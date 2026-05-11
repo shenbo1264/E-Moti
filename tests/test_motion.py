@@ -16,6 +16,12 @@ def test_load_default_motion_catalog_reads_core_rows():
     assert touch.frame_count == 4
 
 
+def test_motion_catalog_uses_spritesheet_from_character_pack():
+    catalog = load_default_motion_catalog()
+
+    assert catalog.sheet_path.name == "spritesheet.png"
+
+
 def test_motion_animator_cycles_frames_for_selected_motion():
     catalog = load_default_motion_catalog()
     animator = MotionAnimator(catalog)

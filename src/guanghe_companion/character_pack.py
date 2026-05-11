@@ -15,6 +15,7 @@ class CharacterPack:
     name: str
     title: str
     description: str
+    spritesheet: str
     default_mode: str
     modes: tuple[str, ...]
     mode_descriptions: dict[str, str]
@@ -33,6 +34,7 @@ def load_character_pack(character_id: str) -> CharacterPack:
         name=payload["name"],
         title=payload["title"],
         description=payload["description"],
+        spritesheet=payload["spritesheet"],
         default_mode=payload["default_mode"],
         modes=tuple(payload["modes"]),
         mode_descriptions=dict(payload["mode_descriptions"]),

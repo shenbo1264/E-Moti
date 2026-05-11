@@ -11,6 +11,12 @@ def test_load_default_character_pack_reads_original_oc_manifest():
     assert pack.motion_labels["TouchHead"] == "靠近回应"
 
 
+def test_load_default_character_pack_reads_spritesheet_filename():
+    pack = load_default_character_pack()
+
+    assert pack.spritesheet == "spritesheet.png"
+
+
 def test_resolve_motion_caption_uses_pack_motion_labels():
     pack = load_default_character_pack()
 
