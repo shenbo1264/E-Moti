@@ -39,6 +39,9 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
         with Image.open(atlas) as image:
             width, height = image.size
             mode = image.mode
+            image.verify()
+        with Image.open(atlas) as image:
+            image.load()
     except (OSError, UnidentifiedImageError) as exc:
         return AtlasValidationReport(False, 0, 0, "", [f"atlas image is invalid: {exc}"])
 
@@ -74,9 +77,14 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
             continue
         row = motion.get("row")
         frame_count = motion.get("frame_count")
-        if not isinstance(row, int) or row < 0 or row >= EXPECTED_ROWS:
+        if isinstance(row, bool) or not isinstance(row, int) or row < 0 or row >= EXPECTED_ROWS:
             errors.append(f"{name}.row must be between 0 and 8, got {row}")
-        if not isinstance(frame_count, int) or frame_count < 1 or frame_count > EXPECTED_COLUMNS:
+        if (
+            isinstance(frame_count, bool)
+            or not isinstance(frame_count, int)
+            or frame_count < 1
+            or frame_count > EXPECTED_COLUMNS
+        ):
             errors.append(f"{name}.frame_count must be between 1 and 8, got {frame_count}")
 
     return AtlasValidationReport(not errors, width, height, mode, errors)
