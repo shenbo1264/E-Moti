@@ -18,10 +18,10 @@ dist/
 
 # Local brainstorm/session artifacts
 .superpowers/
+.worktrees/
 
 # OS/editor noise
 .DS_Store
 Thumbs.db
 .vscode/
 .idea/
-
