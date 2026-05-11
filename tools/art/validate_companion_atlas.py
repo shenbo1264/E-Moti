@@ -5,7 +5,7 @@ import json
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, UnidentifiedImageError
 
 
 EXPECTED_COLUMNS = 8
@@ -35,16 +35,25 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
     if not manifest.exists():
         return AtlasValidationReport(False, 0, 0, "", [f"manifest not found: {manifest}"])
 
-    with Image.open(atlas) as image:
-        width, height = image.size
-        mode = image.mode
+    try:
+        with Image.open(atlas) as image:
+            width, height = image.size
+            mode = image.mode
+    except (OSError, UnidentifiedImageError) as exc:
+        return AtlasValidationReport(False, 0, 0, "", [f"atlas image is invalid: {exc}"])
 
     if (width, height) != (EXPECTED_WIDTH, EXPECTED_HEIGHT):
         errors.append(f"atlas size must be 1536x1872, got {width}x{height}")
     if mode != "RGBA":
         errors.append(f"atlas mode must be RGBA, got {mode}")
 
-    payload = json.loads(manifest.read_text(encoding="utf-8"))
+    try:
+        payload = json.loads(manifest.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError) as exc:
+        return AtlasValidationReport(False, width, height, mode, [f"manifest json is invalid: {exc}"])
+    if not isinstance(payload, dict):
+        return AtlasValidationReport(False, width, height, mode, ["manifest must be an object"])
+
     if payload.get("sheet_columns") != EXPECTED_COLUMNS:
         errors.append(f"sheet_columns must be 8, got {payload.get('sheet_columns')}")
     if payload.get("sheet_rows") != EXPECTED_ROWS:
@@ -54,7 +63,15 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
     if payload.get("frame_height") != EXPECTED_FRAME_HEIGHT:
         errors.append(f"frame_height must be 208, got {payload.get('frame_height')}")
 
-    for name, motion in payload.get("motions", {}).items():
+    motions = payload.get("motions")
+    if not isinstance(motions, dict):
+        errors.append("motions must be an object")
+        return AtlasValidationReport(False, width, height, mode, errors)
+
+    for name, motion in motions.items():
+        if not isinstance(motion, dict):
+            errors.append(f"{name} must be an object")
+            continue
         row = motion.get("row")
         frame_count = motion.get("frame_count")
         if not isinstance(row, int) or row < 0 or row >= EXPECTED_ROWS:
