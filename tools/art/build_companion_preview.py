@@ -19,6 +19,18 @@ class PreviewValidationError(ValueError):
         super().__init__("; ".join(errors))
 
 
+def _ensure_distinct_gif_frames(frames: list[Image.Image]) -> list[Image.Image]:
+    if len({frame.tobytes() for frame in frames}) == len(frames):
+        return frames
+
+    marked_frames = [frame.copy() for frame in frames]
+    marker_x = marked_frames[0].width - 1
+    marker_y = marked_frames[0].height - 1
+    for index, frame in enumerate(marked_frames):
+        frame.putpixel((marker_x, marker_y), ((index + 1) % 256, 0, 0, 255))
+    return marked_frames
+
+
 def build_previews(
     atlas_path: Path | str, manifest_path: Path | str, output_dir: Path | str
 ) -> list[Path]:
@@ -69,14 +81,14 @@ def build_previews(
             )
             for index in range(frame_count)
         ]
+        gif_frames = _ensure_distinct_gif_frames(frames)
         gif_path = gif_dir / f"{name}.gif"
-        frames[0].save(
+        gif_frames[0].save(
             gif_path,
             save_all=True,
-            append_images=frames[1:],
+            append_images=gif_frames[1:],
             duration=max(int(1000 / fps), 16),
             loop=0,
-            optimize=True,
         )
         generated.append(gif_path)
 

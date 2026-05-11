@@ -81,6 +81,19 @@ def test_build_previews_writes_contact_sheet_and_gifs(tmp_path: Path):
         assert sum(1 for _ in ImageSequence.Iterator(image)) == 4
 
 
+def test_build_previews_preserves_identical_gif_frames(tmp_path: Path):
+    atlas = tmp_path / "spritesheet.png"
+    manifest = tmp_path / "motion_manifest.json"
+    output = tmp_path / "preview"
+    Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(atlas)
+    write_manifest(manifest)
+
+    build_previews(atlas, manifest, output)
+
+    with Image.open(output.joinpath("gifs", "Default.gif")) as image:
+        assert image.n_frames == 6
+
+
 def test_build_previews_rejects_invalid_manifest_without_output(tmp_path: Path):
     atlas = tmp_path / "spritesheet.png"
     manifest = tmp_path / "motion_manifest.json"
