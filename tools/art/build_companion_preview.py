@@ -2,9 +2,21 @@ from __future__ import annotations
 
 import argparse
 import json
+import sys
 from pathlib import Path
 
 from PIL import Image, ImageDraw
+
+if __package__ in {None, ""}:
+    sys.path.append(str(Path(__file__).resolve().parents[2]))
+
+from tools.art.validate_companion_atlas import validate_atlas
+
+
+class PreviewValidationError(ValueError):
+    def __init__(self, errors: list[str]) -> None:
+        self.errors = errors
+        super().__init__("; ".join(errors))
 
 
 def build_previews(
@@ -13,9 +25,10 @@ def build_previews(
     atlas = Path(atlas_path)
     manifest = Path(manifest_path)
     output = Path(output_dir)
-    output.mkdir(parents=True, exist_ok=True)
-    gif_dir = output / "gifs"
-    gif_dir.mkdir(parents=True, exist_ok=True)
+
+    report = validate_atlas(atlas, manifest)
+    if not report.ok:
+        raise PreviewValidationError(report.errors)
 
     payload = json.loads(manifest.read_text(encoding="utf-8"))
     frame_width = int(payload["frame_width"])
@@ -23,6 +36,10 @@ def build_previews(
     columns = int(payload["sheet_columns"])
     rows = int(payload["sheet_rows"])
     generated: list[Path] = []
+
+    output.mkdir(parents=True, exist_ok=True)
+    gif_dir = output / "gifs"
+    gif_dir.mkdir(parents=True, exist_ok=True)
 
     with Image.open(atlas) as source:
         sheet = source.convert("RGBA")
@@ -73,7 +90,12 @@ def main() -> int:
     parser.add_argument("--output", required=True, type=Path)
     args = parser.parse_args()
 
-    generated = build_previews(args.atlas, args.manifest, args.output)
+    try:
+        generated = build_previews(args.atlas, args.manifest, args.output)
+    except PreviewValidationError as exc:
+        for error in exc.errors:
+            print(f"ERROR {error}")
+        return 1
     for path in generated:
         print(path)
     return 0
