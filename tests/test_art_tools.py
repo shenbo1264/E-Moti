@@ -6,6 +6,7 @@ from pathlib import Path
 
 from PIL import Image
 
+from tools.art.build_companion_preview import build_previews
 from tools.art.validate_companion_atlas import main, validate_atlas
 
 
@@ -40,6 +41,21 @@ def test_validate_atlas_accepts_valid_8x9_rgba_sheet(tmp_path: Path):
     assert report.errors == []
     assert report.width == 1536
     assert report.height == 1872
+
+
+def test_build_previews_writes_contact_sheet_and_gifs(tmp_path: Path):
+    atlas = tmp_path / "spritesheet.webp"
+    manifest = tmp_path / "motion_manifest.json"
+    output = tmp_path / "preview"
+    Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(atlas)
+    write_manifest(manifest)
+
+    generated = build_previews(atlas, manifest, output)
+
+    assert output.joinpath("contact-sheet.png").exists()
+    assert output.joinpath("gifs", "Default.gif").exists()
+    assert output.joinpath("gifs", "TouchHead.gif").exists()
+    assert "contact-sheet.png" in {path.name for path in generated}
 
 
 def test_validate_atlas_reports_wrong_size(tmp_path: Path):
