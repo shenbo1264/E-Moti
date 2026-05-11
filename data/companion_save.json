@@ -1,0 +1,32 @@
+{
+  "character_id": "original_oc",
+  "character_name": "光核伴生体",
+  "focus": 72,
+  "charge": 65,
+  "stability": 78,
+  "mood": 58,
+  "trust": 5,
+  "exp": 0,
+  "level": 1,
+  "coins": 20,
+  "mode": "Calm",
+  "resting": false,
+  "inventory": {
+    "warm_milk": 0,
+    "energy_candy": 0,
+    "berry_tart": 0,
+    "star_hairpin": 0,
+    "comet_ribbon": 0,
+    "memory_shell": 0,
+    "comfort_blanket": 0,
+    "learning_sticker": 0
+  },
+  "unlocks": [],
+  "current_goal_id": "reach_trust_20",
+  "last_interaction_at": 0,
+  "last_tick_at": 0,
+  "last_gift_item_id": null,
+  "last_gift_at": null,
+  "same_gift_chain": 0,
+  "study_bonus_exp": 0
+}

@@ -1,0 +1,30 @@
+{
+  "character_id": "original_oc",
+  "name": "光核伴生体",
+  "title": "桌面频率同伴",
+  "description": "一个住在桌面上的原创类人伴侣。她通过状态、动作和结构化事件来回应玩家。",
+  "spritesheet": "spritesheet.png",
+  "motion_manifest": "motion_manifest.json",
+  "default_mode": "Calm",
+  "modes": ["Glow", "Calm", "Frayed", "Overload"],
+  "mode_descriptions": {
+    "Glow": "情绪稳定且主动亲近。",
+    "Calm": "频率平稳，适合日常互动。",
+    "Frayed": "开始疲惫或分心，需要轻一点的陪伴。",
+    "Overload": "进入保护状态，只接受安抚和休息。"
+  },
+  "motion_labels": {
+    "Default": "待机呼吸",
+    "TouchHead": "靠近回应",
+    "Comfort": "情绪安抚",
+    "Sleep": "进入休息",
+    "Study": "共同学习",
+    "Play": "共同娱乐",
+    "Raised": "被轻轻提起",
+    "Eat": "接受投喂",
+    "Gift": "收到礼物",
+    "Shop": "资源补给",
+    "Tick": "时间流逝",
+    "SwitchDown": "低状态反馈"
+  }
+}

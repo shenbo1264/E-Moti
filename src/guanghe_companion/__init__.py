@@ -1,0 +1,1 @@
+"""Offline companion demo package."""

@@ -1,0 +1,328 @@
+from __future__ import annotations
+
+import json
+import sys
+
+from PySide6.QtCore import QTimer, Qt, Slot
+from PySide6.QtGui import QPixmap
+from PySide6.QtWidgets import (
+    QApplication,
+    QGridLayout,
+    QGroupBox,
+    QHBoxLayout,
+    QLabel,
+    QListWidget,
+    QListWidgetItem,
+    QMainWindow,
+    QMessageBox,
+    QPushButton,
+    QProgressBar,
+    QVBoxLayout,
+    QWidget,
+)
+
+from .controller import CompanionController
+from .motion import MotionAnimator, load_default_motion_catalog
+
+
+class CompanionWindow(QMainWindow):
+    def __init__(self, controller: CompanionController | None = None) -> None:
+        super().__init__()
+        self.controller = controller or CompanionController()
+        self.motion_catalog = load_default_motion_catalog()
+        self.motion_animator = MotionAnimator(self.motion_catalog)
+        self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
+        self.remaining_seconds = 15
+        self.action_buttons: dict[str, QPushButton] = {}
+        self.status_bars: dict[str, QProgressBar] = {}
+
+        self.setWindowTitle("光核 AI 桌面伴侣 Demo")
+        self.resize(1180, 760)
+        self._build_ui()
+        self._setup_timers()
+        self._apply_snapshot(self.controller.get_snapshot())
+
+    def _build_ui(self) -> None:
+        root = QWidget(self)
+        self.setCentralWidget(root)
+        shell = QVBoxLayout(root)
+        shell.setContentsMargins(16, 16, 16, 16)
+        shell.setSpacing(12)
+
+        top = QHBoxLayout()
+        top.setSpacing(12)
+        shell.addLayout(top, stretch=1)
+
+        self.hero_card = self._build_hero_card()
+        top.addWidget(self.hero_card, stretch=3)
+
+        self.status_card = self._build_status_card()
+        top.addWidget(self.status_card, stretch=2)
+
+        self.feedback_card = self._build_feedback_card()
+        shell.addWidget(self.feedback_card)
+
+        shell.addWidget(self._build_actions_card())
+
+        lower = QHBoxLayout()
+        lower.setSpacing(12)
+        shell.addLayout(lower, stretch=1)
+        lower.addWidget(self._build_shop_card(), stretch=1)
+        lower.addWidget(self._build_inventory_card(), stretch=1)
+
+    def _build_hero_card(self) -> QGroupBox:
+        box = QGroupBox("角色动画区")
+        layout = QVBoxLayout(box)
+        self.sprite_label = QLabel()
+        self.sprite_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.sprite_label.setStyleSheet(
+            "QLabel { border: 2px dashed #4f6d7a; border-radius: 18px; padding: 12px; background: #f7fbfd; }"
+        )
+        self.sprite_label.setMinimumHeight(300)
+        layout.addWidget(self.sprite_label)
+        self.character_label = QLabel()
+        self.character_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.character_label.setStyleSheet(
+            "QLabel { border: 1px solid #d7e3ea; border-radius: 14px; padding: 18px; background: #ffffff; font-size: 16px; }"
+        )
+        self.character_label.setMinimumHeight(160)
+        layout.addWidget(self.character_label)
+        return box
+
+    def _build_status_card(self) -> QGroupBox:
+        box = QGroupBox("状态面板")
+        layout = QVBoxLayout(box)
+
+        self.mode_label = QLabel()
+        self.resources_label = QLabel()
+        self.goal_label = QLabel()
+        self.tick_label = QLabel()
+        for widget in (self.mode_label, self.resources_label, self.goal_label, self.tick_label):
+            widget.setWordWrap(True)
+            layout.addWidget(widget)
+
+        grid = QGridLayout()
+        layout.addLayout(grid)
+        for row, stat_name in enumerate(("focus", "charge", "stability", "mood", "trust")):
+            label = QLabel(stat_name)
+            bar = QProgressBar()
+            bar.setRange(0, 100)
+            bar.setFormat("%v / 100")
+            self.status_bars[stat_name] = bar
+            grid.addWidget(label, row, 0)
+            grid.addWidget(bar, row, 1)
+        return box
+
+    def _build_feedback_card(self) -> QGroupBox:
+        box = QGroupBox("反馈气泡")
+        layout = QVBoxLayout(box)
+        self.feedback_label = QLabel()
+        self.feedback_label.setWordWrap(True)
+        self.feedback_label.setStyleSheet("font-size: 16px;")
+        self.delta_label = QLabel()
+        self.delta_label.setWordWrap(True)
+        self.events_label = QLabel()
+        self.events_label.setWordWrap(True)
+        self.events_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        self.events_label.setStyleSheet("font-family: Consolas, monospace; font-size: 12px; background: #f7fbfd; padding: 8px; border-radius: 8px;")
+        layout.addWidget(self.feedback_label)
+        layout.addWidget(self.delta_label)
+        layout.addWidget(self.events_label)
+        return box
+
+    def _build_actions_card(self) -> QGroupBox:
+        box = QGroupBox("主按钮动作")
+        layout = QHBoxLayout(box)
+        for action_id in ("touch", "soothe", "rest", "study", "play", "drag"):
+            button = QPushButton(action_id)
+            button.clicked.connect(lambda checked=False, current=action_id: self._handle_action(current))
+            button.setMinimumHeight(42)
+            self.action_buttons[action_id] = button
+            layout.addWidget(button)
+        return box
+
+    def _build_shop_card(self) -> QGroupBox:
+        box = QGroupBox("轻量商店")
+        layout = QVBoxLayout(box)
+        self.shop_list = QListWidget()
+        layout.addWidget(self.shop_list)
+        self.buy_button = QPushButton("购买选中物品")
+        self.buy_button.clicked.connect(self._handle_buy)
+        layout.addWidget(self.buy_button)
+        return box
+
+    def _build_inventory_card(self) -> QGroupBox:
+        box = QGroupBox("轻量背包")
+        layout = QVBoxLayout(box)
+        self.inventory_list = QListWidget()
+        layout.addWidget(self.inventory_list)
+        actions = QHBoxLayout()
+        self.feed_button = QPushButton("使用/投喂")
+        self.feed_button.clicked.connect(lambda: self._handle_inventory_usage("feed"))
+        self.gift_button = QPushButton("赠送")
+        self.gift_button.clicked.connect(lambda: self._handle_inventory_usage("gift"))
+        self.tick_button = QPushButton("立即结算 15 秒")
+        self.tick_button.clicked.connect(self._handle_tick)
+        actions.addWidget(self.feed_button)
+        actions.addWidget(self.gift_button)
+        actions.addWidget(self.tick_button)
+        layout.addLayout(actions)
+        return box
+
+    def _setup_timers(self) -> None:
+        self.frame_timer = QTimer(self)
+        self.frame_timer.timeout.connect(self._advance_frame)
+        self.frame_timer.start(self.motion_animator.interval_ms())
+
+        self.tick_timer = QTimer(self)
+        self.tick_timer.timeout.connect(self._handle_tick)
+        self.tick_timer.start(15_000)
+
+        self.countdown_timer = QTimer(self)
+        self.countdown_timer.timeout.connect(self._update_countdown)
+        self.countdown_timer.start(1_000)
+
+    @Slot()
+    def _update_countdown(self) -> None:
+        self.remaining_seconds = 15 if self.remaining_seconds <= 1 else self.remaining_seconds - 1
+        snapshot = self.controller.get_snapshot()
+        self.tick_label.setText(f"15 秒 tick：已结算 {snapshot['tick_count']} 次，下一轮 {self.remaining_seconds} 秒后")
+
+    def _reset_countdown(self) -> None:
+        self.remaining_seconds = 15
+
+    @Slot()
+    def _handle_tick(self) -> None:
+        self._reset_countdown()
+        self._apply_snapshot(self.controller.advance_tick())
+
+    @Slot()
+    def _advance_frame(self) -> None:
+        self.motion_animator.advance()
+        self._render_current_frame()
+
+    def _handle_action(self, action_id: str) -> None:
+        self._apply_snapshot(self.controller.perform_action(action_id))
+
+    @Slot()
+    def _handle_buy(self) -> None:
+        item_id = self._current_item_id(self.shop_list)
+        if not item_id:
+            self._show_message("请先在商店中选择一个物品。")
+            return
+        try:
+            self._apply_snapshot(self.controller.buy_selected_item(item_id))
+        except ValueError as exc:
+            self._show_message(str(exc))
+
+    def _handle_inventory_usage(self, usage: str) -> None:
+        item_id = self._current_item_id(self.inventory_list)
+        if not item_id:
+            self._show_message("请先在背包中选择一个物品。")
+            return
+        try:
+            self._apply_snapshot(self.controller.use_selected_item(item_id, usage=usage))
+        except ValueError as exc:
+            self._show_message(str(exc))
+
+    def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
+        self.motion_animator.set_motion(str(snapshot["motion"]))
+        self.frame_timer.setInterval(self.motion_animator.interval_ms())
+        self._render_current_frame()
+        self.character_label.setText(
+            f"{snapshot['character_name']}\n{snapshot['character_title']}\n\n"
+            f"模式：{snapshot['mode']}\n"
+            f"动作：{snapshot['motion_caption']}\n\n"
+            f"{snapshot['character_description']}\n\n"
+            "当前为程序化占位 spritesheet，后续可直接替换为正式角色包资产。"
+        )
+        self.mode_label.setText(f"当前模式：{snapshot['mode']}")
+        self.resources_label.setText(
+            f"coins {snapshot['coins']} / level {snapshot['level']} / exp {snapshot['exp']}"
+        )
+        self.goal_label.setText(str(snapshot["goal"]))
+        self.tick_label.setText(f"15 秒 tick：已结算 {snapshot['tick_count']} 次，下一轮 {self.remaining_seconds} 秒后")
+
+        for stat_name, bar in self.status_bars.items():
+            bar.setValue(int(float(snapshot[stat_name])))
+
+        self.feedback_label.setText(str(snapshot["feedback"]))
+        self.delta_label.setText(f"最近变化：{snapshot['delta_text']}")
+        self.events_label.setText("\n".join(str(line) for line in snapshot["event_preview"].splitlines()))
+
+        actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
+        for action_id, button in self.action_buttons.items():
+            entry = actions[action_id]
+            button.setText(str(entry["label"]))
+            button.setEnabled(bool(entry["enabled"]))
+
+        self._fill_list(self.shop_list, snapshot["shop_items"], kind="shop")
+        self._fill_list(self.inventory_list, snapshot["inventory_items"], kind="inventory")
+        self._sync_inventory_buttons(snapshot["inventory_items"])
+
+    def _render_current_frame(self) -> None:
+        if self.spritesheet.isNull():
+            self.sprite_label.setText("spritesheet 未找到")
+            return
+        rect = self.motion_animator.current_frame_rect()
+        frame = self.spritesheet.copy(rect)
+        scaled = frame.scaled(
+            288,
+            312,
+            Qt.AspectRatioMode.KeepAspectRatio,
+            Qt.TransformationMode.SmoothTransformation,
+        )
+        self.sprite_label.setPixmap(scaled)
+
+    def _fill_list(self, widget: QListWidget, items: object, kind: str) -> None:
+        current = self._current_item_id(widget)
+        widget.clear()
+        for item in items:
+            row = QListWidgetItem()
+            if kind == "shop":
+                text = f"{item['name']} | {item['category']} | {item['price']} coins"
+                if not item["unlocked"]:
+                    text += " | 未解锁"
+                elif not item["affordable"]:
+                    text += " | 金币不足"
+            else:
+                text = f"{item['name']} | {item['category']} | x{item['count']}"
+            row.setText(text)
+            row.setData(Qt.ItemDataRole.UserRole, item["item_id"])
+            widget.addItem(row)
+            if current and item["item_id"] == current:
+                widget.setCurrentItem(row)
+
+    def _sync_inventory_buttons(self, items: object) -> None:
+        selected_id = self._current_item_id(self.inventory_list)
+        current = None
+        for item in items:
+            if item["item_id"] == selected_id:
+                current = item
+                break
+        if current is None:
+            self.feed_button.setEnabled(False)
+            self.gift_button.setEnabled(False)
+            return
+        self.feed_button.setEnabled(bool(current["can_feed"] or current["can_use"]))
+        self.gift_button.setEnabled(bool(current["can_gift"]))
+
+    def _current_item_id(self, widget: QListWidget) -> str | None:
+        current = widget.currentItem()
+        if current is None:
+            return None
+        return str(current.data(Qt.ItemDataRole.UserRole))
+
+    def _show_message(self, message: str) -> None:
+        QMessageBox.information(self, "提示", message)
+
+
+def launch() -> int:
+    app = QApplication.instance() or QApplication(sys.argv)
+    window = CompanionWindow()
+    window.show()
+    return app.exec()
+
+
+if __name__ == "__main__":
+    raise SystemExit(launch())
