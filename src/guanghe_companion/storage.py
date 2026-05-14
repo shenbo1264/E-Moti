@@ -5,8 +5,10 @@ from dataclasses import asdict
 from pathlib import Path
 
 from .models import CompanionState
+from .shop_items import load_default_shop_items
 
 DEFAULT_SAVE_PATH = Path(__file__).resolve().parents[2] / "data" / "companion_save.json"
+DEMO_SAVE_PATH = Path(__file__).resolve().parents[2] / "data" / "companion_demo_save.json"
 
 
 def save_state(state: CompanionState, path: Path | str = DEFAULT_SAVE_PATH) -> None:
@@ -20,4 +22,8 @@ def load_state(path: Path | str = DEFAULT_SAVE_PATH) -> CompanionState | None:
     if not target.exists():
         return None
     payload = json.loads(target.read_text(encoding="utf-8"))
+    payload.setdefault("memory_log", [])
+    inventory = payload.setdefault("inventory", {})
+    for item_id in load_default_shop_items():
+        inventory.setdefault(item_id, 0)
     return CompanionState(**payload)

@@ -10,6 +10,7 @@ class ItemDefinition:
     category: str
     price: int
     effects: dict[str, float]
+    icon: str = ""
     unlock_level: int = 1
     unlock_trust: float = 0
 
@@ -37,6 +38,7 @@ class CompanionState:
     last_gift_at: int | None = None
     same_gift_chain: int = 0
     study_bonus_exp: int = 0
+    memory_log: list[dict[str, object]] = field(default_factory=list)
 
 
 @dataclass(slots=True)

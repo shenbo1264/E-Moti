@@ -4,71 +4,15 @@ from copy import deepcopy
 from dataclasses import replace
 
 from .models import ActionResult, CompanionState, ItemDefinition
+from .shop_items import load_default_shop_items
 
 STAT_MIN = 0.0
 STAT_MAX = 100.0
 TICK_SECONDS = 15
-CHARACTER_NAME = "光核伴生体"
+CHARACTER_NAME = "星汐"
 
 
-BUYABLE_ITEMS: dict[str, ItemDefinition] = {
-    "warm_milk": ItemDefinition(
-        item_id="warm_milk",
-        name="热牛奶",
-        category="food",
-        price=12,
-        effects={"charge": 12, "mood": 2},
-    ),
-    "energy_candy": ItemDefinition(
-        item_id="energy_candy",
-        name="能量糖",
-        category="food",
-        price=18,
-        effects={"charge": 20, "stability": -2},
-    ),
-    "berry_tart": ItemDefinition(
-        item_id="berry_tart",
-        name="浆果挞",
-        category="food",
-        price=16,
-        effects={"charge": 8, "mood": 6},
-    ),
-    "star_hairpin": ItemDefinition(
-        item_id="star_hairpin",
-        name="星形发夹",
-        category="gift",
-        price=24,
-        effects={"mood": 8, "trust": 3},
-    ),
-    "comet_ribbon": ItemDefinition(
-        item_id="comet_ribbon",
-        name="彗尾丝带",
-        category="gift",
-        price=28,
-        effects={"mood": 7, "trust": 5},
-    ),
-    "memory_shell": ItemDefinition(
-        item_id="memory_shell",
-        name="回声贝壳",
-        category="gift",
-        price=30,
-        effects={"mood": 6, "trust": 6},
-    ),
-    "comfort_blanket": ItemDefinition(
-        item_id="comfort_blanket",
-        name="安抚毯",
-        category="tool",
-        price=30,
-        effects={"stability": 12},
-    ),
-    "learning_sticker": ItemDefinition(
-        item_id="learning_sticker",
-        name="学习贴纸",
-        category="tool",
-        price=16,
-        effects={"study_bonus_exp": 4},
-    ),
-}
+BUYABLE_ITEMS: dict[str, ItemDefinition] = load_default_shop_items()
 
 
 def create_initial_state(now: int = 0) -> CompanionState:

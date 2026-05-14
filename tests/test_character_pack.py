@@ -5,7 +5,7 @@ def test_load_default_character_pack_reads_original_oc_manifest():
     pack = load_default_character_pack()
 
     assert pack.character_id == "original_oc"
-    assert pack.name == "光核伴生体"
+    assert pack.name == "星汐"
     assert pack.default_mode == "Calm"
     assert "Glow" in pack.modes
     assert pack.motion_labels["TouchHead"] == "靠近回应"
