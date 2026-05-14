@@ -32,6 +32,9 @@ assets/companion/original_oc/preview/pyside_*smoke*.png
 assets/companion/original_oc/preview/qa_diagnostics_*/
 
 # Bulk intermediate art-trial frames. Keep manifests, QA reports, and runbooks visible.
+assets/companion/original_oc/art_runs/**/*.png
+assets/companion/original_oc/art_runs/**/*.gif
+assets/companion/original_oc/art_runs/**/*.webp
 assets/companion/original_oc/art_runs/**/motion_trials/**/raw/*.png
 assets/companion/original_oc/art_runs/**/motion_trials/**/alpha/*.png
 assets/companion/original_oc/art_runs/**/motion_trials/**/alpha_review/*.png
