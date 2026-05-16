@@ -135,6 +135,25 @@ def test_controller_keeps_local_stat_and_choice_events_when_ai_supplies_speech(t
     assert set(snapshot) >= {"character_name", "stats", "inventory", "events", "event_preview"}
 
 
+def test_controller_falls_back_when_ai_adapter_raises_without_changing_state(tmp_path):
+    class ExplodingExpressor:
+        def express(self, snapshot, effect=None):
+            raise RuntimeError("adapter offline")
+
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=ExplodingExpressor())
+
+    initial = controller.get_snapshot()
+    touched = controller.perform_action("touch")
+
+    assert [event["character_name"] for event in initial["events"]] == [controller.state.character_name, "STAT", "CHOICE"]
+    assert [event["character_name"] for event in touched["events"]] == [controller.state.character_name, "STAT", "CHOICE"]
+    assert touched["mood"] == 62
+    assert touched["coins"] == 20
+    assert touched["motion"] == "TouchHead"
+    assert touched["memory_log"][0]["motion"] == "TouchHead"
+    assert touched["memory_log"][0]["summary"]
+
+
 def test_controller_accepts_typed_action_request_without_changing_snapshot_shape():
     controller = CompanionController(auto_load=False)
 

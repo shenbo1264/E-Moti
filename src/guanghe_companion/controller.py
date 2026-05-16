@@ -306,7 +306,10 @@ class CompanionController:
             goal=describe_goal(self.state),
             actions=actions,
         )
-        expressed_events = self.ai_expressor.express(context.to_expressor_dict(), effect=effect)
+        try:
+            expressed_events = self.ai_expressor.express(context.to_expressor_dict(), effect=effect)
+        except Exception:
+            return fallback_events + list(domain_events or [])
         if not expressed_events:
             return fallback_events + list(domain_events or [])
         if expressed_events == [event.to_legacy_dict() for event in fallback_events]:
