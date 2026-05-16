@@ -4,6 +4,7 @@ import json
 import os
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
+from dataclasses import dataclass
 from typing import Any
 from urllib import request
 
@@ -16,6 +17,71 @@ HTTPTransport = Callable[[request.Request, float], bytes]
 DEFAULT_TIMEOUT_SECONDS = 2.0
 DEFAULT_OPENAI_MODEL = "gpt-5.5"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+
+
+@dataclass(frozen=True, slots=True)
+class ExpressionRequest:
+    character_name: str
+    mode: str
+    motion: str
+    focus: float
+    charge: float
+    stability: float
+    mood: float
+    trust: float
+    feedback: str
+    delta_text: str
+    goal: str
+    actions: tuple[dict[str, str], ...]
+    recent_memory: tuple[dict[str, str], ...]
+
+    @classmethod
+    def from_snapshot(cls, snapshot: dict[str, object]) -> "ExpressionRequest":
+        actions = tuple(
+            {"label": str(action.get("label", ""))}
+            for action in _as_dict_list(snapshot.get("actions", []))
+            if action.get("label")
+        )
+        recent_memory = tuple(
+            {
+                "kind": str(entry.get("kind", "")),
+                "summary": str(entry.get("summary", "")),
+                "motion": str(entry.get("motion", "")),
+            }
+            for entry in _as_dict_list(snapshot.get("memory_log", []))[:3]
+        )
+        return cls(
+            character_name=str(snapshot["character_name"]),
+            mode=str(snapshot["mode"]),
+            motion=str(snapshot.get("motion", snapshot.get("current_motion", ""))),
+            focus=float(snapshot["focus"]),
+            charge=float(snapshot["charge"]),
+            stability=float(snapshot["stability"]),
+            mood=float(snapshot["mood"]),
+            trust=float(snapshot["trust"]),
+            feedback=str(snapshot["feedback"]),
+            delta_text=str(snapshot["delta_text"]),
+            goal=str(snapshot["goal"]),
+            actions=actions,
+            recent_memory=recent_memory,
+        )
+
+    def to_prompt_dict(self) -> dict[str, object]:
+        return {
+            "character_name": self.character_name,
+            "mode": self.mode,
+            "motion": self.motion,
+            "focus": self.focus,
+            "charge": self.charge,
+            "stability": self.stability,
+            "mood": self.mood,
+            "trust": self.trust,
+            "feedback": self.feedback,
+            "delta_text": self.delta_text,
+            "goal": self.goal,
+            "actions": [dict(action) for action in self.actions],
+            "recent_memory": [dict(entry) for entry in self.recent_memory],
+        }
 
 
 class OpenAIResponsesClient:
@@ -64,33 +130,41 @@ class ShinsekaiAIExpressor:
         self.timeout_seconds = timeout_seconds
         self.enabled = enabled
 
-    def build_prompt(self, snapshot: dict[str, object]) -> str:
-        choices = " / ".join(str(entry["label"]) for entry in snapshot["actions"])
+    def build_prompt(self, snapshot: dict[str, object] | ExpressionRequest) -> str:
+        expression_request = _ensure_expression_request(snapshot)
+        prompt_payload = expression_request.to_prompt_dict()
+        choices = " / ".join(str(entry["label"]) for entry in prompt_payload["actions"])
+        memory = " / ".join(
+            f"{entry['kind']}: {entry['summary']}" for entry in prompt_payload["recent_memory"]
+        )
         return "\n".join(
             [
                 "你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。",
                 "AI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。",
                 "请输出 JSON 数组，每个对象只包含 character_name, speech, sprite, effect。",
-                f"character_name: {snapshot['character_name']}",
-                f"mode: {snapshot['mode']}",
-                f"motion: {snapshot['motion']}",
-                f"focus: {snapshot['focus']}",
-                f"charge: {snapshot['charge']}",
-                f"stability: {snapshot['stability']}",
-                f"mood: {snapshot['mood']}",
-                f"trust: {snapshot['trust']}",
-                f"feedback: {snapshot['feedback']}",
-                f"delta: {snapshot['delta_text']}",
-                f"goal: {snapshot['goal']}",
+                f"character_name: {prompt_payload['character_name']}",
+                f"mode: {prompt_payload['mode']}",
+                f"motion: {prompt_payload['motion']}",
+                f"focus: {prompt_payload['focus']}",
+                f"charge: {prompt_payload['charge']}",
+                f"stability: {prompt_payload['stability']}",
+                f"mood: {prompt_payload['mood']}",
+                f"trust: {prompt_payload['trust']}",
+                f"feedback: {prompt_payload['feedback']}",
+                f"delta: {prompt_payload['delta_text']}",
+                f"goal: {prompt_payload['goal']}",
                 f"choices: {choices}",
+                f"recent_memory: {memory}",
                 '示例字段：{"character_name":"星汐","speech":"短句","sprite":"1","effect":"ATTENTION"}',
             ]
         )
 
-    def express(self, snapshot: dict[str, object], effect: str | None = None) -> list[dict[str, str]]:
-        state = _state_from_snapshot(snapshot)
-        choices = [str(entry["label"]) for entry in snapshot["actions"]]
-        fallback_feedback = str(snapshot["feedback"])
+    def express(self, snapshot: dict[str, object] | ExpressionRequest, effect: str | None = None) -> list[dict[str, str]]:
+        expression_request = _ensure_expression_request(snapshot)
+        prompt_payload = expression_request.to_prompt_dict()
+        state = _state_from_snapshot(prompt_payload)
+        choices = [str(entry["label"]) for entry in prompt_payload["actions"]]
+        fallback_feedback = str(prompt_payload["feedback"])
         fallback_effect = effect or "DISAPPOINTED"
 
         if not self.enabled or self.llm_client is None:
@@ -139,6 +213,18 @@ def _state_from_snapshot(snapshot: dict[str, object]):
 
 def _stringify_event(event: dict[Any, Any]) -> dict[str, str]:
     return {str(key): str(value) for key, value in event.items()}
+
+
+def _ensure_expression_request(snapshot: dict[str, object] | ExpressionRequest) -> ExpressionRequest:
+    if isinstance(snapshot, ExpressionRequest):
+        return snapshot
+    return ExpressionRequest.from_snapshot(snapshot)
+
+
+def _as_dict_list(value: object) -> list[dict[str, object]]:
+    if not isinstance(value, list):
+        return []
+    return [entry for entry in value if isinstance(entry, dict)]
 
 
 def _is_allowed_expression_event(state, event: dict[Any, Any]) -> bool:

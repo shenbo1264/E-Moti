@@ -1,6 +1,12 @@
+from dataclasses import FrozenInstanceError
 import time
 
-from guanghe_companion.ai_expressor import OpenAIResponsesClient, ShinsekaiAIExpressor, build_default_ai_expressor
+from guanghe_companion.ai_expressor import (
+    ExpressionRequest,
+    OpenAIResponsesClient,
+    ShinsekaiAIExpressor,
+    build_default_ai_expressor,
+)
 from guanghe_companion.controller import CompanionController
 
 
@@ -22,6 +28,70 @@ def test_prompt_builder_includes_state_action_and_ai_boundaries():
     assert "AI 只能生成表达事件" in prompt
     assert "不能修改状态数值" in prompt
     assert '"character_name"' in prompt
+
+
+def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
+    snapshot = make_snapshot()
+    original_action_label = snapshot["actions"][0]["label"]
+    original_memory_kind = snapshot["memory_log"][0]["kind"]
+    snapshot["inventory"]["warm_milk"] = 99
+    snapshot["shop_items"][0]["price"] = 0
+    snapshot["unlocks"].append("injected_unlock")
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+    prompt_payload = request.to_prompt_dict()
+
+    assert set(prompt_payload) == {
+        "character_name",
+        "mode",
+        "motion",
+        "focus",
+        "charge",
+        "stability",
+        "mood",
+        "trust",
+        "feedback",
+        "delta_text",
+        "goal",
+        "actions",
+        "recent_memory",
+    }
+    assert "inventory" not in prompt_payload
+    assert "shop_items" not in prompt_payload
+    assert "unlocks" not in prompt_payload
+    assert "coins" not in prompt_payload
+    assert prompt_payload["actions"][0] == {"label": original_action_label}
+    assert prompt_payload["recent_memory"][0]["kind"] == original_memory_kind
+
+
+def test_expression_request_is_immutable_and_copies_mutable_snapshot_values():
+    snapshot = make_snapshot()
+    original_action_label = snapshot["actions"][0]["label"]
+    original_memory_summary = snapshot["memory_log"][0]["summary"]
+    request = ExpressionRequest.from_snapshot(snapshot)
+    snapshot["actions"][0]["label"] = "mutated"
+    snapshot["memory_log"][0]["summary"] = "mutated"
+
+    assert request.actions[0]["label"] == original_action_label
+    assert request.recent_memory[0]["summary"] == original_memory_summary
+    try:
+        request.feedback = "mutated"
+    except FrozenInstanceError:
+        pass
+    else:
+        raise AssertionError("ExpressionRequest should be immutable.")
+
+
+def test_prompt_builder_filters_state_write_surfaces_from_raw_snapshot():
+    snapshot = make_snapshot()
+
+    prompt = ShinsekaiAIExpressor().build_prompt(snapshot)
+
+    assert "inventory" not in prompt
+    assert "shop_items" not in prompt
+    assert "unlocks" not in prompt
+    assert "coins:" not in prompt
+    assert "recent_memory:" in prompt
 
 
 def test_expressor_uses_valid_llm_json_events_without_changing_snapshot():
