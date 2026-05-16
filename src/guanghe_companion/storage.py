@@ -27,3 +27,14 @@ def load_state(path: Path | str = DEFAULT_SAVE_PATH) -> CompanionState | None:
     for item_id in load_default_shop_items():
         inventory.setdefault(item_id, 0)
     return CompanionState(**payload)
+
+
+def logical_time_from_state(state: CompanionState) -> int:
+    times = [state.last_interaction_at, state.last_tick_at]
+    if state.last_gift_at is not None:
+        times.append(state.last_gift_at)
+    for entry in state.memory_log:
+        at = entry.get("at")
+        if isinstance(at, int):
+            times.append(at)
+    return max(0, *times)

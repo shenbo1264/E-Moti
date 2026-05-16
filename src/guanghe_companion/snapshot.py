@@ -1,0 +1,211 @@
+from __future__ import annotations
+
+from copy import deepcopy
+from dataclasses import dataclass
+import json
+
+from .events import CompanionEvent
+from .models import CompanionState
+
+
+def format_delta_text(delta: dict[str, float]) -> str:
+    if not delta:
+        return "数值无变化"
+    parts: list[str] = []
+    labels = {
+        "focus": "focus",
+        "charge": "charge",
+        "stability": "stability",
+        "mood": "mood",
+        "trust": "trust",
+        "exp": "exp",
+        "coins": "coins",
+    }
+    for key, value in delta.items():
+        sign = "+" if value > 0 else ""
+        parts.append(f"{labels.get(key, key)} {sign}{value}")
+    return " / ".join(parts)
+
+
+def legacy_ui_events(events: list[CompanionEvent]) -> list[dict[str, str]]:
+    return [
+        event.to_legacy_dict()
+        for event in events
+        if event.event_type in {"speech", "stat", "choice"}
+    ]
+
+
+def format_event_preview(events: list[dict[str, str]]) -> str:
+    return "\n".join(json.dumps(event, ensure_ascii=False) for event in events)
+
+
+@dataclass(frozen=True, slots=True)
+class CompanionStats:
+    focus: float
+    charge: float
+    stability: float
+    mood: float
+    trust: float
+    exp: int
+    level: int
+    coins: int
+
+    @classmethod
+    def from_state(cls, state: CompanionState) -> "CompanionStats":
+        return cls(
+            focus=state.focus,
+            charge=state.charge,
+            stability=state.stability,
+            mood=state.mood,
+            trust=state.trust,
+            exp=state.exp,
+            level=state.level,
+            coins=state.coins,
+        )
+
+    def to_dict(self) -> dict[str, float | int]:
+        return {
+            "focus": self.focus,
+            "charge": self.charge,
+            "stability": self.stability,
+            "mood": self.mood,
+            "trust": self.trust,
+            "exp": self.exp,
+            "level": self.level,
+            "coins": self.coins,
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class CompanionSnapshot:
+    character_id: str
+    character_name: str
+    mode: str
+    stats: CompanionStats
+    inventory: dict[str, int]
+    shop_items: list[dict[str, object]]
+    relationship_stage: str
+    next_relationship_unlock: str
+    unlocks: list[str]
+    memory_log: list[dict[str, object]]
+    current_motion: str
+    feedback: str
+    events: list[CompanionEvent]
+    proactive_feedback: dict[str, str] | None
+    character_title: str
+    character_description: str
+    goal: str
+    motion_caption: str
+    delta_text: str
+    allowed: bool
+    tick_count: int
+    resting: bool
+    actions: list[dict[str, object]]
+    inventory_items: list[dict[str, object]]
+    item_feedback_icon: str | None = None
+
+    def to_compatible_dict(self) -> dict[str, object]:
+        return SnapshotCompatibleSerializer(self).to_dict()
+
+
+@dataclass(frozen=True, slots=True)
+class SnapshotCompatibleSerializer:
+    snapshot: CompanionSnapshot
+
+    def to_dict(self) -> dict[str, object]:
+        stats = self.snapshot.stats.to_dict()
+        legacy_events = legacy_ui_events(self.snapshot.events)
+        return {
+            "character_id": self.snapshot.character_id,
+            "character_name": self.snapshot.character_name,
+            "mode": self.snapshot.mode,
+            "stats": stats,
+            "inventory": deepcopy(self.snapshot.inventory),
+            "character_title": self.snapshot.character_title,
+            "character_description": self.snapshot.character_description,
+            "focus": stats["focus"],
+            "charge": stats["charge"],
+            "stability": stats["stability"],
+            "mood": stats["mood"],
+            "trust": stats["trust"],
+            "exp": stats["exp"],
+            "level": stats["level"],
+            "coins": stats["coins"],
+            "goal": self.snapshot.goal,
+            "relationship_stage": self.snapshot.relationship_stage,
+            "next_relationship_unlock": self.snapshot.next_relationship_unlock,
+            "unlocks": list(self.snapshot.unlocks),
+            "feedback": self.snapshot.feedback,
+            "current_motion": self.snapshot.current_motion,
+            "motion": self.snapshot.current_motion,
+            "motion_caption": self.snapshot.motion_caption,
+            "delta_text": self.snapshot.delta_text,
+            "allowed": self.snapshot.allowed,
+            "tick_count": self.snapshot.tick_count,
+            "resting": self.snapshot.resting,
+            "events": legacy_events,
+            "event_preview": format_event_preview(legacy_events),
+            "item_feedback_icon": self.snapshot.item_feedback_icon,
+            "proactive_feedback": deepcopy(self.snapshot.proactive_feedback),
+            "memory_log": deepcopy(self.snapshot.memory_log),
+            "actions": deepcopy(self.snapshot.actions),
+            "shop_items": deepcopy(self.snapshot.shop_items),
+            "inventory_items": deepcopy(self.snapshot.inventory_items),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class SnapshotBuilderInput:
+    state: CompanionState
+    character_title: str
+    character_description: str
+    goal: str
+    relationship_stage: str
+    next_relationship_unlock: str
+    current_motion: str
+    motion_caption: str
+    feedback: str
+    delta_text: str
+    allowed: bool
+    tick_count: int
+    events: list[CompanionEvent]
+    actions: list[dict[str, object]]
+    shop_items: list[dict[str, object]]
+    inventory_items: list[dict[str, object]]
+    item_feedback_icon: str | None
+    proactive_feedback: dict[str, str] | None
+
+
+@dataclass(frozen=True, slots=True)
+class SnapshotBuilder:
+    input: SnapshotBuilderInput
+
+    def build(self) -> CompanionSnapshot:
+        source = self.input
+        return CompanionSnapshot(
+            character_id=source.state.character_id,
+            character_name=source.state.character_name,
+            mode=source.state.mode,
+            stats=CompanionStats.from_state(source.state),
+            inventory=deepcopy(source.state.inventory),
+            shop_items=deepcopy(source.shop_items),
+            relationship_stage=source.relationship_stage,
+            next_relationship_unlock=source.next_relationship_unlock,
+            unlocks=list(source.state.unlocks),
+            memory_log=deepcopy(source.state.memory_log),
+            current_motion=source.current_motion,
+            feedback=source.feedback,
+            events=list(source.events),
+            proactive_feedback=deepcopy(source.proactive_feedback),
+            character_title=source.character_title,
+            character_description=source.character_description,
+            goal=source.goal,
+            motion_caption=source.motion_caption,
+            delta_text=source.delta_text,
+            allowed=source.allowed,
+            tick_count=source.tick_count,
+            resting=source.state.resting,
+            actions=deepcopy(source.actions),
+            inventory_items=deepcopy(source.inventory_items),
+            item_feedback_icon=source.item_feedback_icon,
+        )

@@ -2,7 +2,8 @@ from pathlib import Path
 import json
 
 from guanghe_companion.controller import CompanionController
-from guanghe_companion.storage import load_state, save_state
+from guanghe_companion.engine import create_initial_state
+from guanghe_companion.storage import load_state, logical_time_from_state, save_state
 
 
 def test_save_and_load_round_trip(tmp_path: Path):
@@ -57,3 +58,13 @@ def test_load_state_backfills_missing_inventory_items(tmp_path: Path):
     assert loaded.inventory["warm_milk"] == 1
     assert "energy_candy" in loaded.inventory
     assert loaded.inventory["energy_candy"] == 0
+
+
+def test_logical_time_from_state_uses_latest_runtime_timestamp():
+    state = create_initial_state(now=20)
+    state.last_interaction_at = 45
+    state.last_tick_at = 30
+    state.last_gift_at = 60
+    state.memory_log = [{"at": 75, "kind": "互动", "summary": "摸摸头", "motion": "TouchHead"}]
+
+    assert logical_time_from_state(state) == 75

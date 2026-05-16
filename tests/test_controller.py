@@ -1,7 +1,9 @@
 from dataclasses import replace
 
+from guanghe_companion.actions import CompanionActionRequest
 from guanghe_companion.controller import CompanionController
 from guanghe_companion.engine import create_initial_state
+from guanghe_companion.events import CompanionEvent
 from guanghe_companion.storage import save_state
 
 
@@ -22,6 +24,62 @@ def test_snapshot_exposes_status_actions_shop_and_inventory():
     assert snapshot["events"][0]["character_name"] == "星汐"
     assert snapshot["relationship_stage"] == "初识"
     assert "信任达到 20" in snapshot["next_relationship_unlock"]
+
+
+def test_controller_keeps_runtime_events_typed_while_exporting_legacy_snapshot_events():
+    controller = CompanionController(auto_load=False)
+
+    assert all(isinstance(event, CompanionEvent) for event in controller.last_events)
+
+    snapshot = controller.perform_action("touch")
+
+    assert all(isinstance(event, CompanionEvent) for event in controller.last_events)
+    assert [event.event_type for event in controller.last_events] == ["speech", "stat", "choice", "motion", "memory"]
+    assert all(isinstance(event, dict) for event in snapshot["events"])
+    assert len(snapshot["events"]) == 3
+    assert set(snapshot["events"][0]) == {"character_name", "speech", "sprite", "effect"}
+
+
+def test_controller_adds_typed_inventory_event_without_changing_legacy_events():
+    controller = CompanionController(auto_load=False)
+    controller.state.coins = 120
+
+    snapshot = controller.buy_selected_item("warm_milk")
+    inventory_event = next(event for event in controller.last_events if event.event_type == "inventory")
+
+    assert inventory_event.payload["item_id"] == "warm_milk"
+    assert inventory_event.payload["action"] == "purchase"
+    assert inventory_event.payload["item_name"] == "热牛奶"
+    assert len(snapshot["events"]) == 3
+    assert [event["character_name"] for event in snapshot["events"]] == ["星汐", "STAT", "CHOICE"]
+
+
+def test_controller_adds_typed_relationship_event_for_unlock_feedback():
+    controller = CompanionController(auto_load=False)
+    controller.state.trust = 19
+
+    snapshot = controller.perform_action("touch")
+    relationship_event = next(event for event in controller.last_events if event.event_type == "relationship")
+
+    assert relationship_event.payload["stage"] == "熟悉的陪伴"
+    assert relationship_event.payload["unlock_id"] == "unlock_first_nickname"
+    assert "第一次主动称呼" in relationship_event.payload["message"]
+    assert len(snapshot["events"]) == 3
+
+
+def test_controller_adds_typed_proactive_event_for_active_companionship():
+    controller = CompanionController(auto_load=False)
+    controller.state.charge = 25
+    controller.state.mood = 60
+    controller.state.focus = 70
+    controller.state.stability = 70
+
+    snapshot = controller.advance_tick()
+    proactive_event = next(event for event in controller.last_events if event.event_type == "proactive")
+
+    assert proactive_event.payload["kind"] == "low_charge"
+    assert "能量有点低" in proactive_event.payload["summary"]
+    assert len(snapshot["events"]) == 3
 
 
 def test_controller_syncs_loaded_original_oc_save_to_pack_name(tmp_path):
@@ -52,6 +110,21 @@ def test_controller_closes_buy_and_use_loop():
     assert fed["charge"] == 72
     assert fed["mood"] == 60
     assert "投喂" in fed["feedback"]
+
+
+def test_controller_accepts_typed_action_request_without_changing_snapshot_shape():
+    controller = CompanionController(auto_load=False)
+
+    snapshot = controller.perform_action_request(CompanionActionRequest(action_id="touch", source="desktop_pet"))
+
+    assert snapshot["motion"] == "TouchHead"
+    assert snapshot["actions"][0] == {
+        "action_id": "touch",
+        "label": "轻触",
+        "motion": "TouchHead",
+        "enabled": True,
+    }
+    assert snapshot["mood"] == 62
 
 
 def test_controller_reports_refused_feed_without_consuming_item():
