@@ -3,6 +3,7 @@ import time
 
 from guanghe_companion.ai_expressor import (
     ExpressionRequest,
+    LLMProviderError,
     OpenAIResponsesClient,
     ShinsekaiAIExpressor,
     build_default_ai_expressor,
@@ -242,3 +243,68 @@ def test_openai_responses_client_posts_prompt_and_extracts_output_text():
     assert '"model": "gpt-test"' in captured["payload"]
     assert '"input": "prompt text"' in captured["payload"]
     assert result.startswith('[{"character_name"')
+
+
+def test_openai_responses_client_wraps_transport_errors_without_leaking_key():
+    def transport(request, timeout):
+        raise OSError("boom test-key")
+
+    client = OpenAIResponsesClient(api_key="test-key", model="gpt-test", transport=transport)
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "test-key" not in str(exc)
+    else:
+        raise AssertionError("provider transport errors should be wrapped.")
+
+
+def test_openai_responses_client_wraps_empty_or_non_text_responses():
+    empty_client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: b'{"output":[]}',
+    )
+    non_text_client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: b'{"output":[{"content":[{"type":"input_text","text":"ignored"}]}]}',
+    )
+
+    for client in (empty_client, non_text_client):
+        try:
+            client("prompt text")
+        except LLMProviderError:
+            pass
+        else:
+            raise AssertionError("missing output_text should be wrapped.")
+
+
+def test_expressor_falls_back_when_provider_returns_non_json_text():
+    snapshot = make_snapshot()
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: b'{"output_text":"not json"}',
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=client)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+
+
+def test_expressor_falls_back_when_provider_raises_wrapped_error():
+    snapshot = make_snapshot()
+
+    def transport(request, timeout):
+        raise OSError("network down")
+
+    expressor = ShinsekaiAIExpressor(
+        llm_client=OpenAIResponsesClient(api_key="test-key", transport=transport)
+    )
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"

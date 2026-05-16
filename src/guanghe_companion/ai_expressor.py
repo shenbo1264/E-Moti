@@ -19,6 +19,10 @@ DEFAULT_OPENAI_MODEL = "gpt-5.5"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 
 
+class LLMProviderError(RuntimeError):
+    pass
+
+
 @dataclass(frozen=True, slots=True)
 class ExpressionRequest:
     character_name: str
@@ -114,9 +118,12 @@ class OpenAIResponsesClient:
             },
             method="POST",
         )
-        raw = self.transport(api_request, self.timeout_seconds)
-        response = json.loads(raw.decode("utf-8"))
-        return _extract_response_text(response)
+        try:
+            raw = self.transport(api_request, self.timeout_seconds)
+            response = json.loads(raw.decode("utf-8"))
+            return _extract_response_text(response)
+        except Exception as exc:
+            raise LLMProviderError(f"OpenAI expression provider failed: {type(exc).__name__}") from exc
 
 
 class ShinsekaiAIExpressor:
@@ -173,7 +180,7 @@ class ShinsekaiAIExpressor:
         try:
             raw = self._call_llm(self.build_prompt(snapshot))
             payload = json.loads(raw)
-        except (TimeoutError, TypeError, ValueError, OSError, json.JSONDecodeError):
+        except (TimeoutError, LLMProviderError, TypeError, ValueError, OSError, json.JSONDecodeError):
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 
         if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
