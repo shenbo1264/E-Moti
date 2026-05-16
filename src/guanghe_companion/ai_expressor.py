@@ -17,6 +17,8 @@ HTTPTransport = Callable[[request.Request, float], bytes]
 DEFAULT_TIMEOUT_SECONDS = 2.0
 DEFAULT_OPENAI_MODEL = "gpt-5.5"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+MAX_PERCEPTION_SUMMARY_LENGTH = 240
+MAX_TOOL_RESULTS = 3
 
 
 class LLMProviderError(RuntimeError):
@@ -38,6 +40,8 @@ class ExpressionRequest:
     goal: str
     actions: tuple[dict[str, str], ...]
     recent_memory: tuple[dict[str, str], ...]
+    perception_summary: str = ""
+    tool_results: tuple[dict[str, str], ...] = ()
 
     @classmethod
     def from_snapshot(cls, snapshot: dict[str, object]) -> "ExpressionRequest":
@@ -68,6 +72,8 @@ class ExpressionRequest:
             goal=str(snapshot["goal"]),
             actions=actions,
             recent_memory=recent_memory,
+            perception_summary=_short_string(snapshot.get("perception_summary", ""), MAX_PERCEPTION_SUMMARY_LENGTH),
+            tool_results=_sanitize_tool_results(snapshot.get("tool_results", [])),
         )
 
     def to_prompt_dict(self) -> dict[str, object]:
@@ -85,6 +91,8 @@ class ExpressionRequest:
             "goal": self.goal,
             "actions": [dict(action) for action in self.actions],
             "recent_memory": [dict(entry) for entry in self.recent_memory],
+            "perception_summary": self.perception_summary,
+            "tool_results": [dict(entry) for entry in self.tool_results],
         }
 
 
@@ -144,6 +152,9 @@ class ShinsekaiAIExpressor:
         memory = " / ".join(
             f"{entry['kind']}: {entry['summary']}" for entry in prompt_payload["recent_memory"]
         )
+        tool_results = " / ".join(
+            f"{entry['source']}: {entry['title']} - {entry['summary']}" for entry in prompt_payload["tool_results"]
+        )
         return "\n".join(
             [
                 "你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。",
@@ -162,6 +173,8 @@ class ShinsekaiAIExpressor:
                 f"goal: {prompt_payload['goal']}",
                 f"choices: {choices}",
                 f"recent_memory: {memory}",
+                f"perception_summary: {prompt_payload['perception_summary']}",
+                f"tool_results: {tool_results}",
                 '示例字段：{"character_name":"星汐","speech":"短句","sprite":"1","effect":"ATTENTION"}',
             ]
         )
@@ -232,6 +245,26 @@ def _as_dict_list(value: object) -> list[dict[str, object]]:
     if not isinstance(value, list):
         return []
     return [entry for entry in value if isinstance(entry, dict)]
+
+
+def _sanitize_tool_results(value: object) -> tuple[dict[str, str], ...]:
+    results: list[dict[str, str]] = []
+    for entry in _as_dict_list(value):
+        source = _short_string(entry.get("source", ""), 60)
+        title = _short_string(entry.get("title", ""), 80)
+        summary = _short_string(entry.get("summary", ""), 180)
+        if not source or not title or not summary:
+            continue
+        results.append({"source": source, "title": title, "summary": summary})
+        if len(results) >= MAX_TOOL_RESULTS:
+            break
+    return tuple(results)
+
+
+def _short_string(value: object, max_length: int) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.strip()[:max_length]
 
 
 def _is_allowed_expression_event(state, event: dict[Any, Any]) -> bool:

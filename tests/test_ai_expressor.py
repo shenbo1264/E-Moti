@@ -38,6 +38,16 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
     snapshot["inventory"]["warm_milk"] = 99
     snapshot["shop_items"][0]["price"] = 0
     snapshot["unlocks"].append("injected_unlock")
+    snapshot["perception_summary"] = "current window: draft note"
+    snapshot["tool_results"] = [
+        {
+            "source": "local_profile",
+            "title": "expression style",
+            "summary": "keep the reply gentle",
+            "coins": "999",
+            "inventory": "warm_milk",
+        }
+    ]
 
     request = ExpressionRequest.from_snapshot(snapshot)
     prompt_payload = request.to_prompt_dict()
@@ -56,6 +66,8 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
         "goal",
         "actions",
         "recent_memory",
+        "perception_summary",
+        "tool_results",
     }
     assert "inventory" not in prompt_payload
     assert "shop_items" not in prompt_payload
@@ -63,6 +75,36 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
     assert "coins" not in prompt_payload
     assert prompt_payload["actions"][0] == {"label": original_action_label}
     assert prompt_payload["recent_memory"][0]["kind"] == original_memory_kind
+    assert prompt_payload["perception_summary"] == "current window: draft note"
+    assert prompt_payload["tool_results"] == [
+        {
+            "source": "local_profile",
+            "title": "expression style",
+            "summary": "keep the reply gentle",
+        }
+    ]
+
+
+def test_expression_request_sanitizes_perception_and_tool_result_anchors():
+    snapshot = make_snapshot()
+    snapshot["perception_summary"] = "x" * 320
+    snapshot["tool_results"] = [
+        {"source": "local_doc", "title": "one", "summary": "first"},
+        {"source": "search", "title": "two", "summary": "second", "goal": "rewrite"},
+        {"source": "tool", "title": "three", "summary": "third"},
+        {"source": "overflow", "title": "four", "summary": "ignored"},
+        {"source": "bad", "title": {"nested": "bad"}, "summary": "ignored"},
+    ]
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+    prompt_payload = request.to_prompt_dict()
+
+    assert prompt_payload["perception_summary"] == "x" * 240
+    assert prompt_payload["tool_results"] == [
+        {"source": "local_doc", "title": "one", "summary": "first"},
+        {"source": "search", "title": "two", "summary": "second"},
+        {"source": "tool", "title": "three", "summary": "third"},
+    ]
 
 
 def test_expression_request_is_immutable_and_copies_mutable_snapshot_values():
