@@ -1,16 +1,56 @@
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from typing import Any
+from urllib import request
 
 from .engine import create_initial_state
 from .events import build_fallback_events, validate_events
 
 
 LLMClient = Callable[[str], str]
+HTTPTransport = Callable[[request.Request, float], bytes]
 DEFAULT_TIMEOUT_SECONDS = 2.0
+DEFAULT_OPENAI_MODEL = "gpt-5.5"
+OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+
+
+class OpenAIResponsesClient:
+    def __init__(
+        self,
+        api_key: str,
+        model: str = DEFAULT_OPENAI_MODEL,
+        timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+        transport: HTTPTransport | None = None,
+    ) -> None:
+        self.api_key = api_key
+        self.model = model
+        self.timeout_seconds = timeout_seconds
+        self.transport = transport or _default_transport
+
+    def __call__(self, prompt: str) -> str:
+        payload = json.dumps(
+            {
+                "model": self.model,
+                "input": prompt,
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
+        api_request = request.Request(
+            OPENAI_RESPONSES_URL,
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        raw = self.transport(api_request, self.timeout_seconds)
+        response = json.loads(raw.decode("utf-8"))
+        return _extract_response_text(response)
 
 
 class ShinsekaiAIExpressor:
@@ -59,7 +99,7 @@ class ShinsekaiAIExpressor:
         try:
             raw = self._call_llm(self.build_prompt(snapshot))
             payload = json.loads(raw)
-        except (TimeoutError, TypeError, ValueError, json.JSONDecodeError):
+        except (TimeoutError, TypeError, ValueError, OSError, json.JSONDecodeError):
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 
         if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
@@ -105,3 +145,59 @@ def _is_allowed_expression_event(state, event: dict[Any, Any]) -> bool:
     if {str(key) for key in event.keys()} != {"character_name", "speech", "sprite", "effect"}:
         return False
     return str(event.get("character_name")) == state.character_name
+
+
+def build_default_ai_expressor(env: dict[str, str] | None = None) -> ShinsekaiAIExpressor:
+    source = os.environ if env is None else env
+    if source.get("GUANGHE_LLM_ENABLED") != "1":
+        return ShinsekaiAIExpressor(enabled=False)
+    api_key = source.get("OPENAI_API_KEY")
+    if not api_key:
+        return ShinsekaiAIExpressor(enabled=False)
+    timeout_seconds = _parse_timeout(source.get("GUANGHE_LLM_TIMEOUT_SECONDS"))
+    client = OpenAIResponsesClient(
+        api_key=api_key,
+        model=source.get("GUANGHE_LLM_MODEL") or DEFAULT_OPENAI_MODEL,
+        timeout_seconds=timeout_seconds,
+    )
+    return ShinsekaiAIExpressor(
+        llm_client=client,
+        timeout_seconds=timeout_seconds,
+        enabled=True,
+    )
+
+
+def _default_transport(api_request: request.Request, timeout: float) -> bytes:
+    with request.urlopen(api_request, timeout=timeout) as response:
+        return response.read()
+
+
+def _extract_response_text(response: dict[str, Any]) -> str:
+    output_text = response.get("output_text")
+    if isinstance(output_text, str) and output_text:
+        return output_text
+    output = response.get("output")
+    if not isinstance(output, list):
+        raise ValueError("OpenAI response does not include output.")
+    for item in output:
+        if not isinstance(item, dict):
+            continue
+        content = item.get("content")
+        if not isinstance(content, list):
+            continue
+        for part in content:
+            if not isinstance(part, dict):
+                continue
+            if part.get("type") == "output_text" and isinstance(part.get("text"), str):
+                return str(part["text"])
+    raise ValueError("OpenAI response does not include output text.")
+
+
+def _parse_timeout(value: str | None) -> float:
+    if value is None:
+        return DEFAULT_TIMEOUT_SECONDS
+    try:
+        parsed = float(value)
+    except ValueError:
+        return DEFAULT_TIMEOUT_SECONDS
+    return parsed if parsed > 0 else DEFAULT_TIMEOUT_SECONDS

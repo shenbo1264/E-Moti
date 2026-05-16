@@ -1,6 +1,6 @@
 import time
 
-from guanghe_companion.ai_expressor import ShinsekaiAIExpressor
+from guanghe_companion.ai_expressor import OpenAIResponsesClient, ShinsekaiAIExpressor, build_default_ai_expressor
 from guanghe_companion.controller import CompanionController
 
 
@@ -112,3 +112,63 @@ def test_expressor_rejects_more_than_four_llm_rows():
 
     assert len(events) == 3
     assert events[0]["speech"] == snapshot["feedback"]
+
+
+def test_default_expressor_stays_disabled_without_explicit_env(monkeypatch):
+    monkeypatch.delenv("GUANGHE_LLM_ENABLED", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    expressor = build_default_ai_expressor()
+
+    assert expressor.enabled is False
+    assert expressor.llm_client is None
+
+
+def test_default_expressor_requires_api_key_even_when_enabled(monkeypatch):
+    monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+
+    expressor = build_default_ai_expressor()
+
+    assert expressor.enabled is False
+    assert expressor.llm_client is None
+
+
+def test_default_expressor_uses_openai_provider_when_env_is_enabled(monkeypatch):
+    monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("GUANGHE_LLM_MODEL", "gpt-test")
+    monkeypatch.setenv("GUANGHE_LLM_TIMEOUT_SECONDS", "0.5")
+
+    expressor = build_default_ai_expressor()
+
+    assert expressor.enabled is True
+    assert isinstance(expressor.llm_client, OpenAIResponsesClient)
+    assert expressor.llm_client.model == "gpt-test"
+    assert expressor.timeout_seconds == 0.5
+
+
+def test_openai_responses_client_posts_prompt_and_extracts_output_text():
+    captured = {}
+
+    def transport(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["payload"] = request.data.decode("utf-8")
+        captured["timeout"] = timeout
+        return (
+            '{"output":[{"content":[{"type":"output_text","text":"'
+            '[{\\"character_name\\":\\"星汐\\",\\"speech\\":\\"hi\\",\\"sprite\\":\\"1\\",\\"effect\\":\\"ATTENTION\\"}]'
+            '"}]}]}'
+        ).encode("utf-8")
+
+    client = OpenAIResponsesClient(api_key="test-key", model="gpt-test", timeout_seconds=0.5, transport=transport)
+
+    result = client("prompt text")
+
+    assert captured["url"] == "https://api.openai.com/v1/responses"
+    assert captured["headers"]["Authorization"] == "Bearer test-key"
+    assert captured["timeout"] == 0.5
+    assert '"model": "gpt-test"' in captured["payload"]
+    assert '"input": "prompt text"' in captured["payload"]
+    assert result.startswith('[{"character_name"')

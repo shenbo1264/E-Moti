@@ -4,7 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
-from .ai_expressor import ShinsekaiAIExpressor
+from .ai_expressor import ShinsekaiAIExpressor, build_default_ai_expressor
 from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
 from .engine import BUYABLE_ITEMS, TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
 from .events import CompanionEvent, EventBuilder, EventContext, EventValidator, action_event_effect, build_typed_fallback_events
@@ -25,7 +25,7 @@ class CompanionController:
     ) -> None:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
         self.character_pack = load_default_character_pack()
-        self.ai_expressor = ai_expressor or ShinsekaiAIExpressor()
+        self.ai_expressor = ai_expressor or build_default_ai_expressor()
         loaded_state = load_state(self.save_path) if auto_load else None
         self.state = loaded_state or create_initial_state(now=0)
         if self.state.character_id == self.character_pack.character_id:
