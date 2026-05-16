@@ -316,7 +316,13 @@ class CompanionController:
             fallback_feedback=self.last_feedback,
             choices=choices,
         )
-        return validated_events + list(domain_events or [])
+        if _is_local_fallback_expression(validated_events, self.last_feedback):
+            return fallback_events + list(domain_events or [])
+        local_context_events = [event for event in fallback_events if event.event_type in {"stat", "choice"}]
+        expression_events = [event for event in validated_events if event.event_type == "speech"]
+        if not expression_events:
+            return fallback_events + list(domain_events or [])
+        return expression_events + local_context_events + list(domain_events or [])
 
     def _build_actions(self) -> list[dict[str, object]]:
         return [action.to_legacy_dict() for action in CompanionActionLayer(self.state).available_actions()]
@@ -370,3 +376,7 @@ class CompanionController:
             last_proactive_at=self._last_proactive_at,
         ).select_feedback()
         return feedback.to_legacy_dict() if feedback else None
+
+
+def _is_local_fallback_expression(events: list[CompanionEvent], feedback: str) -> bool:
+    return [event.event_type for event in events] == ["speech", "stat", "choice"] and events[0].speech == feedback

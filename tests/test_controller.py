@@ -112,6 +112,29 @@ def test_controller_closes_buy_and_use_loop():
     assert "投喂" in fed["feedback"]
 
 
+def test_controller_keeps_local_stat_and_choice_events_when_ai_supplies_speech(tmp_path):
+    class MockExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "character_name": str(snapshot["character_name"]),
+                    "speech": "LLM speech",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=MockExpressor())
+
+    snapshot = controller.perform_action("touch")
+
+    assert [event["character_name"] for event in snapshot["events"]] == [controller.state.character_name, "STAT", "CHOICE"]
+    assert snapshot["events"][0]["speech"] == "LLM speech"
+    assert snapshot["mood"] == 62
+    assert snapshot["coins"] == 20
+    assert set(snapshot) >= {"character_name", "stats", "inventory", "events", "event_preview"}
+
+
 def test_controller_accepts_typed_action_request_without_changing_snapshot_shape():
     controller = CompanionController(auto_load=False)
 

@@ -1,3 +1,5 @@
+import time
+
 from guanghe_companion.ai_expressor import ShinsekaiAIExpressor
 from guanghe_companion.controller import CompanionController
 
@@ -51,3 +53,62 @@ def test_expressor_falls_back_when_llm_json_is_invalid():
     assert events[0]["effect"] == "DISAPPOINTED"
     assert events[1]["character_name"] == "STAT"
     assert events[2]["character_name"] == "CHOICE"
+
+
+def test_expressor_falls_back_quickly_when_llm_times_out():
+    snapshot = make_snapshot()
+
+    def slow_client(prompt: str) -> str:
+        time.sleep(0.2)
+        return '[{"character_name":"ignored","speech":"late","sprite":"1","effect":"ATTENTION"}]'
+
+    expressor = ShinsekaiAIExpressor(llm_client=slow_client, timeout_seconds=0.01)
+
+    started_at = time.monotonic()
+    events = expressor.express(snapshot)
+
+    assert time.monotonic() - started_at < 0.15
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+
+
+def test_expressor_rejects_llm_owned_stat_or_choice_rows():
+    snapshot = make_snapshot()
+    payload = '[{"character_name":"STAT","speech":"coins 999","sprite":"-1","effect":""}]'
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["character_name"] == snapshot["character_name"]
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[1]["character_name"] == "STAT"
+    assert events[1]["speech"] != "coins 999"
+
+
+def test_expressor_rejects_overreach_fields_and_preserves_snapshot_values():
+    snapshot = make_snapshot()
+    original_coins = snapshot["coins"]
+    payload = (
+        '[{"character_name":"%s","speech":"try write","sprite":"1","effect":"ATTENTION",'
+        '"coins":999,"inventory":{"warm_milk":99}}]'
+    ) % snapshot["character_name"]
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert snapshot["coins"] == original_coins
+
+
+def test_expressor_rejects_more_than_four_llm_rows():
+    snapshot = make_snapshot()
+    row = '{"character_name":"%s","speech":"ok","sprite":"1","effect":"ATTENTION"}' % snapshot["character_name"]
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: f"[{','.join([row] * 5)}]")
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
