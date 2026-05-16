@@ -4,7 +4,7 @@ from dataclasses import replace
 from pathlib import Path
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
-from .ai_expressor import ShinsekaiAIExpressor, build_default_ai_expressor
+from .ai_expressor import ExpressionRequest, ShinsekaiAIExpressor, build_default_ai_expressor
 from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
 from .engine import BUYABLE_ITEMS, TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
 from .events import CompanionEvent, EventBuilder, EventContext, EventValidator, action_event_effect, build_typed_fallback_events
@@ -305,9 +305,11 @@ class CompanionController:
             delta_text=self.last_delta_text,
             goal=describe_goal(self.state),
             actions=actions,
+            memory_log=list(self.state.memory_log),
         )
+        expression_request = ExpressionRequest.from_snapshot(context.to_expressor_dict())
         try:
-            expressed_events = self.ai_expressor.express(context.to_expressor_dict(), effect=effect)
+            expressed_events = self.ai_expressor.express(expression_request, effect=effect)
         except Exception:
             return fallback_events + list(domain_events or [])
         if not expressed_events:

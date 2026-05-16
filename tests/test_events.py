@@ -232,6 +232,7 @@ def test_event_context_builds_ai_expressor_compatible_snapshot():
         "delta_text": "mood +4",
         "goal": "信任达到 20",
         "actions": actions,
+        "memory_log": [],
     }
 
 

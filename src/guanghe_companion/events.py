@@ -54,6 +54,7 @@ class EventContext:
     delta_text: str
     goal: str
     actions: list[dict[str, object]]
+    memory_log: list[dict[str, object]] = field(default_factory=list)
 
     def to_expressor_dict(self) -> dict[str, object]:
         return {
@@ -69,6 +70,7 @@ class EventContext:
             "delta_text": self.delta_text,
             "goal": self.goal,
             "actions": self.actions,
+            "memory_log": self.memory_log,
         }
 
 

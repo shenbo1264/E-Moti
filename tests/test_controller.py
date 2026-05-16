@@ -1,6 +1,7 @@
 from dataclasses import replace
 
 from guanghe_companion.actions import CompanionActionRequest
+from guanghe_companion.ai_expressor import ExpressionRequest
 from guanghe_companion.controller import CompanionController
 from guanghe_companion.engine import create_initial_state
 from guanghe_companion.events import CompanionEvent
@@ -117,7 +118,7 @@ def test_controller_keeps_local_stat_and_choice_events_when_ai_supplies_speech(t
         def express(self, snapshot, effect=None):
             return [
                 {
-                    "character_name": str(snapshot["character_name"]),
+                    "character_name": snapshot.character_name,
                     "speech": "LLM speech",
                     "sprite": "1",
                     "effect": "ATTENTION",
@@ -133,6 +134,29 @@ def test_controller_keeps_local_stat_and_choice_events_when_ai_supplies_speech(t
     assert snapshot["mood"] == 62
     assert snapshot["coins"] == 20
     assert set(snapshot) >= {"character_name", "stats", "inventory", "events", "event_preview"}
+
+
+def test_controller_passes_typed_expression_request_to_ai_adapter(tmp_path):
+    captured = {}
+
+    class CapturingExpressor:
+        def express(self, snapshot, effect=None):
+            captured["request"] = snapshot
+            return []
+
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=CapturingExpressor())
+
+    snapshot = controller.perform_action("touch")
+
+    request = captured["request"]
+    assert isinstance(request, ExpressionRequest)
+    assert request.character_name == controller.state.character_name
+    assert request.motion == "TouchHead"
+    assert request.actions
+    assert request.recent_memory[0]["motion"] == "TouchHead"
+    assert not hasattr(request, "inventory")
+    assert not hasattr(request, "coins")
+    assert snapshot["mood"] == 62
 
 
 def test_controller_falls_back_when_ai_adapter_raises_without_changing_state(tmp_path):
