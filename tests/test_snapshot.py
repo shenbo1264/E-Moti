@@ -6,6 +6,7 @@ from guanghe_companion.snapshot import (
     SnapshotBuilder,
     SnapshotBuilderInput,
     SnapshotCompatibleSerializer,
+    SnapshotContextFactory,
     format_delta_text,
     format_event_preview,
     legacy_ui_events,
@@ -145,6 +146,34 @@ def test_snapshot_builder_accepts_single_typed_input_context(tmp_path):
     assert snapshot.shop_items == shop_items
     assert snapshot.inventory_items == inventory_items
     assert [event.event_type for event in snapshot.events] == ["speech", "stat", "choice"]
+
+
+def test_snapshot_context_factory_derives_state_owned_snapshot_fields(tmp_path):
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    factory = SnapshotContextFactory(
+        state=controller.state,
+        character_title=controller.character_pack.title,
+        character_description=controller.character_pack.description,
+        current_motion="Default",
+        motion_caption="默认待机",
+        feedback="信号稳定。",
+        delta_text="暂无变化",
+        allowed=True,
+        tick_count=0,
+        events=controller.last_events,
+        actions=controller._build_actions(),
+        shop_items=controller._build_shop_items(),
+        inventory_items=controller._build_inventory_items(),
+        item_feedback_icon=None,
+        proactive_feedback=None,
+    )
+
+    builder_input = factory.build_input()
+
+    assert isinstance(builder_input, SnapshotBuilderInput)
+    assert builder_input.goal == "目标：让信任达到 20，解锁第一次主动称呼。"
+    assert builder_input.relationship_stage == "初识"
+    assert builder_input.next_relationship_unlock == "信任达到 20：解锁第一次主动称呼"
 
 
 def test_format_delta_text_keeps_existing_controller_delta_copy():

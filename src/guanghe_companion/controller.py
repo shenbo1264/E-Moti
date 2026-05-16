@@ -12,7 +12,7 @@ from .inventory import InventoryService, InventoryUseRequest, ShopPurchaseReques
 from .memory import MemoryEntry, memory_kind_for_inventory_usage
 from .models import CompanionState
 from .relationship import ProactiveCompanionService, RelationshipService
-from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotBuilderInput, format_delta_text
+from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory, format_delta_text
 from .storage import DEFAULT_SAVE_PATH, load_state, logical_time_from_state, save_state
 
 
@@ -64,13 +64,10 @@ class CompanionController:
         return self.get_typed_snapshot().to_compatible_dict()
 
     def get_typed_snapshot(self) -> CompanionSnapshot:
-        builder_input = SnapshotBuilderInput(
+        builder_input = SnapshotContextFactory(
             state=self.state,
             character_title=self.character_pack.title,
             character_description=self.character_pack.description,
-            goal=describe_goal(self.state),
-            relationship_stage=self._relationship_stage(),
-            next_relationship_unlock=self._next_relationship_unlock(),
             current_motion=self.last_motion,
             motion_caption=resolve_motion_caption(
                 self.character_pack,
@@ -88,7 +85,7 @@ class CompanionController:
             inventory_items=self._build_inventory_items(),
             item_feedback_icon=self.last_item_feedback_icon,
             proactive_feedback=self.last_proactive_feedback,
-        )
+        ).build_input()
         return SnapshotBuilder(builder_input).build()
 
     def perform_action(self, action_id: str) -> dict[str, object]:
@@ -342,12 +339,6 @@ class CompanionController:
 
     def _action_label(self, action_id: str) -> str:
         return action_label(action_id)
-
-    def _relationship_stage(self) -> str:
-        return RelationshipService(self.state).stage()
-
-    def _next_relationship_unlock(self) -> str:
-        return RelationshipService(self.state).next_unlock()
 
     def _new_relationship_unlocks(self, previous_unlocks: set[str]) -> list[str]:
         return RelationshipService(self.state).new_unlocks(previous_unlocks)

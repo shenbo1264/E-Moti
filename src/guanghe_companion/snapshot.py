@@ -4,8 +4,10 @@ from copy import deepcopy
 from dataclasses import dataclass
 import json
 
+from .engine import describe_goal
 from .events import CompanionEvent
 from .models import CompanionState
+from .relationship import RelationshipService
 
 
 def format_delta_text(delta: dict[str, float]) -> str:
@@ -174,6 +176,48 @@ class SnapshotBuilderInput:
     inventory_items: list[dict[str, object]]
     item_feedback_icon: str | None
     proactive_feedback: dict[str, str] | None
+
+
+@dataclass(frozen=True, slots=True)
+class SnapshotContextFactory:
+    state: CompanionState
+    character_title: str
+    character_description: str
+    current_motion: str
+    motion_caption: str
+    feedback: str
+    delta_text: str
+    allowed: bool
+    tick_count: int
+    events: list[CompanionEvent]
+    actions: list[dict[str, object]]
+    shop_items: list[dict[str, object]]
+    inventory_items: list[dict[str, object]]
+    item_feedback_icon: str | None
+    proactive_feedback: dict[str, str] | None
+
+    def build_input(self) -> SnapshotBuilderInput:
+        relationship = RelationshipService(self.state)
+        return SnapshotBuilderInput(
+            state=self.state,
+            character_title=self.character_title,
+            character_description=self.character_description,
+            goal=describe_goal(self.state),
+            relationship_stage=relationship.stage(),
+            next_relationship_unlock=relationship.next_unlock(),
+            current_motion=self.current_motion,
+            motion_caption=self.motion_caption,
+            feedback=self.feedback,
+            delta_text=self.delta_text,
+            allowed=self.allowed,
+            tick_count=self.tick_count,
+            events=self.events,
+            actions=self.actions,
+            shop_items=self.shop_items,
+            inventory_items=self.inventory_items,
+            item_feedback_icon=self.item_feedback_icon,
+            proactive_feedback=self.proactive_feedback,
+        )
 
 
 @dataclass(frozen=True, slots=True)
