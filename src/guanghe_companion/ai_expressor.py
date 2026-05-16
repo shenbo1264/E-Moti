@@ -237,6 +237,8 @@ def _as_dict_list(value: object) -> list[dict[str, object]]:
 def _is_allowed_expression_event(state, event: dict[Any, Any]) -> bool:
     if {str(key) for key in event.keys()} != {"character_name", "speech", "sprite", "effect"}:
         return False
+    if not all(isinstance(event.get(key), str) for key in ("character_name", "speech", "sprite", "effect")):
+        return False
     return str(event.get("character_name")) == state.character_name
 
 

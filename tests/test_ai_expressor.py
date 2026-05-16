@@ -174,6 +174,21 @@ def test_expressor_rejects_overreach_fields_and_preserves_snapshot_values():
     assert snapshot["coins"] == original_coins
 
 
+def test_expressor_rejects_non_string_expression_fields():
+    snapshot = make_snapshot()
+    payload = (
+        '[{"character_name":"%s","speech":{"text":"nested"},"sprite":"1","effect":"ATTENTION"}]'
+    ) % snapshot["character_name"]
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["character_name"] == snapshot["character_name"]
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+
+
 def test_expressor_rejects_more_than_four_llm_rows():
     snapshot = make_snapshot()
     row = '{"character_name":"%s","speech":"ok","sprite":"1","effect":"ATTENTION"}' % snapshot["character_name"]
