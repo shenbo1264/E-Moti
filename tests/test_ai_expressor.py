@@ -154,6 +154,27 @@ def test_expressor_uses_valid_llm_json_events_without_changing_snapshot():
     assert snapshot["focus"] == original_focus
 
 
+def test_expressor_accepts_limited_speech_event_schema_without_applying_motion_hint():
+    snapshot = make_snapshot()
+    payload = (
+        '[{"type":"speech","speech":"我会轻一点回应。",'
+        '"effect":"ATTENTION","motion_hint":"Raised"}]'
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "我会轻一点回应。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert snapshot["motion"] == "TouchHead"
+
+
 def test_expressor_falls_back_when_llm_json_is_invalid():
     snapshot = make_snapshot()
     expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: "not json")

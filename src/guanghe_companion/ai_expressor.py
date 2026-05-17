@@ -198,12 +198,13 @@ class ShinsekaiAIExpressor:
 
         if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
-        if not all(_is_allowed_expression_event(state, row) for row in payload):
+        normalized_events = [_normalize_expression_event(state, row) for row in payload]
+        if any(row is None for row in normalized_events):
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 
         return validate_events(
             state=state,
-            events=[_stringify_event(row) for row in payload],
+            events=[row for row in normalized_events if row is not None],
             fallback_feedback=fallback_feedback,
             choices=choices,
         )
@@ -267,12 +268,43 @@ def _short_string(value: object, max_length: int) -> str:
     return value.strip()[:max_length]
 
 
-def _is_allowed_expression_event(state, event: dict[Any, Any]) -> bool:
+def _normalize_expression_event(state, event: dict[Any, Any]) -> dict[str, str] | None:
+    if _is_allowed_legacy_expression_event(state, event):
+        return _stringify_event(event)
+    return _normalize_speech_schema_event(state, event)
+
+
+def _is_allowed_legacy_expression_event(state, event: dict[Any, Any]) -> bool:
     if {str(key) for key in event.keys()} != {"character_name", "speech", "sprite", "effect"}:
         return False
     if not all(isinstance(event.get(key), str) for key in ("character_name", "speech", "sprite", "effect")):
         return False
     return str(event.get("character_name")) == state.character_name
+
+
+def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, str] | None:
+    allowed_keys = {"type", "speech", "effect", "motion_hint"}
+    if not set(event.keys()).issubset(allowed_keys):
+        return None
+    if event.get("type") != "speech":
+        return None
+
+    speech = event.get("speech")
+    effect = event.get("effect", "")
+    motion_hint = event.get("motion_hint", "")
+    if not isinstance(speech, str):
+        return None
+    if not isinstance(effect, str):
+        return None
+    if motion_hint != "" and not isinstance(motion_hint, str):
+        return None
+
+    return {
+        "character_name": state.character_name,
+        "speech": speech,
+        "sprite": "1",
+        "effect": effect,
+    }
 
 
 def build_default_ai_expressor(env: dict[str, str] | None = None) -> ShinsekaiAIExpressor:
