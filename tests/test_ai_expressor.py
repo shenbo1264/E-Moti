@@ -640,6 +640,33 @@ def test_openai_responses_client_skips_blank_output_text_for_nested_text():
     assert result == '[{"type":"speech","speech":"hi"}]'
 
 
+def test_openai_responses_client_trims_response_output_text():
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: (
+            '  {"output_text":"  [{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]  "}  '
+        ).encode("utf-8"),
+    )
+
+    result = client("prompt text")
+
+    assert result == '[{"type":"speech","speech":"hi"}]'
+
+
+def test_openai_responses_client_trims_nested_output_text():
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: (
+            '{"output":[{"content":[{"type":"output_text","text":"\\n  '
+            '[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]  \\t"}]}]}'
+        ).encode("utf-8"),
+    )
+
+    result = client("prompt text")
+
+    assert result == '[{"type":"speech","speech":"hi"}]'
+
+
 def test_openai_responses_client_wraps_transport_errors_without_leaking_key():
     def transport(request, timeout):
         raise OSError("boom test-key")
