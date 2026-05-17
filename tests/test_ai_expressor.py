@@ -196,6 +196,25 @@ def test_expressor_rejects_blank_speech_schema_text():
     assert expressor.last_fallback_reason == "unsafe_event"
 
 
+def test_expressor_rejects_blank_legacy_speech_text():
+    snapshot = make_snapshot()
+    payload = (
+        '[{"character_name":"%s","speech":"   ","sprite":"1","effect":"ATTENTION"}]'
+        % snapshot["character_name"]
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["character_name"] == snapshot["character_name"]
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "unsafe_event"
+
+
 def test_expressor_falls_back_when_llm_json_is_invalid():
     snapshot = make_snapshot()
     expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: "not json")

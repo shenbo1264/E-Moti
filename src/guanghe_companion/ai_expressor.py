@@ -299,6 +299,8 @@ def _is_allowed_legacy_expression_event(state, event: dict[Any, Any]) -> bool:
         return False
     if not all(isinstance(event.get(key), str) for key in ("character_name", "speech", "sprite", "effect")):
         return False
+    if not str(event.get("speech", "")).strip():
+        return False
     return str(event.get("character_name")) == state.character_name
 
 
