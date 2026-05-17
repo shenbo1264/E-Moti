@@ -323,7 +323,7 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
 
     return {
         "character_name": state.character_name,
-        "speech": speech,
+        "speech": speech.strip(),
         "sprite": "1",
         "effect": effect,
     }
