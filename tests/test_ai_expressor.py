@@ -308,6 +308,21 @@ def test_expressor_falls_back_when_llm_json_is_invalid():
     assert expressor.last_fallback_reason == "invalid_json"
 
 
+def test_expressor_marks_empty_llm_event_list_as_invalid_payload():
+    snapshot = make_snapshot()
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: "[]")
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["character_name"] == snapshot["character_name"]
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "invalid_payload"
+
+
 def test_expressor_clears_fallback_reason_after_next_valid_llm_expression():
     snapshot = make_snapshot()
     responses = iter(
