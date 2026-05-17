@@ -581,6 +581,20 @@ def test_openai_responses_client_posts_prompt_and_extracts_output_text():
     assert result.startswith('[{"character_name"')
 
 
+def test_openai_responses_client_trims_api_key_for_authorization_header():
+    captured = {}
+
+    def transport(request, timeout):
+        captured["headers"] = dict(request.header_items())
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="  test-key  ", transport=transport)
+
+    client("prompt text")
+
+    assert captured["headers"]["Authorization"] == "Bearer test-key"
+
+
 def test_openai_responses_client_skips_blank_output_text_for_nested_text():
     client = OpenAIResponsesClient(
         api_key="test-key",
