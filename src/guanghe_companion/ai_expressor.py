@@ -159,7 +159,8 @@ class ShinsekaiAIExpressor:
             [
                 "你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。",
                 "AI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。",
-                "请输出 JSON 数组，每个对象只包含 character_name, speech, sprite, effect。",
+                "请输出 JSON 数组，每个对象只包含 type, speech, effect, motion_hint。",
+                'type 固定为 speech；speech 是星汐说出的短句；effect 和 motion_hint 只是表达提示。',
                 f"character_name: {prompt_payload['character_name']}",
                 f"mode: {prompt_payload['mode']}",
                 f"motion: {prompt_payload['motion']}",
@@ -175,7 +176,7 @@ class ShinsekaiAIExpressor:
                 f"recent_memory: {memory}",
                 f"perception_summary: {prompt_payload['perception_summary']}",
                 f"tool_results: {tool_results}",
-                '示例字段：{"character_name":"星汐","speech":"短句","sprite":"1","effect":"ATTENTION"}',
+                '示例字段：{"type":"speech","speech":"短句","effect":"ATTENTION","motion_hint":"Raised"}',
             ]
         )
 

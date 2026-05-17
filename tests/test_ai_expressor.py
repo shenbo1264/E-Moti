@@ -28,7 +28,12 @@ def test_prompt_builder_includes_state_action_and_ai_boundaries():
     assert "mood: 62" in prompt
     assert "AI 只能生成表达事件" in prompt
     assert "不能修改状态数值" in prompt
-    assert '"character_name"' in prompt
+    assert '"type":"speech"' in prompt
+    assert '"speech"' in prompt
+    assert '"effect"' in prompt
+    assert '"motion_hint"' in prompt
+    assert '"character_name"' not in prompt
+    assert '"sprite"' not in prompt
 
 
 def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
