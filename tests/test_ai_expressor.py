@@ -243,6 +243,27 @@ def test_expressor_replaces_previous_reason_when_client_raises_unwrapped_error()
     assert expressor.last_fallback_reason == "provider_error"
 
 
+def test_expressor_falls_back_when_mock_client_raises_custom_exception():
+    class MockProviderError(Exception):
+        pass
+
+    snapshot = make_snapshot()
+
+    def broken_client(prompt: str) -> str:
+        raise MockProviderError("mock provider unavailable")
+
+    expressor = ShinsekaiAIExpressor(llm_client=broken_client)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "provider_error"
+
+
 def test_expressor_falls_back_quickly_when_llm_times_out():
     snapshot = make_snapshot()
 
