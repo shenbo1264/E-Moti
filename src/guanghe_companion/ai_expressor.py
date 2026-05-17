@@ -202,7 +202,7 @@ class ShinsekaiAIExpressor:
         except json.JSONDecodeError:
             self.last_fallback_reason = "invalid_json"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
-        except (LLMProviderError, TypeError, ValueError, OSError):
+        except (LLMProviderError, TypeError, ValueError, OSError, RuntimeError):
             self.last_fallback_reason = "provider_error"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 

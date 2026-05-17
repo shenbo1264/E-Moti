@@ -220,6 +220,29 @@ def test_expressor_clears_fallback_reason_after_next_valid_llm_expression():
     ]
 
 
+def test_expressor_replaces_previous_reason_when_client_raises_unwrapped_error():
+    snapshot = make_snapshot()
+    calls = 0
+
+    def flaky_client(prompt: str) -> str:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            return "not json"
+        raise RuntimeError("network down")
+
+    expressor = ShinsekaiAIExpressor(llm_client=flaky_client)
+
+    first_events = expressor.express(snapshot)
+    second_events = expressor.express(snapshot)
+
+    assert first_events[0]["speech"] == snapshot["feedback"]
+    assert len(second_events) == 3
+    assert second_events[0]["speech"] == snapshot["feedback"]
+    assert second_events[0]["effect"] == "DISAPPOINTED"
+    assert expressor.last_fallback_reason == "provider_error"
+
+
 def test_expressor_falls_back_quickly_when_llm_times_out():
     snapshot = make_snapshot()
 
