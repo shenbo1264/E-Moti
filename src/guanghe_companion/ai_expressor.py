@@ -107,7 +107,7 @@ class OpenAIResponsesClient:
     ) -> None:
         self.api_key = api_key.strip()
         self.model = model.strip()
-        self.timeout_seconds = timeout_seconds
+        self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.transport = transport or _default_transport
 
     def __call__(self, prompt: str) -> str:
@@ -393,4 +393,8 @@ def _parse_timeout(value: str | None) -> float:
         parsed = float(value)
     except ValueError:
         return DEFAULT_TIMEOUT_SECONDS
-    return parsed if math.isfinite(parsed) and parsed > 0 else DEFAULT_TIMEOUT_SECONDS
+    return _normalize_timeout(parsed)
+
+
+def _normalize_timeout(value: float) -> float:
+    return value if math.isfinite(value) and value > 0 else DEFAULT_TIMEOUT_SECONDS
