@@ -359,7 +359,7 @@ def _default_transport(api_request: request.Request, timeout: float) -> bytes:
 
 def _extract_response_text(response: dict[str, Any]) -> str:
     output_text = response.get("output_text")
-    if isinstance(output_text, str) and output_text:
+    if isinstance(output_text, str) and output_text.strip():
         return output_text
     output = response.get("output")
     if not isinstance(output, list):
@@ -373,7 +373,7 @@ def _extract_response_text(response: dict[str, Any]) -> str:
         for part in content:
             if not isinstance(part, dict):
                 continue
-            if part.get("type") == "output_text" and isinstance(part.get("text"), str):
+            if part.get("type") == "output_text" and isinstance(part.get("text"), str) and str(part["text"]).strip():
                 return str(part["text"])
     raise ValueError("OpenAI response does not include output text.")
 

@@ -331,6 +331,22 @@ def test_openai_responses_client_posts_prompt_and_extracts_output_text():
     assert result.startswith('[{"character_name"')
 
 
+def test_openai_responses_client_skips_blank_output_text_for_nested_text():
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: (
+            '{"output_text":"   ","output":[{"content":['
+            '{"type":"output_text","text":"\\n"},'
+            '{"type":"output_text","text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+            "]}]}"
+        ).encode("utf-8"),
+    )
+
+    result = client("prompt text")
+
+    assert result == '[{"type":"speech","speech":"hi"}]'
+
+
 def test_openai_responses_client_wraps_transport_errors_without_leaking_key():
     def transport(request, timeout):
         raise OSError("boom test-key")
