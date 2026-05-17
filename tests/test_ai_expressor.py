@@ -2,6 +2,7 @@ from dataclasses import FrozenInstanceError
 import time
 
 from guanghe_companion.ai_expressor import (
+    DEFAULT_OPENAI_MODEL,
     ExpressionRequest,
     LLMProviderError,
     OpenAIResponsesClient,
@@ -529,6 +530,17 @@ def test_default_expressor_uses_openai_provider_when_env_is_enabled(monkeypatch)
     assert isinstance(expressor.llm_client, OpenAIResponsesClient)
     assert expressor.llm_client.model == "gpt-test"
     assert expressor.timeout_seconds == 0.5
+
+
+def test_default_expressor_uses_default_model_for_blank_model_env(monkeypatch):
+    monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("GUANGHE_LLM_MODEL", "   ")
+
+    expressor = build_default_ai_expressor()
+
+    assert isinstance(expressor.llm_client, OpenAIResponsesClient)
+    assert expressor.llm_client.model == DEFAULT_OPENAI_MODEL
 
 
 def test_default_expressor_rejects_non_finite_timeout_env(monkeypatch):
