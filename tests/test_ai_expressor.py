@@ -269,6 +269,7 @@ def test_expressor_rejects_more_than_four_llm_rows():
 
     assert len(events) == 3
     assert events[0]["speech"] == snapshot["feedback"]
+    assert expressor.last_fallback_reason == "too_many_events"
 
 
 def test_default_expressor_stays_disabled_without_explicit_env(monkeypatch):

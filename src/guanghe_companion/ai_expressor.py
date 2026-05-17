@@ -213,6 +213,9 @@ class ShinsekaiAIExpressor:
         if any(row is None for row in normalized_events):
             self.last_fallback_reason = "unsafe_event"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
+        if len(normalized_events) > 4:
+            self.last_fallback_reason = "too_many_events"
+            return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 
         validated_events = validate_events(
             state=state,
