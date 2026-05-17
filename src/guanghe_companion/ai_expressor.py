@@ -106,7 +106,7 @@ class OpenAIResponsesClient:
         transport: HTTPTransport | None = None,
     ) -> None:
         self.api_key = api_key.strip()
-        self.model = model
+        self.model = model.strip()
         self.timeout_seconds = timeout_seconds
         self.transport = transport or _default_transport
 

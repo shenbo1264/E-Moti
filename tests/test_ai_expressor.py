@@ -595,6 +595,20 @@ def test_openai_responses_client_trims_api_key_for_authorization_header():
     assert captured["headers"]["Authorization"] == "Bearer test-key"
 
 
+def test_openai_responses_client_trims_model_for_request_payload():
+    captured = {}
+
+    def transport(request, timeout):
+        captured["payload"] = request.data.decode("utf-8")
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="test-key", model="  gpt-test  ", transport=transport)
+
+    client("prompt text")
+
+    assert '"model": "gpt-test"' in captured["payload"]
+
+
 def test_openai_responses_client_skips_blank_output_text_for_nested_text():
     client = OpenAIResponsesClient(
         api_key="test-key",
