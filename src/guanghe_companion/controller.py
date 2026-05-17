@@ -9,6 +9,7 @@ from .ai_expressor import ExpressionRequest, ShinsekaiAIExpressor, build_default
 from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
 from .engine import BUYABLE_ITEMS, TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
 from .events import CompanionEvent, EventBuilder, EventContext, EventValidator, action_event_effect, build_typed_fallback_events
+from .expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
 from .inventory import InventoryService, InventoryUseRequest, ShopPurchaseRequest, ShopService, format_item_effect
 from .memory import MemoryEntry, memory_kind_for_inventory_usage
 from .models import CompanionState
@@ -30,7 +31,9 @@ class CompanionController:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
         self.character_pack = load_default_character_pack()
         self.ai_expressor = ai_expressor or build_default_ai_expressor()
-        self.expression_context_provider = expression_context_provider
+        self.expression_context_provider = expression_context_provider or ExpressionContextChain(
+            [CharacterProfileExpressionContextProvider(self.character_pack)]
+        )
         loaded_state = load_state(self.save_path) if auto_load else None
         self.state = loaded_state or create_initial_state(now=0)
         if self.state.character_id == self.character_pack.character_id:

@@ -159,6 +159,28 @@ def test_controller_passes_typed_expression_request_to_ai_adapter(tmp_path):
     assert snapshot["mood"] == 62
 
 
+def test_controller_uses_local_character_expression_context_by_default(tmp_path):
+    captured = {}
+
+    class CapturingExpressor:
+        def express(self, snapshot, effect=None):
+            captured["request"] = snapshot
+            return []
+
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=CapturingExpressor())
+
+    snapshot = controller.perform_action("touch")
+
+    request = captured["request"]
+    assert isinstance(request, ExpressionRequest)
+    assert request.tool_results[0]["source"] == "local_character_pack"
+    assert request.tool_results[0]["title"] == f"{controller.character_pack.name} | {controller.character_pack.title}"
+    assert request.perception_summary == ""
+    assert "tool_results" not in snapshot
+    assert "perception_summary" not in snapshot
+    assert snapshot["mood"] == 62
+
+
 def test_controller_passes_optional_readonly_expression_context_to_ai_adapter(tmp_path):
     captured = {}
 
