@@ -144,6 +144,7 @@ class ShinsekaiAIExpressor:
         self.llm_client = llm_client
         self.timeout_seconds = timeout_seconds
         self.enabled = enabled
+        self.last_fallback_reason: str | None = None
 
     def build_prompt(self, snapshot: dict[str, object] | ExpressionRequest) -> str:
         expression_request = _ensure_expression_request(snapshot)
@@ -189,26 +190,41 @@ class ShinsekaiAIExpressor:
         fallback_effect = effect or "DISAPPOINTED"
 
         if not self.enabled or self.llm_client is None:
+            self.last_fallback_reason = "disabled"
             return build_fallback_events(state, fallback_feedback, choices, effect=fallback_effect)
 
         try:
             raw = self._call_llm(self.build_prompt(snapshot))
             payload = json.loads(raw)
-        except (TimeoutError, LLMProviderError, TypeError, ValueError, OSError, json.JSONDecodeError):
+        except TimeoutError:
+            self.last_fallback_reason = "timeout"
+            return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
+        except json.JSONDecodeError:
+            self.last_fallback_reason = "invalid_json"
+            return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
+        except (LLMProviderError, TypeError, ValueError, OSError):
+            self.last_fallback_reason = "provider_error"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 
         if not isinstance(payload, list) or not all(isinstance(row, dict) for row in payload):
+            self.last_fallback_reason = "invalid_payload"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
         normalized_events = [_normalize_expression_event(state, row) for row in payload]
         if any(row is None for row in normalized_events):
+            self.last_fallback_reason = "unsafe_event"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 
-        return validate_events(
+        validated_events = validate_events(
             state=state,
             events=[row for row in normalized_events if row is not None],
             fallback_feedback=fallback_feedback,
             choices=choices,
         )
+        if _is_fallback_events(state, validated_events, fallback_feedback):
+            self.last_fallback_reason = "invalid_event"
+        else:
+            self.last_fallback_reason = None
+        return validated_events
 
     def _call_llm(self, prompt: str) -> str:
         if self.llm_client is None:
@@ -306,6 +322,14 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
         "sprite": "1",
         "effect": effect,
     }
+
+
+def _is_fallback_events(state, events: list[dict[str, str]], fallback_feedback: str) -> bool:
+    return (
+        [event.get("character_name") for event in events] == [state.character_name, "STAT", "CHOICE"]
+        and events[0].get("speech") == fallback_feedback
+        and events[0].get("effect") == "DISAPPOINTED"
+    )
 
 
 def build_default_ai_expressor(env: dict[str, str] | None = None) -> ShinsekaiAIExpressor:

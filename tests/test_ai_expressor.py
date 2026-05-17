@@ -192,6 +192,7 @@ def test_expressor_falls_back_when_llm_json_is_invalid():
     assert events[0]["effect"] == "DISAPPOINTED"
     assert events[1]["character_name"] == "STAT"
     assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "invalid_json"
 
 
 def test_expressor_falls_back_quickly_when_llm_times_out():
@@ -210,6 +211,7 @@ def test_expressor_falls_back_quickly_when_llm_times_out():
     assert len(events) == 3
     assert events[0]["speech"] == snapshot["feedback"]
     assert events[0]["effect"] == "DISAPPOINTED"
+    assert expressor.last_fallback_reason == "timeout"
 
 
 def test_expressor_rejects_llm_owned_stat_or_choice_rows():
@@ -240,6 +242,7 @@ def test_expressor_rejects_overreach_fields_and_preserves_snapshot_values():
     assert len(events) == 3
     assert events[0]["speech"] == snapshot["feedback"]
     assert snapshot["coins"] == original_coins
+    assert expressor.last_fallback_reason == "unsafe_event"
 
 
 def test_expressor_rejects_non_string_expression_fields():
