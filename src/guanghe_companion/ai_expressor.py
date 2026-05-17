@@ -253,7 +253,7 @@ def _state_from_snapshot(snapshot: dict[str, object]):
 
 
 def _stringify_event(event: dict[Any, Any]) -> dict[str, str]:
-    return {str(key): str(value) for key, value in event.items()}
+    return {str(key): str(value).strip() for key, value in event.items()}
 
 
 def _ensure_expression_request(snapshot: dict[str, object] | ExpressionRequest) -> ExpressionRequest:
