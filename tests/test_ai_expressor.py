@@ -521,6 +521,18 @@ def test_default_expressor_uses_openai_provider_when_env_is_enabled(monkeypatch)
     assert expressor.timeout_seconds == 0.5
 
 
+def test_default_expressor_rejects_non_finite_timeout_env(monkeypatch):
+    monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("GUANGHE_LLM_TIMEOUT_SECONDS", "inf")
+
+    expressor = build_default_ai_expressor()
+
+    assert expressor.timeout_seconds == 2.0
+    assert isinstance(expressor.llm_client, OpenAIResponsesClient)
+    assert expressor.llm_client.timeout_seconds == 2.0
+
+
 def test_openai_responses_client_posts_prompt_and_extracts_output_text():
     captured = {}
 

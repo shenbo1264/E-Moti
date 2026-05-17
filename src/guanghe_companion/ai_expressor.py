@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import os
 from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
@@ -391,4 +392,4 @@ def _parse_timeout(value: str | None) -> float:
         parsed = float(value)
     except ValueError:
         return DEFAULT_TIMEOUT_SECONDS
-    return parsed if parsed > 0 else DEFAULT_TIMEOUT_SECONDS
+    return parsed if math.isfinite(parsed) and parsed > 0 else DEFAULT_TIMEOUT_SECONDS
