@@ -1,7 +1,7 @@
 from guanghe_companion.ai_expressor import ExpressionRequest
 from guanghe_companion.character_pack import load_default_character_pack
 from guanghe_companion.controller import CompanionController
-from guanghe_companion.expression_context import CharacterProfileExpressionContextProvider
+from guanghe_companion.expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
 
 
 def test_character_profile_expression_context_returns_local_tool_results_only():
@@ -54,3 +54,59 @@ def test_controller_routes_character_profile_context_without_snapshot_shape_chan
     assert "tool_results" not in snapshot
     assert "perception_summary" not in snapshot
     assert snapshot["mood"] == 62
+
+
+def test_expression_context_chain_merges_readonly_provider_outputs():
+    chain = ExpressionContextChain(
+        [
+            lambda: {
+                "perception_summary": "window: writing notes",
+                "tool_results": [
+                    {"source": "local", "title": "profile", "summary": "gentle voice"},
+                ],
+                "coins": 999,
+            },
+            lambda: {
+                "perception_summary": "tool: profile loaded",
+                "tool_results": [
+                    {"source": "memory", "title": "recent", "summary": "touch happened"},
+                ],
+                "inventory": {"warm_milk": 99},
+            },
+        ]
+    )
+
+    context = chain()
+
+    assert context == {
+        "perception_summary": "window: writing notes\ntool: profile loaded",
+        "tool_results": [
+            {"source": "local", "title": "profile", "summary": "gentle voice"},
+            {"source": "memory", "title": "recent", "summary": "touch happened"},
+        ],
+    }
+
+
+def test_expression_context_chain_ignores_failed_or_invalid_providers():
+    def failing_provider():
+        raise RuntimeError("offline")
+
+    chain = ExpressionContextChain(
+        [
+            failing_provider,
+            lambda: ["not a dict"],
+            lambda: {
+                "perception_summary": "manual context",
+                "tool_results": [
+                    {"source": "local", "title": "safe", "summary": "still available"},
+                ],
+            },
+        ]
+    )
+
+    assert chain() == {
+        "perception_summary": "manual context",
+        "tool_results": [
+            {"source": "local", "title": "safe", "summary": "still available"},
+        ],
+    }
