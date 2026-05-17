@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
 
@@ -15,6 +16,8 @@ from .relationship import ProactiveCompanionService, RelationshipService
 from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory, format_delta_text
 from .storage import DEFAULT_SAVE_PATH, load_state, logical_time_from_state, save_state
 
+ExpressionContextProvider = Callable[[], dict[str, object]]
+
 
 class CompanionController:
     def __init__(
@@ -22,10 +25,12 @@ class CompanionController:
         save_path: Path | None = None,
         auto_load: bool = True,
         ai_expressor: ShinsekaiAIExpressor | None = None,
+        expression_context_provider: ExpressionContextProvider | None = None,
     ) -> None:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
         self.character_pack = load_default_character_pack()
         self.ai_expressor = ai_expressor or build_default_ai_expressor()
+        self.expression_context_provider = expression_context_provider
         loaded_state = load_state(self.save_path) if auto_load else None
         self.state = loaded_state or create_initial_state(now=0)
         if self.state.character_id == self.character_pack.character_id:
@@ -307,7 +312,7 @@ class CompanionController:
             actions=actions,
             memory_log=list(self.state.memory_log),
         )
-        expression_request = ExpressionRequest.from_snapshot(context.to_expressor_dict())
+        expression_request = ExpressionRequest.from_snapshot(self._expression_context_dict(context))
         try:
             expressed_events = self.ai_expressor.express(expression_request, effect=effect)
         except Exception:
@@ -337,6 +342,21 @@ class CompanionController:
 
     def _build_inventory_items(self) -> list[dict[str, object]]:
         return [item.to_legacy_dict() for item in InventoryService(self.state, self._item_icon_path).inventory_items()]
+
+    def _expression_context_dict(self, context: EventContext) -> dict[str, object]:
+        payload = context.to_expressor_dict()
+        if self.expression_context_provider is None:
+            return payload
+        try:
+            external_context = self.expression_context_provider()
+        except Exception:
+            return payload
+        if not isinstance(external_context, dict):
+            return payload
+        for key in ("perception_summary", "tool_results"):
+            if key in external_context:
+                payload[key] = external_context[key]
+        return payload
 
     def _item_icon_path(self, item) -> str:
         if not item.icon:

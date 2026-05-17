@@ -159,6 +159,85 @@ def test_controller_passes_typed_expression_request_to_ai_adapter(tmp_path):
     assert snapshot["mood"] == 62
 
 
+def test_controller_passes_optional_readonly_expression_context_to_ai_adapter(tmp_path):
+    captured = {}
+
+    class CapturingExpressor:
+        def express(self, snapshot, effect=None):
+            captured["request"] = snapshot
+            return []
+
+    def context_provider():
+        return {
+            "perception_summary": "current window: local notes",
+            "tool_results": [
+                {
+                    "source": "character_pack",
+                    "title": "voice",
+                    "summary": "keep Starsea gentle",
+                    "coins": "999",
+                    "inventory": "warm_milk",
+                }
+            ],
+        }
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=CapturingExpressor(),
+        expression_context_provider=context_provider,
+    )
+
+    snapshot = controller.perform_action("touch")
+
+    request = captured["request"]
+    assert isinstance(request, ExpressionRequest)
+    assert request.perception_summary == "current window: local notes"
+    assert request.tool_results == (
+        {
+            "source": "character_pack",
+            "title": "voice",
+            "summary": "keep Starsea gentle",
+        },
+    )
+    assert not hasattr(request, "inventory")
+    assert not hasattr(request, "coins")
+    assert set(snapshot) >= {"character_name", "stats", "inventory", "events", "event_preview"}
+    assert "perception_summary" not in snapshot
+    assert "tool_results" not in snapshot
+    assert snapshot["mood"] == 62
+
+
+def test_controller_ignores_expression_context_provider_failures(tmp_path):
+    captured = {}
+
+    class CapturingExpressor:
+        def express(self, snapshot, effect=None):
+            captured["request"] = snapshot
+            return []
+
+    def context_provider():
+        raise RuntimeError("screen summary unavailable")
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=CapturingExpressor(),
+        expression_context_provider=context_provider,
+    )
+
+    snapshot = controller.perform_action("touch")
+
+    request = captured["request"]
+    assert isinstance(request, ExpressionRequest)
+    assert request.perception_summary == ""
+    assert request.tool_results == ()
+    assert snapshot["mood"] == 62
+    assert snapshot["coins"] == 20
+    assert "perception_summary" not in snapshot
+    assert "tool_results" not in snapshot
+
+
 def test_controller_falls_back_when_ai_adapter_raises_without_changing_state(tmp_path):
     class ExplodingExpressor:
         def express(self, snapshot, effect=None):
