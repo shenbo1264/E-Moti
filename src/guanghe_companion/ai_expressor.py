@@ -299,9 +299,10 @@ def _is_allowed_legacy_expression_event(state, event: dict[Any, Any]) -> bool:
         return False
     if not all(isinstance(event.get(key), str) for key in ("character_name", "speech", "sprite", "effect")):
         return False
-    if not str(event.get("speech", "")).strip():
+    normalized = _stringify_event(event)
+    if not normalized["speech"]:
         return False
-    return str(event.get("character_name")) == state.character_name
+    return normalized["character_name"] == state.character_name
 
 
 def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, str] | None:

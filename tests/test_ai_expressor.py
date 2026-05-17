@@ -237,6 +237,27 @@ def test_expressor_trims_legacy_speech_text_before_returning_expression():
     assert expressor.last_fallback_reason is None
 
 
+def test_expressor_trims_legacy_fields_before_validating_expression():
+    snapshot = make_snapshot()
+    payload = (
+        '[{"character_name":"  %s  ","speech":"  Back online.  ","sprite":" 1 ","effect":" ATTENTION "}]'
+        % snapshot["character_name"]
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "Back online.",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert expressor.last_fallback_reason is None
+
+
 def test_expressor_rejects_blank_speech_schema_text():
     snapshot = make_snapshot()
     payload = '[{"type":"speech","speech":"   ","effect":"ATTENTION","motion_hint":"Raised"}]'
