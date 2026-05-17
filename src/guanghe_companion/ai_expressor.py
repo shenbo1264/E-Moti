@@ -312,7 +312,7 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
     speech = event.get("speech")
     effect = event.get("effect", "")
     motion_hint = event.get("motion_hint", "")
-    if not isinstance(speech, str):
+    if not isinstance(speech, str) or not speech.strip():
         return None
     if not isinstance(effect, str):
         return None
