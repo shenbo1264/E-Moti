@@ -507,6 +507,16 @@ def test_default_expressor_requires_api_key_even_when_enabled(monkeypatch):
     assert expressor.llm_client is None
 
 
+def test_default_expressor_treats_blank_api_key_as_disabled(monkeypatch):
+    monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
+    monkeypatch.setenv("OPENAI_API_KEY", "   ")
+
+    expressor = build_default_ai_expressor()
+
+    assert expressor.enabled is False
+    assert expressor.llm_client is None
+
+
 def test_default_expressor_uses_openai_provider_when_env_is_enabled(monkeypatch):
     monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
