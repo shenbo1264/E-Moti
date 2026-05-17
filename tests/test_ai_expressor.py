@@ -195,6 +195,31 @@ def test_expressor_falls_back_when_llm_json_is_invalid():
     assert expressor.last_fallback_reason == "invalid_json"
 
 
+def test_expressor_clears_fallback_reason_after_next_valid_llm_expression():
+    snapshot = make_snapshot()
+    responses = iter(
+        [
+            "not json",
+            '[{"type":"speech","speech":"Back online.","effect":"ATTENTION","motion_hint":"TouchHead"}]',
+        ]
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: next(responses))
+
+    fallback_events = expressor.express(snapshot)
+    valid_events = expressor.express(snapshot)
+
+    assert fallback_events[0]["speech"] == snapshot["feedback"]
+    assert expressor.last_fallback_reason is None
+    assert valid_events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "Back online.",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+
+
 def test_expressor_falls_back_quickly_when_llm_times_out():
     snapshot = make_snapshot()
 
