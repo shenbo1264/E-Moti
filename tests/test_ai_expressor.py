@@ -469,6 +469,24 @@ def test_expressor_rejects_more_than_four_llm_rows():
     assert expressor.last_fallback_reason == "too_many_events"
 
 
+def test_expressor_prioritizes_event_limit_before_unsafe_row_details():
+    snapshot = make_snapshot()
+    safe_row = '{"type":"speech","speech":"ok","effect":"ATTENTION"}'
+    unsafe_row = '{"type":"speech","speech":"try write","effect":"ATTENTION","coins":999}'
+    expressor = ShinsekaiAIExpressor(
+        llm_client=lambda prompt: f"[{','.join([safe_row] * 4 + [unsafe_row])}]"
+    )
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "too_many_events"
+
+
 def test_default_expressor_stays_disabled_without_explicit_env(monkeypatch):
     monkeypatch.delenv("GUANGHE_LLM_ENABLED", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)

@@ -209,12 +209,12 @@ class ShinsekaiAIExpressor:
         if not isinstance(payload, list) or not payload or not all(isinstance(row, dict) for row in payload):
             self.last_fallback_reason = "invalid_payload"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
+        if len(payload) > 4:
+            self.last_fallback_reason = "too_many_events"
+            return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
         normalized_events = [_normalize_expression_event(state, row) for row in payload]
         if any(row is None for row in normalized_events):
             self.last_fallback_reason = "unsafe_event"
-            return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
-        if len(normalized_events) > 4:
-            self.last_fallback_reason = "too_many_events"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 
         validated_events = validate_events(
