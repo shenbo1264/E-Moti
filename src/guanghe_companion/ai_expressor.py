@@ -118,6 +118,12 @@ class OpenAIResponsesClient:
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.transport = transport or _default_transport
 
+    def __enter__(self) -> "OpenAIResponsesClient":
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        self.close()
+
     def __call__(self, prompt: str) -> str:
         if not self.api_key:
             raise LLMProviderError("OpenAI expression provider failed: missing_api_key")
@@ -143,6 +149,9 @@ class OpenAIResponsesClient:
             return _extract_response_text(response)
         except Exception as exc:
             raise LLMProviderError(f"OpenAI expression provider failed: {type(exc).__name__}") from exc
+
+    def close(self) -> None:
+        return None
 
 
 class ShinsekaiAIExpressor:

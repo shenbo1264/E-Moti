@@ -717,6 +717,18 @@ def test_openai_responses_client_posts_prompt_and_extracts_output_text():
     assert result.startswith('[{"character_name"')
 
 
+def test_openai_responses_client_context_manager_keeps_call_contract():
+    def transport(request, timeout):
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    with OpenAIResponsesClient(api_key="test-key", transport=transport) as client:
+        result = client("prompt text")
+
+    client.close()
+
+    assert result == '[{"type":"speech","speech":"hi"}]'
+
+
 def test_openai_responses_client_trims_api_key_for_authorization_header():
     captured = {}
 
