@@ -168,6 +168,29 @@ def test_expression_request_sanitizes_recent_memory_before_prompt_payload():
     )
 
 
+def test_expression_request_sanitizes_core_prompt_strings_before_prompt_payload():
+    snapshot = make_snapshot()
+    snapshot.update(
+        {
+            "character_name": "  星汐  ",
+            "mode": "  Calm  ",
+            "motion": "  TouchHead  ",
+            "feedback": "  " + "f" * 220 + "  ",
+            "delta_text": "  " + "d" * 120 + "  ",
+            "goal": {"nested": "bad"},
+        }
+    )
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+
+    assert request.character_name == "星汐"
+    assert request.mode == "Calm"
+    assert request.motion == "TouchHead"
+    assert request.feedback == "f" * 160
+    assert request.delta_text == "d" * 80
+    assert request.goal == ""
+
+
 def test_expression_request_is_immutable_and_copies_mutable_snapshot_values():
     snapshot = make_snapshot()
     original_action_label = snapshot["actions"][0]["label"]
