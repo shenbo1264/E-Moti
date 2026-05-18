@@ -26,6 +26,7 @@ MAX_CHARACTER_NAME_LENGTH = 40
 MAX_MODE_LENGTH = 40
 MAX_MOTION_LENGTH = 40
 MAX_MOTION_HINT_LENGTH = 40
+MAX_EFFECT_LENGTH = 20
 MAX_FEEDBACK_LENGTH = 160
 MAX_DELTA_TEXT_LENGTH = 80
 MAX_GOAL_LENGTH = 160
@@ -404,6 +405,8 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
     if not isinstance(speech, str) or not speech.strip():
         return None
     if not isinstance(effect, str):
+        return None
+    if len(effect.strip()) > MAX_EFFECT_LENGTH:
         return None
     if motion_hint != "" and not isinstance(motion_hint, str):
         return None
