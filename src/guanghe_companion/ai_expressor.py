@@ -111,6 +111,8 @@ class OpenAIResponsesClient:
         self.transport = transport or _default_transport
 
     def __call__(self, prompt: str) -> str:
+        if not self.api_key:
+            raise LLMProviderError("OpenAI expression provider failed: missing_api_key")
         payload = json.dumps(
             {
                 "model": self.model,

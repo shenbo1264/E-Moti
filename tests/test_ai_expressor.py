@@ -606,6 +606,25 @@ def test_openai_responses_client_trims_api_key_for_authorization_header():
     assert captured["headers"]["Authorization"] == "Bearer test-key"
 
 
+def test_openai_responses_client_rejects_blank_direct_api_key_without_transport():
+    called = False
+
+    def transport(request, timeout):
+        nonlocal called
+        called = True
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="   ", transport=transport)
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "OpenAI expression provider failed" in str(exc)
+    else:
+        raise AssertionError("blank api key should fail before transport.")
+    assert called is False
+
+
 def test_openai_responses_client_trims_model_for_request_payload():
     captured = {}
 
