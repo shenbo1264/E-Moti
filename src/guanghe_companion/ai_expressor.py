@@ -398,5 +398,9 @@ def _parse_timeout(value: str | None) -> float:
     return _normalize_timeout(parsed)
 
 
-def _normalize_timeout(value: float) -> float:
-    return value if math.isfinite(value) and value > 0 else DEFAULT_TIMEOUT_SECONDS
+def _normalize_timeout(value: object) -> float:
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return DEFAULT_TIMEOUT_SECONDS
+    return parsed if math.isfinite(parsed) and parsed > 0 else DEFAULT_TIMEOUT_SECONDS
