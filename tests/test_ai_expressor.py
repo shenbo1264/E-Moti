@@ -259,6 +259,25 @@ def test_expressor_accepts_limited_speech_event_schema_without_applying_motion_h
     assert snapshot["motion"] == "TouchHead"
 
 
+def test_expressor_rejects_overlong_motion_hint_without_changing_motion():
+    snapshot = make_snapshot()
+    payload = (
+        '[{"type":"speech","speech":"我会轻一点回应。",'
+        '"effect":"ATTENTION","motion_hint":"%s"}]' % ("m" * 80)
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert snapshot["motion"] == "TouchHead"
+    assert expressor.last_fallback_reason == "unsafe_event"
+
+
 def test_expressor_trims_speech_schema_text_before_returning_expression():
     snapshot = make_snapshot()
     payload = '[{"type":"speech","speech":"\\n  Back online.  \\t","effect":"ATTENTION"}]'
