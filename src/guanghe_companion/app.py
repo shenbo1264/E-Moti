@@ -85,6 +85,10 @@ class CompanionWindow(QMainWindow):
         self._setup_timers()
         self._apply_snapshot(self.controller.get_snapshot())
 
+    def closeEvent(self, event) -> None:
+        self.controller.close()
+        super().closeEvent(event)
+
     def _build_ui(self) -> None:
         root = QWidget(self)
         self.setCentralWidget(root)

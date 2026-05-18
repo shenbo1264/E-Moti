@@ -279,6 +279,26 @@ def test_controller_falls_back_when_ai_adapter_raises_without_changing_state(tmp
     assert touched["memory_log"][0]["summary"]
 
 
+def test_controller_close_closes_ai_expressor_once(tmp_path):
+    class CloseableExpressor:
+        def __init__(self):
+            self.close_calls = 0
+
+        def express(self, snapshot, effect=None):
+            return []
+
+        def close(self):
+            self.close_calls += 1
+
+    expressor = CloseableExpressor()
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=expressor)
+
+    controller.close()
+    controller.close()
+
+    assert expressor.close_calls == 1
+
+
 def test_controller_accepts_typed_action_request_without_changing_snapshot_shape():
     controller = CompanionController(auto_load=False)
 

@@ -188,6 +188,37 @@ def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_window_close_closes_controller(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class CloseAwareController(CompanionController):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.close_calls = 0
+
+        def close(self):
+            if self.close_calls:
+                return
+            self.close_calls += 1
+            super().close()
+
+    app = QApplication.instance() or QApplication([])
+    controller = CloseAwareController(save_path=tmp_path / "save.json", auto_load=False)
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.close()
+    app.processEvents()
+
+    assert controller.close_calls == 1
+
+
 def test_window_demo_buttons_trigger_proactive_companionship(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 

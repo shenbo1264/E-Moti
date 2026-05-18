@@ -31,6 +31,7 @@ class CompanionController:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
         self.character_pack = load_default_character_pack()
         self.ai_expressor = ai_expressor or build_default_ai_expressor()
+        self._closed = False
         self.expression_context_provider = expression_context_provider or ExpressionContextChain(
             [CharacterProfileExpressionContextProvider(self.character_pack)]
         )
@@ -50,6 +51,20 @@ class CompanionController:
         self.last_events = self._build_events(effect="ATTENTION")
         if loaded_state is None:
             self._persist()
+
+    def __enter__(self) -> "CompanionController":
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        self.close()
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        close = getattr(self.ai_expressor, "close", None)
+        if callable(close):
+            close()
+        self._closed = True
 
     def reset_demo_state(self) -> dict[str, object]:
         self.state = create_initial_state(now=0)
