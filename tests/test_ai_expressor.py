@@ -578,6 +578,20 @@ def test_default_expressor_rejects_non_finite_timeout_env(monkeypatch):
     assert expressor.llm_client.timeout_seconds == 2.0
 
 
+def test_default_expressor_rejects_non_numeric_timeout_env_value():
+    expressor = build_default_ai_expressor(
+        {
+            "GUANGHE_LLM_ENABLED": "1",
+            "OPENAI_API_KEY": "test-key",
+            "GUANGHE_LLM_TIMEOUT_SECONDS": object(),
+        }
+    )
+
+    assert expressor.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
+    assert isinstance(expressor.llm_client, OpenAIResponsesClient)
+    assert expressor.llm_client.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
+
+
 def test_openai_responses_client_posts_prompt_and_extracts_output_text():
     captured = {}
 

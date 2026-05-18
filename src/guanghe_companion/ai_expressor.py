@@ -393,7 +393,7 @@ def _parse_timeout(value: str | None) -> float:
         return DEFAULT_TIMEOUT_SECONDS
     try:
         parsed = float(value)
-    except ValueError:
+    except (TypeError, ValueError):
         return DEFAULT_TIMEOUT_SECONDS
     return _normalize_timeout(parsed)
 
