@@ -331,6 +331,21 @@ def test_expressor_rejects_overlong_speech_schema_effect_without_changing_state(
     assert expressor.last_fallback_reason == "unsafe_event"
 
 
+def test_expressor_rejects_unknown_speech_schema_effect_before_validation():
+    snapshot = make_snapshot()
+    payload = '[{"type":"speech","speech":"Back online.","effect":"BOOM"}]'
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "unsafe_event"
+
+
 def test_expressor_trims_legacy_speech_text_before_returning_expression():
     snapshot = make_snapshot()
     payload = (

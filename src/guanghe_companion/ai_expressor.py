@@ -10,7 +10,7 @@ from typing import Any
 from urllib import request
 
 from .engine import create_initial_state
-from .events import build_fallback_events, validate_events
+from .events import ALLOWED_EFFECTS, build_fallback_events, validate_events
 
 
 LLMClient = Callable[[str], str]
@@ -406,7 +406,10 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
         return None
     if not isinstance(effect, str):
         return None
-    if len(effect.strip()) > MAX_EFFECT_LENGTH:
+    normalized_effect = effect.strip()
+    if len(normalized_effect) > MAX_EFFECT_LENGTH:
+        return None
+    if normalized_effect not in ALLOWED_EFFECTS:
         return None
     if motion_hint != "" and not isinstance(motion_hint, str):
         return None
@@ -417,7 +420,7 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
         "character_name": state.character_name,
         "speech": speech.strip(),
         "sprite": "1",
-        "effect": effect.strip(),
+        "effect": normalized_effect,
     }
 
 
