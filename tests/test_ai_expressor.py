@@ -543,6 +543,13 @@ def test_default_expressor_treats_non_string_enabled_env_as_disabled():
     assert expressor.llm_client is None
 
 
+def test_default_expressor_treats_non_mapping_env_source_as_disabled():
+    expressor = build_default_ai_expressor(object())
+
+    assert expressor.enabled is False
+    assert expressor.llm_client is None
+
+
 def test_default_expressor_treats_blank_api_key_as_disabled(monkeypatch):
     monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
     monkeypatch.setenv("OPENAI_API_KEY", "   ")

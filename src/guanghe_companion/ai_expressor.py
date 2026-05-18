@@ -3,7 +3,7 @@ from __future__ import annotations
 import json
 import math
 import os
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from dataclasses import dataclass
 from typing import Any
@@ -342,7 +342,9 @@ def _is_fallback_events(state, events: list[dict[str, str]], fallback_feedback: 
     )
 
 
-def build_default_ai_expressor(env: dict[str, str] | None = None) -> ShinsekaiAIExpressor:
+def build_default_ai_expressor(env: Mapping[str, object] | None = None) -> ShinsekaiAIExpressor:
+    if env is not None and not isinstance(env, Mapping):
+        return ShinsekaiAIExpressor(enabled=False)
     source = os.environ if env is None else env
     enabled_flag = source.get("GUANGHE_LLM_ENABLED")
     if not isinstance(enabled_flag, str) or enabled_flag.strip() != "1":
