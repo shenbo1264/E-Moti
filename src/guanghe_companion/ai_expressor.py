@@ -344,7 +344,8 @@ def _is_fallback_events(state, events: list[dict[str, str]], fallback_feedback: 
 
 def build_default_ai_expressor(env: dict[str, str] | None = None) -> ShinsekaiAIExpressor:
     source = os.environ if env is None else env
-    if (source.get("GUANGHE_LLM_ENABLED") or "").strip() != "1":
+    enabled_flag = source.get("GUANGHE_LLM_ENABLED")
+    if not isinstance(enabled_flag, str) or enabled_flag.strip() != "1":
         return ShinsekaiAIExpressor(enabled=False)
     api_key = (source.get("OPENAI_API_KEY") or "").strip()
     if not api_key:
