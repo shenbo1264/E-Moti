@@ -21,6 +21,10 @@ OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 MAX_PERCEPTION_SUMMARY_LENGTH = 240
 MAX_TOOL_RESULTS = 3
 MAX_ACTION_LABEL_LENGTH = 40
+MAX_RECENT_MEMORY = 3
+MAX_MEMORY_KIND_LENGTH = 40
+MAX_MEMORY_SUMMARY_LENGTH = 160
+MAX_MEMORY_MOTION_LENGTH = 40
 
 
 class LLMProviderError(RuntimeError):
@@ -55,14 +59,7 @@ class ExpressionRequest:
     @classmethod
     def from_snapshot(cls, snapshot: dict[str, object]) -> "ExpressionRequest":
         actions = _sanitize_actions(snapshot.get("actions", []))
-        recent_memory = tuple(
-            {
-                "kind": str(entry.get("kind", "")),
-                "summary": str(entry.get("summary", "")),
-                "motion": str(entry.get("motion", "")),
-            }
-            for entry in _as_dict_list(snapshot.get("memory_log", []))[:3]
-        )
+        recent_memory = _sanitize_recent_memory(snapshot.get("memory_log", []))
         return cls(
             character_name=str(snapshot["character_name"]),
             mode=str(snapshot["mode"]),
@@ -348,6 +345,20 @@ def _sanitize_actions(value: object) -> tuple[dict[str, str], ...]:
         if label:
             actions.append({"label": label})
     return tuple(actions)
+
+
+def _sanitize_recent_memory(value: object) -> tuple[dict[str, str], ...]:
+    memory: list[dict[str, str]] = []
+    for entry in _as_dict_list(value):
+        kind = _short_string(entry.get("kind", ""), MAX_MEMORY_KIND_LENGTH)
+        summary = _short_string(entry.get("summary", ""), MAX_MEMORY_SUMMARY_LENGTH)
+        motion = _short_string(entry.get("motion", ""), MAX_MEMORY_MOTION_LENGTH)
+        if not kind or not summary or not motion:
+            continue
+        memory.append({"kind": kind, "summary": summary, "motion": motion})
+        if len(memory) >= MAX_RECENT_MEMORY:
+            break
+    return tuple(memory)
 
 
 def _short_string(value: object, max_length: int) -> str:

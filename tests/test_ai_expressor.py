@@ -132,6 +132,42 @@ def test_expression_request_sanitizes_action_labels_before_prompt_payload():
     )
 
 
+def test_expression_request_sanitizes_recent_memory_before_prompt_payload():
+    snapshot = make_snapshot()
+    snapshot["memory_log"] = [
+        {
+            "kind": "  互动  ",
+            "summary": "  星汐听见你靠近了。  ",
+            "motion": " TouchHead ",
+            "coins": 999,
+        },
+        {"kind": "   ", "summary": "blank kind", "motion": "TouchHead"},
+        {"kind": {"nested": "bad"}, "summary": "bad kind", "motion": "TouchHead"},
+        {"kind": "k" * 80, "summary": "s" * 220, "motion": "m" * 80},
+        {"kind": "overflow", "summary": "ignored after cap", "motion": "Tick"},
+    ]
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+
+    assert request.recent_memory == (
+        {
+            "kind": "互动",
+            "summary": "星汐听见你靠近了。",
+            "motion": "TouchHead",
+        },
+        {
+            "kind": "k" * 40,
+            "summary": "s" * 160,
+            "motion": "m" * 40,
+        },
+        {
+            "kind": "overflow",
+            "summary": "ignored after cap",
+            "motion": "Tick",
+        },
+    )
+
+
 def test_expression_request_is_immutable_and_copies_mutable_snapshot_values():
     snapshot = make_snapshot()
     original_action_label = snapshot["actions"][0]["label"]
