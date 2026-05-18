@@ -115,6 +115,23 @@ def test_expression_request_sanitizes_perception_and_tool_result_anchors():
     ]
 
 
+def test_expression_request_sanitizes_action_labels_before_prompt_payload():
+    snapshot = make_snapshot()
+    snapshot["actions"] = [
+        {"label": "  轻触  ", "action_id": "touch", "coins": 999},
+        {"label": "   "},
+        {"label": {"nested": "bad"}},
+        {"label": "x" * 80},
+    ]
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+
+    assert request.actions == (
+        {"label": "轻触"},
+        {"label": "x" * 40},
+    )
+
+
 def test_expression_request_is_immutable_and_copies_mutable_snapshot_values():
     snapshot = make_snapshot()
     original_action_label = snapshot["actions"][0]["label"]

@@ -20,6 +20,7 @@ DEFAULT_OPENAI_MODEL = "gpt-5.5"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 MAX_PERCEPTION_SUMMARY_LENGTH = 240
 MAX_TOOL_RESULTS = 3
+MAX_ACTION_LABEL_LENGTH = 40
 
 
 class LLMProviderError(RuntimeError):
@@ -53,11 +54,7 @@ class ExpressionRequest:
 
     @classmethod
     def from_snapshot(cls, snapshot: dict[str, object]) -> "ExpressionRequest":
-        actions = tuple(
-            {"label": str(action.get("label", ""))}
-            for action in _as_dict_list(snapshot.get("actions", []))
-            if action.get("label")
-        )
+        actions = _sanitize_actions(snapshot.get("actions", []))
         recent_memory = tuple(
             {
                 "kind": str(entry.get("kind", "")),
@@ -342,6 +339,15 @@ def _sanitize_tool_results(value: object) -> tuple[dict[str, str], ...]:
         if len(results) >= MAX_TOOL_RESULTS:
             break
     return tuple(results)
+
+
+def _sanitize_actions(value: object) -> tuple[dict[str, str], ...]:
+    actions: list[dict[str, str]] = []
+    for action in _as_dict_list(value):
+        label = _short_string(action.get("label", ""), MAX_ACTION_LABEL_LENGTH)
+        if label:
+            actions.append({"label": label})
+    return tuple(actions)
 
 
 def _short_string(value: object, max_length: int) -> str:
