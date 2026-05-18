@@ -425,6 +425,30 @@ def test_expressor_close_disables_future_llm_calls_and_closes_client_once():
     assert expressor.last_fallback_reason == "closed"
 
 
+def test_expressor_context_manager_closes_on_exit():
+    class CloseableClient:
+        def __init__(self):
+            self.close_calls = 0
+
+        def __call__(self, prompt: str) -> str:
+            return '[{"type":"speech","speech":"still online","effect":"ATTENTION"}]'
+
+        def close(self) -> None:
+            self.close_calls += 1
+
+    snapshot = make_snapshot()
+    client = CloseableClient()
+
+    with ShinsekaiAIExpressor(llm_client=client) as expressor:
+        assert expressor.enabled is True
+
+    events = expressor.express(snapshot)
+
+    assert client.close_calls == 1
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert expressor.last_fallback_reason == "closed"
+
+
 def test_expressor_falls_back_quickly_when_llm_times_out():
     snapshot = make_snapshot()
 

@@ -158,6 +158,12 @@ class ShinsekaiAIExpressor:
         self.last_fallback_reason: str | None = None
         self._closed = False
 
+    def __enter__(self) -> "ShinsekaiAIExpressor":
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        self.close()
+
     def build_prompt(self, snapshot: dict[str, object] | ExpressionRequest) -> str:
         expression_request = _ensure_expression_request(snapshot)
         prompt_payload = expression_request.to_prompt_dict()
