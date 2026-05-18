@@ -347,7 +347,8 @@ def build_default_ai_expressor(env: dict[str, str] | None = None) -> ShinsekaiAI
     enabled_flag = source.get("GUANGHE_LLM_ENABLED")
     if not isinstance(enabled_flag, str) or enabled_flag.strip() != "1":
         return ShinsekaiAIExpressor(enabled=False)
-    api_key = (source.get("OPENAI_API_KEY") or "").strip()
+    raw_api_key = source.get("OPENAI_API_KEY")
+    api_key = raw_api_key.strip() if isinstance(raw_api_key, str) else ""
     if not api_key:
         return ShinsekaiAIExpressor(enabled=False)
     timeout_seconds = _parse_timeout(source.get("GUANGHE_LLM_TIMEOUT_SECONDS"))
