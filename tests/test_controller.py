@@ -136,6 +136,35 @@ def test_controller_keeps_local_stat_and_choice_events_when_ai_supplies_speech(t
     assert set(snapshot) >= {"character_name", "stats", "inventory", "events", "event_preview"}
 
 
+def test_controller_uses_only_first_llm_speech_event_and_keeps_local_context(tmp_path):
+    class VerboseExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "First LLM speech",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                },
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "Second LLM speech",
+                    "sprite": "1",
+                    "effect": "SWITCH",
+                },
+            ]
+
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=VerboseExpressor())
+
+    snapshot = controller.perform_action("touch")
+
+    assert [event["character_name"] for event in snapshot["events"]] == [controller.state.character_name, "STAT", "CHOICE"]
+    assert snapshot["events"][0]["speech"] == "First LLM speech"
+    assert "Second LLM speech" not in snapshot["event_preview"]
+    assert snapshot["mood"] == 62
+    assert snapshot["coins"] == 20
+
+
 def test_controller_passes_typed_expression_request_to_ai_adapter(tmp_path):
     captured = {}
 

@@ -352,7 +352,7 @@ class CompanionController:
         expression_events = [event for event in validated_events if event.event_type == "speech"]
         if not expression_events:
             return fallback_events + list(domain_events or [])
-        return expression_events + local_context_events + list(domain_events or [])
+        return expression_events[:1] + local_context_events + list(domain_events or [])
 
     def _build_actions(self) -> list[dict[str, object]]:
         return [action.to_legacy_dict() for action in CompanionActionLayer(self.state).available_actions()]
