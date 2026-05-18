@@ -169,6 +169,7 @@ class ShinsekaiAIExpressor:
         self.enabled = enabled
         self.last_fallback_reason: str | None = None
         self._closed = False
+        self._executor: ThreadPoolExecutor | None = None
 
     def __enter__(self) -> "ShinsekaiAIExpressor":
         return self
@@ -263,14 +264,30 @@ class ShinsekaiAIExpressor:
         return validated_events
 
     def _call_llm(self, prompt: str) -> str:
+        if self._closed:
+            raise LLMProviderError("LLM expression provider failed: closed")
         if self.llm_client is None:
             raise TypeError("LLM client is not configured.")
-        executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="llm-expressor")
+        executor = self._ensure_executor()
         future = executor.submit(self.llm_client, prompt)
         try:
             return future.result(timeout=self.timeout_seconds)
-        finally:
-            executor.shutdown(wait=False, cancel_futures=True)
+        except TimeoutError:
+            future.cancel()
+            self._shutdown_executor()
+            raise
+
+    def _ensure_executor(self) -> ThreadPoolExecutor:
+        if self._executor is None:
+            self._executor = ThreadPoolExecutor(max_workers=1, thread_name_prefix="llm-expressor")
+        return self._executor
+
+    def _shutdown_executor(self) -> None:
+        executor = self._executor
+        if executor is None:
+            return
+        self._executor = None
+        executor.shutdown(wait=False, cancel_futures=True)
 
     def close(self) -> None:
         if self._closed:
@@ -279,6 +296,7 @@ class ShinsekaiAIExpressor:
         close = getattr(client, "close", None)
         if callable(close):
             close()
+        self._shutdown_executor()
         self.llm_client = None
         self.enabled = False
         self._closed = True

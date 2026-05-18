@@ -1,6 +1,7 @@
 from dataclasses import FrozenInstanceError
 import time
 
+import guanghe_companion.ai_expressor as ai_expressor_module
 from guanghe_companion.ai_expressor import (
     DEFAULT_TIMEOUT_SECONDS,
     DEFAULT_OPENAI_MODEL,
@@ -466,6 +467,52 @@ def test_expressor_falls_back_quickly_when_llm_times_out():
     assert events[0]["speech"] == snapshot["feedback"]
     assert events[0]["effect"] == "DISAPPOINTED"
     assert expressor.last_fallback_reason == "timeout"
+
+
+def test_expressor_reuses_timeout_executor_until_close(monkeypatch):
+    class RecordingFuture:
+        def __init__(self, value: str):
+            self.value = value
+
+        def result(self, timeout):
+            return self.value
+
+    class RecordingExecutor:
+        instances = []
+
+        def __init__(self, max_workers, thread_name_prefix):
+            self.max_workers = max_workers
+            self.thread_name_prefix = thread_name_prefix
+            self.submits = 0
+            self.shutdown_calls = []
+            RecordingExecutor.instances.append(self)
+
+        def submit(self, func, prompt):
+            self.submits += 1
+            return RecordingFuture(func(prompt))
+
+        def shutdown(self, wait=True, cancel_futures=False):
+            self.shutdown_calls.append({"wait": wait, "cancel_futures": cancel_futures})
+
+    monkeypatch.setattr(ai_expressor_module, "ThreadPoolExecutor", RecordingExecutor)
+    snapshot = make_snapshot()
+    expressor = ShinsekaiAIExpressor(
+        llm_client=lambda prompt: '[{"type":"speech","speech":"Back online.","effect":"ATTENTION"}]'
+    )
+
+    expressor.express(snapshot)
+    expressor.express(snapshot)
+
+    assert len(RecordingExecutor.instances) == 1
+    executor = RecordingExecutor.instances[0]
+    assert executor.max_workers == 1
+    assert executor.thread_name_prefix == "llm-expressor"
+    assert executor.submits == 2
+    assert executor.shutdown_calls == []
+
+    expressor.close()
+
+    assert executor.shutdown_calls == [{"wait": False, "cancel_futures": True}]
 
 
 def test_expressor_rejects_non_finite_direct_timeout():
