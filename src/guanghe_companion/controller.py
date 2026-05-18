@@ -321,6 +321,8 @@ class CompanionController:
             choices=choices,
             effect=effect,
         )
+        if self._closed:
+            return fallback_events + list(domain_events or [])
         context = EventContext(
             state=self.state,
             motion=self.last_motion,

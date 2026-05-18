@@ -299,6 +299,43 @@ def test_controller_close_closes_ai_expressor_once(tmp_path):
     assert expressor.close_calls == 1
 
 
+def test_controller_uses_local_fallback_after_close_without_calling_ai(tmp_path):
+    class CloseableExpressor:
+        def __init__(self):
+            self.calls = 0
+            self.close_calls = 0
+
+        def express(self, snapshot, effect=None):
+            self.calls += 1
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "LLM speech after close",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+        def close(self):
+            self.close_calls += 1
+
+    expressor = CloseableExpressor()
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=expressor)
+
+    expressor.calls = 0
+    controller.close()
+    snapshot = controller.perform_action("touch")
+
+    assert expressor.close_calls == 1
+    assert expressor.calls == 0
+    assert snapshot["mood"] == 62
+    assert snapshot["motion"] == "TouchHead"
+    assert snapshot["coins"] == 20
+    assert snapshot["events"][0]["speech"] == snapshot["feedback"]
+    assert snapshot["events"][0]["speech"] != "LLM speech after close"
+    assert [event["character_name"] for event in snapshot["events"]] == [controller.state.character_name, "STAT", "CHOICE"]
+
+
 def test_controller_accepts_typed_action_request_without_changing_snapshot_shape():
     controller = CompanionController(auto_load=False)
 
