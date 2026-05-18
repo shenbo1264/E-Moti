@@ -106,7 +106,8 @@ class OpenAIResponsesClient:
         transport: HTTPTransport | None = None,
     ) -> None:
         self.api_key = api_key.strip() if isinstance(api_key, str) else ""
-        self.model = model.strip() or DEFAULT_OPENAI_MODEL
+        self.model = model.strip() if isinstance(model, str) else ""
+        self.model = self.model or DEFAULT_OPENAI_MODEL
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.transport = transport or _default_transport
 

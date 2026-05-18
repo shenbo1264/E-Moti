@@ -698,6 +698,20 @@ def test_openai_responses_client_uses_default_model_for_blank_direct_model():
     assert f'"model": "{DEFAULT_OPENAI_MODEL}"' in captured["payload"]
 
 
+def test_openai_responses_client_uses_default_model_for_non_string_direct_model():
+    captured = {}
+
+    def transport(request, timeout):
+        captured["payload"] = request.data.decode("utf-8")
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="test-key", model=object(), transport=transport)
+
+    client("prompt text")
+
+    assert f'"model": "{DEFAULT_OPENAI_MODEL}"' in captured["payload"]
+
+
 def test_openai_responses_client_rejects_non_finite_timeout_for_transport():
     captured = {}
 
