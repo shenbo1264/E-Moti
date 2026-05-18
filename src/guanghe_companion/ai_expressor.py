@@ -117,6 +117,7 @@ class OpenAIResponsesClient:
         self.model = self.model or DEFAULT_OPENAI_MODEL
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.transport = transport or _default_transport
+        self._closed = False
 
     def __enter__(self) -> "OpenAIResponsesClient":
         return self
@@ -125,6 +126,8 @@ class OpenAIResponsesClient:
         self.close()
 
     def __call__(self, prompt: str) -> str:
+        if self._closed:
+            raise LLMProviderError("OpenAI expression provider failed: closed")
         if not self.api_key:
             raise LLMProviderError("OpenAI expression provider failed: missing_api_key")
         payload = json.dumps(
@@ -151,7 +154,7 @@ class OpenAIResponsesClient:
             raise LLMProviderError(f"OpenAI expression provider failed: {type(exc).__name__}") from exc
 
     def close(self) -> None:
-        return None
+        self._closed = True
 
 
 class ShinsekaiAIExpressor:

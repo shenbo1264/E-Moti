@@ -729,6 +729,28 @@ def test_openai_responses_client_context_manager_keeps_call_contract():
     assert result == '[{"type":"speech","speech":"hi"}]'
 
 
+def test_openai_responses_client_close_disables_future_transport_calls():
+    called = False
+
+    def transport(request, timeout):
+        nonlocal called
+        called = True
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="test-key", transport=transport)
+
+    client.close()
+    client.close()
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "closed" in str(exc)
+    else:
+        raise AssertionError("closed OpenAI client should fail before transport.")
+
+    assert called is False
+
+
 def test_openai_responses_client_trims_api_key_for_authorization_header():
     captured = {}
 
