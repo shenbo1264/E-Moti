@@ -413,6 +413,12 @@ def test_expressor_falls_back_quickly_when_llm_times_out():
     assert expressor.last_fallback_reason == "timeout"
 
 
+def test_expressor_rejects_non_finite_direct_timeout():
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: "[]", timeout_seconds=float("inf"))
+
+    assert expressor.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
+
+
 def test_expressor_rejects_llm_owned_stat_or_choice_rows():
     snapshot = make_snapshot()
     payload = '[{"character_name":"STAT","speech":"coins 999","sprite":"-1","effect":""}]'

@@ -145,7 +145,7 @@ class ShinsekaiAIExpressor:
         enabled: bool = True,
     ) -> None:
         self.llm_client = llm_client
-        self.timeout_seconds = timeout_seconds
+        self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.enabled = enabled
         self.last_fallback_reason: str | None = None
 
