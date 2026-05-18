@@ -352,7 +352,9 @@ def build_default_ai_expressor(env: dict[str, str] | None = None) -> ShinsekaiAI
     if not api_key:
         return ShinsekaiAIExpressor(enabled=False)
     timeout_seconds = _parse_timeout(source.get("GUANGHE_LLM_TIMEOUT_SECONDS"))
-    model = (source.get("GUANGHE_LLM_MODEL") or "").strip() or DEFAULT_OPENAI_MODEL
+    raw_model = source.get("GUANGHE_LLM_MODEL")
+    model = raw_model.strip() if isinstance(raw_model, str) else ""
+    model = model or DEFAULT_OPENAI_MODEL
     client = OpenAIResponsesClient(
         api_key=api_key,
         model=model,

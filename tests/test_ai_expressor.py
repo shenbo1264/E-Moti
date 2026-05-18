@@ -590,6 +590,19 @@ def test_default_expressor_uses_default_model_for_blank_model_env(monkeypatch):
     assert expressor.llm_client.model == DEFAULT_OPENAI_MODEL
 
 
+def test_default_expressor_uses_default_model_for_non_string_model_env():
+    expressor = build_default_ai_expressor(
+        {
+            "GUANGHE_LLM_ENABLED": "1",
+            "OPENAI_API_KEY": "test-key",
+            "GUANGHE_LLM_MODEL": object(),
+        }
+    )
+
+    assert isinstance(expressor.llm_client, OpenAIResponsesClient)
+    assert expressor.llm_client.model == DEFAULT_OPENAI_MODEL
+
+
 def test_default_expressor_rejects_non_finite_timeout_env(monkeypatch):
     monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
