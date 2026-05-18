@@ -27,6 +27,13 @@ class LLMProviderError(RuntimeError):
 
 
 @dataclass(frozen=True, slots=True)
+class _OpenAIProviderConfig:
+    api_key: str
+    model: str
+    timeout_seconds: float
+
+
+@dataclass(frozen=True, slots=True)
 class ExpressionRequest:
     character_name: str
     mode: str
@@ -149,6 +156,7 @@ class ShinsekaiAIExpressor:
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.enabled = enabled
         self.last_fallback_reason: str | None = None
+        self._closed = False
 
     def build_prompt(self, snapshot: dict[str, object] | ExpressionRequest) -> str:
         expression_request = _ensure_expression_request(snapshot)
@@ -193,6 +201,9 @@ class ShinsekaiAIExpressor:
         fallback_feedback = str(prompt_payload["feedback"])
         fallback_effect = effect or "DISAPPOINTED"
 
+        if self._closed:
+            self.last_fallback_reason = "closed"
+            return build_fallback_events(state, fallback_feedback, choices, effect=fallback_effect)
         if not self.enabled or self.llm_client is None:
             self.last_fallback_reason = "disabled"
             return build_fallback_events(state, fallback_feedback, choices, effect=fallback_effect)
@@ -242,6 +253,17 @@ class ShinsekaiAIExpressor:
             return future.result(timeout=self.timeout_seconds)
         finally:
             executor.shutdown(wait=False, cancel_futures=True)
+
+    def close(self) -> None:
+        if self._closed:
+            return
+        client = self.llm_client
+        close = getattr(client, "close", None)
+        if callable(close):
+            close()
+        self.llm_client = None
+        self.enabled = False
+        self._closed = True
 
 
 def _state_from_snapshot(snapshot: dict[str, object]):
@@ -343,29 +365,38 @@ def _is_fallback_events(state, events: list[dict[str, str]], fallback_feedback: 
 
 
 def build_default_ai_expressor(env: Mapping[str, object] | None = None) -> ShinsekaiAIExpressor:
-    if env is not None and not isinstance(env, Mapping):
+    config = _openai_config_from_env(env)
+    if config is None:
         return ShinsekaiAIExpressor(enabled=False)
-    source = os.environ if env is None else env
-    enabled_flag = source.get("GUANGHE_LLM_ENABLED")
-    if not isinstance(enabled_flag, str) or enabled_flag.strip() != "1":
-        return ShinsekaiAIExpressor(enabled=False)
-    raw_api_key = source.get("OPENAI_API_KEY")
-    api_key = raw_api_key.strip() if isinstance(raw_api_key, str) else ""
-    if not api_key:
-        return ShinsekaiAIExpressor(enabled=False)
-    timeout_seconds = _parse_timeout(source.get("GUANGHE_LLM_TIMEOUT_SECONDS"))
-    raw_model = source.get("GUANGHE_LLM_MODEL")
-    model = raw_model.strip() if isinstance(raw_model, str) else ""
-    model = model or DEFAULT_OPENAI_MODEL
     client = OpenAIResponsesClient(
-        api_key=api_key,
-        model=model,
-        timeout_seconds=timeout_seconds,
+        api_key=config.api_key,
+        model=config.model,
+        timeout_seconds=config.timeout_seconds,
     )
     return ShinsekaiAIExpressor(
         llm_client=client,
-        timeout_seconds=timeout_seconds,
+        timeout_seconds=config.timeout_seconds,
         enabled=True,
+    )
+
+
+def _openai_config_from_env(env: Mapping[str, object] | None = None) -> _OpenAIProviderConfig | None:
+    if env is not None and not isinstance(env, Mapping):
+        return None
+    source = os.environ if env is None else env
+    enabled_flag = source.get("GUANGHE_LLM_ENABLED")
+    if not isinstance(enabled_flag, str) or enabled_flag.strip() != "1":
+        return None
+    raw_api_key = source.get("OPENAI_API_KEY")
+    api_key = raw_api_key.strip() if isinstance(raw_api_key, str) else ""
+    if not api_key:
+        return None
+    raw_model = source.get("GUANGHE_LLM_MODEL")
+    model = raw_model.strip() if isinstance(raw_model, str) else ""
+    return _OpenAIProviderConfig(
+        api_key=api_key,
+        model=model or DEFAULT_OPENAI_MODEL,
+        timeout_seconds=_parse_timeout(source.get("GUANGHE_LLM_TIMEOUT_SECONDS")),
     )
 
 
