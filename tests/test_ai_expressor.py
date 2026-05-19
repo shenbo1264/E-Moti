@@ -718,6 +718,12 @@ def test_expressor_rejects_non_numeric_direct_timeout():
     assert expressor.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
 
 
+def test_expressor_rejects_excessive_direct_timeout():
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: "[]", timeout_seconds=999)
+
+    assert expressor.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
+
+
 def test_expressor_rejects_llm_owned_stat_or_choice_rows():
     snapshot = make_snapshot()
     payload = '[{"character_name":"STAT","speech":"coins 999","sprite":"-1","effect":""}]'
@@ -913,6 +919,18 @@ def test_default_expressor_rejects_non_finite_timeout_env(monkeypatch):
     assert expressor.timeout_seconds == 2.0
     assert isinstance(expressor.llm_client, OpenAIResponsesClient)
     assert expressor.llm_client.timeout_seconds == 2.0
+
+
+def test_default_expressor_rejects_excessive_timeout_env(monkeypatch):
+    monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("GUANGHE_LLM_TIMEOUT_SECONDS", "999")
+
+    expressor = build_default_ai_expressor()
+
+    assert expressor.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
+    assert isinstance(expressor.llm_client, OpenAIResponsesClient)
+    assert expressor.llm_client.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
 
 
 def test_default_expressor_rejects_non_numeric_timeout_env_value():

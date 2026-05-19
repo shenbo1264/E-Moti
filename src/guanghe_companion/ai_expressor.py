@@ -16,6 +16,7 @@ from .events import ALLOWED_EFFECTS, build_fallback_events, validate_events
 LLMClient = Callable[[str], str]
 HTTPTransport = Callable[[request.Request, float], bytes]
 DEFAULT_TIMEOUT_SECONDS = 2.0
+MAX_TIMEOUT_SECONDS = 5.0
 DEFAULT_OPENAI_MODEL = "gpt-5.5"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 MAX_PERCEPTION_SUMMARY_LENGTH = 240
@@ -525,4 +526,4 @@ def _normalize_timeout(value: object) -> float:
         parsed = float(value)
     except (TypeError, ValueError):
         return DEFAULT_TIMEOUT_SECONDS
-    return parsed if math.isfinite(parsed) and parsed > 0 else DEFAULT_TIMEOUT_SECONDS
+    return parsed if math.isfinite(parsed) and 0 < parsed <= MAX_TIMEOUT_SECONDS else DEFAULT_TIMEOUT_SECONDS
