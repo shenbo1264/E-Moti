@@ -188,6 +188,38 @@ def test_controller_passes_typed_expression_request_to_ai_adapter(tmp_path):
     assert snapshot["mood"] == 62
 
 
+def test_controller_can_skip_ai_expression_without_changing_local_settlement(tmp_path):
+    class RecordingExpressor:
+        def __init__(self):
+            self.calls = 0
+
+        def express(self, snapshot, effect=None):
+            self.calls += 1
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "LLM speech",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    expressor = RecordingExpressor()
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=expressor)
+    expressor.calls = 0
+
+    snapshot = controller.perform_action("touch", include_ai_expression=False)
+
+    assert expressor.calls == 0
+    assert snapshot["motion"] == "TouchHead"
+    assert snapshot["mood"] == 62
+    assert snapshot["coins"] == 20
+    assert snapshot["memory_log"][0]["motion"] == "TouchHead"
+    assert snapshot["events"][0]["speech"] == snapshot["feedback"]
+    assert snapshot["events"][0]["speech"] != "LLM speech"
+    assert [event["character_name"] for event in snapshot["events"]] == [controller.state.character_name, "STAT", "CHOICE"]
+
+
 def test_controller_uses_local_character_expression_context_by_default(tmp_path):
     captured = {}
 

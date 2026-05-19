@@ -1,3 +1,6 @@
+import time
+
+
 def make_window(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
@@ -13,10 +16,10 @@ def make_window(monkeypatch, tmp_path):
     return app, window
 
 
-def make_controller(tmp_path):
+def make_controller(tmp_path, ai_expressor=None):
     from guanghe_companion.controller import CompanionController
 
-    return CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    return CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=ai_expressor)
 
 
 def test_companion_window_character_panel_omits_obsolete_placeholder_copy(monkeypatch, tmp_path):
@@ -81,6 +84,53 @@ def test_clicking_sprite_area_performs_touch_action(monkeypatch, tmp_path):
     assert snapshot["motion"] == "TouchHead"
     assert snapshot["mood"] == 62
     assert "靠近" in snapshot["feedback"]
+
+    window.close()
+    app.processEvents()
+
+
+def test_window_action_handler_does_not_wait_for_slow_llm_expression(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class SlowExpressor:
+        def __init__(self):
+            self.calls = 0
+
+        def express(self, snapshot, effect=None):
+            self.calls += 1
+            time.sleep(0.25)
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "late LLM speech",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    app = QApplication.instance() or QApplication([])
+    slow_expressor = SlowExpressor()
+    window = CompanionWindow(controller=make_controller(tmp_path, ai_expressor=slow_expressor))
+    window.show()
+    app.processEvents()
+    slow_expressor.calls = 0
+
+    started_at = time.monotonic()
+    window._handle_action("touch")
+    elapsed = time.monotonic() - started_at
+    app.processEvents()
+
+    snapshot = window.controller.get_snapshot()
+    assert elapsed < 0.1
+    assert slow_expressor.calls == 0
+    assert snapshot["motion"] == "TouchHead"
+    assert snapshot["mood"] == 62
+    assert snapshot["events"][0]["speech"] == snapshot["feedback"]
+    assert snapshot["events"][0]["speech"] != "late LLM speech"
 
     window.close()
     app.processEvents()

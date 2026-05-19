@@ -66,7 +66,7 @@ class CompanionController:
             close()
         self._closed = True
 
-    def reset_demo_state(self) -> dict[str, object]:
+    def reset_demo_state(self, *, include_ai_expression: bool = True) -> dict[str, object]:
         self.state = create_initial_state(now=0)
         if self.state.character_id == self.character_pack.character_id:
             self.state = replace(self.state, character_name=self.character_pack.name)
@@ -79,7 +79,7 @@ class CompanionController:
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
         self._last_proactive_at.clear()
-        self.last_events = self._build_events(effect="SWITCH")
+        self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
         self._persist()
         return self.get_snapshot()
 
@@ -111,10 +111,18 @@ class CompanionController:
         ).build_input()
         return SnapshotBuilder(builder_input).build()
 
-    def perform_action(self, action_id: str) -> dict[str, object]:
-        return self.perform_action_request(CompanionActionRequest(action_id=action_id, source="control_panel"))
+    def perform_action(self, action_id: str, *, include_ai_expression: bool = True) -> dict[str, object]:
+        return self.perform_action_request(
+            CompanionActionRequest(action_id=action_id, source="control_panel"),
+            include_ai_expression=include_ai_expression,
+        )
 
-    def perform_action_request(self, request: CompanionActionRequest) -> dict[str, object]:
+    def perform_action_request(
+        self,
+        request: CompanionActionRequest,
+        *,
+        include_ai_expression: bool = True,
+    ) -> dict[str, object]:
         action_id = request.action_id
         self.now += 5
         previous_unlocks = set(self.state.unlocks)
@@ -145,14 +153,26 @@ class CompanionController:
             memory_summary=memory_summary,
             relationship_unlocks=self._relationship_event_payloads(new_unlocks),
         )
-        self.last_events = self._build_events(effect=effect, domain_events=domain_events)
+        self.last_events = self._build_events(
+            effect=effect,
+            domain_events=domain_events,
+            include_ai_expression=include_ai_expression,
+        )
         self._persist()
         return self.get_snapshot()
 
-    def buy_selected_item(self, item_id: str) -> dict[str, object]:
-        return self.buy_item_request(ShopPurchaseRequest(item_id=item_id))
+    def buy_selected_item(self, item_id: str, *, include_ai_expression: bool = True) -> dict[str, object]:
+        return self.buy_item_request(
+            ShopPurchaseRequest(item_id=item_id),
+            include_ai_expression=include_ai_expression,
+        )
 
-    def buy_item_request(self, request: ShopPurchaseRequest) -> dict[str, object]:
+    def buy_item_request(
+        self,
+        request: ShopPurchaseRequest,
+        *,
+        include_ai_expression: bool = True,
+    ) -> dict[str, object]:
         self.state = ShopService(self.state, self._item_icon_path).purchase(request)
         item_id = request.item_id
         item = BUYABLE_ITEMS[item_id]
@@ -174,14 +194,29 @@ class CompanionController:
                 item_name=item.name,
                 icon_path=self._item_icon_path(item),
             ),
+            include_ai_expression=include_ai_expression,
         )
         self._persist()
         return self.get_snapshot()
 
-    def use_selected_item(self, item_id: str, usage: str) -> dict[str, object]:
-        return self.use_inventory_request(InventoryUseRequest(item_id=item_id, usage=usage))
+    def use_selected_item(
+        self,
+        item_id: str,
+        usage: str,
+        *,
+        include_ai_expression: bool = True,
+    ) -> dict[str, object]:
+        return self.use_inventory_request(
+            InventoryUseRequest(item_id=item_id, usage=usage),
+            include_ai_expression=include_ai_expression,
+        )
 
-    def use_inventory_request(self, request: InventoryUseRequest) -> dict[str, object]:
+    def use_inventory_request(
+        self,
+        request: InventoryUseRequest,
+        *,
+        include_ai_expression: bool = True,
+    ) -> dict[str, object]:
         self.now += 5
         item_id = request.item_id
         usage = request.usage
@@ -204,6 +239,7 @@ class CompanionController:
                     feedback=self.last_feedback,
                     effect="DISAPPOINTED",
                 ),
+                include_ai_expression=include_ai_expression,
             )
             self._persist()
             return self.get_snapshot()
@@ -247,11 +283,15 @@ class CompanionController:
             memory_summary=memory_summary,
             relationship_unlocks=self._relationship_event_payloads(new_unlocks),
         )
-        self.last_events = self._build_events(effect=effect, domain_events=domain_events)
+        self.last_events = self._build_events(
+            effect=effect,
+            domain_events=domain_events,
+            include_ai_expression=include_ai_expression,
+        )
         self._persist()
         return self.get_snapshot()
 
-    def advance_tick(self) -> dict[str, object]:
+    def advance_tick(self, *, include_ai_expression: bool = True) -> dict[str, object]:
         self.now += TICK_SECONDS
         self.tick_count += 1
         previous_unlocks = set(self.state.unlocks)
@@ -287,11 +327,15 @@ class CompanionController:
             proactive_summary=self.last_proactive_feedback["summary"] if self.last_proactive_feedback else None,
             relationship_unlocks=self._relationship_event_payloads(new_unlocks),
         )
-        self.last_events = self._build_events(effect=effect, domain_events=domain_events)
+        self.last_events = self._build_events(
+            effect=effect,
+            domain_events=domain_events,
+            include_ai_expression=include_ai_expression,
+        )
         self._persist()
         return self.get_snapshot()
 
-    def trigger_demo_proactive(self, scenario: str) -> dict[str, object]:
+    def trigger_demo_proactive(self, scenario: str, *, include_ai_expression: bool = True) -> dict[str, object]:
         if scenario == "low_charge":
             self.state.charge = 25
             self.state.focus = max(self.state.focus, 70)
@@ -307,12 +351,18 @@ class CompanionController:
             self._last_proactive_at.pop("low_mood", None)
         else:
             raise ValueError(f"Unknown demo proactive scenario: {scenario}")
-        return self.advance_tick()
+        return self.advance_tick(include_ai_expression=include_ai_expression)
 
     def _persist(self) -> None:
         save_state(self.state, self.save_path)
 
-    def _build_events(self, effect: str, domain_events: list[CompanionEvent] | None = None) -> list[CompanionEvent]:
+    def _build_events(
+        self,
+        effect: str,
+        domain_events: list[CompanionEvent] | None = None,
+        *,
+        include_ai_expression: bool = True,
+    ) -> list[CompanionEvent]:
         actions = self._build_actions()
         choices = [entry["label"] for entry in actions]
         fallback_events = build_typed_fallback_events(
@@ -321,7 +371,7 @@ class CompanionController:
             choices=choices,
             effect=effect,
         )
-        if self._closed:
+        if self._closed or not include_ai_expression:
             return fallback_events + list(domain_events or [])
         context = EventContext(
             state=self.state,

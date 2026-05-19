@@ -295,7 +295,7 @@ class CompanionWindow(QMainWindow):
     @Slot()
     def _handle_tick(self) -> None:
         self._reset_countdown()
-        self._apply_snapshot(self.controller.advance_tick())
+        self._apply_snapshot(self.controller.advance_tick(include_ai_expression=False))
 
     @Slot()
     def _advance_frame(self) -> None:
@@ -303,15 +303,15 @@ class CompanionWindow(QMainWindow):
         self._render_current_frame()
 
     def _handle_action(self, action_id: str) -> None:
-        self._apply_snapshot(self.controller.perform_action(action_id))
+        self._apply_snapshot(self.controller.perform_action(action_id, include_ai_expression=False))
 
     def _handle_demo_proactive(self, scenario: str) -> None:
         self._reset_countdown()
-        self._apply_snapshot(self.controller.trigger_demo_proactive(scenario))
+        self._apply_snapshot(self.controller.trigger_demo_proactive(scenario, include_ai_expression=False))
 
     def _handle_demo_reset(self) -> None:
         self._reset_countdown()
-        self._apply_snapshot(self.controller.reset_demo_state())
+        self._apply_snapshot(self.controller.reset_demo_state(include_ai_expression=False))
 
     @Slot()
     def _handle_buy(self) -> None:
@@ -320,7 +320,7 @@ class CompanionWindow(QMainWindow):
             self._show_message("请先在商店中选择一个物品。")
             return
         try:
-            self._apply_snapshot(self.controller.buy_selected_item(item_id))
+            self._apply_snapshot(self.controller.buy_selected_item(item_id, include_ai_expression=False))
         except ValueError as exc:
             self._show_message(str(exc))
 
@@ -330,7 +330,7 @@ class CompanionWindow(QMainWindow):
             self._show_message("请先在背包中选择一个物品。")
             return
         try:
-            self._apply_snapshot(self.controller.use_selected_item(item_id, usage=usage))
+            self._apply_snapshot(self.controller.use_selected_item(item_id, usage=usage, include_ai_expression=False))
         except ValueError as exc:
             self._show_message(str(exc))
 
