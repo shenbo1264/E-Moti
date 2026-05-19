@@ -89,6 +89,15 @@ def test_manual_perception_context_returns_sanitized_summary_when_enabled():
     assert context == {"perception_summary": "current window: draft notes"}
 
 
+def test_manual_perception_context_bounds_enabled_summary():
+    long_summary = "x" * 320
+    long_provider = ManualPerceptionExpressionContextProvider(summary=long_summary, enabled=True)
+    invalid_provider = ManualPerceptionExpressionContextProvider(summary=object(), enabled=True)
+
+    assert long_provider() == {"perception_summary": "x" * 240}
+    assert invalid_provider() == {}
+
+
 def test_controller_routes_character_profile_context_without_snapshot_shape_changes(tmp_path):
     captured = {}
 

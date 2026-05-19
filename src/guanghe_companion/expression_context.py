@@ -7,6 +7,7 @@ from .character_pack import CharacterPack
 
 ExpressionContextProvider = Callable[[], dict[str, object]]
 MAX_MOCK_SEARCH_RESULTS = 3
+MAX_MANUAL_PERCEPTION_SUMMARY_LENGTH = 240
 
 
 @dataclass(frozen=True, slots=True)
@@ -83,8 +84,10 @@ class ManualPerceptionExpressionContextProvider:
     def __call__(self) -> dict[str, object]:
         if not self.enabled:
             return {}
+        if not isinstance(self.summary, str):
+            return {}
         summary = self.summary.strip()
-        return {"perception_summary": summary} if summary else {}
+        return {"perception_summary": summary[:MAX_MANUAL_PERCEPTION_SUMMARY_LENGTH]} if summary else {}
 
 
 def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
