@@ -227,6 +227,19 @@ def test_expression_context_chain_keeps_later_perception_after_tool_result_cap()
     assert "overflow" not in str(context)
 
 
+def test_expression_context_chain_bounds_merged_perception_summary():
+    chain = ExpressionContextChain(
+        [
+            lambda: {"perception_summary": "x" * 320},
+            lambda: {"perception_summary": "ignored after cap"},
+        ]
+    )
+
+    context = chain()
+
+    assert context == {"perception_summary": "x" * 240}
+
+
 def test_expression_context_chain_ignores_failed_or_invalid_providers():
     def failing_provider():
         raise RuntimeError("offline")

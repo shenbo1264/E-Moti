@@ -7,7 +7,7 @@ from .character_pack import CharacterPack
 
 ExpressionContextProvider = Callable[[], dict[str, object]]
 MAX_MOCK_SEARCH_RESULTS = 3
-MAX_MANUAL_PERCEPTION_SUMMARY_LENGTH = 240
+MAX_PERCEPTION_SUMMARY_LENGTH = 240
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,8 +25,9 @@ class ExpressionContextChain:
             if not isinstance(context, dict):
                 continue
             perception_summary = context.get("perception_summary")
-            if isinstance(perception_summary, str) and perception_summary.strip():
-                perception_summaries.append(perception_summary.strip())
+            sanitized_perception = _sanitize_perception_summary(perception_summary)
+            if sanitized_perception:
+                perception_summaries.append(sanitized_perception)
             context_tool_results = context.get("tool_results")
             if isinstance(context_tool_results, list):
                 for entry in context_tool_results:
@@ -39,7 +40,7 @@ class ExpressionContextChain:
 
         merged: dict[str, object] = {}
         if perception_summaries:
-            merged["perception_summary"] = "\n".join(perception_summaries)
+            merged["perception_summary"] = "\n".join(perception_summaries)[:MAX_PERCEPTION_SUMMARY_LENGTH]
         if tool_results:
             merged["tool_results"] = tool_results
         return merged
@@ -85,7 +86,13 @@ class ManualPerceptionExpressionContextProvider:
         if not isinstance(self.summary, str):
             return {}
         summary = self.summary.strip()
-        return {"perception_summary": summary[:MAX_MANUAL_PERCEPTION_SUMMARY_LENGTH]} if summary else {}
+        return {"perception_summary": summary[:MAX_PERCEPTION_SUMMARY_LENGTH]} if summary else {}
+
+
+def _sanitize_perception_summary(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.strip()[:MAX_PERCEPTION_SUMMARY_LENGTH]
 
 
 def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
