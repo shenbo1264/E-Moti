@@ -280,6 +280,50 @@ def test_window_manual_screen_perception_updates_readonly_expression_context(mon
     app.processEvents()
 
 
+def test_window_manual_screen_perception_reaches_typed_expression_request(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication, QMessageBox
+
+    from guanghe_companion.ai_expressor import ExpressionRequest
+    from guanghe_companion.app import (
+        MANUAL_PERCEPTION_NO_SCREEN_SUMMARY,
+        CompanionWindow,
+    )
+
+    class CapturingExpressor:
+        def __init__(self):
+            self.requests = []
+
+        def express(self, snapshot, effect=None):
+            self.requests.append(snapshot)
+            return []
+
+    monkeypatch.setattr(QMessageBox, "information", lambda parent, title, message: None)
+    app = QApplication.instance() or QApplication([])
+    expressor = CapturingExpressor()
+    window = CompanionWindow(controller=make_controller(tmp_path, ai_expressor=expressor))
+    window.show()
+    app.processEvents()
+
+    window.observe_screen_button.click()
+    app.processEvents()
+    snapshot = window.controller.perform_action("touch", include_ai_expression=True)
+
+    request = expressor.requests[-1]
+    assert isinstance(request, ExpressionRequest)
+    assert request.perception_summary == MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
+    assert "no screen content was read" in request.perception_summary
+    assert "window title:" not in request.perception_summary.lower()
+    assert "screenshot" not in request.perception_summary.lower()
+    assert "ocr" not in request.perception_summary.lower()
+    assert snapshot["mood"] == 62
+    assert snapshot["events"][0]["speech"] == snapshot["feedback"]
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
     window.controller.state.charge = 25
