@@ -389,9 +389,15 @@ def _is_allowed_legacy_expression_event(state, event: dict[Any, Any]) -> bool:
     normalized = _stringify_event(event)
     if not normalized["speech"]:
         return False
+    if not _is_safe_legacy_sprite(normalized["sprite"]):
+        return False
     if normalized["effect"] not in ALLOWED_EFFECTS:
         return False
     return normalized["character_name"] == state.character_name
+
+
+def _is_safe_legacy_sprite(sprite: str) -> bool:
+    return sprite == "1"
 
 
 def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, str] | None:
