@@ -136,6 +136,76 @@ def test_window_action_handler_does_not_wait_for_slow_llm_expression(monkeypatch
     app.processEvents()
 
 
+def test_window_secondary_controls_do_not_wait_for_slow_llm_expression(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class SlowExpressor:
+        def __init__(self):
+            self.calls = 0
+
+        def express(self, snapshot, effect=None):
+            self.calls += 1
+            time.sleep(0.25)
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "late secondary LLM speech",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    app = QApplication.instance() or QApplication([])
+    slow_expressor = SlowExpressor()
+    controller = make_controller(tmp_path, ai_expressor=slow_expressor)
+    controller.state.coins = 120
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+    slow_expressor.calls = 0
+
+    window.shop_list.setCurrentRow(0)
+    started_at = time.monotonic()
+    window._handle_buy()
+    buy_elapsed = time.monotonic() - started_at
+    app.processEvents()
+
+    window.inventory_list.setCurrentRow(0)
+    started_at = time.monotonic()
+    window._handle_inventory_usage("feed")
+    feed_elapsed = time.monotonic() - started_at
+    app.processEvents()
+
+    started_at = time.monotonic()
+    window._handle_tick()
+    tick_elapsed = time.monotonic() - started_at
+    app.processEvents()
+
+    started_at = time.monotonic()
+    window._handle_demo_reset()
+    reset_elapsed = time.monotonic() - started_at
+    app.processEvents()
+
+    started_at = time.monotonic()
+    window._handle_demo_proactive("low_charge")
+    proactive_elapsed = time.monotonic() - started_at
+    app.processEvents()
+
+    snapshot = window.controller.get_snapshot()
+    assert max(buy_elapsed, feed_elapsed, tick_elapsed, reset_elapsed, proactive_elapsed) < 0.1
+    assert slow_expressor.calls == 0
+    assert snapshot["proactive_feedback"]["kind"] == "low_charge"
+    assert snapshot["events"][0]["speech"] == snapshot["feedback"]
+    assert snapshot["events"][0]["speech"] != "late secondary LLM speech"
+
+    window.close()
+    app.processEvents()
+
+
 def test_dragging_sprite_area_performs_raised_action(monkeypatch, tmp_path):
     from PySide6.QtCore import QPoint, Qt
     from PySide6.QtTest import QTest
