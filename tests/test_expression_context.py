@@ -4,6 +4,7 @@ from guanghe_companion.controller import CompanionController
 from guanghe_companion.expression_context import (
     CharacterProfileExpressionContextProvider,
     ExpressionContextChain,
+    ManualPerceptionExpressionContextProvider,
     MockSearchExpressionContextProvider,
 )
 
@@ -65,6 +66,27 @@ def test_mock_search_expression_context_returns_timestamped_tool_results_only():
     }
     assert "url" not in str(context)
     assert "coins" not in str(context)
+
+
+def test_manual_perception_context_is_disabled_by_default():
+    provider = ManualPerceptionExpressionContextProvider(
+        summary="current window: draft notes",
+    )
+
+    context = provider()
+
+    assert context == {}
+
+
+def test_manual_perception_context_returns_sanitized_summary_when_enabled():
+    provider = ManualPerceptionExpressionContextProvider(
+        summary="  current window: draft notes  ",
+        enabled=True,
+    )
+
+    context = provider()
+
+    assert context == {"perception_summary": "current window: draft notes"}
 
 
 def test_controller_routes_character_profile_context_without_snapshot_shape_changes(tmp_path):

@@ -75,6 +75,18 @@ class CharacterProfileExpressionContextProvider:
         return " / ".join(parts)
 
 
+@dataclass(frozen=True, slots=True)
+class ManualPerceptionExpressionContextProvider:
+    summary: str = ""
+    enabled: bool = False
+
+    def __call__(self) -> dict[str, object]:
+        if not self.enabled:
+            return {}
+        summary = self.summary.strip()
+        return {"perception_summary": summary} if summary else {}
+
+
 def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
     if not isinstance(entry, dict):
         return None
