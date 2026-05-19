@@ -94,6 +94,8 @@ class CompanionWindow(QMainWindow):
         self._apply_snapshot(self.controller.get_snapshot())
 
     def closeEvent(self, event) -> None:
+        self._manual_perception_summary = ""
+        self.controller.expression_context_provider = self._base_expression_context_provider
         self.controller.close()
         super().closeEvent(event)
 

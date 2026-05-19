@@ -350,6 +350,24 @@ def test_window_manual_screen_perception_updates_readonly_expression_context(mon
     app.processEvents()
 
 
+def test_window_close_clears_manual_screen_perception_context(monkeypatch, tmp_path):
+    from PySide6.QtWidgets import QMessageBox
+
+    monkeypatch.setattr(QMessageBox, "information", lambda parent, title, message: None)
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window.observe_screen_button.click()
+    app.processEvents()
+    assert window.controller.expression_context_provider()["perception_summary"]
+
+    controller = window.controller
+    window.close()
+    app.processEvents()
+
+    context_after_close = controller.expression_context_provider()
+    assert "perception_summary" not in context_after_close
+
+
 def test_window_manual_screen_perception_reaches_typed_expression_request(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
