@@ -520,7 +520,7 @@ def launch(argv: list[str] | None = None) -> int:
     app = QApplication.instance() or QApplication(args)
     controller = CompanionController(save_path=DEMO_SAVE_PATH) if should_use_demo_save(args) else CompanionController()
     if should_reset_demo_save(args):
-        controller.reset_demo_state()
+        controller.reset_demo_state(include_ai_expression=False)
     window = CompanionWindow(controller=controller, desktop_mode=should_use_desktop_mode(args))
     window.show()
     return app.exec()

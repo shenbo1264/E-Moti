@@ -375,3 +375,45 @@ def test_demo_save_cli_flags_select_isolated_demo_save():
     assert should_use_demo_save(["demo"]) is False
     assert should_reset_demo_save(["demo", "--reset-demo-save"]) is True
     assert should_reset_demo_save(["demo", "--demo-save"]) is False
+
+
+def test_launch_reset_demo_save_uses_local_first_reset(monkeypatch):
+    import guanghe_companion.app as app_module
+
+    captured = {}
+
+    class FakeApplication:
+        def __init__(self, args):
+            captured["app_args"] = args
+
+        @staticmethod
+        def instance():
+            return None
+
+        def exec(self):
+            return 17
+
+    class FakeController:
+        def __init__(self, save_path=None):
+            captured["save_path"] = save_path
+
+        def reset_demo_state(self, **kwargs):
+            captured["reset_kwargs"] = kwargs
+
+    class FakeWindow:
+        def __init__(self, controller, desktop_mode=False):
+            captured["window_controller"] = controller
+            captured["desktop_mode"] = desktop_mode
+
+        def show(self):
+            captured["shown"] = True
+
+    monkeypatch.setattr(app_module, "QApplication", FakeApplication)
+    monkeypatch.setattr(app_module, "CompanionController", FakeController)
+    monkeypatch.setattr(app_module, "CompanionWindow", FakeWindow)
+
+    result = app_module.launch(["demo", "--reset-demo-save"])
+
+    assert result == 17
+    assert captured["reset_kwargs"] == {"include_ai_expression": False}
+    assert captured["shown"] is True
