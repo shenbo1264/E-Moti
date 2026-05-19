@@ -1,4 +1,5 @@
 from dataclasses import replace
+import time
 
 from guanghe_companion.actions import CompanionActionRequest
 from guanghe_companion.ai_expressor import ExpressionRequest
@@ -218,6 +219,36 @@ def test_controller_can_skip_ai_expression_without_changing_local_settlement(tmp
     assert snapshot["events"][0]["speech"] == snapshot["feedback"]
     assert snapshot["events"][0]["speech"] != "LLM speech"
     assert [event["character_name"] for event in snapshot["events"]] == [controller.state.character_name, "STAT", "CHOICE"]
+
+
+def test_controller_initialization_does_not_wait_for_ai_expression(tmp_path):
+    class SlowExpressor:
+        def __init__(self):
+            self.calls = 0
+
+        def express(self, snapshot, effect=None):
+            self.calls += 1
+            time.sleep(0.25)
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "late initial LLM speech",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    expressor = SlowExpressor()
+
+    started_at = time.monotonic()
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=expressor)
+    elapsed = time.monotonic() - started_at
+    snapshot = controller.get_snapshot()
+
+    assert elapsed < 0.1
+    assert expressor.calls == 0
+    assert snapshot["events"][0]["speech"] == snapshot["feedback"]
+    assert snapshot["events"][0]["speech"] != "late initial LLM speech"
 
 
 def test_controller_uses_local_character_expression_context_by_default(tmp_path):

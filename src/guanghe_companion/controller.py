@@ -48,7 +48,7 @@ class CompanionController:
         self.last_item_feedback_icon: str | None = None
         self.last_proactive_feedback: dict[str, str] | None = None
         self._last_proactive_at: dict[str, int] = {}
-        self.last_events = self._build_events(effect="ATTENTION")
+        self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
         if loaded_state is None:
             self._persist()
 
