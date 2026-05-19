@@ -221,6 +221,50 @@ def test_controller_can_skip_ai_expression_without_changing_local_settlement(tmp
     assert [event["character_name"] for event in snapshot["events"]] == [controller.state.character_name, "STAT", "CHOICE"]
 
 
+def test_controller_rejects_llm_state_writes_for_inventory_and_tick_settlement(tmp_path):
+    class OverreachingExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "LLM tries to rewrite settlement",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                    "coins": "999",
+                    "inventory": {"warm_milk": 99},
+                    "focus": "100",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=OverreachingExpressor(),
+    )
+    controller.state.coins = 120
+
+    purchased = controller.buy_selected_item("warm_milk")
+    warm_milk_after_buy = next(item for item in purchased["inventory_items"] if item["item_id"] == "warm_milk")
+    charge_before_feed = purchased["charge"]
+    fed = controller.use_selected_item("warm_milk", usage="feed")
+    warm_milk_after_feed = next(item for item in fed["inventory_items"] if item["item_id"] == "warm_milk")
+    focus_before_tick = fed["focus"]
+    ticked = controller.advance_tick()
+
+    assert purchased["coins"] == 108
+    assert warm_milk_after_buy["count"] == 1
+    assert purchased["events"][0]["speech"] == purchased["feedback"]
+    assert purchased["events"][0]["speech"] != "LLM tries to rewrite settlement"
+    assert fed["coins"] == 108
+    assert fed["charge"] == charge_before_feed + 12
+    assert warm_milk_after_feed["count"] == 0
+    assert fed["events"][0]["speech"] == fed["feedback"]
+    assert ticked["coins"] == 108
+    assert ticked["focus"] == focus_before_tick - 0.5
+    assert ticked["tick_count"] == 1
+    assert ticked["events"][0]["speech"] == ticked["feedback"]
+
+
 def test_controller_initialization_does_not_wait_for_ai_expression(tmp_path):
     class SlowExpressor:
         def __init__(self):
