@@ -28,7 +28,15 @@ class ExpressionContextChain:
                 perception_summaries.append(perception_summary.strip())
             context_tool_results = context.get("tool_results")
             if isinstance(context_tool_results, list):
-                tool_results.extend(entry for entry in context_tool_results if isinstance(entry, dict))
+                for entry in context_tool_results:
+                    sanitized = _sanitize_tool_result(entry)
+                    if sanitized is None:
+                        continue
+                    tool_results.append(sanitized)
+                    if len(tool_results) >= MAX_MOCK_SEARCH_RESULTS:
+                        break
+            if len(tool_results) >= MAX_MOCK_SEARCH_RESULTS:
+                break
 
         merged: dict[str, object] = {}
         if perception_summaries:
@@ -65,6 +73,27 @@ class CharacterProfileExpressionContextProvider:
             if mode in self.character_pack.mode_descriptions
         ]
         return " / ".join(parts)
+
+
+def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
+    if not isinstance(entry, dict):
+        return None
+    source = entry.get("source")
+    title = entry.get("title")
+    summary = entry.get("summary")
+    if not isinstance(source, str) or not isinstance(title, str) or not isinstance(summary, str):
+        return None
+    result = {
+        "source": source.strip(),
+        "title": title.strip(),
+        "summary": summary.strip(),
+    }
+    if not result["source"] or not result["title"] or not result["summary"]:
+        return None
+    timestamp = entry.get("timestamp")
+    if isinstance(timestamp, str) and timestamp.strip():
+        result["timestamp"] = timestamp.strip()
+    return result
 
 
 @dataclass(frozen=True, slots=True)

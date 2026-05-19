@@ -126,6 +126,50 @@ def test_expression_context_chain_merges_readonly_provider_outputs():
     }
 
 
+def test_expression_context_chain_sanitizes_and_caps_tool_results():
+    chain = ExpressionContextChain(
+        [
+            lambda: {
+                "tool_results": [
+                    {
+                        "source": "local",
+                        "title": "profile",
+                        "summary": "gentle voice",
+                        "timestamp": "2026-05-19T12:00:00+08:00",
+                        "coins": 999,
+                    },
+                    {"source": "bad", "title": "missing summary"},
+                ],
+            },
+            lambda: {
+                "tool_results": [
+                    {"source": "search", "title": "one", "summary": "first", "url": "https://example.invalid/1"},
+                    {"source": "search", "title": "two", "summary": "second"},
+                    {"source": "search", "title": "overflow", "summary": "ignored after cap"},
+                ],
+            },
+        ]
+    )
+
+    context = chain()
+
+    assert context == {
+        "tool_results": [
+            {
+                "source": "local",
+                "title": "profile",
+                "summary": "gentle voice",
+                "timestamp": "2026-05-19T12:00:00+08:00",
+            },
+            {"source": "search", "title": "one", "summary": "first"},
+            {"source": "search", "title": "two", "summary": "second"},
+        ]
+    }
+    assert "coins" not in str(context)
+    assert "url" not in str(context)
+    assert "overflow" not in str(context)
+
+
 def test_expression_context_chain_ignores_failed_or_invalid_providers():
     def failing_provider():
         raise RuntimeError("offline")
