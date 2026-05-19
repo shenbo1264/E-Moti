@@ -201,6 +201,32 @@ def test_expression_context_chain_sanitizes_and_caps_tool_results():
     assert "overflow" not in str(context)
 
 
+def test_expression_context_chain_keeps_later_perception_after_tool_result_cap():
+    chain = ExpressionContextChain(
+        [
+            lambda: {
+                "tool_results": [
+                    {"source": "search", "title": "one", "summary": "first"},
+                    {"source": "search", "title": "two", "summary": "second"},
+                    {"source": "search", "title": "three", "summary": "third"},
+                ],
+            },
+            lambda: {
+                "perception_summary": "manual screen note",
+                "tool_results": [
+                    {"source": "search", "title": "overflow", "summary": "ignored after cap"},
+                ],
+            },
+        ]
+    )
+
+    context = chain()
+
+    assert context["perception_summary"] == "manual screen note"
+    assert [entry["title"] for entry in context["tool_results"]] == ["one", "two", "three"]
+    assert "overflow" not in str(context)
+
+
 def test_expression_context_chain_ignores_failed_or_invalid_providers():
     def failing_provider():
         raise RuntimeError("offline")

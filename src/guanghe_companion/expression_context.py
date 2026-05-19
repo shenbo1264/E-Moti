@@ -30,14 +30,12 @@ class ExpressionContextChain:
             context_tool_results = context.get("tool_results")
             if isinstance(context_tool_results, list):
                 for entry in context_tool_results:
+                    if len(tool_results) >= MAX_MOCK_SEARCH_RESULTS:
+                        break
                     sanitized = _sanitize_tool_result(entry)
                     if sanitized is None:
                         continue
                     tool_results.append(sanitized)
-                    if len(tool_results) >= MAX_MOCK_SEARCH_RESULTS:
-                        break
-            if len(tool_results) >= MAX_MOCK_SEARCH_RESULTS:
-                break
 
         merged: dict[str, object] = {}
         if perception_summaries:
