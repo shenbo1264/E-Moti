@@ -33,6 +33,7 @@ MAX_GOAL_LENGTH = 160
 MAX_MEMORY_KIND_LENGTH = 40
 MAX_MEMORY_SUMMARY_LENGTH = 160
 MAX_MEMORY_MOTION_LENGTH = 40
+MAX_TOOL_TIMESTAMP_LENGTH = 40
 
 
 class LLMProviderError(RuntimeError):
@@ -186,9 +187,7 @@ class ShinsekaiAIExpressor:
         memory = " / ".join(
             f"{entry['kind']}: {entry['summary']}" for entry in prompt_payload["recent_memory"]
         )
-        tool_results = " / ".join(
-            f"{entry['source']}: {entry['title']} - {entry['summary']}" for entry in prompt_payload["tool_results"]
-        )
+        tool_results = " / ".join(_format_tool_result(entry) for entry in prompt_payload["tool_results"])
         return "\n".join(
             [
                 "你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。",
@@ -340,10 +339,19 @@ def _sanitize_tool_results(value: object) -> tuple[dict[str, str], ...]:
         summary = _short_string(entry.get("summary", ""), 180)
         if not source or not title or not summary:
             continue
-        results.append({"source": source, "title": title, "summary": summary})
+        result = {"source": source, "title": title, "summary": summary}
+        timestamp = _short_string(entry.get("timestamp", ""), MAX_TOOL_TIMESTAMP_LENGTH)
+        if timestamp:
+            result["timestamp"] = timestamp
+        results.append(result)
         if len(results) >= MAX_TOOL_RESULTS:
             break
     return tuple(results)
+
+
+def _format_tool_result(entry: dict[str, str]) -> str:
+    timestamp = f" @ {entry['timestamp']}" if entry.get("timestamp") else ""
+    return f"{entry['source']}: {entry['title']}{timestamp} - {entry['summary']}"
 
 
 def _sanitize_actions(value: object) -> tuple[dict[str, str], ...]:

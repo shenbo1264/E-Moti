@@ -1,7 +1,11 @@
 from guanghe_companion.ai_expressor import ExpressionRequest
 from guanghe_companion.character_pack import load_default_character_pack
 from guanghe_companion.controller import CompanionController
-from guanghe_companion.expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
+from guanghe_companion.expression_context import (
+    CharacterProfileExpressionContextProvider,
+    ExpressionContextChain,
+    MockSearchExpressionContextProvider,
+)
 
 
 def test_character_profile_expression_context_returns_local_tool_results_only():
@@ -25,6 +29,41 @@ def test_character_profile_expression_context_returns_local_tool_results_only():
     ]
     assert "perception_summary" not in context
     assert "inventory" not in str(context)
+    assert "coins" not in str(context)
+
+
+def test_mock_search_expression_context_returns_timestamped_tool_results_only():
+    provider = MockSearchExpressionContextProvider(
+        query="星汐 口吻",
+        results=[
+            {
+                "title": "表达设定",
+                "summary": "保持轻柔、短句、陪伴感。",
+                "timestamp": "2026-05-19T12:00:00+08:00",
+                "url": "https://example.invalid/profile",
+                "coins": 999,
+            },
+            {
+                "title": "空摘要会被忽略",
+                "summary": "   ",
+                "timestamp": "2026-05-19T12:01:00+08:00",
+            },
+        ],
+    )
+
+    context = provider()
+
+    assert context == {
+        "tool_results": [
+            {
+                "source": "mock_search",
+                "title": "星汐 口吻: 表达设定",
+                "summary": "保持轻柔、短句、陪伴感。",
+                "timestamp": "2026-05-19T12:00:00+08:00",
+            }
+        ]
+    }
+    assert "url" not in str(context)
     assert "coins" not in str(context)
 
 

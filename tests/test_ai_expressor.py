@@ -115,6 +115,32 @@ def test_expression_request_sanitizes_perception_and_tool_result_anchors():
     ]
 
 
+def test_expression_request_keeps_bounded_tool_result_timestamp():
+    snapshot = make_snapshot()
+    snapshot["tool_results"] = [
+        {
+            "source": "mock_search",
+            "title": "search hit",
+            "summary": "timestamped context",
+            "timestamp": "  2026-05-19T12:00:00+08:00  ",
+        }
+    ]
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+    prompt_payload = request.to_prompt_dict()
+    prompt = ShinsekaiAIExpressor().build_prompt(request)
+
+    assert prompt_payload["tool_results"] == [
+        {
+            "source": "mock_search",
+            "title": "search hit",
+            "summary": "timestamped context",
+            "timestamp": "2026-05-19T12:00:00+08:00",
+        }
+    ]
+    assert "2026-05-19T12:00:00+08:00" in prompt
+
+
 def test_expression_request_sanitizes_action_labels_before_prompt_payload():
     snapshot = make_snapshot()
     snapshot["actions"] = [
