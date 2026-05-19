@@ -115,6 +115,9 @@ class CompanionWindow(QMainWindow):
         self.demo_card = self._build_demo_card()
         shell.addWidget(self.demo_card)
 
+        self.perception_card = self._build_perception_card()
+        shell.addWidget(self.perception_card)
+
         lower = QHBoxLayout()
         lower.setSpacing(12)
         shell.addLayout(lower, stretch=1)
@@ -225,6 +228,21 @@ class CompanionWindow(QMainWindow):
             layout.addWidget(button)
         return box
 
+    def _build_perception_card(self) -> QGroupBox:
+        box = QGroupBox("屏幕感知")
+        layout = QVBoxLayout(box)
+        self.perception_status_label = QLabel("屏幕感知：关闭")
+        self.perception_status_label.setWordWrap(True)
+        self.perception_privacy_label = QLabel("默认不会读取屏幕；只在手动触发时显示隐私提示。本轮不会自动截图。")
+        self.perception_privacy_label.setWordWrap(True)
+        self.observe_screen_button = QPushButton("手动触发屏幕感知")
+        self.observe_screen_button.setMinimumHeight(36)
+        self.observe_screen_button.clicked.connect(self._handle_manual_screen_perception)
+        layout.addWidget(self.perception_status_label)
+        layout.addWidget(self.perception_privacy_label)
+        layout.addWidget(self.observe_screen_button)
+        return box
+
     def _build_shop_card(self) -> QGroupBox:
         box = QGroupBox("轻量商店")
         layout = QVBoxLayout(box)
@@ -266,6 +284,7 @@ class CompanionWindow(QMainWindow):
         self.feedback_card.hide()
         self.actions_card.hide()
         self.demo_card.hide()
+        self.perception_card.hide()
         self.shop_card.hide()
         self.inventory_card.hide()
         self.resize(360, 420)
@@ -312,6 +331,14 @@ class CompanionWindow(QMainWindow):
     def _handle_demo_reset(self) -> None:
         self._reset_countdown()
         self._apply_snapshot(self.controller.reset_demo_state(include_ai_expression=False))
+
+    def _handle_manual_screen_perception(self) -> None:
+        QMessageBox.information(
+            self,
+            "屏幕感知隐私提示",
+            "屏幕感知只在手动触发时运行。本轮不会自动截图、不会上传屏幕、不会长期记录原始截图。",
+        )
+        self.perception_status_label.setText("屏幕感知：已手动触发（未读取屏幕内容）")
 
     @Slot()
     def _handle_buy(self) -> None:

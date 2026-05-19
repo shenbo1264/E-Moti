@@ -221,6 +221,44 @@ def test_window_shows_relationship_stage_and_next_unlock(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_window_shows_screen_perception_disabled_by_default(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert window.perception_card.isVisibleTo(window)
+    assert window.observe_screen_button.isEnabled()
+    assert "屏幕感知：关闭" in window.perception_status_label.text()
+    assert "默认不会读取屏幕" in window.perception_privacy_label.text()
+    assert "不会自动截图" in window.perception_privacy_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_window_manual_screen_perception_trigger_shows_privacy_prompt_and_status(monkeypatch, tmp_path):
+    from PySide6.QtWidgets import QMessageBox
+
+    captured = {}
+
+    def fake_information(parent, title, message):
+        captured["title"] = title
+        captured["message"] = message
+
+    monkeypatch.setattr(QMessageBox, "information", fake_information)
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window.observe_screen_button.click()
+    app.processEvents()
+
+    assert captured["title"] == "屏幕感知隐私提示"
+    assert "只在手动触发时运行" in captured["message"]
+    assert "本轮不会自动截图" in captured["message"]
+    assert "屏幕感知：已手动触发" in window.perception_status_label.text()
+    assert "未读取屏幕内容" in window.perception_status_label.text()
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
     window.controller.state.charge = 25
