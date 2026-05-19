@@ -86,12 +86,29 @@ def test_mock_search_expression_context_bounds_result_fields():
         "tool_results": [
             {
                 "source": "mock_search",
-                "title": f"{'q' * 40}: {'t' * 80}",
+                "title": f"{'q' * 40}: {'t' * 38}",
                 "summary": "s" * 180,
                 "timestamp": "2026-05-19T12:00:00+08:00",
             }
         ]
     }
+
+
+def test_mock_search_expression_context_bounds_combined_title():
+    provider = MockSearchExpressionContextProvider(
+        query="manual search query that is already pretty long",
+        results=[
+            {
+                "title": "result title that should not make the combined title too long",
+                "summary": "short summary",
+                "timestamp": "2026-05-19T12:00:00+08:00",
+            },
+        ],
+    )
+
+    title = provider()["tool_results"][0]["title"]
+
+    assert len(title) <= 80
 
 
 def test_manual_perception_context_is_disabled_by_default():

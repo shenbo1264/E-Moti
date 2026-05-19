@@ -142,10 +142,11 @@ class MockSearchExpressionContextProvider:
             timestamp = timestamp.strip()[:MAX_TOOL_TIMESTAMP_LENGTH]
             if not title or not summary or not timestamp:
                 continue
+            combined_title = f"{query}: {title}"[:MAX_TOOL_TITLE_LENGTH]
             tool_results.append(
                 {
                     "source": "mock_search",
-                    "title": f"{query}: {title}",
+                    "title": combined_title,
                     "summary": summary,
                     "timestamp": timestamp,
                 }
