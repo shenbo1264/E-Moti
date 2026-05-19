@@ -24,8 +24,11 @@ from PySide6.QtWidgets import (
 )
 
 from .controller import CompanionController
+from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_default_motion_catalog
 from .storage import DEMO_SAVE_PATH
+
+MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
 
 
 class SpriteInteractionLabel(QLabel):
@@ -76,6 +79,11 @@ class CompanionWindow(QMainWindow):
         self.remaining_seconds = 15
         self.action_buttons: dict[str, QPushButton] = {}
         self.status_bars: dict[str, QProgressBar] = {}
+        self._manual_perception_summary = ""
+        self._base_expression_context_provider = self.controller.expression_context_provider
+        self.controller.expression_context_provider = ExpressionContextChain(
+            [self._base_expression_context_provider, self._manual_perception_context]
+        )
 
         self.setWindowTitle("光核 AI 桌面伴侣 Demo")
         self.resize(1180, 760)
@@ -339,6 +347,14 @@ class CompanionWindow(QMainWindow):
             "屏幕感知只在手动触发时运行。本轮不会自动截图、不会上传屏幕、不会长期记录原始截图。",
         )
         self.perception_status_label.setText("屏幕感知：已手动触发（未读取屏幕内容）")
+
+        self._manual_perception_summary = MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
+
+    def _manual_perception_context(self) -> dict[str, object]:
+        return ManualPerceptionExpressionContextProvider(
+            summary=self._manual_perception_summary,
+            enabled=bool(self._manual_perception_summary),
+        )()
 
     @Slot()
     def _handle_buy(self) -> None:

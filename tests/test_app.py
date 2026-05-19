@@ -259,6 +259,27 @@ def test_window_manual_screen_perception_trigger_shows_privacy_prompt_and_status
     app.processEvents()
 
 
+def test_window_manual_screen_perception_updates_readonly_expression_context(monkeypatch, tmp_path):
+    from PySide6.QtWidgets import QMessageBox
+
+    monkeypatch.setattr(QMessageBox, "information", lambda parent, title, message: None)
+    app, window = make_window(monkeypatch, tmp_path)
+
+    before_context = window.controller.expression_context_provider()
+    window.observe_screen_button.click()
+    app.processEvents()
+    after_context = window.controller.expression_context_provider()
+
+    assert "perception_summary" not in before_context
+    assert after_context["perception_summary"] == "manual screen perception requested; no screen content was read"
+    assert "tool_results" in after_context
+    assert "screenshot" not in after_context["perception_summary"]
+    assert "ocr" not in after_context["perception_summary"].lower()
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
     window.controller.state.charge = 25
