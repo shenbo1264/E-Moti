@@ -68,6 +68,32 @@ def test_mock_search_expression_context_returns_timestamped_tool_results_only():
     assert "coins" not in str(context)
 
 
+def test_mock_search_expression_context_bounds_result_fields():
+    provider = MockSearchExpressionContextProvider(
+        query="q" * 120,
+        results=[
+            {
+                "title": "t" * 120,
+                "summary": "s" * 260,
+                "timestamp": "2026-05-19T12:00:00+08:00-extra-data",
+            },
+        ],
+    )
+
+    context = provider()
+
+    assert context == {
+        "tool_results": [
+            {
+                "source": "mock_search",
+                "title": f"{'q' * 40}: {'t' * 80}",
+                "summary": "s" * 180,
+                "timestamp": "2026-05-19T12:00:00+08:00",
+            }
+        ]
+    }
+
+
 def test_manual_perception_context_is_disabled_by_default():
     provider = ManualPerceptionExpressionContextProvider(
         summary="current window: draft notes",

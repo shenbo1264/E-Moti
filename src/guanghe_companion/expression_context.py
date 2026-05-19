@@ -8,6 +8,10 @@ from .character_pack import CharacterPack
 ExpressionContextProvider = Callable[[], dict[str, object]]
 MAX_MOCK_SEARCH_RESULTS = 3
 MAX_PERCEPTION_SUMMARY_LENGTH = 240
+MAX_SEARCH_QUERY_LENGTH = 40
+MAX_TOOL_TITLE_LENGTH = 80
+MAX_TOOL_SUMMARY_LENGTH = 180
+MAX_TOOL_TIMESTAMP_LENGTH = 25
 
 
 @dataclass(frozen=True, slots=True)
@@ -122,7 +126,7 @@ class MockSearchExpressionContextProvider:
     results: Iterable[Mapping[str, object]]
 
     def __call__(self) -> dict[str, object]:
-        query = self.query.strip()
+        query = self.query.strip()[:MAX_SEARCH_QUERY_LENGTH]
         if not query:
             return {}
 
@@ -133,9 +137,9 @@ class MockSearchExpressionContextProvider:
             timestamp = result.get("timestamp")
             if not isinstance(title, str) or not isinstance(summary, str) or not isinstance(timestamp, str):
                 continue
-            title = title.strip()
-            summary = summary.strip()
-            timestamp = timestamp.strip()
+            title = title.strip()[:MAX_TOOL_TITLE_LENGTH]
+            summary = summary.strip()[:MAX_TOOL_SUMMARY_LENGTH]
+            timestamp = timestamp.strip()[:MAX_TOOL_TIMESTAMP_LENGTH]
             if not title or not summary or not timestamp:
                 continue
             tool_results.append(
