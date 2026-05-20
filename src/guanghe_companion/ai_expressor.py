@@ -29,6 +29,7 @@ MAX_MOTION_LENGTH = 40
 MAX_SPEECH_LENGTH = 80
 MAX_MOTION_HINT_LENGTH = 40
 MAX_EFFECT_LENGTH = 20
+MAX_OPENAI_RESPONSE_TEXT_LENGTH = 4096
 MAX_FEEDBACK_LENGTH = 160
 MAX_DELTA_TEXT_LENGTH = 80
 MAX_GOAL_LENGTH = 160
@@ -574,7 +575,7 @@ def _default_transport(api_request: request.Request, timeout: float) -> bytes:
 def _extract_response_text(response: dict[str, Any]) -> str:
     output_text = response.get("output_text")
     if isinstance(output_text, str) and output_text.strip():
-        return output_text.strip()
+        return _validated_response_text(output_text)
     output = response.get("output")
     if not isinstance(output, list):
         raise ValueError("OpenAI response does not include output.")
@@ -588,8 +589,15 @@ def _extract_response_text(response: dict[str, Any]) -> str:
             if not isinstance(part, dict):
                 continue
             if part.get("type") == "output_text" and isinstance(part.get("text"), str) and str(part["text"]).strip():
-                return str(part["text"]).strip()
+                return _validated_response_text(str(part["text"]))
     raise ValueError("OpenAI response does not include output text.")
+
+
+def _validated_response_text(value: str) -> str:
+    text = value.strip()
+    if len(text) > MAX_OPENAI_RESPONSE_TEXT_LENGTH:
+        raise ValueError("OpenAI response text is too long.")
+    return text
 
 
 def _parse_timeout(value: str | None) -> float:

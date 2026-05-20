@@ -1523,6 +1523,21 @@ def test_openai_responses_client_rejects_missing_output_text_explicitly():
         raise AssertionError("missing OpenAI output text should be rejected explicitly.")
 
 
+def test_openai_responses_client_rejects_overlong_output_text_explicitly():
+    oversized_text = "x" * 4097
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: f'{{"output_text":"{oversized_text}"}}'.encode("utf-8"),
+    )
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "invalid_response_text" in str(exc)
+    else:
+        raise AssertionError("overlong OpenAI output text should be rejected explicitly.")
+
+
 def test_expressor_falls_back_when_provider_returns_non_json_text():
     snapshot = make_snapshot()
     client = OpenAIResponsesClient(
