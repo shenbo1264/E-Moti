@@ -136,6 +136,8 @@ class MockSearchExpressionContextProvider:
 
         tool_results: list[dict[str, str]] = []
         for result in self.results:
+            if not isinstance(result, Mapping):
+                continue
             title = result.get("title")
             summary = result.get("summary")
             timestamp = result.get("timestamp")

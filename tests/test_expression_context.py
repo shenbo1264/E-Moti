@@ -111,6 +111,33 @@ def test_mock_search_expression_context_bounds_combined_title():
     assert len(title) <= 80
 
 
+def test_mock_search_expression_context_skips_non_mapping_results():
+    provider = MockSearchExpressionContextProvider(
+        query="starsea voice",
+        results=[
+            ["not", "a", "mapping"],
+            {
+                "title": "expression style",
+                "summary": "keep replies short and gentle",
+                "timestamp": "2026-05-19T12:00:00+08:00",
+            },
+        ],
+    )
+
+    context = provider()
+
+    assert context == {
+        "tool_results": [
+            {
+                "source": "mock_search",
+                "title": "starsea voice: expression style",
+                "summary": "keep replies short and gentle",
+                "timestamp": "2026-05-19T12:00:00+08:00",
+            }
+        ]
+    }
+
+
 def test_manual_perception_context_is_disabled_by_default():
     provider = ManualPerceptionExpressionContextProvider(
         summary="current window: draft notes",
