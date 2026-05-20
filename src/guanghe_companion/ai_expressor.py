@@ -19,6 +19,7 @@ DEFAULT_TIMEOUT_SECONDS = 2.0
 MAX_TIMEOUT_SECONDS = 5.0
 DEFAULT_OPENAI_MODEL = "gpt-5.5"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
+MAX_OPENAI_MODEL_LENGTH = 80
 MAX_PERCEPTION_SUMMARY_LENGTH = 240
 MAX_TOOL_RESULTS = 3
 MAX_ACTION_LABEL_LENGTH = 40
@@ -121,8 +122,7 @@ class OpenAIResponsesClient:
         transport: HTTPTransport | None = None,
     ) -> None:
         self.api_key = api_key.strip() if isinstance(api_key, str) else ""
-        self.model = model.strip() if isinstance(model, str) else ""
-        self.model = self.model or DEFAULT_OPENAI_MODEL
+        self.model = _normalize_model(model)
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.transport = transport or _default_transport
         self._closed = False
@@ -564,11 +564,9 @@ def _openai_config_from_env(env: Mapping[str, object] | None = None) -> _OpenAIP
     api_key = raw_api_key.strip() if isinstance(raw_api_key, str) else ""
     if not api_key:
         return None
-    raw_model = source.get("GUANGHE_LLM_MODEL")
-    model = raw_model.strip() if isinstance(raw_model, str) else ""
     return _OpenAIProviderConfig(
         api_key=api_key,
-        model=model or DEFAULT_OPENAI_MODEL,
+        model=_normalize_model(source.get("GUANGHE_LLM_MODEL")),
         timeout_seconds=_parse_timeout(source.get("GUANGHE_LLM_TIMEOUT_SECONDS")),
     )
 
@@ -622,3 +620,12 @@ def _normalize_timeout(value: object) -> float:
     except (TypeError, ValueError):
         return DEFAULT_TIMEOUT_SECONDS
     return parsed if math.isfinite(parsed) and 0 < parsed <= MAX_TIMEOUT_SECONDS else DEFAULT_TIMEOUT_SECONDS
+
+
+def _normalize_model(value: object) -> str:
+    if not isinstance(value, str):
+        return DEFAULT_OPENAI_MODEL
+    model = value.strip()
+    if not model or len(model) > MAX_OPENAI_MODEL_LENGTH:
+        return DEFAULT_OPENAI_MODEL
+    return model
