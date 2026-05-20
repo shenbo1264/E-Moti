@@ -525,8 +525,12 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
         return None
     if motion_hint != "" and not isinstance(motion_hint, str):
         return None
-    if isinstance(motion_hint, str) and len(motion_hint.strip()) > MAX_MOTION_HINT_LENGTH:
-        return None
+    if isinstance(motion_hint, str):
+        normalized_motion_hint = motion_hint.strip()
+        if _has_control_character(normalized_motion_hint):
+            return None
+        if len(normalized_motion_hint) > MAX_MOTION_HINT_LENGTH:
+            return None
 
     return {
         "character_name": state.character_name,
