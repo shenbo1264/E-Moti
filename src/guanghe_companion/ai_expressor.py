@@ -141,6 +141,8 @@ class OpenAIResponsesClient:
             raise LLMProviderError("OpenAI expression provider failed: missing_api_key")
         if not isinstance(prompt, str):
             raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
+        if not prompt.strip():
+            raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
         if len(prompt) > MAX_OPENAI_PROMPT_LENGTH:
             raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
         payload = json.dumps(
