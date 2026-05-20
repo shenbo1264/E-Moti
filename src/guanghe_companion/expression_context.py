@@ -130,6 +130,8 @@ class MockSearchExpressionContextProvider:
     results: Iterable[Mapping[str, object]]
 
     def __call__(self) -> dict[str, object]:
+        if not isinstance(self.query, str):
+            return {}
         query = self.query.strip()[:MAX_SEARCH_QUERY_LENGTH]
         if not query:
             return {}

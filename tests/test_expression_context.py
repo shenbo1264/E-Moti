@@ -111,6 +111,21 @@ def test_mock_search_expression_context_bounds_combined_title():
     assert len(title) <= 80
 
 
+def test_mock_search_expression_context_ignores_non_string_query():
+    provider = MockSearchExpressionContextProvider(
+        query=object(),
+        results=[
+            {
+                "title": "expression style",
+                "summary": "keep replies short and gentle",
+                "timestamp": "2026-05-19T12:00:00+08:00",
+            },
+        ],
+    )
+
+    assert provider() == {}
+
+
 def test_mock_search_expression_context_skips_non_mapping_results():
     provider = MockSearchExpressionContextProvider(
         query="starsea voice",
