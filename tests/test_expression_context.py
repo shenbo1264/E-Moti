@@ -244,6 +244,36 @@ def test_expression_context_chain_sanitizes_and_caps_tool_results():
     assert "overflow" not in str(context)
 
 
+def test_expression_context_chain_bounds_tool_result_fields():
+    chain = ExpressionContextChain(
+        [
+            lambda: {
+                "tool_results": [
+                    {
+                        "source": "s" * 90,
+                        "title": "t" * 120,
+                        "summary": "m" * 260,
+                        "timestamp": "2026-05-19T12:00:00+08:00-extra-data",
+                    },
+                ],
+            },
+        ]
+    )
+
+    context = chain()
+
+    assert context == {
+        "tool_results": [
+            {
+                "source": "s" * 60,
+                "title": "t" * 80,
+                "summary": "m" * 180,
+                "timestamp": "2026-05-19T12:00:00+08:00",
+            },
+        ]
+    }
+
+
 def test_expression_context_chain_keeps_later_perception_after_tool_result_cap():
     chain = ExpressionContextChain(
         [

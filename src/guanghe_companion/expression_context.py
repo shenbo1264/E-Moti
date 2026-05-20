@@ -9,6 +9,7 @@ ExpressionContextProvider = Callable[[], dict[str, object]]
 MAX_MOCK_SEARCH_RESULTS = 3
 MAX_PERCEPTION_SUMMARY_LENGTH = 240
 MAX_SEARCH_QUERY_LENGTH = 40
+MAX_TOOL_SOURCE_LENGTH = 60
 MAX_TOOL_TITLE_LENGTH = 80
 MAX_TOOL_SUMMARY_LENGTH = 180
 MAX_TOOL_TIMESTAMP_LENGTH = 25
@@ -111,15 +112,15 @@ def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
     if not isinstance(source, str) or not isinstance(title, str) or not isinstance(summary, str):
         return None
     result = {
-        "source": source.strip(),
-        "title": title.strip(),
-        "summary": summary.strip(),
+        "source": source.strip()[:MAX_TOOL_SOURCE_LENGTH],
+        "title": title.strip()[:MAX_TOOL_TITLE_LENGTH],
+        "summary": summary.strip()[:MAX_TOOL_SUMMARY_LENGTH],
     }
     if not result["source"] or not result["title"] or not result["summary"]:
         return None
     timestamp = entry.get("timestamp")
     if isinstance(timestamp, str) and timestamp.strip():
-        result["timestamp"] = timestamp.strip()
+        result["timestamp"] = timestamp.strip()[:MAX_TOOL_TIMESTAMP_LENGTH]
     return result
 
 
