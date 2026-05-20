@@ -217,6 +217,54 @@ def test_expression_request_sanitizes_core_prompt_strings_before_prompt_payload(
     assert request.goal == ""
 
 
+def test_expression_request_flattens_control_characters_before_prompt_payload():
+    snapshot = make_snapshot()
+    snapshot.update(
+        {
+            "feedback": "local\nfeedback",
+            "perception_summary": "window title:\tDraft\napp: Notes",
+            "actions": [{"label": "Touch\nnow"}],
+            "memory_log": [
+                {
+                    "kind": "interaction\nkind",
+                    "summary": "first line\nsecond line",
+                    "motion": "Touch\tHead",
+                }
+            ],
+            "tool_results": [
+                {
+                    "source": "mock\nsearch",
+                    "title": "title\twith tab",
+                    "summary": "summary\nwith newline",
+                    "timestamp": "2026-05-19\n12:00",
+                }
+            ],
+        }
+    )
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+    prompt_payload = request.to_prompt_dict()
+
+    assert prompt_payload["feedback"] == "local feedback"
+    assert prompt_payload["perception_summary"] == "window title: Draft app: Notes"
+    assert prompt_payload["actions"] == [{"label": "Touch now"}]
+    assert prompt_payload["recent_memory"] == [
+        {
+            "kind": "interaction kind",
+            "summary": "first line second line",
+            "motion": "Touch Head",
+        }
+    ]
+    assert prompt_payload["tool_results"] == [
+        {
+            "source": "mock search",
+            "title": "title with tab",
+            "summary": "summary with newline",
+            "timestamp": "2026-05-19 12:00",
+        }
+    ]
+
+
 def test_expression_request_is_immutable_and_copies_mutable_snapshot_values():
     snapshot = make_snapshot()
     original_action_label = snapshot["actions"][0]["label"]

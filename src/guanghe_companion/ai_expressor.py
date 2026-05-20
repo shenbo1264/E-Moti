@@ -460,7 +460,11 @@ def _sanitize_recent_memory(value: object) -> tuple[dict[str, str], ...]:
 def _short_string(value: object, max_length: int) -> str:
     if not isinstance(value, str):
         return ""
-    return value.strip()[:max_length]
+    return _replace_control_characters(value.strip())[:max_length]
+
+
+def _replace_control_characters(value: str) -> str:
+    return "".join(" " if _is_control_character(char) else char for char in value)
 
 
 def _finite_float(value: object) -> float:
@@ -655,4 +659,8 @@ def _normalize_api_key(value: object) -> str:
 
 
 def _has_control_character(value: str) -> bool:
-    return any(ord(char) < 32 or ord(char) == 127 for char in value)
+    return any(_is_control_character(char) for char in value)
+
+
+def _is_control_character(char: str) -> bool:
+    return ord(char) < 32 or ord(char) == 127
