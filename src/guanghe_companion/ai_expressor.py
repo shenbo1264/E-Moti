@@ -26,6 +26,7 @@ MAX_RECENT_MEMORY = 3
 MAX_CHARACTER_NAME_LENGTH = 40
 MAX_MODE_LENGTH = 40
 MAX_MOTION_LENGTH = 40
+MAX_SPEECH_LENGTH = 80
 MAX_MOTION_HINT_LENGTH = 40
 MAX_EFFECT_LENGTH = 20
 MAX_FEEDBACK_LENGTH = 160
@@ -398,6 +399,8 @@ def _is_allowed_legacy_expression_event(state, event: dict[Any, Any]) -> bool:
     normalized = _stringify_event(event)
     if not normalized["speech"]:
         return False
+    if len(normalized["speech"]) > MAX_SPEECH_LENGTH:
+        return False
     if not _is_safe_legacy_sprite(normalized["sprite"]):
         return False
     if normalized["effect"] not in ALLOWED_EFFECTS:
@@ -421,6 +424,9 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
     motion_hint = event.get("motion_hint", "")
     if not isinstance(speech, str) or not speech.strip():
         return None
+    normalized_speech = speech.strip()
+    if len(normalized_speech) > MAX_SPEECH_LENGTH:
+        return None
     if not isinstance(effect, str):
         return None
     normalized_effect = effect.strip()
@@ -435,7 +441,7 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
 
     return {
         "character_name": state.character_name,
-        "speech": speech.strip(),
+        "speech": normalized_speech,
         "sprite": "1",
         "effect": normalized_effect,
     }
