@@ -247,6 +247,18 @@ def test_prompt_builder_filters_state_write_surfaces_from_raw_snapshot():
     assert "recent_memory:" in prompt
 
 
+def test_prompt_builder_falls_back_to_safe_summary_when_raw_snapshot_stats_are_invalid():
+    snapshot = make_snapshot()
+    snapshot["focus"] = "not-a-number"
+
+    prompt = ShinsekaiAIExpressor().build_prompt(snapshot)
+
+    assert "invalid_snapshot: expression prompt unavailable" in prompt
+    assert "not-a-number" not in prompt
+    assert "inventory" not in prompt
+    assert "coins:" not in prompt
+
+
 def test_expressor_falls_back_when_raw_snapshot_stats_are_invalid():
     snapshot = make_snapshot()
     snapshot["focus"] = "not-a-number"

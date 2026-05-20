@@ -183,7 +183,10 @@ class ShinsekaiAIExpressor:
         self.close()
 
     def build_prompt(self, snapshot: dict[str, object] | ExpressionRequest) -> str:
-        expression_request = _ensure_expression_request(snapshot)
+        try:
+            expression_request = _ensure_expression_request(snapshot)
+        except (KeyError, TypeError, ValueError):
+            return _invalid_snapshot_prompt()
         prompt_payload = expression_request.to_prompt_dict()
         choices = " / ".join(str(entry["label"]) for entry in prompt_payload["actions"])
         memory = " / ".join(
@@ -329,6 +332,16 @@ def _ensure_expression_request(snapshot: dict[str, object] | ExpressionRequest) 
     if isinstance(snapshot, ExpressionRequest):
         return snapshot
     return ExpressionRequest.from_snapshot(snapshot)
+
+
+def _invalid_snapshot_prompt() -> str:
+    return "\n".join(
+        [
+            "invalid_snapshot: expression prompt unavailable",
+            "AI can only generate expression events and must not change local settlement data, goals, or saves.",
+            'Output a JSON array with one speech object if possible: [{"type":"speech","speech":"short line","effect":"DISAPPOINTED"}]',
+        ]
+    )
 
 
 def _fallback_events_for_invalid_snapshot(snapshot: object) -> list[dict[str, str]]:
