@@ -93,14 +93,14 @@ class ManualPerceptionExpressionContextProvider:
             return {}
         if not isinstance(self.summary, str):
             return {}
-        summary = self.summary.strip()
+        summary = _sanitize_perception_summary(self.summary)
         return {"perception_summary": summary[:MAX_PERCEPTION_SUMMARY_LENGTH]} if summary else {}
 
 
 def _sanitize_perception_summary(value: object) -> str:
     if not isinstance(value, str):
         return ""
-    return value.strip()[:MAX_PERCEPTION_SUMMARY_LENGTH]
+    return _replace_control_characters(value.strip())[:MAX_PERCEPTION_SUMMARY_LENGTH]
 
 
 def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
@@ -122,6 +122,10 @@ def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
     if isinstance(timestamp, str) and timestamp.strip():
         result["timestamp"] = timestamp.strip()[:MAX_TOOL_TIMESTAMP_LENGTH]
     return result
+
+
+def _replace_control_characters(value: str) -> str:
+    return "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value)
 
 
 @dataclass(frozen=True, slots=True)

@@ -183,6 +183,17 @@ def test_manual_perception_context_returns_sanitized_summary_when_enabled():
     assert context == {"perception_summary": "current window: draft notes"}
 
 
+def test_manual_perception_context_flattens_control_characters_when_enabled():
+    provider = ManualPerceptionExpressionContextProvider(
+        summary="window title:\tDraft\napp: Notes",
+        enabled=True,
+    )
+
+    context = provider()
+
+    assert context == {"perception_summary": "window title: Draft app: Notes"}
+
+
 def test_manual_perception_context_bounds_enabled_summary():
     long_summary = "x" * 320
     long_provider = ManualPerceptionExpressionContextProvider(summary=long_summary, enabled=True)
