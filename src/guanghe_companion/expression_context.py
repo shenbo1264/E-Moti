@@ -135,6 +135,8 @@ class MockSearchExpressionContextProvider:
         query = self.query.strip()[:MAX_SEARCH_QUERY_LENGTH]
         if not query:
             return {}
+        if not isinstance(self.results, Iterable):
+            return {}
 
         tool_results: list[dict[str, str]] = []
         for result in self.results:

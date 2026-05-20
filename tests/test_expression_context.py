@@ -126,6 +126,15 @@ def test_mock_search_expression_context_ignores_non_string_query():
     assert provider() == {}
 
 
+def test_mock_search_expression_context_ignores_non_iterable_results():
+    provider = MockSearchExpressionContextProvider(
+        query="starsea voice",
+        results=object(),
+    )
+
+    assert provider() == {}
+
+
 def test_mock_search_expression_context_skips_non_mapping_results():
     provider = MockSearchExpressionContextProvider(
         query="starsea voice",
