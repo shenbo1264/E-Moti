@@ -112,16 +112,20 @@ def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
     if not isinstance(source, str) or not isinstance(title, str) or not isinstance(summary, str):
         return None
     result = {
-        "source": source.strip()[:MAX_TOOL_SOURCE_LENGTH],
-        "title": title.strip()[:MAX_TOOL_TITLE_LENGTH],
-        "summary": summary.strip()[:MAX_TOOL_SUMMARY_LENGTH],
+        "source": _sanitize_context_string(source, MAX_TOOL_SOURCE_LENGTH),
+        "title": _sanitize_context_string(title, MAX_TOOL_TITLE_LENGTH),
+        "summary": _sanitize_context_string(summary, MAX_TOOL_SUMMARY_LENGTH),
     }
     if not result["source"] or not result["title"] or not result["summary"]:
         return None
     timestamp = entry.get("timestamp")
     if isinstance(timestamp, str) and timestamp.strip():
-        result["timestamp"] = timestamp.strip()[:MAX_TOOL_TIMESTAMP_LENGTH]
+        result["timestamp"] = _sanitize_context_string(timestamp, MAX_TOOL_TIMESTAMP_LENGTH)
     return result
+
+
+def _sanitize_context_string(value: str, max_length: int) -> str:
+    return _replace_control_characters(value.strip())[:max_length]
 
 
 def _replace_control_characters(value: str) -> str:

@@ -336,6 +336,36 @@ def test_expression_context_chain_bounds_tool_result_fields():
     }
 
 
+def test_expression_context_chain_flattens_tool_result_control_characters():
+    chain = ExpressionContextChain(
+        [
+            lambda: {
+                "tool_results": [
+                    {
+                        "source": "mock\nsearch",
+                        "title": "title\twith tab",
+                        "summary": "summary\nwith newline",
+                        "timestamp": "2026-05-19\n12:00",
+                    },
+                ],
+            },
+        ]
+    )
+
+    context = chain()
+
+    assert context == {
+        "tool_results": [
+            {
+                "source": "mock search",
+                "title": "title with tab",
+                "summary": "summary with newline",
+                "timestamp": "2026-05-19 12:00",
+            }
+        ]
+    }
+
+
 def test_expression_context_chain_keeps_later_perception_after_tool_result_cap():
     chain = ExpressionContextChain(
         [
