@@ -285,6 +285,25 @@ def test_validate_events_replaces_invalid_rows_with_fallback():
     assert validated[2]["character_name"] == "CHOICE"
 
 
+def test_validate_events_falls_back_for_non_string_adapter_fields():
+    state = make_state()
+    bad_events = [
+        {"character_name": state.character_name, "speech": "ok", "sprite": 1, "effect": "ATTENTION"},
+    ]
+
+    validated = validate_events(
+        state=state,
+        events=bad_events,
+        fallback_feedback="adapter field invalid; local fallback",
+        choices=["杞昏Е"],
+    )
+
+    assert len(validated) == 3
+    assert validated[0]["character_name"] == state.character_name
+    assert validated[0]["speech"] == "adapter field invalid; local fallback"
+    assert validated[0]["effect"] == "DISAPPOINTED"
+
+
 def test_validate_events_keeps_compliant_rows():
     state = make_state()
     good_events = [

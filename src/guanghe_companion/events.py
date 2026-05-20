@@ -342,6 +342,8 @@ def _is_valid_event(state: CompanionState, event: dict[str, str]) -> bool:
         return False
 
     character_name = event["character_name"]
+    if not isinstance(character_name, str):
+        return False
     if character_name != state.character_name and character_name not in ALLOWED_META_NAMES:
         return False
 
@@ -351,10 +353,14 @@ def _is_valid_event(state: CompanionState, event: dict[str, str]) -> bool:
         return False
 
     sprite = event["sprite"]
+    if not isinstance(sprite, str):
+        return False
     if sprite != "-1" and not sprite.isdigit():
         return False
 
     effect = event["effect"]
+    if not isinstance(effect, str):
+        return False
     if effect not in ALLOWED_EFFECTS:
         return False
 
@@ -369,7 +375,7 @@ def _is_valid_typed_event(event: CompanionEvent) -> bool:
     if not required_payload_fields.issubset(event.payload.keys()):
         return False
 
-    if not event.character_name:
+    if not isinstance(event.character_name, str) or not event.character_name:
         return False
 
     if (
@@ -380,10 +386,13 @@ def _is_valid_typed_event(event: CompanionEvent) -> bool:
     ):
         return False
 
+    if not isinstance(event.sprite, str):
+        return False
+
     if event.sprite != "-1" and not event.sprite.isdigit():
         return False
 
-    if event.effect not in ALLOWED_EFFECTS:
+    if not isinstance(event.effect, str) or event.effect not in ALLOWED_EFFECTS:
         return False
 
     return True
