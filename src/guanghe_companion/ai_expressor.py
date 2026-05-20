@@ -281,7 +281,14 @@ class ShinsekaiAIExpressor:
         if self.llm_client is None:
             raise TypeError("LLM client is not configured.")
         executor = self._ensure_executor()
-        future = executor.submit(self.llm_client, prompt)
+        try:
+            future = executor.submit(self.llm_client, prompt)
+        except Exception:
+            try:
+                self._shutdown_executor()
+            except Exception:
+                pass
+            raise
         try:
             return future.result(timeout=self.timeout_seconds)
         except TimeoutError:

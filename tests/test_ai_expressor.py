@@ -649,6 +649,61 @@ def test_expressor_falls_back_when_mock_client_raises_custom_exception():
     assert expressor.last_fallback_reason == "provider_error"
 
 
+def test_expressor_resets_executor_after_submit_failure(monkeypatch):
+    class RecordingFuture:
+        def __init__(self, value: str):
+            self.value = value
+
+        def result(self, timeout):
+            return self.value
+
+    class FlakySubmitExecutor:
+        instances = []
+
+        def __init__(self, max_workers, thread_name_prefix):
+            self.should_fail = len(FlakySubmitExecutor.instances) == 0
+            self.submit_calls = 0
+            self.shutdown_calls = []
+            FlakySubmitExecutor.instances.append(self)
+
+        def submit(self, func, prompt):
+            self.submit_calls += 1
+            if self.should_fail:
+                raise RuntimeError("executor submit failed")
+            return RecordingFuture(func(prompt))
+
+        def shutdown(self, wait=True, cancel_futures=False):
+            self.shutdown_calls.append({"wait": wait, "cancel_futures": cancel_futures})
+
+    monkeypatch.setattr(ai_expressor_module, "ThreadPoolExecutor", FlakySubmitExecutor)
+    snapshot = make_snapshot()
+    expressor = ShinsekaiAIExpressor(
+        llm_client=lambda prompt: '[{"type":"speech","speech":"Recovered.","effect":"ATTENTION"}]'
+    )
+
+    first_events = expressor.express(snapshot)
+    first_reason = expressor.last_fallback_reason
+    second_events = expressor.express(snapshot)
+
+    assert len(first_events) == 3
+    assert first_events[0]["speech"] == snapshot["feedback"]
+    assert first_events[0]["effect"] == "DISAPPOINTED"
+    assert first_reason == "provider_error"
+    assert len(FlakySubmitExecutor.instances) == 2
+    assert FlakySubmitExecutor.instances[0].shutdown_calls == [
+        {"wait": False, "cancel_futures": True}
+    ]
+    assert second_events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "Recovered.",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert expressor.last_fallback_reason is None
+
+
 def test_expressor_close_disables_future_llm_calls_and_closes_client_once():
     class CloseableClient:
         def __init__(self):
