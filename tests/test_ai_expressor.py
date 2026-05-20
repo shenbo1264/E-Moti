@@ -1321,6 +1321,25 @@ def test_openai_responses_client_rejects_non_string_prompt_without_transport():
     assert called is False
 
 
+def test_openai_responses_client_rejects_overlong_prompt_without_transport():
+    called = False
+
+    def transport(request, timeout):
+        nonlocal called
+        called = True
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="test-key", transport=transport)
+
+    try:
+        client("x" * 8193)
+    except LLMProviderError as exc:
+        assert "invalid_prompt" in str(exc)
+    else:
+        raise AssertionError("overlong prompt should fail before transport.")
+    assert called is False
+
+
 def test_openai_responses_client_rejects_non_bytes_transport_response():
     client = OpenAIResponsesClient(
         api_key="test-key",

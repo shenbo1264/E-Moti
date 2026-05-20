@@ -23,6 +23,7 @@ MAX_PERCEPTION_SUMMARY_LENGTH = 240
 MAX_TOOL_RESULTS = 3
 MAX_ACTION_LABEL_LENGTH = 40
 MAX_RECENT_MEMORY = 3
+MAX_OPENAI_PROMPT_LENGTH = 8192
 MAX_CHARACTER_NAME_LENGTH = 40
 MAX_MODE_LENGTH = 40
 MAX_MOTION_LENGTH = 40
@@ -138,6 +139,8 @@ class OpenAIResponsesClient:
         if not self.api_key:
             raise LLMProviderError("OpenAI expression provider failed: missing_api_key")
         if not isinstance(prompt, str):
+            raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
+        if len(prompt) > MAX_OPENAI_PROMPT_LENGTH:
             raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
         payload = json.dumps(
             {
