@@ -561,7 +561,7 @@ def _openai_config_from_env(env: Mapping[str, object] | None = None) -> _OpenAIP
         return None
     source = os.environ if env is None else env
     enabled_flag = source.get("GUANGHE_LLM_ENABLED")
-    if not isinstance(enabled_flag, str) or enabled_flag.strip() != "1":
+    if not isinstance(enabled_flag, str) or _has_control_character(enabled_flag) or enabled_flag.strip() != "1":
         return None
     api_key = _normalize_api_key(source.get("OPENAI_API_KEY"))
     if not api_key:
