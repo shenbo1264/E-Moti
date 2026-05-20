@@ -18,6 +18,9 @@ MAX_TOOL_TIMESTAMP_LENGTH = 25
 class ExpressionContextChain:
     providers: Iterable[ExpressionContextProvider]
 
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "providers", tuple(self.providers))
+
     def __call__(self) -> dict[str, object]:
         perception_summaries: list[str] = []
         tool_results: list[dict[str, object]] = []

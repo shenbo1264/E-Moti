@@ -306,3 +306,29 @@ def test_expression_context_chain_ignores_failed_or_invalid_providers():
             {"source": "local", "title": "safe", "summary": "still available"},
         ],
     }
+
+
+def test_expression_context_chain_can_reuse_one_shot_provider_iterables():
+    providers = (
+        provider
+        for provider in [
+            lambda: {"perception_summary": "manual screen note"},
+            lambda: {
+                "tool_results": [
+                    {"source": "local", "title": "profile", "summary": "gentle voice"},
+                ]
+            },
+        ]
+    )
+    chain = ExpressionContextChain(providers)
+
+    first_context = chain()
+    second_context = chain()
+
+    assert first_context == {
+        "perception_summary": "manual screen note",
+        "tool_results": [
+            {"source": "local", "title": "profile", "summary": "gentle voice"},
+        ],
+    }
+    assert second_context == first_context
