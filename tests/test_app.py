@@ -136,6 +136,53 @@ def test_window_action_handler_does_not_wait_for_slow_llm_expression(monkeypatch
     app.processEvents()
 
 
+def test_window_action_button_signal_does_not_wait_for_slow_llm_expression(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class SlowExpressor:
+        def __init__(self):
+            self.calls = 0
+
+        def express(self, snapshot, effect=None):
+            self.calls += 1
+            time.sleep(0.25)
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "late button LLM speech",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    app = QApplication.instance() or QApplication([])
+    slow_expressor = SlowExpressor()
+    window = CompanionWindow(controller=make_controller(tmp_path, ai_expressor=slow_expressor))
+    window.show()
+    app.processEvents()
+    slow_expressor.calls = 0
+
+    started_at = time.monotonic()
+    window.action_buttons["touch"].click()
+    elapsed = time.monotonic() - started_at
+    app.processEvents()
+
+    snapshot = window.controller.get_snapshot()
+    assert elapsed < 0.1
+    assert slow_expressor.calls == 0
+    assert snapshot["motion"] == "TouchHead"
+    assert snapshot["mood"] == 62
+    assert snapshot["events"][0]["speech"] == snapshot["feedback"]
+    assert snapshot["events"][0]["speech"] != "late button LLM speech"
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_secondary_controls_do_not_wait_for_slow_llm_expression(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
