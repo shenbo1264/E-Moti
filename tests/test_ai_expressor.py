@@ -1342,6 +1342,25 @@ def test_openai_responses_client_rejects_overlong_direct_api_key_without_transpo
     assert called is False
 
 
+def test_openai_responses_client_rejects_control_character_api_key_without_transport():
+    called = False
+
+    def transport(request, timeout):
+        nonlocal called
+        called = True
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="test\nkey", transport=transport)
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "missing_api_key" in str(exc)
+    else:
+        raise AssertionError("control-character api key should fail before transport.")
+    assert called is False
+
+
 def test_openai_responses_client_rejects_non_string_prompt_without_transport():
     called = False
 

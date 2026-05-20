@@ -637,6 +637,10 @@ def _normalize_api_key(value: object) -> str:
     if not isinstance(value, str):
         return ""
     api_key = value.strip()
-    if not api_key or len(api_key) > MAX_OPENAI_API_KEY_LENGTH:
+    if not api_key or len(api_key) > MAX_OPENAI_API_KEY_LENGTH or _has_control_character(api_key):
         return ""
     return api_key
+
+
+def _has_control_character(value: str) -> bool:
+    return any(ord(char) < 32 or ord(char) == 127 for char in value)
