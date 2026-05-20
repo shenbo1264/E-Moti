@@ -62,9 +62,13 @@ class CompanionController:
         if self._closed:
             return
         close = getattr(self.ai_expressor, "close", None)
-        if callable(close):
-            close()
-        self._closed = True
+        try:
+            if callable(close):
+                close()
+        except Exception:
+            pass
+        finally:
+            self._closed = True
 
     def reset_demo_state(self, *, include_ai_expression: bool = True) -> dict[str, object]:
         self.state = create_initial_state(now=0)
