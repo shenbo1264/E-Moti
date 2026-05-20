@@ -216,7 +216,11 @@ class ShinsekaiAIExpressor:
         )
 
     def express(self, snapshot: dict[str, object] | ExpressionRequest, effect: str | None = None) -> list[dict[str, str]]:
-        expression_request = _ensure_expression_request(snapshot)
+        try:
+            expression_request = _ensure_expression_request(snapshot)
+        except (KeyError, TypeError, ValueError):
+            self.last_fallback_reason = "invalid_snapshot"
+            return _fallback_events_for_invalid_snapshot(snapshot)
         prompt_payload = expression_request.to_prompt_dict()
         state = _state_from_snapshot(prompt_payload)
         choices = [str(entry["label"]) for entry in prompt_payload["actions"]]
@@ -325,6 +329,19 @@ def _ensure_expression_request(snapshot: dict[str, object] | ExpressionRequest) 
     if isinstance(snapshot, ExpressionRequest):
         return snapshot
     return ExpressionRequest.from_snapshot(snapshot)
+
+
+def _fallback_events_for_invalid_snapshot(snapshot: object) -> list[dict[str, str]]:
+    state = create_initial_state(now=0)
+    feedback = "expression unavailable"
+    choices: list[str] = []
+    if isinstance(snapshot, dict):
+        character_name = _short_string(snapshot.get("character_name", ""), MAX_CHARACTER_NAME_LENGTH)
+        if character_name:
+            state.character_name = character_name
+        feedback = _short_string(snapshot.get("feedback", ""), MAX_FEEDBACK_LENGTH) or feedback
+        choices = [entry["label"] for entry in _sanitize_actions(snapshot.get("actions", []))]
+    return build_fallback_events(state, feedback, choices, effect="DISAPPOINTED")
 
 
 def _as_dict_list(value: object) -> list[dict[str, object]]:
