@@ -680,6 +680,38 @@ def test_expressor_close_disables_future_llm_calls_and_closes_client_once():
     assert expressor.last_fallback_reason == "closed"
 
 
+def test_expressor_close_ignores_client_close_errors_and_disables_future_llm_calls():
+    class BrokenCloseClient:
+        def __init__(self):
+            self.calls = 0
+            self.close_calls = 0
+
+        def __call__(self, prompt: str) -> str:
+            self.calls += 1
+            return '[{"type":"speech","speech":"should not run","effect":"ATTENTION"}]'
+
+        def close(self) -> None:
+            self.close_calls += 1
+            raise LLMProviderError("provider close failed")
+
+    snapshot = make_snapshot()
+    client = BrokenCloseClient()
+    expressor = ShinsekaiAIExpressor(llm_client=client)
+
+    expressor.close()
+    expressor.close()
+    events = expressor.express(snapshot)
+
+    assert client.close_calls == 1
+    assert client.calls == 0
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert expressor.enabled is False
+    assert expressor.llm_client is None
+    assert expressor.last_fallback_reason == "closed"
+
+
 def test_expressor_context_manager_closes_on_exit():
     class CloseableClient:
         def __init__(self):

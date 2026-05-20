@@ -304,12 +304,16 @@ class ShinsekaiAIExpressor:
             return
         client = self.llm_client
         close = getattr(client, "close", None)
-        if callable(close):
-            close()
-        self._shutdown_executor()
-        self.llm_client = None
-        self.enabled = False
-        self._closed = True
+        try:
+            if callable(close):
+                close()
+        except Exception:
+            pass
+        finally:
+            self._shutdown_executor()
+            self.llm_client = None
+            self.enabled = False
+            self._closed = True
 
 
 def _state_from_snapshot(snapshot: dict[str, object]):
