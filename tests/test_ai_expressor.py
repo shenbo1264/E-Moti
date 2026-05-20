@@ -803,6 +803,51 @@ def test_expressor_falls_back_quickly_when_llm_times_out():
     assert expressor.last_fallback_reason == "timeout"
 
 
+def test_expressor_keeps_timeout_fallback_when_executor_shutdown_fails(monkeypatch):
+    class TimeoutFuture:
+        def __init__(self):
+            self.cancel_calls = 0
+
+        def result(self, timeout):
+            raise ai_expressor_module.TimeoutError()
+
+        def cancel(self):
+            self.cancel_calls += 1
+            return True
+
+    class BrokenShutdownExecutor:
+        instances = []
+
+        def __init__(self, max_workers, thread_name_prefix):
+            self.future = TimeoutFuture()
+            self.shutdown_calls = 0
+            BrokenShutdownExecutor.instances.append(self)
+
+        def submit(self, func, prompt):
+            return self.future
+
+        def shutdown(self, wait=True, cancel_futures=False):
+            self.shutdown_calls += 1
+            raise RuntimeError("shutdown cleanup failed")
+
+    monkeypatch.setattr(ai_expressor_module, "ThreadPoolExecutor", BrokenShutdownExecutor)
+    snapshot = make_snapshot()
+    expressor = ShinsekaiAIExpressor(
+        llm_client=lambda prompt: '[{"type":"speech","speech":"late","effect":"ATTENTION"}]',
+        timeout_seconds=0.01,
+    )
+
+    events = expressor.express(snapshot)
+
+    executor = BrokenShutdownExecutor.instances[0]
+    assert executor.future.cancel_calls == 1
+    assert executor.shutdown_calls == 1
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert expressor.last_fallback_reason == "timeout"
+
+
 def test_expressor_reuses_timeout_executor_until_close(monkeypatch):
     class RecordingFuture:
         def __init__(self, value: str):

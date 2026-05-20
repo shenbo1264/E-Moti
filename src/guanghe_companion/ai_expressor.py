@@ -283,8 +283,14 @@ class ShinsekaiAIExpressor:
         try:
             return future.result(timeout=self.timeout_seconds)
         except TimeoutError:
-            future.cancel()
-            self._shutdown_executor()
+            try:
+                future.cancel()
+            except Exception:
+                pass
+            try:
+                self._shutdown_executor()
+            except Exception:
+                pass
             raise
 
     def _ensure_executor(self) -> ThreadPoolExecutor:
