@@ -96,8 +96,12 @@ class CompanionWindow(QMainWindow):
     def closeEvent(self, event) -> None:
         self._manual_perception_summary = ""
         self.controller.expression_context_provider = self._base_expression_context_provider
-        self.controller.close()
-        super().closeEvent(event)
+        try:
+            self.controller.close()
+        except Exception:
+            pass
+        finally:
+            super().closeEvent(event)
 
     def _build_ui(self) -> None:
         root = QWidget(self)

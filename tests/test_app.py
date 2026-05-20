@@ -507,6 +507,38 @@ def test_window_close_closes_controller(monkeypatch, tmp_path):
     assert controller.close_calls == 1
 
 
+def test_window_close_ignores_controller_close_errors(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtGui import QCloseEvent
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class BrokenCloseController(CompanionController):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.close_calls = 0
+
+        def close(self):
+            self.close_calls += 1
+            raise RuntimeError("controller close failed")
+
+    app = QApplication.instance() or QApplication([])
+    controller = BrokenCloseController(save_path=tmp_path / "save.json", auto_load=False)
+    original_provider = controller.expression_context_provider
+    window = CompanionWindow(controller=controller)
+    window._manual_perception_summary = "manual context"
+
+    window.closeEvent(QCloseEvent())
+    app.processEvents()
+
+    assert controller.close_calls == 1
+    assert window._manual_perception_summary == ""
+    assert controller.expression_context_provider is original_provider
+
+
 def test_window_demo_buttons_trigger_proactive_companionship(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
