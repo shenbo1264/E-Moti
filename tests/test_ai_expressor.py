@@ -265,6 +265,24 @@ def test_expressor_falls_back_when_raw_snapshot_stats_are_invalid():
     assert expressor.last_fallback_reason == "invalid_snapshot"
 
 
+def test_expressor_falls_back_when_raw_snapshot_stats_are_non_finite():
+    snapshot = make_snapshot()
+    snapshot["focus"] = float("nan")
+    expressor = ShinsekaiAIExpressor(
+        llm_client=lambda prompt: '[{"type":"speech","speech":"should not be called","effect":"ATTENTION"}]'
+    )
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["character_name"] == snapshot["character_name"]
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "invalid_snapshot"
+
+
 def test_expressor_uses_valid_llm_json_events_without_changing_snapshot():
     snapshot = make_snapshot()
     original_focus = snapshot["focus"]

@@ -75,11 +75,11 @@ class ExpressionRequest:
             character_name=_short_string(snapshot.get("character_name", ""), MAX_CHARACTER_NAME_LENGTH),
             mode=_short_string(snapshot.get("mode", ""), MAX_MODE_LENGTH),
             motion=_short_string(snapshot.get("motion", snapshot.get("current_motion", "")), MAX_MOTION_LENGTH),
-            focus=float(snapshot["focus"]),
-            charge=float(snapshot["charge"]),
-            stability=float(snapshot["stability"]),
-            mood=float(snapshot["mood"]),
-            trust=float(snapshot["trust"]),
+            focus=_finite_float(snapshot["focus"]),
+            charge=_finite_float(snapshot["charge"]),
+            stability=_finite_float(snapshot["stability"]),
+            mood=_finite_float(snapshot["mood"]),
+            trust=_finite_float(snapshot["trust"]),
             feedback=_short_string(snapshot.get("feedback", ""), MAX_FEEDBACK_LENGTH),
             delta_text=_short_string(snapshot.get("delta_text", ""), MAX_DELTA_TEXT_LENGTH),
             goal=_short_string(snapshot.get("goal", ""), MAX_GOAL_LENGTH),
@@ -218,13 +218,13 @@ class ShinsekaiAIExpressor:
     def express(self, snapshot: dict[str, object] | ExpressionRequest, effect: str | None = None) -> list[dict[str, str]]:
         try:
             expression_request = _ensure_expression_request(snapshot)
+            prompt_payload = expression_request.to_prompt_dict()
+            state = _state_from_snapshot(prompt_payload)
+            choices = [str(entry["label"]) for entry in prompt_payload["actions"]]
+            fallback_feedback = str(prompt_payload["feedback"])
         except (KeyError, TypeError, ValueError):
             self.last_fallback_reason = "invalid_snapshot"
             return _fallback_events_for_invalid_snapshot(snapshot)
-        prompt_payload = expression_request.to_prompt_dict()
-        state = _state_from_snapshot(prompt_payload)
-        choices = [str(entry["label"]) for entry in prompt_payload["actions"]]
-        fallback_feedback = str(prompt_payload["feedback"])
         fallback_effect = effect or "DISAPPOINTED"
 
         if self._closed:
@@ -312,11 +312,11 @@ class ShinsekaiAIExpressor:
 def _state_from_snapshot(snapshot: dict[str, object]):
     state = create_initial_state(now=0)
     state.character_name = str(snapshot["character_name"])
-    state.focus = float(snapshot["focus"])
-    state.charge = float(snapshot["charge"])
-    state.stability = float(snapshot["stability"])
-    state.mood = float(snapshot["mood"])
-    state.trust = float(snapshot["trust"])
+    state.focus = _finite_float(snapshot["focus"])
+    state.charge = _finite_float(snapshot["charge"])
+    state.stability = _finite_float(snapshot["stability"])
+    state.mood = _finite_float(snapshot["mood"])
+    state.trust = _finite_float(snapshot["trust"])
     state.mode = str(snapshot["mode"])
     return state
 
@@ -400,6 +400,13 @@ def _short_string(value: object, max_length: int) -> str:
     if not isinstance(value, str):
         return ""
     return value.strip()[:max_length]
+
+
+def _finite_float(value: object) -> float:
+    parsed = float(value)
+    if not math.isfinite(parsed):
+        raise ValueError("non-finite expression stat")
+    return parsed
 
 
 def _normalize_expression_event(state, event: dict[Any, Any]) -> dict[str, str] | None:
