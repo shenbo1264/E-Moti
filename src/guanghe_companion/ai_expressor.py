@@ -155,8 +155,12 @@ class OpenAIResponsesClient:
         )
         try:
             raw = self.transport(api_request, self.timeout_seconds)
-            response = json.loads(raw.decode("utf-8"))
+            if not isinstance(raw, (bytes, bytearray)):
+                raise LLMProviderError("OpenAI expression provider failed: invalid_response_bytes")
+            response = json.loads(bytes(raw).decode("utf-8"))
             return _extract_response_text(response)
+        except LLMProviderError:
+            raise
         except Exception as exc:
             raise LLMProviderError(f"OpenAI expression provider failed: {type(exc).__name__}") from exc
 

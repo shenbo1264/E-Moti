@@ -1321,6 +1321,20 @@ def test_openai_responses_client_rejects_non_string_prompt_without_transport():
     assert called is False
 
 
+def test_openai_responses_client_rejects_non_bytes_transport_response():
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: '{"output_text":"[]"}',
+    )
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "invalid_response_bytes" in str(exc)
+    else:
+        raise AssertionError("non-bytes transport responses should be rejected explicitly.")
+
+
 def test_openai_responses_client_trims_model_for_request_payload():
     captured = {}
 
