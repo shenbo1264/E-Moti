@@ -94,6 +94,32 @@ def test_mock_search_expression_context_bounds_result_fields():
     }
 
 
+def test_mock_search_expression_context_flattens_control_characters():
+    provider = MockSearchExpressionContextProvider(
+        query="star\nsea",
+        results=[
+            {
+                "title": "voice\tstyle",
+                "summary": "gentle\nshort",
+                "timestamp": "2026-05-19\n12:00",
+            },
+        ],
+    )
+
+    context = provider()
+
+    assert context == {
+        "tool_results": [
+            {
+                "source": "mock_search",
+                "title": "star sea: voice style",
+                "summary": "gentle short",
+                "timestamp": "2026-05-19 12:00",
+            }
+        ]
+    }
+
+
 def test_mock_search_expression_context_bounds_combined_title():
     provider = MockSearchExpressionContextProvider(
         query="manual search query that is already pretty long",

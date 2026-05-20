@@ -140,7 +140,7 @@ class MockSearchExpressionContextProvider:
     def __call__(self) -> dict[str, object]:
         if not isinstance(self.query, str):
             return {}
-        query = self.query.strip()[:MAX_SEARCH_QUERY_LENGTH]
+        query = _sanitize_context_string(self.query, MAX_SEARCH_QUERY_LENGTH)
         if not query:
             return {}
         if not isinstance(self.results, Iterable):
@@ -155,9 +155,9 @@ class MockSearchExpressionContextProvider:
             timestamp = result.get("timestamp")
             if not isinstance(title, str) or not isinstance(summary, str) or not isinstance(timestamp, str):
                 continue
-            title = title.strip()[:MAX_TOOL_TITLE_LENGTH]
-            summary = summary.strip()[:MAX_TOOL_SUMMARY_LENGTH]
-            timestamp = timestamp.strip()[:MAX_TOOL_TIMESTAMP_LENGTH]
+            title = _sanitize_context_string(title, MAX_TOOL_TITLE_LENGTH)
+            summary = _sanitize_context_string(summary, MAX_TOOL_SUMMARY_LENGTH)
+            timestamp = _sanitize_context_string(timestamp, MAX_TOOL_TIMESTAMP_LENGTH)
             if not title or not summary or not timestamp:
                 continue
             combined_title = f"{query}: {title}"[:MAX_TOOL_TITLE_LENGTH]
