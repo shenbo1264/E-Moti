@@ -166,6 +166,33 @@ def test_controller_uses_only_first_llm_speech_event_and_keeps_local_context(tmp
     assert snapshot["coins"] == 20
 
 
+def test_controller_rejects_control_character_ai_speech_without_changing_state(tmp_path):
+    class UnsafeSpeechExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "LLM line one\nLLM line two",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=UnsafeSpeechExpressor(),
+    )
+
+    snapshot = controller.perform_action("touch")
+
+    assert snapshot["mood"] == 62
+    assert snapshot["coins"] == 20
+    assert snapshot["motion"] == "TouchHead"
+    assert snapshot["events"][0]["speech"] == snapshot["feedback"]
+    assert "LLM line one" not in snapshot["event_preview"]
+
+
 def test_controller_passes_typed_expression_request_to_ai_adapter(tmp_path):
     captured = {}
 

@@ -347,7 +347,7 @@ def _is_valid_event(state: CompanionState, event: dict[str, str]) -> bool:
 
     speech = event["speech"]
     max_length = 120 if character_name == "STAT" else 80
-    if not isinstance(speech, str) or not speech or len(speech) > max_length:
+    if not isinstance(speech, str) or not speech or len(speech) > max_length or _has_control_character(speech):
         return False
 
     sprite = event["sprite"]
@@ -372,7 +372,12 @@ def _is_valid_typed_event(event: CompanionEvent) -> bool:
     if not event.character_name:
         return False
 
-    if not isinstance(event.speech, str) or not event.speech or len(event.speech) > 120:
+    if (
+        not isinstance(event.speech, str)
+        or not event.speech
+        or len(event.speech) > 120
+        or _has_control_character(event.speech)
+    ):
         return False
 
     if event.sprite != "-1" and not event.sprite.isdigit():
@@ -382,3 +387,7 @@ def _is_valid_typed_event(event: CompanionEvent) -> bool:
         return False
 
     return True
+
+
+def _has_control_character(value: str) -> bool:
+    return any(ord(char) < 32 or ord(char) == 127 for char in value)
