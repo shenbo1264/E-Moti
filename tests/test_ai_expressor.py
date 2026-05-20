@@ -1207,6 +1207,18 @@ def test_default_expressor_rejects_excessive_timeout_env(monkeypatch):
     assert expressor.llm_client.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
 
 
+def test_default_expressor_rejects_control_character_timeout_env(monkeypatch):
+    monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
+    monkeypatch.setenv("OPENAI_API_KEY", "test-key")
+    monkeypatch.setenv("GUANGHE_LLM_TIMEOUT_SECONDS", "0.5\n")
+
+    expressor = build_default_ai_expressor()
+
+    assert expressor.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
+    assert isinstance(expressor.llm_client, OpenAIResponsesClient)
+    assert expressor.llm_client.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
+
+
 def test_default_expressor_rejects_non_numeric_timeout_env_value():
     expressor = build_default_ai_expressor(
         {

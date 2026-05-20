@@ -609,6 +609,8 @@ def _validated_response_text(value: str) -> str:
 def _parse_timeout(value: str | None) -> float:
     if value is None:
         return DEFAULT_TIMEOUT_SECONDS
+    if isinstance(value, str) and _has_control_character(value):
+        return DEFAULT_TIMEOUT_SECONDS
     try:
         parsed = float(value)
     except (TypeError, ValueError):
