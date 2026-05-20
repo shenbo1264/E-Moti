@@ -1335,6 +1335,20 @@ def test_openai_responses_client_rejects_non_bytes_transport_response():
         raise AssertionError("non-bytes transport responses should be rejected explicitly.")
 
 
+def test_openai_responses_client_rejects_non_utf8_transport_response():
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: b"\xff\xfe\x00",
+    )
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "invalid_response_encoding" in str(exc)
+    else:
+        raise AssertionError("non-UTF-8 transport responses should be rejected explicitly.")
+
+
 def test_openai_responses_client_rejects_non_object_json_response():
     client = OpenAIResponsesClient(
         api_key="test-key",
