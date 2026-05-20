@@ -158,6 +158,8 @@ class OpenAIResponsesClient:
             if not isinstance(raw, (bytes, bytearray)):
                 raise LLMProviderError("OpenAI expression provider failed: invalid_response_bytes")
             response = json.loads(bytes(raw).decode("utf-8"))
+            if not isinstance(response, dict):
+                raise LLMProviderError("OpenAI expression provider failed: invalid_response_shape")
             return _extract_response_text(response)
         except LLMProviderError:
             raise

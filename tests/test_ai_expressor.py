@@ -1335,6 +1335,20 @@ def test_openai_responses_client_rejects_non_bytes_transport_response():
         raise AssertionError("non-bytes transport responses should be rejected explicitly.")
 
 
+def test_openai_responses_client_rejects_non_object_json_response():
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: b'["not", "an", "object"]',
+    )
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "invalid_response_shape" in str(exc)
+    else:
+        raise AssertionError("non-object OpenAI responses should be rejected explicitly.")
+
+
 def test_openai_responses_client_trims_model_for_request_payload():
     captured = {}
 
