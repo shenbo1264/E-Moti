@@ -161,7 +161,10 @@ class OpenAIResponsesClient:
                 decoded = bytes(raw).decode("utf-8")
             except UnicodeDecodeError as exc:
                 raise LLMProviderError("OpenAI expression provider failed: invalid_response_encoding") from exc
-            response = json.loads(decoded)
+            try:
+                response = json.loads(decoded)
+            except json.JSONDecodeError as exc:
+                raise LLMProviderError("OpenAI expression provider failed: invalid_response_json") from exc
             if not isinstance(response, dict):
                 raise LLMProviderError("OpenAI expression provider failed: invalid_response_shape")
             return _extract_response_text(response)
