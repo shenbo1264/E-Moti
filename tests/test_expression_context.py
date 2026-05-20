@@ -280,12 +280,26 @@ def test_expression_context_chain_merges_readonly_provider_outputs():
     context = chain()
 
     assert context == {
-        "perception_summary": "window: writing notes\ntool: profile loaded",
+        "perception_summary": "window: writing notes tool: profile loaded",
         "tool_results": [
             {"source": "local", "title": "profile", "summary": "gentle voice"},
             {"source": "memory", "title": "recent", "summary": "touch happened"},
         ],
     }
+
+
+def test_expression_context_chain_flattens_merged_perception_separator():
+    chain = ExpressionContextChain(
+        [
+            lambda: {"perception_summary": "window: writing notes"},
+            lambda: {"perception_summary": "tool: profile loaded"},
+        ]
+    )
+
+    context = chain()
+
+    assert context["perception_summary"] == "window: writing notes tool: profile loaded"
+    assert "\n" not in context["perception_summary"]
 
 
 def test_expression_context_chain_sanitizes_and_caps_tool_results():

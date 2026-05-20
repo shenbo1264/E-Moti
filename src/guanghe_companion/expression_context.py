@@ -48,7 +48,10 @@ class ExpressionContextChain:
 
         merged: dict[str, object] = {}
         if perception_summaries:
-            merged["perception_summary"] = "\n".join(perception_summaries)[:MAX_PERCEPTION_SUMMARY_LENGTH]
+            merged["perception_summary"] = _sanitize_context_string(
+                " ".join(perception_summaries),
+                MAX_PERCEPTION_SUMMARY_LENGTH,
+            )
         if tool_results:
             merged["tool_results"] = tool_results
         return merged
