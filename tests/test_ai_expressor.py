@@ -1114,6 +1114,16 @@ def test_default_expressor_treats_non_string_api_key_env_as_disabled():
     assert expressor.llm_client is None
 
 
+def test_default_expressor_treats_overlong_api_key_env_as_disabled(monkeypatch):
+    monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
+    monkeypatch.setenv("OPENAI_API_KEY", "k" * 800)
+
+    expressor = build_default_ai_expressor()
+
+    assert expressor.enabled is False
+    assert expressor.llm_client is None
+
+
 def test_default_expressor_uses_openai_provider_when_env_is_enabled(monkeypatch):
     monkeypatch.setenv("GUANGHE_LLM_ENABLED", "1")
     monkeypatch.setenv("OPENAI_API_KEY", "test-key")
@@ -1310,6 +1320,25 @@ def test_openai_responses_client_rejects_non_string_direct_api_key_without_trans
         assert "OpenAI expression provider failed" in str(exc)
     else:
         raise AssertionError("non-string api key should fail before transport.")
+    assert called is False
+
+
+def test_openai_responses_client_rejects_overlong_direct_api_key_without_transport():
+    called = False
+
+    def transport(request, timeout):
+        nonlocal called
+        called = True
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="k" * 800, transport=transport)
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "missing_api_key" in str(exc)
+    else:
+        raise AssertionError("overlong api key should fail before transport.")
     assert called is False
 
 
