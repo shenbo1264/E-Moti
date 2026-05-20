@@ -135,6 +135,8 @@ class OpenAIResponsesClient:
             raise LLMProviderError("OpenAI expression provider failed: closed")
         if not self.api_key:
             raise LLMProviderError("OpenAI expression provider failed: missing_api_key")
+        if not isinstance(prompt, str):
+            raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
         payload = json.dumps(
             {
                 "model": self.model,
