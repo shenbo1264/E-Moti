@@ -1597,6 +1597,20 @@ def test_openai_responses_client_rejects_non_finite_timeout_for_transport():
     assert captured["timeout"] == DEFAULT_TIMEOUT_SECONDS
 
 
+def test_openai_responses_client_rejects_control_character_timeout_for_transport():
+    captured = {}
+
+    def transport(request, timeout):
+        captured["timeout"] = timeout
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="test-key", timeout_seconds="0.5\n", transport=transport)
+
+    client("prompt text")
+
+    assert captured["timeout"] == DEFAULT_TIMEOUT_SECONDS
+
+
 def test_openai_responses_client_skips_blank_output_text_for_nested_text():
     client = OpenAIResponsesClient(
         api_key="test-key",
