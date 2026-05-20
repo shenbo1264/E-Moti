@@ -1335,6 +1335,21 @@ def test_openai_responses_client_rejects_non_bytes_transport_response():
         raise AssertionError("non-bytes transport responses should be rejected explicitly.")
 
 
+def test_openai_responses_client_rejects_oversized_transport_response():
+    body = b'{"output_text":"[]","metadata":"' + (b"x" * 65_536) + b'"}'
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: body,
+    )
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "invalid_response_size" in str(exc)
+    else:
+        raise AssertionError("oversized transport responses should be rejected before parsing.")
+
+
 def test_openai_responses_client_rejects_non_utf8_transport_response():
     client = OpenAIResponsesClient(
         api_key="test-key",

@@ -29,6 +29,7 @@ MAX_MOTION_LENGTH = 40
 MAX_SPEECH_LENGTH = 80
 MAX_MOTION_HINT_LENGTH = 40
 MAX_EFFECT_LENGTH = 20
+MAX_OPENAI_RESPONSE_BYTES = 65_536
 MAX_OPENAI_RESPONSE_TEXT_LENGTH = 4096
 MAX_FEEDBACK_LENGTH = 160
 MAX_DELTA_TEXT_LENGTH = 80
@@ -158,6 +159,8 @@ class OpenAIResponsesClient:
             raw = self.transport(api_request, self.timeout_seconds)
             if not isinstance(raw, (bytes, bytearray)):
                 raise LLMProviderError("OpenAI expression provider failed: invalid_response_bytes")
+            if len(raw) > MAX_OPENAI_RESPONSE_BYTES:
+                raise LLMProviderError("OpenAI expression provider failed: invalid_response_size")
             try:
                 decoded = bytes(raw).decode("utf-8")
             except UnicodeDecodeError as exc:
