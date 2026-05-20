@@ -310,7 +310,10 @@ class ShinsekaiAIExpressor:
         except Exception:
             pass
         finally:
-            self._shutdown_executor()
+            try:
+                self._shutdown_executor()
+            except Exception:
+                pass
             self.llm_client = None
             self.enabled = False
             self._closed = True

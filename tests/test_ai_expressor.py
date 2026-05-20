@@ -712,6 +712,54 @@ def test_expressor_close_ignores_client_close_errors_and_disables_future_llm_cal
     assert expressor.last_fallback_reason == "closed"
 
 
+def test_expressor_close_ignores_executor_shutdown_errors_and_disables_future_llm_calls(monkeypatch):
+    class RecordingFuture:
+        def __init__(self, value: str):
+            self.value = value
+
+        def result(self, timeout):
+            return self.value
+
+    class BrokenShutdownExecutor:
+        instances = []
+
+        def __init__(self, max_workers, thread_name_prefix):
+            self.shutdown_calls = 0
+            BrokenShutdownExecutor.instances.append(self)
+
+        def submit(self, func, prompt):
+            return RecordingFuture(func(prompt))
+
+        def shutdown(self, wait=True, cancel_futures=False):
+            self.shutdown_calls += 1
+            raise RuntimeError("executor shutdown failed")
+
+    monkeypatch.setattr(ai_expressor_module, "ThreadPoolExecutor", BrokenShutdownExecutor)
+    snapshot = make_snapshot()
+    calls = 0
+
+    def client(prompt: str) -> str:
+        nonlocal calls
+        calls += 1
+        return '[{"type":"speech","speech":"first call","effect":"ATTENTION"}]'
+
+    expressor = ShinsekaiAIExpressor(llm_client=client)
+    expressor.express(snapshot)
+
+    expressor.close()
+    expressor.close()
+    events = expressor.express(snapshot)
+
+    assert BrokenShutdownExecutor.instances[0].shutdown_calls == 1
+    assert calls == 1
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert expressor.enabled is False
+    assert expressor.llm_client is None
+    assert expressor.last_fallback_reason == "closed"
+
+
 def test_expressor_context_manager_closes_on_exit():
     class CloseableClient:
         def __init__(self):
