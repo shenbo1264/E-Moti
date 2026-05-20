@@ -435,6 +435,29 @@ def test_expressor_rejects_overlong_speech_schema_text_before_validation():
     assert expressor.last_fallback_reason == "unsafe_event"
 
 
+def test_expressor_rejects_control_character_speech_text_before_validation():
+    snapshot = make_snapshot()
+    payloads = [
+        '[{"type":"speech","speech":"Back\\nonline.","effect":"ATTENTION"}]',
+        (
+            '[{"character_name":"%s","speech":"Back\\nonline.","sprite":"1","effect":"ATTENTION"}]'
+            % snapshot["character_name"]
+        ),
+    ]
+
+    for payload in payloads:
+        expressor = ShinsekaiAIExpressor(llm_client=lambda prompt, payload=payload: payload)
+
+        events = expressor.express(snapshot)
+
+        assert len(events) == 3
+        assert events[0]["speech"] == snapshot["feedback"]
+        assert events[0]["effect"] == "DISAPPOINTED"
+        assert events[1]["character_name"] == "STAT"
+        assert events[2]["character_name"] == "CHOICE"
+        assert expressor.last_fallback_reason == "unsafe_event"
+
+
 def test_expressor_trims_legacy_speech_text_before_returning_expression():
     snapshot = make_snapshot()
     payload = (

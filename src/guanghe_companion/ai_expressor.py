@@ -484,6 +484,8 @@ def _is_allowed_legacy_expression_event(state, event: dict[Any, Any]) -> bool:
     normalized = _stringify_event(event)
     if not normalized["speech"]:
         return False
+    if _has_control_character(normalized["speech"]):
+        return False
     if len(normalized["speech"]) > MAX_SPEECH_LENGTH:
         return False
     if not _is_safe_legacy_sprite(normalized["sprite"]):
@@ -510,6 +512,8 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
     if not isinstance(speech, str) or not speech.strip():
         return None
     normalized_speech = speech.strip()
+    if _has_control_character(normalized_speech):
+        return None
     if len(normalized_speech) > MAX_SPEECH_LENGTH:
         return None
     if not isinstance(effect, str):
