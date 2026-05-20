@@ -167,7 +167,10 @@ class OpenAIResponsesClient:
                 raise LLMProviderError("OpenAI expression provider failed: invalid_response_json") from exc
             if not isinstance(response, dict):
                 raise LLMProviderError("OpenAI expression provider failed: invalid_response_shape")
-            return _extract_response_text(response)
+            try:
+                return _extract_response_text(response)
+            except ValueError as exc:
+                raise LLMProviderError("OpenAI expression provider failed: invalid_response_text") from exc
         except LLMProviderError:
             raise
         except Exception as exc:

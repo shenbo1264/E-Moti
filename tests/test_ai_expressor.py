@@ -1509,6 +1509,20 @@ def test_openai_responses_client_wraps_empty_or_non_text_responses():
             raise AssertionError("missing output_text should be wrapped.")
 
 
+def test_openai_responses_client_rejects_missing_output_text_explicitly():
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        transport=lambda request, timeout: b'{"output":[]}',
+    )
+
+    try:
+        client("prompt text")
+    except LLMProviderError as exc:
+        assert "invalid_response_text" in str(exc)
+    else:
+        raise AssertionError("missing OpenAI output text should be rejected explicitly.")
+
+
 def test_expressor_falls_back_when_provider_returns_non_json_text():
     snapshot = make_snapshot()
     client = OpenAIResponsesClient(
