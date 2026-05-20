@@ -1546,6 +1546,21 @@ def test_openai_responses_client_uses_default_model_for_overlong_direct_model():
     assert "m" * 200 not in captured["payload"]
 
 
+def test_openai_responses_client_uses_default_model_for_control_character_direct_model():
+    captured = {}
+
+    def transport(request, timeout):
+        captured["payload"] = request.data.decode("utf-8")
+        return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
+
+    client = OpenAIResponsesClient(api_key="test-key", model="gpt\nbad", transport=transport)
+
+    client("prompt text")
+
+    assert f'"model": "{DEFAULT_OPENAI_MODEL}"' in captured["payload"]
+    assert "gpt\\nbad" not in captured["payload"]
+
+
 def test_openai_responses_client_rejects_non_finite_timeout_for_transport():
     captured = {}
 

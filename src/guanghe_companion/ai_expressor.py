@@ -628,7 +628,7 @@ def _normalize_model(value: object) -> str:
     if not isinstance(value, str):
         return DEFAULT_OPENAI_MODEL
     model = value.strip()
-    if not model or len(model) > MAX_OPENAI_MODEL_LENGTH:
+    if not model or len(model) > MAX_OPENAI_MODEL_LENGTH or _has_control_character(model):
         return DEFAULT_OPENAI_MODEL
     return model
 
