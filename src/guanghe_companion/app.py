@@ -507,6 +507,8 @@ class CompanionWindow(QMainWindow):
         self.memory_label.setText(self._format_memory_log(snapshot["memory_log"]))
         self.desktop_feedback_label.setText(
             f"模式：{snapshot['mode']}\n"
+            f"能量 {int(float(snapshot['charge']))} / 心情 {int(float(snapshot['mood']))} / "
+            f"信任 {int(float(snapshot['trust']))}\n"
             f"动作：{snapshot['motion_caption']}\n"
             f"{snapshot['feedback']}"
         )

@@ -79,6 +79,9 @@ def test_desktop_mode_shows_minimal_feedback_overlay(monkeypatch, tmp_path):
 
     assert window.desktop_feedback_label.isVisibleTo(window)
     assert "模式：Calm" in text
+    assert "能量 65" in text
+    assert "心情 58" in text
+    assert "信任 5" in text
     assert "待机呼吸" in text
     assert "信号稳定" in text
     assert "{" not in text
