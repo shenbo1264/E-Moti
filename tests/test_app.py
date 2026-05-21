@@ -63,6 +63,106 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     app.processEvents()
 
 
+def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    menu = window._build_desktop_context_menu()
+    labels = [action.text() for action in menu.actions()]
+
+    assert labels == ["返回控制面板", "退出"]
+
+    menu.actions()[0].trigger()
+    app.processEvents()
+    flags = window.windowFlags()
+
+    assert window.desktop_mode is False
+    assert not bool(flags & Qt.WindowType.FramelessWindowHint)
+    assert not bool(flags & Qt.WindowType.WindowStaysOnTopHint)
+    assert not window.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    assert window.status_card.isVisibleTo(window)
+    assert window.feedback_card.isVisibleTo(window)
+    assert window.actions_card.isVisibleTo(window)
+    assert window.demo_card.isVisibleTo(window)
+    assert window.perception_card.isVisibleTo(window)
+    assert window.shop_card.isVisibleTo(window)
+    assert window.inventory_card.isVisibleTo(window)
+    assert window.controller.get_snapshot()["motion"] == "Default"
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_mode_sprite_right_click_opens_context_menu(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtCore import QPoint
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    captured = {}
+
+    def fake_show_desktop_context_menu(global_pos):
+        captured["global_pos"] = global_pos
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window._show_desktop_context_menu = fake_show_desktop_context_menu
+    window.show()
+    app.processEvents()
+
+    window.sprite_label.customContextMenuRequested.emit(QPoint(18, 18))
+    app.processEvents()
+
+    assert isinstance(captured["global_pos"], QPoint)
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_mode_context_menu_exit_closes_window_and_controller(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class CloseAwareController(CompanionController):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.close_calls = 0
+
+        def close(self):
+            if self.close_calls:
+                return
+            self.close_calls += 1
+            super().close()
+
+    app = QApplication.instance() or QApplication([])
+    controller = CloseAwareController(save_path=tmp_path / "save.json", auto_load=False)
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    menu = window._build_desktop_context_menu()
+    menu.actions()[1].trigger()
+    app.processEvents()
+
+    assert not window.isVisible()
+    assert controller.close_calls == 1
+
+
 def test_should_use_desktop_mode_accepts_pet_mode_alias():
     from guanghe_companion.app import should_use_desktop_mode
 

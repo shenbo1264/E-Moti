@@ -6,7 +6,7 @@ import sys
 from collections.abc import Callable
 
 from PySide6.QtCore import QPoint, QSize, QTimer, Qt, Slot
-from PySide6.QtGui import QIcon, QPixmap
+from PySide6.QtGui import QAction, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QGridLayout,
@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMainWindow,
+    QMenu,
     QMessageBox,
     QPushButton,
     QProgressBar,
@@ -146,6 +147,10 @@ class CompanionWindow(QMainWindow):
         self.sprite_label = SpriteInteractionLabel(
             on_click=lambda: self._handle_action("touch"),
             on_drag=lambda: self._handle_action("drag"),
+        )
+        self.sprite_label.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.sprite_label.customContextMenuRequested.connect(
+            lambda pos: self._show_desktop_context_menu(self.sprite_label.mapToGlobal(pos))
         )
         self.sprite_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.sprite_label.setStyleSheet(
@@ -288,6 +293,7 @@ class CompanionWindow(QMainWindow):
         return box
 
     def _apply_desktop_mode(self) -> None:
+        self.desktop_mode = True
         self.setWindowFlags(
             self.windowFlags()
             | Qt.WindowType.FramelessWindowHint
@@ -302,6 +308,51 @@ class CompanionWindow(QMainWindow):
         self.shop_card.hide()
         self.inventory_card.hide()
         self.resize(360, 420)
+
+    def _build_desktop_context_menu(self) -> QMenu:
+        menu = QMenu(self)
+        return_action = QAction("返回控制面板", self)
+        return_action.triggered.connect(self._return_to_control_panel)
+        exit_action = QAction("退出", self)
+        exit_action.triggered.connect(self.close)
+        menu.addAction(return_action)
+        menu.addAction(exit_action)
+        return menu
+
+    def contextMenuEvent(self, event) -> None:
+        if not self.desktop_mode:
+            super().contextMenuEvent(event)
+            return
+        self._show_desktop_context_menu(event.globalPos())
+        event.accept()
+
+    def _show_desktop_context_menu(self, global_pos: QPoint) -> None:
+        if not self.desktop_mode:
+            return
+        self._build_desktop_context_menu().exec(global_pos)
+
+    def _return_to_control_panel(self) -> None:
+        if not self.desktop_mode:
+            return
+        self.desktop_mode = False
+        flags = self.windowFlags()
+        flags &= ~Qt.WindowType.FramelessWindowHint
+        flags &= ~Qt.WindowType.WindowStaysOnTopHint
+        self.setWindowFlags(flags)
+        self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        for card in (
+            self.status_card,
+            self.feedback_card,
+            self.actions_card,
+            self.demo_card,
+            self.perception_card,
+            self.shop_card,
+            self.inventory_card,
+        ):
+            card.show()
+        self.resize(1180, 760)
+        self.show()
+        self._apply_snapshot(self.controller.get_snapshot())
 
     def _setup_timers(self) -> None:
         self.frame_timer = QTimer(self)
