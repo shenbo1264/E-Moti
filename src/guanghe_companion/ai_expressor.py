@@ -11,6 +11,7 @@ from urllib import request
 
 from .engine import create_initial_state
 from .events import ALLOWED_EFFECTS, build_fallback_events, validate_events
+from .snapshot import CompanionSnapshot
 
 
 LLMClient = Callable[[str], str]
@@ -73,25 +74,26 @@ class ExpressionRequest:
     tool_results: tuple[dict[str, str], ...] = ()
 
     @classmethod
-    def from_snapshot(cls, snapshot: dict[str, object]) -> "ExpressionRequest":
-        actions = _sanitize_actions(snapshot.get("actions", []))
-        recent_memory = _sanitize_recent_memory(snapshot.get("memory_log", []))
+    def from_snapshot(cls, snapshot: dict[str, object] | CompanionSnapshot) -> "ExpressionRequest":
+        source = _expression_payload_from_snapshot(snapshot)
+        actions = _sanitize_actions(source.get("actions", []))
+        recent_memory = _sanitize_recent_memory(source.get("memory_log", []))
         return cls(
-            character_name=_short_string(snapshot.get("character_name", ""), MAX_CHARACTER_NAME_LENGTH),
-            mode=_short_string(snapshot.get("mode", ""), MAX_MODE_LENGTH),
-            motion=_short_string(snapshot.get("motion", snapshot.get("current_motion", "")), MAX_MOTION_LENGTH),
-            focus=_finite_float(snapshot["focus"]),
-            charge=_finite_float(snapshot["charge"]),
-            stability=_finite_float(snapshot["stability"]),
-            mood=_finite_float(snapshot["mood"]),
-            trust=_finite_float(snapshot["trust"]),
-            feedback=_short_string(snapshot.get("feedback", ""), MAX_FEEDBACK_LENGTH),
-            delta_text=_short_string(snapshot.get("delta_text", ""), MAX_DELTA_TEXT_LENGTH),
-            goal=_short_string(snapshot.get("goal", ""), MAX_GOAL_LENGTH),
+            character_name=_short_string(source.get("character_name", ""), MAX_CHARACTER_NAME_LENGTH),
+            mode=_short_string(source.get("mode", ""), MAX_MODE_LENGTH),
+            motion=_short_string(source.get("motion", source.get("current_motion", "")), MAX_MOTION_LENGTH),
+            focus=_finite_float(source["focus"]),
+            charge=_finite_float(source["charge"]),
+            stability=_finite_float(source["stability"]),
+            mood=_finite_float(source["mood"]),
+            trust=_finite_float(source["trust"]),
+            feedback=_short_string(source.get("feedback", ""), MAX_FEEDBACK_LENGTH),
+            delta_text=_short_string(source.get("delta_text", ""), MAX_DELTA_TEXT_LENGTH),
+            goal=_short_string(source.get("goal", ""), MAX_GOAL_LENGTH),
             actions=actions,
             recent_memory=recent_memory,
-            perception_summary=_short_string(snapshot.get("perception_summary", ""), MAX_PERCEPTION_SUMMARY_LENGTH),
-            tool_results=_sanitize_tool_results(snapshot.get("tool_results", [])),
+            perception_summary=_short_string(source.get("perception_summary", ""), MAX_PERCEPTION_SUMMARY_LENGTH),
+            tool_results=_sanitize_tool_results(source.get("tool_results", [])),
         )
 
     def to_prompt_dict(self) -> dict[str, object]:
@@ -210,7 +212,7 @@ class ShinsekaiAIExpressor:
     def __exit__(self, exc_type, exc, traceback) -> None:
         self.close()
 
-    def build_prompt(self, snapshot: dict[str, object] | ExpressionRequest) -> str:
+    def build_prompt(self, snapshot: dict[str, object] | CompanionSnapshot | ExpressionRequest) -> str:
         try:
             expression_request = _ensure_expression_request(snapshot)
         except (KeyError, TypeError, ValueError):
@@ -246,7 +248,11 @@ class ShinsekaiAIExpressor:
             ]
         )
 
-    def express(self, snapshot: dict[str, object] | ExpressionRequest, effect: str | None = None) -> list[dict[str, str]]:
+    def express(
+        self,
+        snapshot: dict[str, object] | CompanionSnapshot | ExpressionRequest,
+        effect: str | None = None,
+    ) -> list[dict[str, str]]:
         try:
             expression_request = _ensure_expression_request(snapshot)
             prompt_payload = expression_request.to_prompt_dict()
@@ -376,7 +382,30 @@ def _stringify_event(event: dict[Any, Any]) -> dict[str, str]:
     return {str(key): str(value).strip() for key, value in event.items()}
 
 
-def _ensure_expression_request(snapshot: dict[str, object] | ExpressionRequest) -> ExpressionRequest:
+def _expression_payload_from_snapshot(snapshot: dict[str, object] | CompanionSnapshot) -> dict[str, object]:
+    if isinstance(snapshot, CompanionSnapshot):
+        return {
+            "character_name": snapshot.character_name,
+            "mode": snapshot.mode,
+            "motion": snapshot.current_motion,
+            "current_motion": snapshot.current_motion,
+            "focus": snapshot.stats.focus,
+            "charge": snapshot.stats.charge,
+            "stability": snapshot.stats.stability,
+            "mood": snapshot.stats.mood,
+            "trust": snapshot.stats.trust,
+            "feedback": snapshot.feedback,
+            "delta_text": snapshot.delta_text,
+            "goal": snapshot.goal,
+            "actions": snapshot.actions,
+            "memory_log": snapshot.memory_log,
+        }
+    if isinstance(snapshot, dict):
+        return snapshot
+    raise TypeError("expression snapshot must be a dict or CompanionSnapshot")
+
+
+def _ensure_expression_request(snapshot: dict[str, object] | CompanionSnapshot | ExpressionRequest) -> ExpressionRequest:
     if isinstance(snapshot, ExpressionRequest):
         return snapshot
     return ExpressionRequest.from_snapshot(snapshot)

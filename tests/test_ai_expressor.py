@@ -93,6 +93,60 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
     ]
 
 
+def test_expression_request_accepts_typed_companion_snapshot_without_state_write_surfaces():
+    controller = CompanionController(auto_load=False)
+    controller.perform_action("touch")
+    typed_snapshot = controller.get_typed_snapshot()
+
+    request = ExpressionRequest.from_snapshot(typed_snapshot)
+    prompt_payload = request.to_prompt_dict()
+
+    assert request.character_name == "星汐"
+    assert request.motion == "TouchHead"
+    assert request.focus == typed_snapshot.stats.focus
+    assert request.mood == typed_snapshot.stats.mood
+    assert request.actions[0] == {"label": "轻触"}
+    assert request.recent_memory[0]["motion"] == "TouchHead"
+    assert "inventory" not in prompt_payload
+    assert "shop_items" not in prompt_payload
+    assert "coins" not in prompt_payload
+
+
+def test_expressor_build_prompt_accepts_typed_companion_snapshot():
+    controller = CompanionController(auto_load=False)
+    controller.perform_action("touch")
+    typed_snapshot = controller.get_typed_snapshot()
+
+    prompt = ShinsekaiAIExpressor().build_prompt(typed_snapshot)
+
+    assert "character_name: 星汐" in prompt
+    assert "motion: TouchHead" in prompt
+    assert "inventory" not in prompt
+    assert "coins:" not in prompt
+
+
+def test_expressor_uses_typed_companion_snapshot_for_expression_events():
+    controller = CompanionController(auto_load=False)
+    controller.perform_action("touch")
+    typed_snapshot = controller.get_typed_snapshot()
+    expressor = ShinsekaiAIExpressor(
+        llm_client=lambda prompt: '[{"type":"speech","speech":"我会轻一点回应。","effect":"ATTENTION"}]'
+    )
+
+    events = expressor.express(typed_snapshot)
+
+    assert events == [
+        {
+            "character_name": "星汐",
+            "speech": "我会轻一点回应。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert typed_snapshot.stats.mood == 62
+    assert typed_snapshot.inventory["warm_milk"] == 0
+
+
 def test_expression_request_sanitizes_perception_and_tool_result_anchors():
     snapshot = make_snapshot()
     snapshot["perception_summary"] = "x" * 320
