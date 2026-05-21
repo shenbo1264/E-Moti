@@ -33,11 +33,18 @@ MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no sc
 
 
 class SpriteInteractionLabel(QLabel):
-    def __init__(self, on_click: Callable[[], None], on_drag: Callable[[], None]) -> None:
+    def __init__(
+        self,
+        on_click: Callable[[], None],
+        on_drag: Callable[[], None],
+        on_drag_move: Callable[[QPoint], None] | None = None,
+    ) -> None:
         super().__init__()
         self.on_click = on_click
         self.on_drag = on_drag
+        self.on_drag_move = on_drag_move
         self._press_pos: QPoint | None = None
+        self._last_drag_pos: QPoint | None = None
         self._dragged = False
 
     def mousePressEvent(self, event) -> None:
@@ -45,6 +52,7 @@ class SpriteInteractionLabel(QLabel):
             super().mousePressEvent(event)
             return
         self._press_pos = event.position().toPoint()
+        self._last_drag_pos = self._press_pos
         self._dragged = False
         event.accept()
 
@@ -52,8 +60,12 @@ class SpriteInteractionLabel(QLabel):
         if self._press_pos is None:
             super().mouseMoveEvent(event)
             return
-        if (event.position().toPoint() - self._press_pos).manhattanLength() >= 12:
+        current_pos = event.position().toPoint()
+        if (current_pos - self._press_pos).manhattanLength() >= 12:
             self._dragged = True
+            if self.on_drag_move is not None and self._last_drag_pos is not None:
+                self.on_drag_move(current_pos - self._last_drag_pos)
+                self._last_drag_pos = current_pos
         event.accept()
 
     def mouseReleaseEvent(self, event) -> None:
@@ -65,6 +77,7 @@ class SpriteInteractionLabel(QLabel):
         else:
             self.on_click()
         self._press_pos = None
+        self._last_drag_pos = None
         self._dragged = False
         event.accept()
 
@@ -147,6 +160,7 @@ class CompanionWindow(QMainWindow):
         self.sprite_label = SpriteInteractionLabel(
             on_click=lambda: self._handle_action("touch"),
             on_drag=lambda: self._handle_action("drag"),
+            on_drag_move=self._move_desktop_window_by,
         )
         self.sprite_label.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.sprite_label.customContextMenuRequested.connect(
@@ -364,6 +378,11 @@ class CompanionWindow(QMainWindow):
         self.resize(1180, 760)
         self.show()
         self._apply_snapshot(self.controller.get_snapshot())
+
+    def _move_desktop_window_by(self, delta: QPoint) -> None:
+        if not self.desktop_mode:
+            return
+        self.move(self.pos() + delta)
 
     def _setup_timers(self) -> None:
         self.frame_timer = QTimer(self)

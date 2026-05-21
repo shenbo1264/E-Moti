@@ -425,6 +425,38 @@ def test_dragging_sprite_area_performs_raised_action(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_dragging_sprite_area_moves_desktop_pet_window(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtCore import QPoint, Qt
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.move(100, 100)
+    window.show()
+    app.processEvents()
+    original_pos = window.pos()
+
+    QTest.mousePress(window.sprite_label, Qt.MouseButton.LeftButton, pos=QPoint(24, 24))
+    QTest.mouseMove(window.sprite_label, pos=QPoint(84, 54))
+    QTest.mouseRelease(window.sprite_label, Qt.MouseButton.LeftButton, pos=QPoint(84, 54))
+    app.processEvents()
+
+    moved_pos = window.pos()
+    snapshot = window.controller.get_snapshot()
+
+    assert moved_pos.x() > original_pos.x()
+    assert moved_pos.y() > original_pos.y()
+    assert snapshot["motion"] == "Raised"
+
+    window.close()
+    app.processEvents()
+
+
 def test_shop_and_inventory_lists_show_item_icons(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
