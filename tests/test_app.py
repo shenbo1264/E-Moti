@@ -495,6 +495,63 @@ def test_dragging_desktop_pet_window_stays_inside_available_screen(monkeypatch, 
     app.processEvents()
 
 
+def test_desktop_pet_drag_release_docks_to_near_left_edge(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtCore import QPoint, QRect
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window._desktop_available_geometry = lambda: QRect(0, 0, 1000, 800)
+    window.show()
+    app.processEvents()
+    window.move(24, 140)
+    app.processEvents()
+
+    window._handle_action("drag")
+    app.processEvents()
+    snapshot = window.controller.get_snapshot()
+
+    assert window.pos().x() == 0
+    assert window.pos().y() == 140
+    assert snapshot["motion"] == "Raised"
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_pet_drag_release_docks_to_near_right_edge(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtCore import QPoint, QRect
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window._desktop_available_geometry = lambda: QRect(0, 0, 1000, 800)
+    window.show()
+    app.processEvents()
+    docked_x = window._clamp_desktop_position(QPoint(10_000, 140)).x()
+    window.move(docked_x - 24, 140)
+    app.processEvents()
+
+    window._handle_action("drag")
+    app.processEvents()
+    snapshot = window.controller.get_snapshot()
+
+    assert window.pos().x() == docked_x
+    assert window.pos().y() == 140
+    assert snapshot["motion"] == "Raised"
+
+    window.close()
+    app.processEvents()
+
+
 def test_shop_and_inventory_lists_show_item_icons(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 

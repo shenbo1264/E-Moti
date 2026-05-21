@@ -30,6 +30,7 @@ from .motion import MotionAnimator, load_default_motion_catalog
 from .storage import DEMO_SAVE_PATH
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
+DESKTOP_DOCK_THRESHOLD_PX = 32
 
 
 class SpriteInteractionLabel(QLabel):
@@ -392,6 +393,26 @@ class CompanionWindow(QMainWindow):
         y = min(max(target.y(), bounds.top()), max_y)
         return QPoint(x, y)
 
+    def _dock_desktop_position(self, target: QPoint) -> QPoint:
+        clamped = self._clamp_desktop_position(target)
+        bounds = self._desktop_available_geometry()
+        max_x = max(bounds.left(), bounds.right() - self.width() + 1)
+        max_y = max(bounds.top(), bounds.bottom() - self.height() + 1)
+
+        x = clamped.x()
+        if x - bounds.left() <= DESKTOP_DOCK_THRESHOLD_PX:
+            x = bounds.left()
+        elif max_x - x <= DESKTOP_DOCK_THRESHOLD_PX:
+            x = max_x
+
+        y = clamped.y()
+        if y - bounds.top() <= DESKTOP_DOCK_THRESHOLD_PX:
+            y = bounds.top()
+        elif max_y - y <= DESKTOP_DOCK_THRESHOLD_PX:
+            y = max_y
+
+        return QPoint(x, y)
+
     def _desktop_available_geometry(self) -> QRect:
         screen = QApplication.screenAt(self.frameGeometry().center()) or QApplication.primaryScreen()
         if screen is None:
@@ -431,6 +452,8 @@ class CompanionWindow(QMainWindow):
         self._render_current_frame()
 
     def _handle_action(self, action_id: str) -> None:
+        if self.desktop_mode and action_id == "drag":
+            self.move(self._dock_desktop_position(self.pos()))
         self._apply_snapshot(self.controller.perform_action(action_id, include_ai_expression=False))
 
     def _handle_demo_proactive(self, scenario: str) -> None:
