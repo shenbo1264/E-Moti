@@ -186,6 +186,91 @@ def test_event_builder_groups_proactive_domain_events():
     }
 
 
+def test_domain_event_composer_builds_action_bundle_with_effect_and_unlocks():
+    state = make_state()
+    assert hasattr(events_module, "DomainEventComposer")
+    composer = events_module.DomainEventComposer(state)
+
+    bundle = composer.action_events(
+        events_module.ActionDomainEventRequest(
+            action_id="touch",
+            motion="TouchHead",
+            feedback="我听见你靠近了。第一次主动称呼解锁了。",
+            allowed=True,
+            mode="Calm",
+            memory_kind="互动",
+            memory_summary="轻触：我听见你靠近了。",
+            relationship_unlocks=[
+                {
+                    "stage": "熟悉的陪伴",
+                    "unlock_id": "unlock_first_nickname",
+                    "message": "第一次主动称呼解锁了。",
+                }
+            ],
+        )
+    )
+
+    assert bundle.effect == "SHOCKED"
+    assert [event.event_type for event in bundle.events] == ["motion", "memory", "relationship"]
+    assert bundle.events[0].payload == {"motion": "TouchHead", "reason": "我听见你靠近了。第一次主动称呼解锁了。"}
+    assert bundle.events[2].payload["unlock_id"] == "unlock_first_nickname"
+
+
+def test_domain_event_composer_builds_inventory_bundle_with_memory_and_unlocks():
+    state = make_state()
+    assert hasattr(events_module, "DomainEventComposer")
+    composer = events_module.DomainEventComposer(state)
+
+    bundle = composer.inventory_events(
+        events_module.InventoryDomainEventRequest(
+            motion="Gift",
+            feedback="赠送了 星形发夹。第一次主动称呼解锁了。",
+            item_id="star_hairpin",
+            action="gift",
+            item_name="星形发夹",
+            icon_path="icons/star_hairpin.png",
+            memory_kind="赠礼",
+            memory_summary="赠礼了 星形发夹：mood +8 / trust +3",
+            relationship_unlocks=[
+                {
+                    "stage": "熟悉的陪伴",
+                    "unlock_id": "unlock_first_nickname",
+                    "message": "第一次主动称呼解锁了。",
+                }
+            ],
+        )
+    )
+
+    assert bundle.effect == "SHOCKED"
+    assert [event.event_type for event in bundle.events] == ["motion", "inventory", "memory", "relationship"]
+    assert bundle.events[1].payload["item_id"] == "star_hairpin"
+    assert bundle.events[2].payload["kind"] == "赠礼"
+
+
+def test_domain_event_composer_builds_proactive_bundle_from_optional_payload():
+    state = make_state()
+    assert hasattr(events_module, "DomainEventComposer")
+    composer = events_module.DomainEventComposer(state)
+
+    bundle = composer.proactive_events(
+        events_module.ProactiveDomainEventRequest(
+            motion="Tick",
+            feedback="能量有点低了。",
+            base_effect="ATTENTION",
+            proactive_payload={
+                "kind": "low_charge",
+                "summary": "能量有点低时主动陪伴：能量有点低了。",
+            },
+            relationship_unlocks=[],
+        )
+    )
+
+    assert bundle.effect == "ATTENTION"
+    assert [event.event_type for event in bundle.events] == ["motion", "proactive", "memory"]
+    assert bundle.events[1].payload["kind"] == "low_charge"
+    assert bundle.events[2].payload["kind"] == "主动陪伴"
+
+
 def test_event_validator_accepts_typed_events_only_when_required_payload_fields_exist():
     state = make_state()
     validator = EventValidator(state)
@@ -204,6 +289,54 @@ def test_event_validator_accepts_typed_events_only_when_required_payload_fields_
 
     assert [event.event_type for event in fallback] == ["speech", "stat", "choice"]
     assert fallback[0].speech == "字段缺失，切回本地反馈。"
+
+
+def test_event_validator_rejects_typed_events_with_extra_payload_fields():
+    state = make_state()
+    validator = EventValidator(state)
+    extra_payload_event = CompanionEvent(
+        event_type="motion",
+        character_name="MOTION",
+        speech="切换动作",
+        payload={"motion": "TouchHead", "reason": "轻触后切换动作", "coins": 999},
+    )
+
+    fallback = validator.validate_typed(
+        [extra_payload_event],
+        fallback_feedback="payload 越界，切回本地反馈。",
+        choices=["轻触"],
+    )
+
+    assert [event.event_type for event in fallback] == ["speech", "stat", "choice"]
+    assert fallback[0].speech == "payload 越界，切回本地反馈。"
+
+
+def test_event_validator_rejects_typed_events_with_invalid_payload_value_types():
+    state = make_state()
+    validator = EventValidator(state)
+    invalid_stats_event = CompanionEvent(
+        event_type="stat",
+        character_name="STAT",
+        speech="专注 72 / 能量 65 / 稳定 78 / 心情 58 / 信任 5",
+        payload={
+            "stats": {
+                "focus": "72",
+                "charge": 65,
+                "stability": 78,
+                "mood": 58,
+                "trust": 5,
+            }
+        },
+    )
+
+    fallback = validator.validate_typed(
+        [invalid_stats_event],
+        fallback_feedback="payload 类型错误，切回本地反馈。",
+        choices=["轻触"],
+    )
+
+    assert [event.event_type for event in fallback] == ["speech", "stat", "choice"]
+    assert fallback[0].speech == "payload 类型错误，切回本地反馈。"
 
 
 def test_event_context_builds_ai_expressor_compatible_snapshot():

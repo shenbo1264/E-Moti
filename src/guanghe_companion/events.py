@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import math
 from copy import deepcopy
 from dataclasses import dataclass, field
 from typing import Literal
@@ -37,6 +38,22 @@ EVENT_PAYLOAD_FIELDS: dict[EventType, frozenset[str]] = {
     "inventory": frozenset({"item_id", "action", "item_name", "icon_path"}),
     "proactive": frozenset({"kind", "summary"}),
     "system": frozenset({"code", "message"}),
+}
+STAT_PAYLOAD_FIELDS = frozenset({"focus", "charge", "stability", "mood", "trust"})
+MAX_PAYLOAD_STRING_LENGTH = 160
+MAX_CHOICE_PAYLOAD_LENGTH = 40
+MAX_CHOICE_PAYLOAD_ITEMS = 6
+TEXT_PAYLOAD_FIELDS: dict[EventType, frozenset[str]] = {
+    "motion": frozenset({"motion", "reason"}),
+    "memory": frozenset({"kind", "summary", "motion"}),
+    "relationship": frozenset({"stage", "unlock_id", "message"}),
+    "inventory": frozenset({"item_id", "action", "item_name", "icon_path"}),
+    "proactive": frozenset({"kind", "summary"}),
+    "system": frozenset({"code", "message"}),
+}
+ALLOW_EMPTY_TEXT_PAYLOAD_FIELDS: dict[EventType, frozenset[str]] = {
+    "relationship": frozenset({"unlock_id"}),
+    "inventory": frozenset({"icon_path"}),
 }
 
 
@@ -110,6 +127,47 @@ class CompanionEvent:
             sprite=event["sprite"],
             effect=event["effect"],
         )
+
+
+@dataclass(frozen=True, slots=True)
+class DomainEventBundle:
+    effect: str
+    events: list[CompanionEvent]
+
+
+@dataclass(frozen=True, slots=True)
+class ActionDomainEventRequest:
+    action_id: str
+    motion: str
+    feedback: str
+    allowed: bool
+    mode: str
+    memory_kind: str | None = None
+    memory_summary: str | None = None
+    relationship_unlocks: list[dict[str, str]] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class InventoryDomainEventRequest:
+    motion: str
+    feedback: str
+    item_id: str
+    action: str
+    item_name: str
+    icon_path: str
+    base_effect: str = "ATTENTION"
+    memory_kind: str | None = None
+    memory_summary: str | None = None
+    relationship_unlocks: list[dict[str, str]] = field(default_factory=list)
+
+
+@dataclass(frozen=True, slots=True)
+class ProactiveDomainEventRequest:
+    motion: str
+    feedback: str
+    base_effect: str
+    proactive_payload: dict[str, str] | None = None
+    relationship_unlocks: list[dict[str, str]] = field(default_factory=list)
 
 
 class EventBuilder:
@@ -267,6 +325,66 @@ class EventBuilder:
         ]
 
 
+class DomainEventComposer:
+    def __init__(self, state: CompanionState) -> None:
+        self.builder = EventBuilder(state)
+
+    def action_events(self, request: ActionDomainEventRequest) -> DomainEventBundle:
+        effect = self._effect_with_relationship_override(
+            action_event_effect(request.action_id, request.allowed, request.mode),
+            request.relationship_unlocks,
+        )
+        return DomainEventBundle(
+            effect=effect,
+            events=self.builder.action_domain_events(
+                motion=request.motion,
+                feedback=request.feedback,
+                effect=effect,
+                memory_kind=request.memory_kind,
+                memory_summary=request.memory_summary,
+                relationship_unlocks=request.relationship_unlocks,
+            ),
+        )
+
+    def inventory_events(self, request: InventoryDomainEventRequest) -> DomainEventBundle:
+        effect = self._effect_with_relationship_override(request.base_effect, request.relationship_unlocks)
+        return DomainEventBundle(
+            effect=effect,
+            events=self.builder.inventory_domain_events(
+                motion=request.motion,
+                feedback=request.feedback,
+                effect=effect,
+                item_id=request.item_id,
+                action=request.action,
+                item_name=request.item_name,
+                icon_path=request.icon_path,
+                memory_kind=request.memory_kind,
+                memory_summary=request.memory_summary,
+                relationship_unlocks=request.relationship_unlocks,
+            ),
+        )
+
+    def proactive_events(self, request: ProactiveDomainEventRequest) -> DomainEventBundle:
+        effect = self._effect_with_relationship_override(request.base_effect, request.relationship_unlocks)
+        proactive_payload = request.proactive_payload
+        return DomainEventBundle(
+            effect=effect,
+            events=self.builder.proactive_domain_events(
+                motion=request.motion,
+                feedback=request.feedback,
+                effect=effect,
+                proactive_kind=proactive_payload["kind"] if proactive_payload else None,
+                proactive_summary=proactive_payload["summary"] if proactive_payload else None,
+                relationship_unlocks=request.relationship_unlocks,
+            ),
+        )
+
+    def _effect_with_relationship_override(self, base_effect: str, relationship_unlocks: list[dict[str, str]]) -> str:
+        if relationship_unlocks:
+            return "SHOCKED"
+        return base_effect if base_effect in ALLOWED_EFFECTS else ""
+
+
 class EventValidator:
     def __init__(self, state: CompanionState) -> None:
         self.state = state
@@ -371,8 +489,14 @@ def _is_valid_typed_event(event: CompanionEvent) -> bool:
     if event.event_type not in EVENT_PAYLOAD_FIELDS:
         return False
 
-    required_payload_fields = EVENT_PAYLOAD_FIELDS[event.event_type]
-    if not required_payload_fields.issubset(event.payload.keys()):
+    if not isinstance(event.payload, dict):
+        return False
+
+    payload_fields = EVENT_PAYLOAD_FIELDS[event.event_type]
+    if set(event.payload.keys()) != payload_fields:
+        return False
+
+    if not _is_valid_typed_event_payload(event):
         return False
 
     if not isinstance(event.character_name, str) or not event.character_name:
@@ -395,6 +519,61 @@ def _is_valid_typed_event(event: CompanionEvent) -> bool:
     if not isinstance(event.effect, str) or event.effect not in ALLOWED_EFFECTS:
         return False
 
+    return True
+
+
+def _is_valid_typed_event_payload(event: CompanionEvent) -> bool:
+    if event.event_type == "speech":
+        return event.payload == {}
+    if event.event_type == "stat":
+        return _is_valid_stats_payload(event.payload.get("stats"))
+    if event.event_type == "choice":
+        return _is_valid_choices_payload(event.payload.get("choices"))
+
+    text_fields = TEXT_PAYLOAD_FIELDS.get(event.event_type)
+    if text_fields is None:
+        return False
+    allow_empty = ALLOW_EMPTY_TEXT_PAYLOAD_FIELDS.get(event.event_type, frozenset())
+    return all(
+        _is_valid_payload_text(
+            event.payload.get(field),
+            allow_empty=field in allow_empty,
+            max_length=MAX_PAYLOAD_STRING_LENGTH,
+        )
+        for field in text_fields
+    )
+
+
+def _is_valid_stats_payload(value: object) -> bool:
+    if not isinstance(value, dict):
+        return False
+    if set(value.keys()) != STAT_PAYLOAD_FIELDS:
+        return False
+    return all(_is_valid_stat_payload_value(value[field]) for field in STAT_PAYLOAD_FIELDS)
+
+
+def _is_valid_stat_payload_value(value: object) -> bool:
+    if isinstance(value, bool) or not isinstance(value, (int, float)):
+        return False
+    return math.isfinite(float(value))
+
+
+def _is_valid_choices_payload(value: object) -> bool:
+    if not isinstance(value, list) or len(value) > MAX_CHOICE_PAYLOAD_ITEMS:
+        return False
+    return all(
+        _is_valid_payload_text(choice, allow_empty=False, max_length=MAX_CHOICE_PAYLOAD_LENGTH)
+        for choice in value
+    )
+
+
+def _is_valid_payload_text(value: object, *, allow_empty: bool, max_length: int) -> bool:
+    if not isinstance(value, str):
+        return False
+    if not allow_empty and not value.strip():
+        return False
+    if len(value) > max_length or _has_control_character(value):
+        return False
     return True
 
 

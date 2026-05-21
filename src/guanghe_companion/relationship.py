@@ -28,6 +28,41 @@ class ProactiveFeedback:
         }
 
 
+@dataclass(frozen=True, slots=True)
+class ProactiveCompanionDecision:
+    feedback: ProactiveFeedback | None
+    now: int
+    motion: str
+
+    @property
+    def effect(self) -> str:
+        return "ATTENTION" if self.feedback else ""
+
+    def to_legacy_feedback(self) -> dict[str, str] | None:
+        return self.feedback.to_legacy_dict() if self.feedback else None
+
+    def cooldown_updates(self) -> dict[str, int]:
+        if self.feedback is None:
+            return {}
+        return {self.feedback.kind: self.now}
+
+    def event_payload(self) -> dict[str, str] | None:
+        if self.feedback is None:
+            return None
+        return {"kind": self.feedback.kind, "summary": self.feedback.summary}
+
+    def memory_drafts(self) -> list[dict[str, object]]:
+        if self.feedback is None:
+            return []
+        return [
+            {
+                "kind": "主动陪伴",
+                "summary": self.feedback.summary,
+                "motion": self.motion,
+            }
+        ]
+
+
 class RelationshipService:
     def __init__(self, state: CompanionState) -> None:
         self.state = state
@@ -58,6 +93,17 @@ class RelationshipService:
                 "kind": "关系解锁",
                 "summary": RELATIONSHIP_UNLOCK_LINES[unlock_id],
                 "motion": motion,
+            }
+            for unlock_id in unlocks
+            if unlock_id in RELATIONSHIP_UNLOCK_LINES
+        ]
+
+    def unlock_event_payloads(self, unlocks: list[str]) -> list[dict[str, str]]:
+        return [
+            {
+                "stage": self.stage(),
+                "unlock_id": unlock_id,
+                "message": RELATIONSHIP_UNLOCK_LINES[unlock_id],
             }
             for unlock_id in unlocks
             if unlock_id in RELATIONSHIP_UNLOCK_LINES
@@ -99,6 +145,13 @@ class ProactiveCompanionService:
                 summary=f"久未互动后主动陪伴：{line}",
             )
         return None
+
+    def select_decision(self, motion: str) -> ProactiveCompanionDecision:
+        return ProactiveCompanionDecision(
+            feedback=self.select_feedback(),
+            now=self.now,
+            motion=motion,
+        )
 
     def _can_emit(self, kind: str) -> bool:
         last_at = self.last_proactive_at.get(kind)

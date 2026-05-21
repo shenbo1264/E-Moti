@@ -39,6 +39,7 @@ class CompanionState:
     same_gift_chain: int = 0
     study_bonus_exp: int = 0
     memory_log: list[dict[str, object]] = field(default_factory=list)
+    schema_version: int = 1
 
 
 @dataclass(slots=True)

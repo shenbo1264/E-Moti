@@ -3,21 +3,39 @@ from __future__ import annotations
 from collections.abc import Callable
 from dataclasses import replace
 from pathlib import Path
+from typing import Protocol
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
 from .ai_expressor import ExpressionRequest, ShinsekaiAIExpressor, build_default_ai_expressor
 from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
 from .engine import BUYABLE_ITEMS, TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
-from .events import CompanionEvent, EventBuilder, EventContext, EventValidator, action_event_effect, build_typed_fallback_events
+from .events import (
+    ActionDomainEventRequest,
+    CompanionEvent,
+    DomainEventComposer,
+    EventContext,
+    EventValidator,
+    InventoryDomainEventRequest,
+    ProactiveDomainEventRequest,
+    build_typed_fallback_events,
+)
 from .expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
 from .inventory import InventoryService, InventoryUseRequest, ShopPurchaseRequest, ShopService, format_item_effect
-from .memory import MemoryEntry, memory_kind_for_inventory_usage
+from .memory import MemoryLogService, memory_kind_for_inventory_usage
 from .models import CompanionState
-from .relationship import ProactiveCompanionService, RelationshipService
+from .relationship import ProactiveCompanionDecision, ProactiveCompanionService, RelationshipService
 from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory, format_delta_text
-from .storage import DEFAULT_SAVE_PATH, load_state, logical_time_from_state, save_state
+from .storage import DEFAULT_SAVE_PATH, SaveManager, logical_time_from_state
 
 ExpressionContextProvider = Callable[[], dict[str, object]]
+
+
+class CompanionSaveManager(Protocol):
+    def load(self) -> CompanionState | None:
+        ...
+
+    def save(self, state: CompanionState) -> None:
+        ...
 
 
 class CompanionController:
@@ -27,15 +45,17 @@ class CompanionController:
         auto_load: bool = True,
         ai_expressor: ShinsekaiAIExpressor | None = None,
         expression_context_provider: ExpressionContextProvider | None = None,
+        save_manager: CompanionSaveManager | None = None,
     ) -> None:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
+        self.save_manager = save_manager or SaveManager(self.save_path)
         self.character_pack = load_default_character_pack()
         self.ai_expressor = ai_expressor or build_default_ai_expressor()
         self._closed = False
         self.expression_context_provider = expression_context_provider or ExpressionContextChain(
             [CharacterProfileExpressionContextProvider(self.character_pack)]
         )
-        loaded_state = load_state(self.save_path) if auto_load else None
+        loaded_state = self.save_manager.load() if auto_load else None
         self.state = loaded_state or create_initial_state(now=0)
         if self.state.character_id == self.character_pack.character_id:
             self.state = replace(self.state, character_name=self.character_pack.name)
@@ -142,24 +162,26 @@ class CompanionController:
         unlock_feedback = self._relationship_unlock_feedback(new_unlocks)
         if unlock_feedback:
             self.last_feedback = f"{self.last_feedback} {unlock_feedback}"
-        effect = "SHOCKED" if new_unlocks else action_event_effect(action_id, result.allowed, self.state.mode)
-        event_builder = EventBuilder(self.state)
         memory_summary = None
         if result.allowed:
             memory_summary = f"{self._action_label(action_id)}：{self.last_feedback}"
             self._remember(kind="互动", summary=memory_summary, motion=result.motion)
             self._remember_relationship_unlocks(new_unlocks)
-        domain_events = event_builder.action_domain_events(
-            motion=result.motion,
-            feedback=self.last_feedback,
-            effect=effect,
-            memory_kind="互动" if result.allowed else None,
-            memory_summary=memory_summary,
-            relationship_unlocks=self._relationship_event_payloads(new_unlocks),
+        event_bundle = DomainEventComposer(self.state).action_events(
+            ActionDomainEventRequest(
+                action_id=action_id,
+                motion=result.motion,
+                feedback=self.last_feedback,
+                allowed=result.allowed,
+                mode=self.state.mode,
+                memory_kind="互动" if result.allowed else None,
+                memory_summary=memory_summary,
+                relationship_unlocks=self._relationship_event_payloads(new_unlocks),
+            )
         )
         self.last_events = self._build_events(
-            effect=effect,
-            domain_events=domain_events,
+            effect=event_bundle.effect,
+            domain_events=event_bundle.events,
             include_ai_expression=include_ai_expression,
         )
         self._persist()
@@ -186,18 +208,20 @@ class CompanionController:
         self.last_allowed = True
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
-        event_builder = EventBuilder(self.state)
-        self.last_events = self._build_events(
-            effect="SWITCH",
-            domain_events=event_builder.inventory_domain_events(
+        event_bundle = DomainEventComposer(self.state).inventory_events(
+            InventoryDomainEventRequest(
                 motion=self.last_motion,
                 feedback=self.last_feedback,
-                effect="SWITCH",
+                base_effect="SWITCH",
                 item_id=item_id,
                 action="purchase",
                 item_name=item.name,
                 icon_path=self._item_icon_path(item),
-            ),
+            )
+        )
+        self.last_events = self._build_events(
+            effect=event_bundle.effect,
+            domain_events=event_bundle.events,
             include_ai_expression=include_ai_expression,
         )
         self._persist()
@@ -235,14 +259,18 @@ class CompanionController:
             self.last_allowed = False
             self.last_item_feedback_icon = None
             self.last_proactive_feedback = None
-            event_builder = EventBuilder(self.state)
-            self.last_events = self._build_events(
-                effect="DISAPPOINTED",
-                domain_events=event_builder.action_domain_events(
+            event_bundle = DomainEventComposer(self.state).action_events(
+                ActionDomainEventRequest(
+                    action_id=usage,
                     motion=self.last_motion,
                     feedback=self.last_feedback,
-                    effect="DISAPPOINTED",
-                ),
+                    allowed=False,
+                    mode=self.state.mode,
+                )
+            )
+            self.last_events = self._build_events(
+                effect=event_bundle.effect,
+                domain_events=event_bundle.events,
                 include_ai_expression=include_ai_expression,
             )
             self._persist()
@@ -273,23 +301,24 @@ class CompanionController:
             item_id=item_id,
         )
         self._remember_relationship_unlocks(new_unlocks)
-        effect = "SHOCKED" if new_unlocks else "ATTENTION" if usage in {"feed", "gift"} else "SWITCH"
-        event_builder = EventBuilder(self.state)
-        domain_events = event_builder.inventory_domain_events(
-            motion=self.last_motion,
-            feedback=self.last_feedback,
-            effect=effect,
-            item_id=item_id,
-            action=usage,
-            item_name=item.name,
-            icon_path=self._item_icon_path(item),
-            memory_kind=memory_kind,
-            memory_summary=memory_summary,
-            relationship_unlocks=self._relationship_event_payloads(new_unlocks),
+        base_effect = "ATTENTION" if usage in {"feed", "gift"} else "SWITCH"
+        event_bundle = DomainEventComposer(self.state).inventory_events(
+            InventoryDomainEventRequest(
+                motion=self.last_motion,
+                feedback=self.last_feedback,
+                base_effect=base_effect,
+                item_id=item_id,
+                action=usage,
+                item_name=item.name,
+                icon_path=self._item_icon_path(item),
+                memory_kind=memory_kind,
+                memory_summary=memory_summary,
+                relationship_unlocks=self._relationship_event_payloads(new_unlocks),
+            )
         )
         self.last_events = self._build_events(
-            effect=effect,
-            domain_events=domain_events,
+            effect=event_bundle.effect,
+            domain_events=event_bundle.events,
             include_ai_expression=include_ai_expression,
         )
         self._persist()
@@ -310,30 +339,28 @@ class CompanionController:
         self.last_delta_text = "tick -15s"
         self.last_allowed = True
         self.last_item_feedback_icon = None
-        self.last_proactive_feedback = self._select_proactive_feedback(previous_state)
-        if self.last_proactive_feedback:
-            self.last_feedback = self.last_proactive_feedback["speech"]
-            self._last_proactive_at[self.last_proactive_feedback["kind"]] = self.now
-            proactive_summary = self.last_proactive_feedback["summary"]
-            self._remember(
-                kind="主动陪伴",
-                summary=proactive_summary,
-                motion=self.last_motion,
+        proactive_decision = self._select_proactive_decision(previous_state)
+        self.last_proactive_feedback = proactive_decision.to_legacy_feedback()
+        if proactive_decision.feedback:
+            self.last_feedback = proactive_decision.feedback.speech
+            self._last_proactive_at.update(proactive_decision.cooldown_updates())
+            MemoryLogService(self.state.memory_log).append_drafts(
+                at=self.now,
+                drafts=proactive_decision.memory_drafts(),
             )
         self._remember_relationship_unlocks(new_unlocks)
-        effect = "SHOCKED" if new_unlocks else "ATTENTION" if self.last_proactive_feedback else ""
-        event_builder = EventBuilder(self.state)
-        domain_events = event_builder.proactive_domain_events(
-            motion=self.last_motion,
-            feedback=self.last_feedback,
-            effect=effect,
-            proactive_kind=self.last_proactive_feedback["kind"] if self.last_proactive_feedback else None,
-            proactive_summary=self.last_proactive_feedback["summary"] if self.last_proactive_feedback else None,
-            relationship_unlocks=self._relationship_event_payloads(new_unlocks),
+        event_bundle = DomainEventComposer(self.state).proactive_events(
+            ProactiveDomainEventRequest(
+                motion=self.last_motion,
+                feedback=self.last_feedback,
+                base_effect=proactive_decision.effect,
+                proactive_payload=proactive_decision.event_payload(),
+                relationship_unlocks=self._relationship_event_payloads(new_unlocks),
+            )
         )
         self.last_events = self._build_events(
-            effect=effect,
-            domain_events=domain_events,
+            effect=event_bundle.effect,
+            domain_events=event_bundle.events,
             include_ai_expression=include_ai_expression,
         )
         self._persist()
@@ -358,7 +385,7 @@ class CompanionController:
         return self.advance_tick(include_ai_expression=include_ai_expression)
 
     def _persist(self) -> None:
-        save_state(self.state, self.save_path)
+        self.save_manager.save(self.state)
 
     def _build_events(
         self,
@@ -438,9 +465,13 @@ class CompanionController:
         return str(ASSETS_ROOT / self.character_pack.character_id / item.icon)
 
     def _remember(self, kind: str, summary: str, motion: str, item_id: str | None = None) -> None:
-        entry = MemoryEntry(at=self.now, kind=kind, summary=summary, motion=motion, item_id=item_id)
-        self.state.memory_log.insert(0, entry.to_legacy_dict())
-        del self.state.memory_log[12:]
+        MemoryLogService(self.state.memory_log).append(
+            at=self.now,
+            kind=kind,
+            summary=summary,
+            motion=motion,
+            item_id=item_id,
+        )
 
     def _action_label(self, action_id: str) -> str:
         return action_label(action_id)
@@ -452,29 +483,21 @@ class CompanionController:
         return RelationshipService(self.state).unlock_feedback(unlocks)
 
     def _remember_relationship_unlocks(self, unlocks: list[str]) -> None:
-        for draft in RelationshipService(self.state).unlock_memory_drafts(unlocks, motion=self.last_motion):
-            self._remember(kind=str(draft["kind"]), summary=str(draft["summary"]), motion=str(draft["motion"]))
+        MemoryLogService(self.state.memory_log).append_drafts(
+            at=self.now,
+            drafts=RelationshipService(self.state).unlock_memory_drafts(unlocks, motion=self.last_motion),
+        )
 
     def _relationship_event_payloads(self, unlocks: list[str]) -> list[dict[str, str]]:
-        relationship_service = RelationshipService(self.state)
-        return [
-            {
-                "stage": relationship_service.stage(),
-                "unlock_id": unlock_id,
-                "message": relationship_service.unlock_feedback([unlock_id]),
-            }
-            for unlock_id in unlocks
-            if relationship_service.unlock_feedback([unlock_id])
-        ]
+        return RelationshipService(self.state).unlock_event_payloads(unlocks)
 
-    def _select_proactive_feedback(self, previous_state: CompanionState) -> dict[str, str] | None:
-        feedback = ProactiveCompanionService(
+    def _select_proactive_decision(self, previous_state: CompanionState) -> ProactiveCompanionDecision:
+        return ProactiveCompanionService(
             state=self.state,
             previous_state=previous_state,
             now=self.now,
             last_proactive_at=self._last_proactive_at,
-        ).select_feedback()
-        return feedback.to_legacy_dict() if feedback else None
+        ).select_decision(motion=self.last_motion)
 
 
 def _is_local_fallback_expression(events: list[CompanionEvent], feedback: str) -> bool:

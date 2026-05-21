@@ -757,3 +757,26 @@ def test_controller_resumes_logical_time_from_loaded_save(tmp_path):
     assert controller.now == 495
     assert controller.state.last_tick_at == 495
     assert snapshot["tick_count"] == 1
+
+
+def test_controller_uses_injected_save_manager_for_load_and_persist():
+    class RecordingSaveManager:
+        def __init__(self):
+            self.saved_states = []
+
+        def load(self):
+            return replace(create_initial_state(now=120), coins=42, last_interaction_at=120, last_tick_at=120)
+
+        def save(self, state):
+            self.saved_states.append(state)
+
+    save_manager = RecordingSaveManager()
+
+    controller = CompanionController(save_manager=save_manager)
+    snapshot = controller.perform_action("touch", include_ai_expression=False)
+
+    assert controller.now == 125
+    assert snapshot["coins"] == 42
+    assert len(save_manager.saved_states) == 1
+    assert save_manager.saved_states[0] is controller.state
+    assert save_manager.saved_states[0].mood == 62
