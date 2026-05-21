@@ -158,6 +158,15 @@ class CompanionWindow(QMainWindow):
         )
         self.sprite_label.setMinimumHeight(300)
         layout.addWidget(self.sprite_label)
+        self.desktop_feedback_label = QLabel()
+        self.desktop_feedback_label.setWordWrap(True)
+        self.desktop_feedback_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.desktop_feedback_label.setStyleSheet(
+            "QLabel { border: 1px solid rgba(79, 109, 122, 140); border-radius: 10px; "
+            "padding: 8px 10px; background: rgba(255, 255, 255, 225); font-size: 13px; }"
+        )
+        self.desktop_feedback_label.hide()
+        layout.addWidget(self.desktop_feedback_label)
         self.item_feedback_label = QLabel()
         self.item_feedback_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.item_feedback_label.setFixedSize(72, 72)
@@ -307,6 +316,7 @@ class CompanionWindow(QMainWindow):
         self.perception_card.hide()
         self.shop_card.hide()
         self.inventory_card.hide()
+        self.desktop_feedback_label.show()
         self.resize(360, 420)
 
     def _build_desktop_context_menu(self) -> QMenu:
@@ -350,6 +360,7 @@ class CompanionWindow(QMainWindow):
             self.inventory_card,
         ):
             card.show()
+        self.desktop_feedback_label.hide()
         self.resize(1180, 760)
         self.show()
         self._apply_snapshot(self.controller.get_snapshot())
@@ -461,6 +472,11 @@ class CompanionWindow(QMainWindow):
         self.delta_label.setText(f"最近变化：{snapshot['delta_text']}")
         self.events_label.setText("\n".join(str(line) for line in snapshot["event_preview"].splitlines()))
         self.memory_label.setText(self._format_memory_log(snapshot["memory_log"]))
+        self.desktop_feedback_label.setText(
+            f"模式：{snapshot['mode']}\n"
+            f"动作：{snapshot['motion_caption']}\n"
+            f"{snapshot['feedback']}"
+        )
 
         actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
         for action_id, button in self.action_buttons.items():

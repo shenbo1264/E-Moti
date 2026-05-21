@@ -63,6 +63,59 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     app.processEvents()
 
 
+def test_desktop_mode_shows_minimal_feedback_overlay(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    text = window.desktop_feedback_label.text()
+
+    assert window.desktop_feedback_label.isVisibleTo(window)
+    assert "模式：Calm" in text
+    assert "待机呼吸" in text
+    assert "信号稳定" in text
+    assert "{" not in text
+    assert "STAT" not in text
+    assert "CHOICE" not in text
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_mode_feedback_overlay_updates_after_sprite_touch(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtCore import QPoint, Qt
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    QTest.mouseClick(window.sprite_label, Qt.MouseButton.LeftButton, pos=QPoint(24, 24))
+    app.processEvents()
+    text = window.desktop_feedback_label.text()
+
+    assert "模式：Calm" in text
+    assert "靠近回应" in text
+    assert "靠近我的方式" in text
+    assert window.controller.get_snapshot()["motion"] == "TouchHead"
+
+    window.close()
+    app.processEvents()
+
+
 def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
