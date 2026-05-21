@@ -1,14 +1,20 @@
 # 星汐核心框架、LLM 表达与桌宠交互路线 Spec
 
-状态：稳定开发顺序 spec v0.1
+状态：稳定开发顺序 spec v0.3
 
-最后核对日期：2026-05-15
+最后核对日期：2026-05-21
 
 ## 1. 写作目的
 
 本 spec 用来纠正下一阶段开发优先级：当前 demo 还没有完成核心框架、真实 LLM 表达 adapter、桌宠交互增强和 MotionLayer 能力，因此不应继续优先做 DemoMode / 演示导览。
 
 本 spec 同时作为后续 agent 的项目管理锚点。任何后续开发都必须先检查本文件的阶段顺序和门禁，避免只盯住某一个亮点能力，例如只做联网搜索、只做桌宠拖拽、只做演示按钮，而忽视整体闭环。
+
+## 1.1 交付倒计时与提速规则
+
+以 2026-05-21 为当前核对日，距离 2026-05-26 交付节点只剩 5 天。后续开发必须从“可交付闭环”倒推优先级：先快速收束阶段一门禁，再判断是否进入阶段二；不要陷入无限 debug、不要为了抽象而造轮子、不要把参考项目的大型架构搬进 demo。
+
+允许把多个同属阶段一的拆层点合并为一个较大的可验证包，但每个包仍必须有清晰验收命令。若出现产品方向分歧，例如是否提前接真实 LLM、是否跳到 MotionLayer、是否改正式美术资源，必须停下来确认；普通工程实现细节默认由当前代码风格和已有 spec 决定。
 
 ## 2. 不可变边界
 
@@ -95,6 +101,19 @@ typed snapshot 应至少覆盖：
 - 至少覆盖动作、背包、关系、主动陪伴、存档迁移和 UI snapshot 消费测试。
 - `pytest` 必须通过。
 - 未改 UI 时不需要声称 PySide visible smoke；改 UI 时必须重跑。
+
+### 4.6 阶段一核对记录（2026-05-21）
+
+截至提交 `5879ad0 refactor: harden stage one companion services`，阶段一核心门禁已按代码和测试收束：
+
+- typed snapshot 已落在 `CompanionSnapshot`、`CompanionStats`、`SnapshotBuilder` 和兼容 serializer 上，controller 通过 builder 导出 UI 兼容 dict。
+- typed events 已覆盖 `speech`、`stat`、`choice`、`motion`、`memory`、`relationship`、`inventory`、`proactive`、`system`，并由 `EventBuilder`、`EventValidator`、`DomainEventComposer` 统一组装和校验。
+- 动作、背包/商店、关系解锁、主动陪伴、回忆写入和存档迁移都有定向测试覆盖。
+- `SaveManager` 已负责 schema 版本写入、旧档补齐、未知字段丢弃、坏 JSON 降级、inventory 修复和逻辑时间恢复。
+- 2026-05-21 实际运行 `python -m pytest`，结果为 `272 passed`。
+- 本轮没有修改 PySide UI；因此没有声称跑过 PySide visible smoke。
+
+阶段一仍有可继续清理的工程债，例如 controller 进一步减负、公开演示 UI 的调试信息压缩、默认存档副作用治理；但这些不再阻塞进入阶段二的受控 LLM 表达 adapter 小切片。进入阶段二时仍不得让 LLM 修改状态、背包、目标、回忆或存档。
 
 ## 5. 阶段二：真实 LLM 表达 adapter
 
@@ -265,32 +284,35 @@ MotionLayer 可以先用现有 atlas 和 manifest 做逻辑能力，不要求同
 
 ## 10. 当前下一步建议
 
-下一轮优先执行阶段一的第一个切片：
+下一轮可进入阶段二的第一个小切片：
 
-**切片名称：typed events/snapshot 基础类型落地。**
+**切片名称：LLM 表达 adapter 门禁复核与运行入口收束。**
 
 建议范围：
 
-- 新增 typed event 和 typed snapshot 数据结构。
-- 让 controller 的现有 snapshot 先通过 builder 产出兼容 dict，避免一次性改爆 UI。
-- 先迁移测试到稳定字段。
-- 不接真实 LLM。
+- 复核现有 `ShinsekaiAIExpressor`、`OpenAIResponsesClient`、环境变量开关、timeout、fallback 和字段越界测试。
+- 保持默认无 API key、无网络时 demo 完整可跑。
+- 如需补入口，只补可关闭、可 mock、可超时的表达入口，不让 UI 阻塞。
+- `STAT` / `CHOICE` 继续由本地生成，LLM 只允许影响首条 `speech`。
+- 不做 TTS。
+- 不做自动后台屏幕观察。
+- 不做联网搜索主体，只可保留受控工具结果接口。
 - 不改 spritesheet。
-- 不做 DemoMode。
+- 不做 DemoMode 主体。
 
 验收：
 
-- 现有行为不变。
-- typed snapshot/events 有单元测试。
-- controller 不再新增新的裸 dict 拼装。
+- 无 API key 时完整 fallback。
+- mock LLM、超时、非法 JSON、字段越界、状态写入企图均有测试。
+- UI 操作不等待慢 LLM。
 - `pytest` 通过。
 
 ## 11. 后续阶段状态表
 
 | 阶段 | 状态 | 可以做 | 不可以做 |
 |---|---|---|---|
-| 1. 框架拆层 + typed snapshot/events | 下一步 | 类型、builder、validator、service 边界 | 真实 LLM、DemoMode 主体 |
-| 2. 真实 LLM 表达 adapter | 等阶段一门禁 | LLM adapter、mock、timeout、fallback、手动感知摘要、工具接口 | LLM 改状态、自动后台截图 |
+| 1. 框架拆层 + typed snapshot/events | 核心门禁已过，剩余工程债可并行收尾 | controller 继续减负、默认存档副作用治理、门禁文档维护 | 返工大架构、绕过 typed snapshot/events |
+| 2. 真实 LLM 表达 adapter | 下一步 | LLM adapter、mock、timeout、fallback、手动感知摘要、工具接口 | LLM 改状态、自动后台截图 |
 | 3. 桌宠模式交互增强 | 等阶段二基本稳定 | 拖动、右键菜单、桌宠反馈、返回面板 | 长期自动化、复杂系统控制 |
 | 4. MotionLayer ABC / idle 随机 | 等桌宠交互稳定 | ABC、idle 随机、fallback motion | 绕过美术 QA 换正式资源 |
 | 5. DemoMode / 演示导览 | 最后 | reset/seed、导览、演示存档隔离 | 用 DemoMode 代替核心框架 |

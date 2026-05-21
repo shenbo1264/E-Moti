@@ -4,6 +4,12 @@
 
 当前 demo 已经具备原创 OC 桌面电子宠物/伴侣“星汐”的基础闭环：角色展示、状态机、轻触/拖拽/休息/共同学习/共同娱乐、商店与背包、投喂与赠礼、关系解锁、回忆日志、主动陪伴触发、演示触发按钮，以及 `--desktop-mode` / `--pet-mode` 桌宠模式。
 
+## 交付倒计时
+
+当前核对日为 2026-05-21，距离 2026-05-26 课题 demo 交付只剩 5 天。后续路线必须优先服务可演示、可复现、可解释的交付结果：阶段一剩余拆层可以合并推进，但不得无限 debug、不得为了工程洁癖重写大模块、不得把 Shinsekai/VPet 的完整架构照搬进本 demo。
+
+提速后的默认策略是：先收阶段一 typed snapshot/events、存档、关系、回忆、主动陪伴这些已在 demo 中使用的核心边界；只有阶段一门禁和全量测试稳定后，才评估真实 LLM、桌宠交互增强、MotionLayer 或 DemoMode 主体。遇到是否跨阶段的产品分歧时再暂停确认，普通代码组织按当前项目最小可维护方案推进。
+
 本规格基于 3 个只读子评估汇总而成：
 
 - 演示流程评估：当前 3-5 分钟演示闭环基本完整，但需要固定演示脚本和干净初始状态。
@@ -28,7 +34,20 @@
 | AI 表达 | AI 只生成 JSON 表达，不改状态 | 已有 `ShinsekaiAIExpressor`、validator 和 fallback | 真实 LLM 后置，先保证 fallback 稳定 |
 | 资源包 | 9 行 atlas、57 帧、preview/QA 不进运行时 | 当前运行时使用 8x9 manifest，preview 与过程资产仍大量存在于工作树 | P2 继续按候选到正式替换处理 |
 | 桌宠形态 | VPet 风格桌面陪伴 | 已有 `--desktop-mode` / `--pet-mode`，但主要是形态证明 | P3 再做拖动、停靠、右键菜单 |
-| 存档 | JSON 存档、需稳定复现 | 当前默认写 `data/companion_save.json`，demo 触发会真实持久化 | P0 最高优先级处理 |
+| 存档 | JSON 存档、需稳定复现 | 已有 `schema_version`、`SaveManager`、demo save 参数、reset、旧档补齐、坏档降级和逻辑时间恢复；默认正式存档仍会被普通运行写入 | P0 的核心工程风险已收住，默认存档副作用仍需演示前管理 |
+
+## 阶段一门禁核对（2026-05-21）
+
+截至提交 `5879ad0 refactor: harden stage one companion services`，阶段一“框架拆层 + typed snapshot/events”核心门禁已按测试收束：
+
+- typed snapshot/events 已作为 controller、UI、LLM 表达层之间的稳定边界。
+- 动作、背包、关系、主动陪伴、回忆和存档迁移均有定向测试覆盖。
+- `SaveManager` 已覆盖 schema 写入、旧档补齐、坏 JSON 降级、未知字段丢弃、inventory 修复和逻辑时间恢复。
+- controller 仍可继续减负，但新增行为应继续走 typed snapshot/events 与 service 边界。
+- 2026-05-21 实际运行全量 `python -m pytest`，结果为 `272 passed`。
+- 未修改 PySide UI 时，不声称跑过 PySide visible smoke。
+
+下一步可以进入阶段二的 LLM 表达 adapter 门禁复核；阶段二仍必须保持 LLM 只增强表达，不改变状态、背包、关系、回忆、目标和存档。
 
 ## 总控判断
 
@@ -182,12 +201,11 @@
 
 ## 工程债优先级
 
-1. 逻辑时间与存档：避免 controller 重启后 `now` 归零导致冷却、久未互动和礼物衰减异常。
-2. demo 触发隔离：避免演示按钮永久污染真实陪伴状态。
-3. 存档 schema：增加版本、迁移和 inventory 补全。
-4. snapshot 类型化：减少 UI 与 controller 之间的松散 dict key 风险。
-5. controller 拆分：后续可把主动陪伴规则、关系解锁、记忆写入、展示 DTO 分离。
-6. UI 调试信息分层：公开演示界面可以压缩 JSON event 区，但保留开发者可展开查看。
+1. 默认存档副作用：普通运行仍会写 `data/companion_save.json`，演示前要优先使用 `--demo-save` / `--reset-demo-save`，或明确记录正式存档差异。
+2. controller 继续减负：后续可进一步分离动作结果应用、回忆写入、关系解锁和展示 DTO，但不需要为交付重写大架构。
+3. UI 调试信息分层：公开演示界面可以压缩 JSON event 区，但保留开发者可展开查看。
+4. 阶段二 LLM 门禁复核：默认无 key 可跑、mock/timeout/非法 JSON/字段越界回归测试保持稳定，UI 不等待慢 LLM。
+5. 桌宠模式增强：阶段二稳定后再补右键菜单、返回控制面板和更稳的窗口交互。
 
 ## 与 05/06/07 的一致性决策
 
@@ -209,10 +227,9 @@
 
 ## 下一步推荐实施顺序
 
-1. 写失败测试：演示重置后状态固定，背包为空，回忆为空，信任和金币回到 seed。
-2. 实现演示 reset/seed，不覆盖正式存档。
-3. 增加存档 schema/version 和 inventory 补全，修复重启后逻辑时间风险。
-4. UI 增加“重置演示状态”或演示导览入口。
-5. 跑 `pytest` 和 PySide visible smoke。
-6. 再做主动陪伴触发原因可视化。
-7. 最后评估是否压缩公开演示 UI 中的 JSON event 区。
+1. 进入阶段二前先跑 LLM 表达 adapter 定向测试，确认现有 mock、timeout、fallback 和只读表达边界。
+2. 补缺口时先写失败测试：无 key、慢 LLM、非法 JSON、越界字段、状态写入企图和 UI 非阻塞。
+3. 只补表达 adapter 入口和配置边界，不接 TTS，不做自动屏幕观察，不做搜索主体。
+4. 继续使用 `--demo-save` / `--reset-demo-save` 做排练，避免默认正式存档被演示污染。
+5. 阶段二小切片结束后跑定向测试和全量 `python -m pytest`。
+6. 阶段二稳定后，再评估桌宠模式右键菜单与返回控制面板，而不是直接做 MotionLayer 或 DemoMode 主体。
