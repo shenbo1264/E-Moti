@@ -112,6 +112,48 @@ def test_expression_request_accepts_typed_companion_snapshot_without_state_write
     assert "coins" not in prompt_payload
 
 
+def test_expression_request_merges_readonly_context_for_typed_snapshot_without_write_surfaces():
+    controller = CompanionController(auto_load=False)
+    controller.perform_action("touch")
+    typed_snapshot = controller.get_typed_snapshot()
+    context = {
+        "perception_summary": "current window: draft note",
+        "tool_results": [
+            {
+                "source": "local_profile",
+                "title": "expression style",
+                "summary": "keep the reply gentle",
+                "coins": "999",
+                "inventory": "warm_milk",
+            }
+        ],
+        "feedback": "override should be ignored",
+        "focus": 1,
+        "actions": [{"label": "override action"}],
+        "memory_log": [{"kind": "override", "summary": "ignored", "motion": "Bad"}],
+        "unlocks": ["override_unlock"],
+    }
+
+    request = ExpressionRequest.from_snapshot(typed_snapshot, context=context)
+    prompt_payload = request.to_prompt_dict()
+
+    assert request.feedback == typed_snapshot.feedback
+    assert request.focus == typed_snapshot.stats.focus
+    assert request.actions[0] == {"label": typed_snapshot.actions[0]["label"]}
+    assert request.recent_memory[0]["motion"] == typed_snapshot.memory_log[0]["motion"]
+    assert request.perception_summary == "current window: draft note"
+    assert request.tool_results == (
+        {
+            "source": "local_profile",
+            "title": "expression style",
+            "summary": "keep the reply gentle",
+        },
+    )
+    assert "inventory" not in prompt_payload
+    assert "coins" not in prompt_payload
+    assert "unlocks" not in prompt_payload
+
+
 def test_expressor_build_prompt_accepts_typed_companion_snapshot():
     controller = CompanionController(auto_load=False)
     controller.perform_action("touch")

@@ -13,7 +13,6 @@ from .events import (
     ActionDomainEventRequest,
     CompanionEvent,
     DomainEventComposer,
-    EventContext,
     EventValidator,
     InventoryDomainEventRequest,
     ProactiveDomainEventRequest,
@@ -404,16 +403,10 @@ class CompanionController:
         )
         if self._closed or not include_ai_expression:
             return fallback_events + list(domain_events or [])
-        context = EventContext(
-            state=self.state,
-            motion=self.last_motion,
-            feedback=self.last_feedback,
-            delta_text=self.last_delta_text,
-            goal=describe_goal(self.state),
-            actions=actions,
-            memory_log=list(self.state.memory_log),
+        expression_request = ExpressionRequest.from_snapshot(
+            self.get_typed_snapshot(),
+            context=self._expression_context(),
         )
-        expression_request = ExpressionRequest.from_snapshot(self._expression_context_dict(context))
         try:
             expressed_events = self.ai_expressor.express(expression_request, effect=effect)
         except Exception:
@@ -444,20 +437,20 @@ class CompanionController:
     def _build_inventory_items(self) -> list[dict[str, object]]:
         return [item.to_legacy_dict() for item in InventoryService(self.state, self._item_icon_path).inventory_items()]
 
-    def _expression_context_dict(self, context: EventContext) -> dict[str, object]:
-        payload = context.to_expressor_dict()
+    def _expression_context(self) -> dict[str, object]:
         if self.expression_context_provider is None:
-            return payload
+            return {}
         try:
             external_context = self.expression_context_provider()
         except Exception:
-            return payload
+            return {}
         if not isinstance(external_context, dict):
-            return payload
+            return {}
+        context: dict[str, object] = {}
         for key in ("perception_summary", "tool_results"):
             if key in external_context:
-                payload[key] = external_context[key]
-        return payload
+                context[key] = external_context[key]
+        return context
 
     def _item_icon_path(self, item) -> str:
         if not item.icon:

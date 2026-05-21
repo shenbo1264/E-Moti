@@ -74,8 +74,15 @@ class ExpressionRequest:
     tool_results: tuple[dict[str, str], ...] = ()
 
     @classmethod
-    def from_snapshot(cls, snapshot: dict[str, object] | CompanionSnapshot) -> "ExpressionRequest":
+    def from_snapshot(
+        cls,
+        snapshot: dict[str, object] | CompanionSnapshot,
+        context: Mapping[str, object] | None = None,
+    ) -> "ExpressionRequest":
         source = _expression_payload_from_snapshot(snapshot)
+        context_payload = _expression_payload_from_context(context)
+        if context_payload:
+            source = {**source, **context_payload}
         actions = _sanitize_actions(source.get("actions", []))
         recent_memory = _sanitize_recent_memory(source.get("memory_log", []))
         return cls(
@@ -403,6 +410,16 @@ def _expression_payload_from_snapshot(snapshot: dict[str, object] | CompanionSna
     if isinstance(snapshot, dict):
         return snapshot
     raise TypeError("expression snapshot must be a dict or CompanionSnapshot")
+
+
+def _expression_payload_from_context(context: Mapping[str, object] | None) -> dict[str, object]:
+    if not isinstance(context, Mapping):
+        return {}
+    payload: dict[str, object] = {}
+    for key in ("perception_summary", "tool_results"):
+        if key in context:
+            payload[key] = context[key]
+    return payload
 
 
 def _ensure_expression_request(snapshot: dict[str, object] | CompanionSnapshot | ExpressionRequest) -> ExpressionRequest:

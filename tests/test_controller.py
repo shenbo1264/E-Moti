@@ -6,6 +6,7 @@ from guanghe_companion.ai_expressor import ExpressionRequest
 from guanghe_companion.controller import CompanionController
 from guanghe_companion.engine import create_initial_state
 from guanghe_companion.events import CompanionEvent
+from guanghe_companion.snapshot import CompanionSnapshot
 from guanghe_companion.storage import save_state
 
 
@@ -391,6 +392,73 @@ def test_controller_passes_optional_readonly_expression_context_to_ai_adapter(tm
     assert "perception_summary" not in snapshot
     assert "tool_results" not in snapshot
     assert snapshot["mood"] == 62
+
+
+def test_controller_builds_ai_expression_request_from_typed_snapshot_and_separate_context(tmp_path, monkeypatch):
+    captured = {}
+    original_from_snapshot = ExpressionRequest.from_snapshot
+
+    def recording_from_snapshot(cls, snapshot, context=None):
+        captured["source_snapshot"] = snapshot
+        captured["context"] = context
+        if context is None:
+            return original_from_snapshot(snapshot)
+        return original_from_snapshot(snapshot, context=context)
+
+    class CapturingExpressor:
+        def express(self, snapshot, effect=None):
+            captured["request"] = snapshot
+            return []
+
+    def context_provider():
+        return {
+            "perception_summary": "current window: local notes",
+            "tool_results": [
+                {
+                    "source": "character_pack",
+                    "title": "voice",
+                    "summary": "keep Starsea gentle",
+                    "coins": "999",
+                }
+            ],
+            "feedback": "override should be ignored",
+            "actions": [{"label": "override action"}],
+        }
+
+    monkeypatch.setattr(ExpressionRequest, "from_snapshot", classmethod(recording_from_snapshot))
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=CapturingExpressor(),
+        expression_context_provider=context_provider,
+    )
+
+    snapshot = controller.perform_action("touch")
+
+    request = captured["request"]
+    assert isinstance(captured["source_snapshot"], CompanionSnapshot)
+    assert captured["context"] == {
+        "perception_summary": "current window: local notes",
+        "tool_results": [
+            {
+                "source": "character_pack",
+                "title": "voice",
+                "summary": "keep Starsea gentle",
+                "coins": "999",
+            }
+        ],
+    }
+    assert isinstance(request, ExpressionRequest)
+    assert request.perception_summary == "current window: local notes"
+    assert request.tool_results == (
+        {
+            "source": "character_pack",
+            "title": "voice",
+            "summary": "keep Starsea gentle",
+        },
+    )
+    assert request.feedback == snapshot["feedback"]
+    assert request.actions[0] == {"label": snapshot["actions"][0]["label"]}
 
 
 def test_controller_ignores_expression_context_provider_failures(tmp_path):
