@@ -4,6 +4,7 @@ import time
 import guanghe_companion.ai_expressor as ai_expressor_module
 from guanghe_companion.ai_expressor import (
     DEFAULT_TIMEOUT_SECONDS,
+    MAX_OPENAI_RESPONSE_TEXT_LENGTH,
     DEFAULT_OPENAI_MODEL,
     ExpressionRequest,
     LLMProviderError,
@@ -749,6 +750,37 @@ def test_expressor_falls_back_when_llm_json_is_invalid():
     assert events[1]["character_name"] == "STAT"
     assert events[2]["character_name"] == "CHOICE"
     assert expressor.last_fallback_reason == "invalid_json"
+
+
+def test_expressor_rejects_non_string_llm_response_before_json_parsing():
+    snapshot = make_snapshot()
+    payload = b'[{"type":"speech","speech":"Back online.","effect":"ATTENTION"}]'
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "provider_error"
+
+
+def test_expressor_rejects_oversized_llm_response_before_json_parsing():
+    snapshot = make_snapshot()
+    valid_payload = '[{"type":"speech","speech":"Back online.","effect":"ATTENTION"}]'
+    oversized_payload = valid_payload + (" " * (MAX_OPENAI_RESPONSE_TEXT_LENGTH + 1))
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: oversized_payload)
+
+    events = expressor.express(snapshot)
+
+    assert len(events) == 3
+    assert events[0]["speech"] == snapshot["feedback"]
+    assert events[0]["effect"] == "DISAPPOINTED"
+    assert events[1]["character_name"] == "STAT"
+    assert events[2]["character_name"] == "CHOICE"
+    assert expressor.last_fallback_reason == "provider_error"
 
 
 def test_expressor_marks_empty_llm_event_list_as_invalid_payload():

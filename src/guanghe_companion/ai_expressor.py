@@ -280,6 +280,7 @@ class ShinsekaiAIExpressor:
 
         try:
             raw = self._call_llm(self.build_prompt(snapshot))
+            raw = _validated_llm_response_text(raw)
             payload = json.loads(raw)
         except TimeoutError:
             self.last_fallback_reason = "timeout"
@@ -662,6 +663,14 @@ def _validated_response_text(value: str) -> str:
     if len(text) > MAX_OPENAI_RESPONSE_TEXT_LENGTH:
         raise ValueError("OpenAI response text is too long.")
     return text
+
+
+def _validated_llm_response_text(value: object) -> str:
+    if not isinstance(value, str):
+        raise LLMProviderError("LLM expression provider failed: invalid_response_text")
+    if len(value) > MAX_OPENAI_RESPONSE_TEXT_LENGTH:
+        raise LLMProviderError("LLM expression provider failed: invalid_response_text")
+    return value.strip()
 
 
 def _parse_timeout(value: str | None) -> float:
