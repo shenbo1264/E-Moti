@@ -5,7 +5,7 @@ import sys
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QPoint, QSize, QTimer, Qt, Slot
+from PySide6.QtCore import QPoint, QRect, QSize, QTimer, Qt, Slot
 from PySide6.QtGui import QAction, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -382,7 +382,21 @@ class CompanionWindow(QMainWindow):
     def _move_desktop_window_by(self, delta: QPoint) -> None:
         if not self.desktop_mode:
             return
-        self.move(self.pos() + delta)
+        self.move(self._clamp_desktop_position(self.pos() + delta))
+
+    def _clamp_desktop_position(self, target: QPoint) -> QPoint:
+        bounds = self._desktop_available_geometry()
+        max_x = max(bounds.left(), bounds.right() - self.width() + 1)
+        max_y = max(bounds.top(), bounds.bottom() - self.height() + 1)
+        x = min(max(target.x(), bounds.left()), max_x)
+        y = min(max(target.y(), bounds.top()), max_y)
+        return QPoint(x, y)
+
+    def _desktop_available_geometry(self) -> QRect:
+        screen = QApplication.screenAt(self.frameGeometry().center()) or QApplication.primaryScreen()
+        if screen is None:
+            return QRect(self.pos(), self.size())
+        return screen.availableGeometry()
 
     def _setup_timers(self) -> None:
         self.frame_timer = QTimer(self)
