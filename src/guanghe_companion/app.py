@@ -31,6 +31,8 @@ from .storage import DEMO_SAVE_PATH
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
 DESKTOP_DOCK_THRESHOLD_PX = 32
+CONTROL_PANEL_SPRITE_MIN_HEIGHT = 300
+DESKTOP_SPRITE_MIN_HEIGHT = 260
 
 
 class SpriteInteractionLabel(QLabel):
@@ -171,7 +173,7 @@ class CompanionWindow(QMainWindow):
         self.sprite_label.setStyleSheet(
             "QLabel { border: 2px dashed #4f6d7a; border-radius: 18px; padding: 12px; background: #f7fbfd; }"
         )
-        self.sprite_label.setMinimumHeight(300)
+        self.sprite_label.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         layout.addWidget(self.sprite_label)
         self.desktop_feedback_label = QLabel()
         self.desktop_feedback_label.setWordWrap(True)
@@ -331,6 +333,8 @@ class CompanionWindow(QMainWindow):
         self.perception_card.hide()
         self.shop_card.hide()
         self.inventory_card.hide()
+        self.character_label.hide()
+        self.sprite_label.setMinimumHeight(DESKTOP_SPRITE_MIN_HEIGHT)
         self.desktop_feedback_label.show()
         self.resize(360, 420)
 
@@ -375,6 +379,8 @@ class CompanionWindow(QMainWindow):
             self.inventory_card,
         ):
             card.show()
+        self.character_label.show()
+        self.sprite_label.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         self.desktop_feedback_label.hide()
         self.resize(1180, 760)
         self.show()

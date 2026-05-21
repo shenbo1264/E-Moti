@@ -63,6 +63,27 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     app.processEvents()
 
 
+def test_desktop_mode_uses_compact_pet_surface_after_layout(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert window.width() <= 430
+    assert window.height() <= 460
+    assert not window.character_label.isVisibleTo(window)
+    assert window.desktop_feedback_label.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
 def test_desktop_mode_shows_minimal_feedback_overlay(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
