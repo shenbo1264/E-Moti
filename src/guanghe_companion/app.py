@@ -708,11 +708,26 @@ class CompanionWindow(QMainWindow):
         menu = QMenu(self)
         status_action = QAction("状态面板", self)
         status_action.triggered.connect(self._show_desktop_status_panel)
+        history_action = QAction("对话历史", self)
+        history_action.triggered.connect(self._show_dialogue_history_panel)
+        clear_history_action = QAction("清屏", self)
+        clear_history_action.triggered.connect(self._clear_dialogue_history)
+        copy_history_action = QAction("复制对话", self)
+        copy_history_action.triggered.connect(self._copy_dialogue_history_to_clipboard)
+        replay_history_action = QAction("回放上一句", self)
+        replay_history_action.triggered.connect(self._replay_latest_dialogue)
+        revert_history_action = QAction("回溯上一轮", self)
+        revert_history_action.triggered.connect(self._revert_dialogue_history)
         return_action = QAction("返回控制面板", self)
         return_action.triggered.connect(self._return_to_control_panel)
         exit_action = QAction("退出", self)
         exit_action.triggered.connect(self.close)
         menu.addAction(status_action)
+        menu.addAction(history_action)
+        menu.addAction(clear_history_action)
+        menu.addAction(copy_history_action)
+        menu.addAction(replay_history_action)
+        menu.addAction(revert_history_action)
         menu.addSeparator()
         menu.addAction(return_action)
         menu.addAction(exit_action)
@@ -736,6 +751,31 @@ class CompanionWindow(QMainWindow):
             "状态面板",
             self._format_desktop_status_panel(self.controller.get_snapshot()),
         )
+
+    def _show_dialogue_history_panel(self) -> None:
+        history_text = self.controller.copy_dialogue_history_text() or "暂无对话历史"
+        QMessageBox.information(self, "对话历史", history_text)
+
+    def _clear_dialogue_history(self) -> None:
+        self._apply_snapshot(self.controller.clear_dialogue_history())
+        self.desktop_feedback_label.show()
+
+    def _copy_dialogue_history_to_clipboard(self) -> None:
+        history_text = self.controller.copy_dialogue_history_text()
+        QApplication.clipboard().setText(history_text)
+        if not history_text:
+            self.desktop_feedback_label.setText(f"{self.controller.state.character_name}：暂无可复制的对话。")
+        else:
+            self.desktop_feedback_label.setText(f"{self.controller.state.character_name}：对话已复制。")
+        self.desktop_feedback_label.show()
+
+    def _replay_latest_dialogue(self) -> None:
+        self._apply_snapshot(self.controller.replay_latest_dialogue())
+        self.desktop_feedback_label.show()
+
+    def _revert_dialogue_history(self) -> None:
+        self._apply_snapshot(self.controller.revert_dialogue_history())
+        self.desktop_feedback_label.show()
 
     def _format_desktop_status_panel(self, snapshot: dict[str, object]) -> str:
         return (

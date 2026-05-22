@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import replace
 from pathlib import Path
 from typing import Protocol
@@ -9,6 +9,14 @@ from .actions import CompanionActionLayer, CompanionActionRequest, action_label
 from .ai_expressor import ExpressionRequest, ShinsekaiAIExpressor, build_default_ai_expressor
 from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
 from .dialogue import DialogueRequest
+from .dialogue_history import (
+    DialogueHistoryEntry,
+    DialogueHistoryStore,
+    append_dialogue_exchange,
+    format_dialogue_history_text,
+    replay_latest_assistant,
+    revert_latest_exchange,
+)
 from .engine import BUYABLE_ITEMS, TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
 from .events import (
     ActionDomainEventRequest,
@@ -38,6 +46,17 @@ class CompanionSaveManager(Protocol):
         ...
 
 
+class CompanionDialogueHistoryStore(Protocol):
+    def load(self) -> tuple[DialogueHistoryEntry, ...]:
+        ...
+
+    def save(self, entries: Iterable[DialogueHistoryEntry]) -> None:
+        ...
+
+    def clear(self) -> None:
+        ...
+
+
 class CompanionController:
     def __init__(
         self,
@@ -46,9 +65,18 @@ class CompanionController:
         ai_expressor: ShinsekaiAIExpressor | None = None,
         expression_context_provider: ExpressionContextProvider | None = None,
         save_manager: CompanionSaveManager | None = None,
+        dialogue_history_path: Path | None = None,
+        dialogue_history_store: CompanionDialogueHistoryStore | None = None,
     ) -> None:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
         self.save_manager = save_manager or SaveManager(self.save_path)
+        self.dialogue_history_path = (
+            Path(dialogue_history_path)
+            if dialogue_history_path is not None
+            else _dialogue_history_path_for_save_path(self.save_path)
+        )
+        self.dialogue_history_store = dialogue_history_store or DialogueHistoryStore(self.dialogue_history_path)
+        self.dialogue_history = self.dialogue_history_store.load()
         self.character_pack = load_default_character_pack()
         self.ai_expressor = ai_expressor or build_default_ai_expressor()
         self._closed = False
@@ -132,6 +160,7 @@ class CompanionController:
             inventory_items=self._build_inventory_items(),
             item_feedback_icon=self.last_item_feedback_icon,
             proactive_feedback=self.last_proactive_feedback,
+            dialogue_history=self.dialogue_history,
         ).build_input()
         return SnapshotBuilder(builder_input).build()
 
@@ -159,7 +188,63 @@ class CompanionController:
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
         self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
+        if text:
+            self.dialogue_history = append_dialogue_exchange(
+                self.dialogue_history,
+                user_text=text,
+                assistant_name=self.state.character_name,
+                assistant_text=self.last_feedback,
+                effect="ATTENTION",
+                source=request.source,
+            )
+            self.dialogue_history_store.save(self.dialogue_history)
         self._persist()
+        return self.get_snapshot()
+
+    def copy_dialogue_history_text(self) -> str:
+        return format_dialogue_history_text(self.dialogue_history)
+
+    def clear_dialogue_history(self) -> dict[str, object]:
+        self.dialogue_history = ()
+        self.dialogue_history_store.clear()
+        self._set_dialogue_history_feedback(
+            feedback="对话已清屏。",
+            delta_text="对话历史已清空，养成状态未改变",
+            effect="SWITCH",
+        )
+        return self.get_snapshot()
+
+    def replay_latest_dialogue(self) -> dict[str, object]:
+        entry = replay_latest_assistant(self.dialogue_history)
+        if entry is None:
+            self._set_dialogue_history_feedback(
+                feedback="暂无可回放的对话。",
+                delta_text="历史回放未改变养成状态",
+                effect="DISAPPOINTED",
+            )
+            return self.get_snapshot()
+        self._set_dialogue_history_feedback(
+            feedback=entry.text,
+            delta_text="历史回放不改变养成状态",
+            effect=entry.effect or "ATTENTION",
+        )
+        return self.get_snapshot()
+
+    def revert_dialogue_history(self) -> dict[str, object]:
+        self.dialogue_history, entry = revert_latest_exchange(self.dialogue_history)
+        self.dialogue_history_store.save(self.dialogue_history)
+        if entry is None:
+            self._set_dialogue_history_feedback(
+                feedback="已回溯到对话开始。",
+                delta_text="历史回溯不改变养成状态",
+                effect="SWITCH",
+            )
+            return self.get_snapshot()
+        self._set_dialogue_history_feedback(
+            feedback=entry.text,
+            delta_text="历史回溯不改变养成状态",
+            effect=entry.effect or "ATTENTION",
+        )
         return self.get_snapshot()
 
     def perform_action_request(
@@ -408,6 +493,15 @@ class CompanionController:
     def _persist(self) -> None:
         self.save_manager.save(self.state)
 
+    def _set_dialogue_history_feedback(self, *, feedback: str, delta_text: str, effect: str) -> None:
+        self.last_motion = "Default"
+        self.last_feedback = feedback
+        self.last_delta_text = delta_text
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_proactive_feedback = None
+        self.last_events = self._build_events(effect=effect, include_ai_expression=False)
+
     def _build_events(
         self,
         effect: str,
@@ -517,3 +611,11 @@ class CompanionController:
 
 def _is_local_fallback_expression(events: list[CompanionEvent], feedback: str) -> bool:
     return [event.event_type for event in events] == ["speech", "stat", "choice"] and events[0].speech == feedback
+
+
+def _dialogue_history_path_for_save_path(save_path: Path) -> Path:
+    if save_path.name == "companion_save.json":
+        return save_path.with_name("dialogue_history.json")
+    if save_path.name == "companion_demo_save.json":
+        return save_path.with_name("companion_demo_dialogue_history.json")
+    return save_path.with_name(f"{save_path.stem}_dialogue_history.json")

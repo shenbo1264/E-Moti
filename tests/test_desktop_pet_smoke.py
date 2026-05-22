@@ -57,6 +57,39 @@ def test_desktop_pet_smoke_validator_accepts_dialogue_controls(monkeypatch, tmp_
     app.processEvents()
 
 
+def test_desktop_pet_smoke_validator_accepts_dialogue_history_menu(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+    from tools.desktop_pet_smoke import EXPECTED_MENU_LABELS, validate_desktop_pet_window
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(
+        controller=CompanionController(save_path=tmp_path / "smoke-save.json", auto_load=False),
+        desktop_mode=True,
+    )
+    window.show()
+    app.processEvents()
+
+    assert EXPECTED_MENU_LABELS == (
+        "状态面板",
+        "对话历史",
+        "清屏",
+        "复制对话",
+        "回放上一句",
+        "回溯上一轮",
+        "返回控制面板",
+        "退出",
+    )
+    assert validate_desktop_pet_window(app, window) == []
+
+    window.close()
+    app.processEvents()
+
+
 def test_desktop_pet_smoke_validator_reports_window_escape(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 

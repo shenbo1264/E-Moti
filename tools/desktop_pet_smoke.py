@@ -18,7 +18,16 @@ from PySide6.QtWidgets import QApplication
 from guanghe_companion.app import CompanionWindow
 from guanghe_companion.controller import CompanionController
 
-EXPECTED_MENU_LABELS = ("\u72b6\u6001\u9762\u677f", "\u8fd4\u56de\u63a7\u5236\u9762\u677f", "\u9000\u51fa")
+EXPECTED_MENU_LABELS = (
+    "\u72b6\u6001\u9762\u677f",
+    "\u5bf9\u8bdd\u5386\u53f2",
+    "\u6e05\u5c4f",
+    "\u590d\u5236\u5bf9\u8bdd",
+    "\u56de\u653e\u4e0a\u4e00\u53e5",
+    "\u56de\u6eaf\u4e0a\u4e00\u8f6e",
+    "\u8fd4\u56de\u63a7\u5236\u9762\u677f",
+    "\u9000\u51fa",
+)
 
 
 @dataclass(frozen=True, slots=True)

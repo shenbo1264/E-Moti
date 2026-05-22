@@ -44,6 +44,10 @@ def demo_save_path() -> Path:
     return user_data_dir() / "companion_demo_save.json"
 
 
+def dialogue_history_path() -> Path:
+    return user_data_dir() / "dialogue_history.json"
+
+
 def _asset_candidates() -> list[Path]:
     candidates: list[Path] = []
     if is_frozen():

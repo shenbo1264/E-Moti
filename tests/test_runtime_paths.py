@@ -40,10 +40,11 @@ def test_frozen_save_paths_use_local_app_data(monkeypatch, tmp_path):
 
 
 def test_user_data_dir_can_be_overridden_for_smoke_runs(monkeypatch, tmp_path):
-    from guanghe_companion.runtime_paths import default_save_path, user_data_dir
+    from guanghe_companion.runtime_paths import default_save_path, dialogue_history_path, user_data_dir
 
     override = tmp_path / "runtime-data"
     monkeypatch.setenv("E_MOTI_USER_DATA_DIR", str(override))
 
     assert user_data_dir() == override
     assert default_save_path() == override / "companion_save.json"
+    assert dialogue_history_path() == override / "dialogue_history.json"

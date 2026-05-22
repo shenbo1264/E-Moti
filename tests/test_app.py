@@ -398,9 +398,10 @@ def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_pat
     menu = window._build_desktop_context_menu()
     labels = [action.text() for action in menu.actions() if not action.isSeparator()]
 
-    assert labels == ["状态面板", "返回控制面板", "退出"]
+    assert labels == ["状态面板", "对话历史", "清屏", "复制对话", "回放上一句", "回溯上一轮", "返回控制面板", "退出"]
 
-    menu.actions()[2].trigger()
+    labels_to_actions = {action.text(): action for action in menu.actions() if not action.isSeparator()}
+    labels_to_actions["返回控制面板"].trigger()
     app.processEvents()
     flags = window.windowFlags()
 
@@ -481,11 +482,67 @@ def test_desktop_mode_context_menu_exit_closes_window_and_controller(monkeypatch
     app.processEvents()
 
     menu = window._build_desktop_context_menu()
-    menu.actions()[-1].trigger()
+    labels_to_actions = {action.text(): action for action in menu.actions() if not action.isSeparator()}
+    labels_to_actions["退出"].trigger()
     app.processEvents()
 
     assert not window.isVisible()
     assert controller.close_calls == 1
+
+
+def test_desktop_pet_history_menu_shows_copies_replays_reverts_and_clears_dialogue(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication, QMessageBox
+
+    from guanghe_companion.app import CompanionWindow
+
+    captured_messages = []
+
+    def fake_information(parent, title, message):
+        captured_messages.append((title, message))
+
+    monkeypatch.setattr(QMessageBox, "information", fake_information)
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    window.dialogue_input.setText("第一句")
+    window.dialogue_send_button.click()
+    window.dialogue_input.setText("第二句")
+    window.dialogue_send_button.click()
+    app.processEvents()
+
+    menu = window._build_desktop_context_menu()
+    labels_to_actions = {action.text(): action for action in menu.actions() if not action.isSeparator()}
+
+    labels_to_actions["对话历史"].trigger()
+    app.processEvents()
+    assert captured_messages[-1][0] == "对话历史"
+    assert "你：第一句" in captured_messages[-1][1]
+    assert "星汐：" in captured_messages[-1][1]
+    assert "{" not in captured_messages[-1][1]
+
+    labels_to_actions["复制对话"].trigger()
+    app.processEvents()
+    assert "你：第二句" in QApplication.clipboard().text()
+
+    labels_to_actions["回放上一句"].trigger()
+    app.processEvents()
+    assert "第二句" in window.desktop_feedback_label.text()
+
+    labels_to_actions["回溯上一轮"].trigger()
+    app.processEvents()
+    assert "第一句" in window.desktop_feedback_label.text()
+
+    labels_to_actions["清屏"].trigger()
+    app.processEvents()
+    assert window.controller.get_snapshot()["dialogue_history"] == []
+    assert "清屏" in window.controller.get_snapshot()["feedback"]
+
+    window.close()
+    app.processEvents()
 
 
 def test_should_use_desktop_mode_accepts_pet_mode_alias():

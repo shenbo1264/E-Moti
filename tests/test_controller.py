@@ -4,6 +4,7 @@ import time
 from guanghe_companion.actions import CompanionActionRequest
 from guanghe_companion.ai_expressor import ExpressionRequest
 from guanghe_companion.controller import CompanionController
+from guanghe_companion.dialogue import DialogueRequest
 from guanghe_companion.engine import create_initial_state
 from guanghe_companion.events import CompanionEvent
 from guanghe_companion.snapshot import CompanionSnapshot
@@ -848,3 +849,61 @@ def test_controller_uses_injected_save_manager_for_load_and_persist():
     assert len(save_manager.saved_states) == 1
     assert save_manager.saved_states[0] is controller.state
     assert save_manager.saved_states[0].mood == 62
+
+
+def test_controller_records_dialogue_history_without_growth_mutation(tmp_path):
+    history_path = tmp_path / "dialogue-history.json"
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=history_path,
+    )
+    before = controller.get_typed_snapshot()
+
+    snapshot = controller.submit_dialogue_request(DialogueRequest("今天陪我一会儿"))
+
+    assert [entry["role"] for entry in snapshot["dialogue_history"]] == ["user", "assistant"]
+    assert snapshot["dialogue_history"][0]["speaker"] == "你"
+    assert snapshot["dialogue_history"][0]["text"] == "今天陪我一会儿"
+    assert snapshot["dialogue_history"][1]["speaker"] == snapshot["character_name"]
+    assert "今天陪我一会儿" in snapshot["dialogue_history"][1]["text"]
+    assert controller.copy_dialogue_history_text() == (
+        "你：今天陪我一会儿\n"
+        f"{snapshot['character_name']}：{snapshot['dialogue_history'][1]['text']}"
+    )
+    assert controller.get_typed_snapshot().stats == before.stats
+    assert controller.get_typed_snapshot().inventory == before.inventory
+    assert controller.get_typed_snapshot().relationship_stage == before.relationship_stage
+    assert controller.get_typed_snapshot().memory_log == before.memory_log
+
+    reloaded = CompanionController(
+        save_path=tmp_path / "save.json",
+        dialogue_history_path=history_path,
+    )
+
+    assert reloaded.copy_dialogue_history_text() == controller.copy_dialogue_history_text()
+
+
+def test_controller_clear_replay_and_revert_dialogue_history_do_not_touch_growth_state(tmp_path):
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+    )
+    baseline = controller.get_typed_snapshot()
+    controller.submit_dialogue_request(DialogueRequest("第一句"))
+    controller.submit_dialogue_request(DialogueRequest("第二句"))
+
+    replayed = controller.replay_latest_dialogue()
+    reverted = controller.revert_dialogue_history()
+    cleared = controller.clear_dialogue_history()
+
+    assert "第二句" in replayed["feedback"]
+    assert [entry["text"] for entry in reverted["dialogue_history"]] == ["第一句", "我听见了：第一句"]
+    assert "第一句" in reverted["feedback"]
+    assert cleared["dialogue_history"] == []
+    assert "清屏" in cleared["feedback"]
+    assert controller.get_typed_snapshot().stats == baseline.stats
+    assert controller.get_typed_snapshot().inventory == baseline.inventory
+    assert controller.get_typed_snapshot().relationship_stage == baseline.relationship_stage
+    assert controller.get_typed_snapshot().memory_log == baseline.memory_log

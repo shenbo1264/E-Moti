@@ -4,6 +4,7 @@ from copy import deepcopy
 from dataclasses import dataclass
 import json
 
+from .dialogue_history import DialogueHistoryEntry, format_dialogue_history_text
 from .engine import describe_goal
 from .events import CompanionEvent
 from .models import CompanionState
@@ -105,6 +106,7 @@ class CompanionSnapshot:
     actions: list[dict[str, object]]
     inventory_items: list[dict[str, object]]
     item_feedback_icon: str | None = None
+    dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
 
     def to_compatible_dict(self) -> dict[str, object]:
         return SnapshotCompatibleSerializer(self).to_dict()
@@ -153,6 +155,8 @@ class SnapshotCompatibleSerializer:
             "actions": deepcopy(self.snapshot.actions),
             "shop_items": deepcopy(self.snapshot.shop_items),
             "inventory_items": deepcopy(self.snapshot.inventory_items),
+            "dialogue_history": [entry.to_dict() for entry in self.snapshot.dialogue_history],
+            "dialogue_history_text": format_dialogue_history_text(self.snapshot.dialogue_history),
         }
 
 
@@ -176,6 +180,7 @@ class SnapshotBuilderInput:
     inventory_items: list[dict[str, object]]
     item_feedback_icon: str | None
     proactive_feedback: dict[str, str] | None
+    dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,6 +200,7 @@ class SnapshotContextFactory:
     inventory_items: list[dict[str, object]]
     item_feedback_icon: str | None
     proactive_feedback: dict[str, str] | None
+    dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
 
     def build_input(self) -> SnapshotBuilderInput:
         relationship = RelationshipService(self.state)
@@ -217,6 +223,7 @@ class SnapshotContextFactory:
             inventory_items=self.inventory_items,
             item_feedback_icon=self.item_feedback_icon,
             proactive_feedback=self.proactive_feedback,
+            dialogue_history=self.dialogue_history,
         )
 
 
@@ -252,4 +259,5 @@ class SnapshotBuilder:
             actions=deepcopy(source.actions),
             inventory_items=deepcopy(source.inventory_items),
             item_feedback_icon=source.item_feedback_icon,
+            dialogue_history=tuple(source.dialogue_history),
         )
