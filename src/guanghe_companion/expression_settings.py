@@ -86,7 +86,7 @@ class ExpressionSettingsStore:
         if not target.exists():
             return ExpressionSettings()
         try:
-            payload = json.loads(target.read_text(encoding="utf-8"))
+            payload = json.loads(target.read_text(encoding="utf-8-sig"))
         except (OSError, UnicodeDecodeError, json.JSONDecodeError):
             return ExpressionSettings()
         return normalize_expression_settings(payload)

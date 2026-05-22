@@ -50,6 +50,23 @@ def test_expression_settings_store_round_trips_safe_local_config(tmp_path):
     assert fallback.timeout_seconds == 2.0
 
 
+def test_expression_settings_store_loads_utf8_bom_file(tmp_path):
+    from guanghe_companion.expression_settings import ExpressionSettingsStore
+
+    path = tmp_path / "expression-settings.json"
+    path.write_text(
+        '{"enabled": true, "provider": "deepseek", "api_key": "sk-demo", "timeout_seconds": 30}',
+        encoding="utf-8-sig",
+    )
+
+    loaded = ExpressionSettingsStore(path).load()
+
+    assert loaded.enabled is True
+    assert loaded.provider == "deepseek"
+    assert loaded.api_key == "sk-demo"
+    assert loaded.timeout_seconds == 30.0
+
+
 def test_expression_settings_path_uses_user_data_dir(monkeypatch, tmp_path):
     from guanghe_companion.runtime_paths import expression_settings_path
 
