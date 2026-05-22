@@ -12,7 +12,7 @@ from urllib import request
 from .dialogue_parser import DialogueStreamParser
 from .engine import create_initial_state
 from .events import ALLOWED_EFFECTS, build_fallback_events, validate_events
-from .expression_settings import ExpressionSettings
+from .expression_settings import ExpressionSettings, provider_api_style
 from .snapshot import CompanionSnapshot
 
 
@@ -209,6 +209,141 @@ class OpenAIResponsesClient:
 
     def close(self) -> None:
         self._closed = True
+
+
+class OpenAICompatibleChatClient:
+    def __init__(
+        self,
+        api_key: str,
+        model: str = DEFAULT_OPENAI_MODEL,
+        base_url: str = "https://api.openai.com/v1",
+        timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+        transport: HTTPTransport | None = None,
+    ) -> None:
+        self.api_key = _normalize_api_key(api_key)
+        self.model = _normalize_model(model)
+        self.base_url = _normalize_base_url(base_url)
+        self.timeout_seconds = _normalize_timeout(timeout_seconds)
+        self.transport = transport or _default_transport
+        self._closed = False
+
+    def __enter__(self) -> "OpenAICompatibleChatClient":
+        return self
+
+    def __exit__(self, exc_type, exc, traceback) -> None:
+        self.close()
+
+    def __call__(self, prompt: str) -> str:
+        if self._closed:
+            raise LLMProviderError("OpenAI-compatible expression provider failed: closed")
+        if not self.api_key:
+            raise LLMProviderError("OpenAI-compatible expression provider failed: missing_api_key")
+        if not isinstance(prompt, str):
+            raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
+        if not prompt.strip():
+            raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
+        if len(prompt) > MAX_OPENAI_PROMPT_LENGTH:
+            raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
+        payload = json.dumps(
+            {
+                "model": self.model,
+                "messages": [{"role": "user", "content": prompt}],
+            },
+            ensure_ascii=False,
+        ).encode("utf-8")
+        api_request = request.Request(
+            _chat_completions_url(self.base_url),
+            data=payload,
+            headers={
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json",
+            },
+            method="POST",
+        )
+        try:
+            raw = self.transport(api_request, self.timeout_seconds)
+            if not isinstance(raw, (bytes, bytearray)):
+                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_bytes")
+            if len(raw) > MAX_OPENAI_RESPONSE_BYTES:
+                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_size")
+            try:
+                decoded = bytes(raw).decode("utf-8")
+            except UnicodeDecodeError as exc:
+                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_encoding") from exc
+            try:
+                response = json.loads(decoded)
+            except json.JSONDecodeError as exc:
+                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_json") from exc
+            if not isinstance(response, dict):
+                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_shape")
+            try:
+                return _extract_chat_completion_text(response)
+            except ValueError as exc:
+                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_text") from exc
+        except LLMProviderError:
+            raise
+        except Exception as exc:
+            raise LLMProviderError(f"OpenAI-compatible expression provider failed: {type(exc).__name__}") from exc
+
+    def close(self) -> None:
+        self._closed = True
+
+
+def fetch_provider_model_ids(
+    *,
+    provider: str,
+    base_url: str,
+    api_key: str,
+    timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
+    transport: HTTPTransport | None = None,
+) -> tuple[str, ...]:
+    normalized_api_key = _normalize_api_key(api_key)
+    if not normalized_api_key:
+        raise LLMProviderError("model list fetch failed: missing_api_key")
+    normalized_base_url = _normalize_base_url(base_url)
+    api_request = request.Request(
+        _models_url(normalized_base_url),
+        headers={
+            "Authorization": f"Bearer {normalized_api_key}",
+            "Content-Type": "application/json",
+        },
+        method="GET",
+    )
+    try:
+        raw = (transport or _default_transport)(api_request, _normalize_timeout(timeout_seconds))
+        if not isinstance(raw, (bytes, bytearray)):
+            raise LLMProviderError("model list fetch failed: invalid_response_bytes")
+        if len(raw) > MAX_OPENAI_RESPONSE_BYTES:
+            raise LLMProviderError("model list fetch failed: invalid_response_size")
+        response = json.loads(bytes(raw).decode("utf-8"))
+    except LLMProviderError:
+        raise
+    except UnicodeDecodeError as exc:
+        raise LLMProviderError("model list fetch failed: invalid_response_encoding") from exc
+    except json.JSONDecodeError as exc:
+        raise LLMProviderError("model list fetch failed: invalid_response_json") from exc
+    except Exception as exc:
+        raise LLMProviderError(f"model list fetch failed: {type(exc).__name__}") from exc
+    if not isinstance(response, dict):
+        raise LLMProviderError("model list fetch failed: invalid_response_shape")
+    data = response.get("data")
+    if not isinstance(data, list):
+        raise LLMProviderError("model list fetch failed: invalid_response_shape")
+    models: list[str] = []
+    seen: set[str] = set()
+    for entry in data:
+        if not isinstance(entry, dict):
+            continue
+        model_id = _short_string(entry.get("id", ""), 160)
+        if not model_id or model_id in seen:
+            continue
+        seen.add(model_id)
+        models.append(model_id)
+        if len(models) >= 200:
+            break
+    if not models:
+        raise LLMProviderError("model list fetch failed: empty_model_list")
+    return tuple(models)
 
 
 def build_expression_prompt_preview(character_name: str = "星汐") -> str:
@@ -697,14 +832,22 @@ def _openai_config_from_env(env: Mapping[str, object] | None = None) -> _OpenAIP
 
 
 def _build_ai_expressor_from_settings(settings: ExpressionSettings) -> ShinsekaiAIExpressor:
-    if not settings.enabled or settings.provider != "openai" or not settings.api_key:
+    if not settings.enabled or not settings.api_key:
         return ShinsekaiAIExpressor(enabled=False)
-    client = OpenAIResponsesClient(
-        api_key=settings.api_key,
-        model=settings.model,
-        base_url=settings.base_url,
-        timeout_seconds=settings.timeout_seconds,
-    )
+    if provider_api_style(settings.provider) == "responses":
+        client = OpenAIResponsesClient(
+            api_key=settings.api_key,
+            model=settings.model,
+            base_url=settings.base_url,
+            timeout_seconds=settings.timeout_seconds,
+        )
+    else:
+        client = OpenAICompatibleChatClient(
+            api_key=settings.api_key,
+            model=settings.model,
+            base_url=settings.base_url,
+            timeout_seconds=settings.timeout_seconds,
+        )
     return ShinsekaiAIExpressor(
         llm_client=client,
         timeout_seconds=settings.timeout_seconds,
@@ -736,6 +879,40 @@ def _extract_response_text(response: dict[str, Any]) -> str:
             if part.get("type") == "output_text" and isinstance(part.get("text"), str) and str(part["text"]).strip():
                 return _validated_response_text(str(part["text"]))
     raise ValueError("OpenAI response does not include output text.")
+
+
+def _extract_chat_completion_text(response: dict[str, Any]) -> str:
+    choices = response.get("choices")
+    if not isinstance(choices, list):
+        raise ValueError("Chat completion response does not include choices.")
+    for choice in choices:
+        if not isinstance(choice, dict):
+            continue
+        message = choice.get("message")
+        if not isinstance(message, dict):
+            continue
+        content = message.get("content")
+        if isinstance(content, str) and content.strip():
+            return _validated_response_text(content)
+    raise ValueError("Chat completion response does not include message content.")
+
+
+def _chat_completions_url(base_url: str) -> str:
+    base = base_url.rstrip("/")
+    if base.endswith("/chat/completions"):
+        return base
+    if base.endswith("/responses"):
+        return base[: -len("/responses")] + "/chat/completions"
+    return f"{base}/chat/completions"
+
+
+def _models_url(base_url: str) -> str:
+    base = base_url.rstrip("/")
+    for suffix in ("/chat/completions", "/responses"):
+        if base.endswith(suffix):
+            base = base[: -len(suffix)]
+            break
+    return f"{base}/models"
 
 
 def _validated_response_text(value: str) -> str:

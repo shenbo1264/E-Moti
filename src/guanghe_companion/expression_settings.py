@@ -10,6 +10,12 @@ from typing import Any
 DEFAULT_EXPRESSION_PROVIDER = "openai"
 DEFAULT_EXPRESSION_MODEL = "gpt-5.5"
 DEFAULT_EXPRESSION_BASE_URL = "https://api.openai.com/v1/responses"
+DEFAULT_DEEPSEEK_EXPRESSION_MODEL = "deepseek-v4-flash"
+DEFAULT_DEEPSEEK_EXPRESSION_BASE_URL = "https://api.deepseek.com"
+DEFAULT_OPENROUTER_EXPRESSION_MODEL = "openai/gpt-5.5"
+DEFAULT_OPENROUTER_EXPRESSION_BASE_URL = "https://openrouter.ai/api/v1"
+DEFAULT_CUSTOM_EXPRESSION_MODEL = "gpt-5.5"
+DEFAULT_CUSTOM_EXPRESSION_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_EXPRESSION_TIMEOUT_SECONDS = 2.0
 DISABLED_VOICE_PROVIDER = "disabled"
 MAX_EXPRESSION_MODEL_LENGTH = 80
@@ -18,7 +24,29 @@ MAX_EXPRESSION_API_KEY_LENGTH = 512
 MIN_EXPRESSION_TIMEOUT_SECONDS = 0.1
 MAX_EXPRESSION_TIMEOUT_SECONDS = 5.0
 CURRENT_EXPRESSION_SETTINGS_SCHEMA_VERSION = 1
-ALLOWED_EXPRESSION_PROVIDERS = frozenset({"openai"})
+EXPRESSION_PROVIDER_PRESETS: dict[str, dict[str, str]] = {
+    "openai": {
+        "model": DEFAULT_EXPRESSION_MODEL,
+        "base_url": DEFAULT_EXPRESSION_BASE_URL,
+        "api_style": "responses",
+    },
+    "deepseek": {
+        "model": DEFAULT_DEEPSEEK_EXPRESSION_MODEL,
+        "base_url": DEFAULT_DEEPSEEK_EXPRESSION_BASE_URL,
+        "api_style": "chat_completions",
+    },
+    "openrouter": {
+        "model": DEFAULT_OPENROUTER_EXPRESSION_MODEL,
+        "base_url": DEFAULT_OPENROUTER_EXPRESSION_BASE_URL,
+        "api_style": "chat_completions",
+    },
+    "custom": {
+        "model": DEFAULT_CUSTOM_EXPRESSION_MODEL,
+        "base_url": DEFAULT_CUSTOM_EXPRESSION_BASE_URL,
+        "api_style": "chat_completions",
+    },
+}
+ALLOWED_EXPRESSION_PROVIDERS = frozenset(EXPRESSION_PROVIDER_PRESETS)
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,11 +104,12 @@ class ExpressionSettingsStore:
 def normalize_expression_settings(payload: Mapping[str, Any] | object) -> ExpressionSettings:
     if not isinstance(payload, Mapping):
         return ExpressionSettings()
+    provider = _normalize_provider(payload.get("provider"))
     return ExpressionSettings(
         enabled=_normalize_enabled(payload.get("enabled")),
-        provider=_normalize_provider(payload.get("provider")),
-        model=_normalize_model(payload.get("model")),
-        base_url=_normalize_base_url(payload.get("base_url")),
+        provider=provider,
+        model=_normalize_model(payload.get("model"), provider),
+        base_url=_normalize_base_url(payload.get("base_url"), provider),
         api_key=_normalize_api_key(payload.get("api_key")),
         timeout_seconds=_normalize_timeout(payload.get("timeout_seconds", payload.get("timeout"))),
         tts_provider=_normalize_disabled_voice_provider(payload.get("tts_provider")),
@@ -103,16 +132,31 @@ def _normalize_provider(value: object) -> str:
     return DEFAULT_EXPRESSION_PROVIDER
 
 
-def _normalize_model(value: object) -> str:
+def _normalize_model(value: object, provider: str = DEFAULT_EXPRESSION_PROVIDER) -> str:
     model = _clean_string(value, MAX_EXPRESSION_MODEL_LENGTH)
-    return model or DEFAULT_EXPRESSION_MODEL
+    return model or provider_default_model(provider)
 
 
-def _normalize_base_url(value: object) -> str:
+def _normalize_base_url(value: object, provider: str = DEFAULT_EXPRESSION_PROVIDER) -> str:
     base_url = _clean_string(value, MAX_EXPRESSION_BASE_URL_LENGTH)
     if base_url.startswith(("https://", "http://")):
         return base_url
-    return DEFAULT_EXPRESSION_BASE_URL
+    return provider_default_base_url(provider)
+
+
+def provider_default_model(provider: str) -> str:
+    preset = EXPRESSION_PROVIDER_PRESETS.get(provider, EXPRESSION_PROVIDER_PRESETS[DEFAULT_EXPRESSION_PROVIDER])
+    return preset["model"]
+
+
+def provider_default_base_url(provider: str) -> str:
+    preset = EXPRESSION_PROVIDER_PRESETS.get(provider, EXPRESSION_PROVIDER_PRESETS[DEFAULT_EXPRESSION_PROVIDER])
+    return preset["base_url"]
+
+
+def provider_api_style(provider: str) -> str:
+    preset = EXPRESSION_PROVIDER_PRESETS.get(provider, EXPRESSION_PROVIDER_PRESETS[DEFAULT_EXPRESSION_PROVIDER])
+    return preset["api_style"]
 
 
 def _normalize_api_key(value: object) -> str:

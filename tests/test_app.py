@@ -1001,7 +1001,7 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert window.expression_model_input.text()
     assert window.expression_model_input.placeholderText() == "例如 gpt-5.5"
     assert window.expression_base_url_input.text().startswith("https://")
-    assert window.expression_base_url_input.placeholderText() == "OpenAI-compatible /v1/responses 地址"
+    assert window.expression_base_url_input.placeholderText() == "OpenAI-compatible Base URL 或完整 endpoint"
     assert window.expression_api_key_input.echoMode() == QLineEdit.EchoMode.Password
     assert window.expression_api_key_input.placeholderText() == "粘贴 API Key"
     assert window.expression_timeout_input.value() == 2.0
@@ -1095,6 +1095,66 @@ def test_expression_settings_test_button_saves_and_tests_llm_without_mutating_st
     assert after.inventory == before.inventory
     assert after.relationship_stage == before.relationship_stage
     assert after.unlocks == before.unlocks
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_expression_settings_fetches_provider_model_list_without_saving_or_mutating_state(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    captured = {}
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+
+    def fake_fetch_expression_models(settings):
+        captured.update(settings)
+        return ("deepseek-v4-flash", "deepseek-v4-pro")
+
+    window.controller.fetch_expression_models = fake_fetch_expression_models
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[4].click()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    provider_items = [window.expression_provider_combo.itemText(index) for index in range(window.expression_provider_combo.count())]
+    assert provider_items == ["openai", "deepseek", "openrouter", "custom"]
+    assert not window.expression_model_list_combo.isVisibleTo(window)
+
+    window.expression_provider_combo.setCurrentText("deepseek")
+    app.processEvents()
+
+    assert window.expression_model_input.text() == "deepseek-v4-flash"
+    assert window.expression_base_url_input.text() == "https://api.deepseek.com"
+
+    window.expression_api_key_input.setText("test-key")
+    window.expression_model_fetch_button.click()
+    app.processEvents()
+
+    after = window.controller.get_typed_snapshot()
+    assert captured["provider"] == "deepseek"
+    assert captured["base_url"] == "https://api.deepseek.com"
+    assert captured["api_key"] == "test-key"
+    assert window.expression_model_list_combo.isVisibleTo(window)
+    assert window.expression_model_list_combo.count() == 2
+    assert window.expression_model_list_combo.itemText(1) == "deepseek-v4-pro"
+    assert window.expression_model_input.text() == "deepseek-v4-flash"
+
+    window.expression_model_list_combo.setCurrentIndex(1)
+    app.processEvents()
+
+    assert window.expression_model_input.text() == "deepseek-v4-pro"
+    assert "获取到 2 个模型" in window.expression_settings_status_label.text()
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
     assert after.memory_log == before.memory_log
 
     window.close()

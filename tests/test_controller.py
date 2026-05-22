@@ -85,6 +85,50 @@ def test_controller_expression_provider_test_does_not_mutate_growth_state():
     assert tuple(controller.last_events) == before_events
 
 
+def test_controller_fetches_expression_models_without_mutating_growth_state(monkeypatch):
+    import guanghe_companion.controller as controller_module
+
+    captured = {}
+
+    def fake_fetch_provider_model_ids(*, provider, base_url, api_key, timeout_seconds):
+        captured.update(
+            {
+                "provider": provider,
+                "base_url": base_url,
+                "api_key": api_key,
+                "timeout_seconds": timeout_seconds,
+            }
+        )
+        return ("deepseek-v4-flash", "deepseek-v4-pro")
+
+    monkeypatch.setattr(controller_module, "fetch_provider_model_ids", fake_fetch_provider_model_ids)
+    controller = CompanionController(auto_load=False)
+    before = controller.get_typed_snapshot()
+
+    models = controller.fetch_expression_models(
+        {
+            "provider": "deepseek",
+            "base_url": "https://api.deepseek.com",
+            "api_key": "test-key",
+            "timeout_seconds": "0.5",
+        }
+    )
+
+    after = controller.get_typed_snapshot()
+    assert models == ("deepseek-v4-flash", "deepseek-v4-pro")
+    assert captured == {
+        "provider": "deepseek",
+        "base_url": "https://api.deepseek.com",
+        "api_key": "test-key",
+        "timeout_seconds": 0.5,
+    }
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.unlocks == before.unlocks
+    assert after.memory_log == before.memory_log
+
+
 def test_controller_adds_typed_inventory_event_without_changing_legacy_events():
     controller = CompanionController(auto_load=False)
     controller.state.coins = 120

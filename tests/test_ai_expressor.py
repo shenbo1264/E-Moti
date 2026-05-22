@@ -1517,6 +1517,67 @@ def test_openai_responses_client_posts_prompt_and_extracts_output_text():
     assert result.startswith('[{"character_name"')
 
 
+def test_openai_compatible_chat_client_posts_prompt_and_extracts_message_content():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["payload"] = request.data.decode("utf-8")
+        captured["timeout"] = timeout
+        return (
+            '{"choices":[{"message":{"content":"'
+            '[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\",\\"effect\\":\\"ATTENTION\\"}]'
+            '"}}]}'
+        ).encode("utf-8")
+
+    client = OpenAICompatibleChatClient(
+        api_key="test-key",
+        model="deepseek-chat",
+        base_url="https://api.deepseek.com",
+        timeout_seconds=0.5,
+        transport=transport,
+    )
+
+    result = client("prompt text")
+
+    assert captured["url"] == "https://api.deepseek.com/chat/completions"
+    assert captured["headers"]["Authorization"] == "Bearer test-key"
+    assert captured["timeout"] == 0.5
+    assert '"model": "deepseek-chat"' in captured["payload"]
+    assert '"content": "prompt text"' in captured["payload"]
+    assert result.startswith('[{"type":"speech"')
+
+
+def test_fetch_provider_model_ids_uses_models_endpoint_without_leaking_state():
+    from guanghe_companion.ai_expressor import fetch_provider_model_ids
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["timeout"] = timeout
+        return (
+            '{"data":[{"id":"deepseek-v4-flash"},{"id":"deepseek-v4-pro"},{"id":""},{"name":"bad"}]}'
+        ).encode("utf-8")
+
+    models = fetch_provider_model_ids(
+        provider="deepseek",
+        base_url="https://api.deepseek.com",
+        api_key="test-key",
+        timeout_seconds=0.5,
+        transport=transport,
+    )
+
+    assert captured["url"] == "https://api.deepseek.com/models"
+    assert captured["headers"]["Authorization"] == "Bearer test-key"
+    assert captured["timeout"] == 0.5
+    assert models == ("deepseek-v4-flash", "deepseek-v4-pro")
+
+
 def test_openai_responses_client_context_manager_keeps_call_contract():
     def transport(request, timeout):
         return b'{"output_text":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}]"}'
@@ -1882,6 +1943,30 @@ def test_default_expressor_can_be_built_from_saved_expression_settings():
     assert isinstance(expressor.llm_client, OpenAIResponsesClient)
     assert expressor.llm_client.model == "demo-model"
     assert expressor.llm_client.base_url == "https://example.test/v1/responses"
+    assert expressor.timeout_seconds == 0.5
+
+
+def test_default_expressor_builds_deepseek_chat_client_from_saved_settings():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient, build_default_ai_expressor
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "deepseek",
+            "model": "deepseek-v4-flash",
+            "base_url": "https://api.deepseek.com",
+            "api_key": "test-key",
+            "timeout_seconds": "0.5",
+        }
+    )
+
+    expressor = build_default_ai_expressor(settings=settings)
+
+    assert expressor.enabled is True
+    assert isinstance(expressor.llm_client, OpenAICompatibleChatClient)
+    assert expressor.llm_client.model == "deepseek-v4-flash"
+    assert expressor.llm_client.base_url == "https://api.deepseek.com"
     assert expressor.timeout_seconds == 0.5
 
 

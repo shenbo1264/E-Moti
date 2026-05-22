@@ -76,3 +76,31 @@ def test_voice_settings_are_explicitly_disabled_by_default():
 
     assert normalized.tts_provider == "disabled"
     assert normalized.asr_provider == "disabled"
+
+
+def test_expression_settings_supports_provider_presets_for_openai_compatible_services():
+    from guanghe_companion.expression_settings import EXPRESSION_PROVIDER_PRESETS, normalize_expression_settings
+
+    assert set(EXPRESSION_PROVIDER_PRESETS) >= {"openai", "deepseek", "openrouter", "custom"}
+
+    deepseek = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": " deepseek ",
+            "model": "",
+            "base_url": "",
+            "api_key": " sk-deepseek ",
+        }
+    )
+
+    assert deepseek.enabled is True
+    assert deepseek.provider == "deepseek"
+    assert deepseek.model == "deepseek-v4-flash"
+    assert deepseek.base_url == "https://api.deepseek.com"
+    assert deepseek.api_key == "sk-deepseek"
+
+    openrouter = normalize_expression_settings({"provider": "openrouter", "model": "", "base_url": ""})
+
+    assert openrouter.provider == "openrouter"
+    assert openrouter.model == "openai/gpt-5.5"
+    assert openrouter.base_url == "https://openrouter.ai/api/v1"

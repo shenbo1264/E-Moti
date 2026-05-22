@@ -6,7 +6,12 @@ from pathlib import Path
 from typing import Protocol
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
-from .ai_expressor import ExpressionRequest, ShinsekaiAIExpressor, build_default_ai_expressor
+from .ai_expressor import (
+    ExpressionRequest,
+    ShinsekaiAIExpressor,
+    build_default_ai_expressor,
+    fetch_provider_model_ids,
+)
 from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
 from .dialogue import DialogueRequest
 from .dialogue_history import (
@@ -276,6 +281,24 @@ class CompanionController:
             "effect": speech_event.effect,
             "fallback_reason": "" if not fallback_reason and not is_local_fallback else fallback_reason or "invalid_event",
         }
+
+    def fetch_expression_models(
+        self,
+        settings: ExpressionSettings | dict[str, object] | None = None,
+    ) -> tuple[str, ...]:
+        normalized = (
+            self.expression_settings
+            if settings is None
+            else settings
+            if isinstance(settings, ExpressionSettings)
+            else normalize_expression_settings(settings)
+        )
+        return fetch_provider_model_ids(
+            provider=normalized.provider,
+            base_url=normalized.base_url,
+            api_key=normalized.api_key,
+            timeout_seconds=normalized.timeout_seconds,
+        )
 
     def clear_dialogue_history(self) -> dict[str, object]:
         self.dialogue_history = ()

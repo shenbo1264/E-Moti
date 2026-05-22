@@ -35,7 +35,12 @@ from PySide6.QtWidgets import (
 from .ai_expressor import build_expression_prompt_preview
 from .controller import CompanionController
 from .dialogue import DialogueRequest
-from .expression_settings import normalize_expression_settings
+from .expression_settings import (
+    EXPRESSION_PROVIDER_PRESETS,
+    normalize_expression_settings,
+    provider_default_base_url,
+    provider_default_model,
+)
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_default_motion_catalog
 from .storage import DEMO_SAVE_PATH
@@ -651,14 +656,21 @@ class CompanionWindow(QMainWindow):
         self.expression_enabled_checkbox.setChecked(bool(settings["enabled"]))
 
         self.expression_provider_combo = QComboBox()
-        self.expression_provider_combo.addItems(["openai"])
+        self.expression_provider_combo.addItems(list(EXPRESSION_PROVIDER_PRESETS))
         provider_index = self.expression_provider_combo.findText(str(settings["provider"]))
         self.expression_provider_combo.setCurrentIndex(max(0, provider_index))
+        self.expression_provider_combo.currentTextChanged.connect(self._handle_expression_provider_change)
 
         self.expression_model_input = QLineEdit(str(settings["model"]))
         self.expression_model_input.setPlaceholderText("例如 gpt-5.5")
+        self.expression_model_fetch_button = QPushButton("获取模型列表")
+        self.expression_model_fetch_button.clicked.connect(self._handle_expression_model_fetch)
+        self.expression_model_list_combo = QComboBox()
+        self.expression_model_list_combo.setEnabled(False)
+        self.expression_model_list_combo.hide()
+        self.expression_model_list_combo.currentTextChanged.connect(self._handle_expression_model_selected)
         self.expression_base_url_input = QLineEdit(str(settings["base_url"]))
-        self.expression_base_url_input.setPlaceholderText("OpenAI-compatible /v1/responses 地址")
+        self.expression_base_url_input.setPlaceholderText("OpenAI-compatible Base URL 或完整 endpoint")
         self.expression_api_key_input = QLineEdit(str(settings["api_key"]))
         self.expression_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.expression_api_key_input.setPlaceholderText("粘贴 API Key")
@@ -681,18 +693,20 @@ class CompanionWindow(QMainWindow):
 
         layout.addWidget(self.expression_enabled_checkbox, 0, 0, 1, 2)
         layout.addWidget(self.expression_provider_label, 1, 0)
-        layout.addWidget(self.expression_provider_combo, 1, 1)
+        layout.addWidget(self.expression_provider_combo, 1, 1, 1, 2)
         layout.addWidget(self.expression_model_label, 2, 0)
         layout.addWidget(self.expression_model_input, 2, 1)
-        layout.addWidget(self.expression_base_url_label, 3, 0)
-        layout.addWidget(self.expression_base_url_input, 3, 1)
-        layout.addWidget(self.expression_api_key_label, 4, 0)
-        layout.addWidget(self.expression_api_key_input, 4, 1)
-        layout.addWidget(self.expression_timeout_label, 5, 0)
-        layout.addWidget(self.expression_timeout_input, 5, 1)
-        layout.addWidget(self.expression_save_button, 6, 0)
-        layout.addWidget(self.expression_test_button, 6, 1)
-        layout.addWidget(self.expression_settings_status_label, 7, 0, 1, 2)
+        layout.addWidget(self.expression_model_fetch_button, 2, 2)
+        layout.addWidget(self.expression_model_list_combo, 3, 1, 1, 2)
+        layout.addWidget(self.expression_base_url_label, 4, 0)
+        layout.addWidget(self.expression_base_url_input, 4, 1, 1, 2)
+        layout.addWidget(self.expression_api_key_label, 5, 0)
+        layout.addWidget(self.expression_api_key_input, 5, 1, 1, 2)
+        layout.addWidget(self.expression_timeout_label, 6, 0)
+        layout.addWidget(self.expression_timeout_input, 6, 1, 1, 2)
+        layout.addWidget(self.expression_save_button, 7, 0)
+        layout.addWidget(self.expression_test_button, 7, 1, 1, 2)
+        layout.addWidget(self.expression_settings_status_label, 8, 0, 1, 3)
         return box
 
     def _build_expression_rule_card(self) -> QGroupBox:
@@ -1092,30 +1106,74 @@ class CompanionWindow(QMainWindow):
         reason = self._format_expression_test_failure(str(result["fallback_reason"]))
         self.expression_settings_status_label.setText(f"LLM 测试失败：{reason}")
 
+    def _handle_expression_provider_change(self, provider: str) -> None:
+        normalized_provider = str(provider).strip()
+        if normalized_provider not in EXPRESSION_PROVIDER_PRESETS:
+            return
+        self.expression_model_input.setText(provider_default_model(normalized_provider))
+        self.expression_base_url_input.setText(provider_default_base_url(normalized_provider))
+        self.expression_model_list_combo.clear()
+        self.expression_model_list_combo.setEnabled(False)
+        self.expression_model_list_combo.hide()
+        self.expression_settings_status_label.setText(f"已切换到 {normalized_provider}，请填写 API Key 后保存或测试")
+
+    def _handle_expression_model_fetch(self) -> None:
+        try:
+            models = self.controller.fetch_expression_models(self._expression_settings_payload_from_form())
+        except Exception as exc:
+            reason = self._format_expression_test_failure(_model_fetch_reason(exc))
+            self.expression_model_list_combo.clear()
+            self.expression_model_list_combo.setEnabled(False)
+            self.expression_model_list_combo.hide()
+            self.expression_settings_status_label.setText(f"模型列表获取失败：{reason}")
+            return
+        blocked = self.expression_model_list_combo.blockSignals(True)
+        self.expression_model_list_combo.clear()
+        self.expression_model_list_combo.addItems(list(models))
+        self.expression_model_list_combo.setEnabled(True)
+        self.expression_model_list_combo.show()
+        current_model = self.expression_model_input.text().strip()
+        if current_model in models:
+            self.expression_model_list_combo.setCurrentText(current_model)
+        else:
+            self.expression_model_list_combo.setCurrentIndex(0)
+            self.expression_model_input.setText(str(models[0]))
+        self.expression_model_list_combo.blockSignals(blocked)
+        self.expression_settings_status_label.setText(f"获取到 {len(models)} 个模型")
+
+    def _handle_expression_model_selected(self, model: str) -> None:
+        if model:
+            self.expression_model_input.setText(model)
+
     def _save_expression_settings_from_form(self) -> dict[str, object]:
-        settings = normalize_expression_settings(
-            {
-                "enabled": self.expression_enabled_checkbox.isChecked(),
-                "provider": self.expression_provider_combo.currentText(),
-                "model": self.expression_model_input.text(),
-                "base_url": self.expression_base_url_input.text(),
-                "api_key": self.expression_api_key_input.text(),
-                "timeout_seconds": self.expression_timeout_input.value(),
-            }
-        )
+        settings = normalize_expression_settings(self._expression_settings_payload_from_form())
         public_settings = self.controller.update_expression_settings(settings)
         self.expression_model_input.setText(str(public_settings["model"]))
         self.expression_base_url_input.setText(str(public_settings["base_url"]))
         self.expression_timeout_input.setValue(float(public_settings["timeout_seconds"]))
         return public_settings
 
+    def _expression_settings_payload_from_form(self) -> dict[str, object]:
+        return {
+            "enabled": self.expression_enabled_checkbox.isChecked(),
+            "provider": self.expression_provider_combo.currentText(),
+            "model": self.expression_model_input.text(),
+            "base_url": self.expression_base_url_input.text(),
+            "api_key": self.expression_api_key_input.text(),
+            "timeout_seconds": self.expression_timeout_input.value(),
+        }
+
     def _format_expression_test_failure(self, reason: str) -> str:
         labels = {
             "disabled": "未启用或缺少 API Key",
+            "missing_api_key": "缺少 API Key",
             "timeout": "请求超时",
             "provider_error": "Provider 调用失败",
             "invalid_json": "返回不是合法 JSON",
+            "invalid_response_json": "返回不是合法 JSON",
+            "invalid_response_shape": "返回结构不符合模型列表格式",
             "invalid_payload": "返回内容为空或格式不符合规则",
+            "empty_model_list": "模型列表为空",
             "unsafe_event": "返回包含不允许的字段",
             "invalid_event": "返回事件未通过本地校验",
             "too_many_events": "返回事件过多",
@@ -1301,6 +1359,23 @@ class CompanionWindow(QMainWindow):
 
     def _show_message(self, message: str) -> None:
         QMessageBox.information(self, "提示", message)
+
+
+def _model_fetch_reason(exc: Exception) -> str:
+    message = str(exc)
+    for reason in (
+        "missing_api_key",
+        "timeout",
+        "invalid_response_json",
+        "invalid_response_shape",
+        "empty_model_list",
+        "invalid_response_encoding",
+        "invalid_response_bytes",
+        "invalid_response_size",
+    ):
+        if reason in message:
+            return reason
+    return "provider_error"
 
 
 def should_use_desktop_mode(argv: list[str]) -> bool:
