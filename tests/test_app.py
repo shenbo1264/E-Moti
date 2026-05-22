@@ -158,7 +158,7 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
     assert window.navigation_hint_label.text() == "控制中心"
-    assert [button.text() for button in window.navigation_buttons] == ["总览", "互动", "背包", "隐私", "表达"]
+    assert [button.text() for button in window.navigation_buttons] == ["总览", "互动", "背包", "隐私", "表达", "表达规则"]
 
     window.close()
     app.processEvents()
@@ -230,6 +230,7 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     assert window.shop_card.isHidden()
     assert window.inventory_card.isHidden()
     assert window.expression_settings_card.isHidden()
+    assert window.expression_rule_card.isHidden()
 
     window.close()
     app.processEvents()
@@ -421,6 +422,7 @@ def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_pat
     assert not window.shop_card.isVisibleTo(window)
     assert not window.inventory_card.isVisibleTo(window)
     assert not window.expression_settings_card.isVisibleTo(window)
+    assert not window.expression_rule_card.isVisibleTo(window)
     assert window.character_label.isVisibleTo(window)
     assert window.desktop_feedback_label.isHidden()
     assert window.mask().isEmpty()
@@ -1001,6 +1003,43 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert settings["api_key_set"] is True
     assert settings["timeout_seconds"] == 0.5
     assert "已保存" in window.expression_settings_status_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_expression_rule_preview_page_is_readonly_and_copyable(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.navigation_buttons[5].click()
+    app.processEvents()
+
+    preview = window.expression_rule_preview_text.toPlainText()
+    assert window.expression_rule_card.isVisibleTo(window)
+    assert window.expression_rule_preview_text.isReadOnly()
+    assert "AI 只能生成表达事件" in preview
+    assert "不能修改状态数值" in preview
+    assert "背包" in preview
+    assert "星汐" in preview
+
+    window.expression_rule_copy_button.click()
+    app.processEvents()
+
+    assert QApplication.clipboard().text() == preview
+    assert "已复制" in window.expression_rule_status_label.text()
+    assert window.controller.get_typed_snapshot().stats == before.stats
+    assert window.controller.get_typed_snapshot().inventory == before.inventory
+    assert window.controller.get_typed_snapshot().memory_log == before.memory_log
 
     window.close()
     app.processEvents()

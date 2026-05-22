@@ -40,6 +40,19 @@ def test_prompt_builder_includes_state_action_and_ai_boundaries():
     assert '"sprite"' not in prompt
 
 
+def test_expression_prompt_preview_states_local_authority():
+    from guanghe_companion.ai_expressor import build_expression_prompt_preview
+
+    preview = build_expression_prompt_preview(character_name="星汐")
+
+    assert "AI 只能生成表达事件" in preview
+    assert "不能修改状态数值" in preview
+    assert "动作结果" in preview
+    assert "背包" in preview
+    assert "存档" in preview
+    assert "星汐" in preview
+
+
 def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
     snapshot = make_snapshot()
     original_action_label = snapshot["actions"][0]["label"]

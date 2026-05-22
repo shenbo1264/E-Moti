@@ -26,11 +26,13 @@ from PySide6.QtWidgets import (
     QPushButton,
     QProgressBar,
     QStackedWidget,
+    QTextEdit,
     QStyleFactory,
     QVBoxLayout,
     QWidget,
 )
 
+from .ai_expressor import build_expression_prompt_preview
 from .controller import CompanionController
 from .dialogue import DialogueRequest
 from .expression_settings import normalize_expression_settings
@@ -400,6 +402,16 @@ class CompanionWindow(QMainWindow):
         expression_layout.addStretch(1)
         self.content_stack.addWidget(expression_page)
 
+        rule_page = QWidget()
+        rule_layout = QVBoxLayout(rule_page)
+        rule_layout.setContentsMargins(0, 0, 0, 0)
+        rule_layout.setSpacing(12)
+        self.control_panel_page_layouts.append(rule_layout)
+        self.expression_rule_card = self._build_expression_rule_card()
+        rule_layout.addWidget(self.expression_rule_card)
+        rule_layout.addStretch(1)
+        self.content_stack.addWidget(rule_page)
+
     def _build_sidebar_card(self) -> QFrame:
         frame = QFrame()
         frame.setObjectName("SidebarCard")
@@ -412,7 +424,7 @@ class CompanionWindow(QMainWindow):
         self.navigation_hint_label.setObjectName("NavigationHint")
         layout.addWidget(self.navigation_hint_label)
 
-        for index, label in enumerate(("总览", "互动", "背包", "隐私", "表达")):
+        for index, label in enumerate(("总览", "互动", "背包", "隐私", "表达", "表达规则")):
             button = QPushButton(label)
             button.setObjectName("NavigationButton")
             button.setCheckable(True)
@@ -662,6 +674,23 @@ class CompanionWindow(QMainWindow):
         layout.addWidget(self.expression_settings_status_label, 6, 1)
         return box
 
+    def _build_expression_rule_card(self) -> QGroupBox:
+        box = QGroupBox("表达规则")
+        layout = QVBoxLayout(box)
+        self.expression_rule_preview_text = QTextEdit()
+        self.expression_rule_preview_text.setReadOnly(True)
+        self.expression_rule_preview_text.setPlainText(
+            build_expression_prompt_preview(character_name=self.controller.state.character_name)
+        )
+        self.expression_rule_preview_text.setMinimumHeight(220)
+        self.expression_rule_copy_button = QPushButton("复制规则")
+        self.expression_rule_copy_button.clicked.connect(self._handle_expression_rule_copy)
+        self.expression_rule_status_label = QLabel("表达规则：只读")
+        layout.addWidget(self.expression_rule_preview_text)
+        layout.addWidget(self.expression_rule_copy_button)
+        layout.addWidget(self.expression_rule_status_label)
+        return box
+
     def _build_shop_card(self) -> QGroupBox:
         box = QGroupBox("轻量商店")
         layout = QVBoxLayout(box)
@@ -720,6 +749,7 @@ class CompanionWindow(QMainWindow):
         self.demo_card.hide()
         self.perception_card.hide()
         self.expression_settings_card.hide()
+        self.expression_rule_card.hide()
         self.shop_card.hide()
         self.inventory_card.hide()
         self.hero_card.setTitle("")
@@ -883,6 +913,7 @@ class CompanionWindow(QMainWindow):
             self.demo_card,
             self.perception_card,
             self.expression_settings_card,
+            self.expression_rule_card,
             self.shop_card,
             self.inventory_card,
         ):
@@ -1022,6 +1053,11 @@ class CompanionWindow(QMainWindow):
         self.expression_base_url_input.setText(str(public_settings["base_url"]))
         self.expression_timeout_input.setValue(float(public_settings["timeout_seconds"]))
         self.expression_settings_status_label.setText("表达增强设置已保存")
+
+    def _handle_expression_rule_copy(self) -> None:
+        text = self.expression_rule_preview_text.toPlainText()
+        QApplication.clipboard().setText(text)
+        self.expression_rule_status_label.setText("表达规则已复制")
 
     def _manual_perception_context(self) -> dict[str, object]:
         return ManualPerceptionExpressionContextProvider(

@@ -211,6 +211,20 @@ class OpenAIResponsesClient:
         self._closed = True
 
 
+def build_expression_prompt_preview(character_name: str = "星汐") -> str:
+    safe_name = _short_string(character_name, MAX_CHARACTER_NAME_LENGTH) or "星汐"
+    return "\n".join(
+        [
+            f"角色：{safe_name}",
+            "AI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。",
+            "输出必须是 JSON 数组或连续 JSON 对象；每个对象只允许 type、speech、effect、motion_hint。",
+            "type 固定为 speech；speech 是星汐说出的短句；effect 和 motion_hint 只是演出提示。",
+            "本地状态机拥有最终权威：数值、背包、商店、关系、回忆、目标和存档只由本地代码更新。",
+            '示例：{"type":"speech","speech":"我在这里。","effect":"ATTENTION","motion_hint":"Default"}',
+        ]
+    )
+
+
 class ShinsekaiAIExpressor:
     def __init__(
         self,
