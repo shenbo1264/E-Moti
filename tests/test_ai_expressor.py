@@ -478,6 +478,33 @@ def test_expressor_accepts_limited_speech_event_schema_without_applying_motion_h
     assert snapshot["motion"] == "TouchHead"
 
 
+def test_expressor_accepts_adjacent_shinsekai_style_speech_objects():
+    snapshot = make_snapshot()
+    payload = (
+        '{"type":"speech","speech":"第一句。","effect":"ATTENTION"}'
+        '{"type":"speech","speech":"第二句。","effect":"SWITCH"}'
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "第一句。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        },
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "第二句。",
+            "sprite": "1",
+            "effect": "SWITCH",
+        },
+    ]
+    assert snapshot["motion"] == "TouchHead"
+
+
 def test_expressor_rejects_overlong_motion_hint_without_changing_motion():
     snapshot = make_snapshot()
     payload = (

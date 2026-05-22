@@ -9,6 +9,7 @@ from dataclasses import dataclass
 from typing import Any
 from urllib import request
 
+from .dialogue_parser import DialogueStreamParser
 from .engine import create_initial_state
 from .events import ALLOWED_EFFECTS, build_fallback_events, validate_events
 from .snapshot import CompanionSnapshot
@@ -46,6 +47,12 @@ MAX_TOOL_TIMESTAMP_LENGTH = 40
 
 class LLMProviderError(RuntimeError):
     pass
+
+
+class _ExpressionPayloadError(ValueError):
+    def __init__(self, reason: str) -> None:
+        super().__init__(reason)
+        self.reason = reason
 
 
 @dataclass(frozen=True, slots=True)
@@ -281,9 +288,17 @@ class ShinsekaiAIExpressor:
         try:
             raw = self._call_llm(self.build_prompt(snapshot))
             raw = _validated_llm_response_text(raw)
-            payload = json.loads(raw)
+            try:
+                payload = json.loads(raw)
+            except json.JSONDecodeError as exc:
+                payload = _parse_shinsekai_object_stream(raw, state)
+                if payload is None:
+                    raise exc
         except TimeoutError:
             self.last_fallback_reason = "timeout"
+            return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
+        except _ExpressionPayloadError as exc:
+            self.last_fallback_reason = exc.reason
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
         except json.JSONDecodeError:
             self.last_fallback_reason = "invalid_json"
@@ -525,6 +540,28 @@ def _normalize_expression_event(state, event: dict[Any, Any]) -> dict[str, str] 
     if _is_allowed_legacy_expression_event(state, event):
         return _stringify_event(event)
     return _normalize_speech_schema_event(state, event)
+
+
+def _parse_shinsekai_object_stream(raw: str, state) -> list[dict[str, str]] | None:
+    if not raw.lstrip().startswith("{"):
+        return None
+    parser = DialogueStreamParser(character_name=state.character_name)
+    events = list(parser.feed(raw))
+    if parser.has_pending_text():
+        raise _ExpressionPayloadError("invalid_json")
+    if parser.last_error is not None:
+        raise _ExpressionPayloadError(_dialogue_parser_fallback_reason(parser.last_error))
+    if not events:
+        raise _ExpressionPayloadError("invalid_payload")
+    if len(events) > 4:
+        raise _ExpressionPayloadError("too_many_events")
+    return [event.to_legacy_dict() for event in events]
+
+
+def _dialogue_parser_fallback_reason(reason: str) -> str:
+    if reason == "invalid_json":
+        return "invalid_json"
+    return "unsafe_event"
 
 
 def _is_allowed_legacy_expression_event(state, event: dict[Any, Any]) -> bool:
