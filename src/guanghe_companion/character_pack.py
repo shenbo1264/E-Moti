@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from pathlib import Path
+
+from .runtime_paths import companion_assets_root
 
 
-ASSETS_ROOT = Path(__file__).resolve().parents[2] / "assets" / "companion"
+ASSETS_ROOT = companion_assets_root()
 DEFAULT_CHARACTER_ID = "original_oc"
 
 

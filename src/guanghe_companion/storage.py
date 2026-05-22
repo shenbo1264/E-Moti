@@ -8,10 +8,11 @@ from pathlib import Path
 
 from .engine import create_initial_state
 from .models import CompanionState
+from .runtime_paths import default_save_path, demo_save_path
 from .shop_items import load_default_shop_items
 
-DEFAULT_SAVE_PATH = Path(__file__).resolve().parents[2] / "data" / "companion_save.json"
-DEMO_SAVE_PATH = Path(__file__).resolve().parents[2] / "data" / "companion_demo_save.json"
+DEFAULT_SAVE_PATH = default_save_path()
+DEMO_SAVE_PATH = demo_save_path()
 CURRENT_SAVE_SCHEMA_VERSION = 1
 
 
