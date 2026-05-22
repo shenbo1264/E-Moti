@@ -104,3 +104,12 @@ def test_expression_settings_supports_provider_presets_for_openai_compatible_ser
     assert openrouter.provider == "openrouter"
     assert openrouter.model == "openai/gpt-5.5"
     assert openrouter.base_url == "https://openrouter.ai/api/v1"
+
+    slow_provider = normalize_expression_settings(
+        {
+            "provider": "deepseek",
+            "timeout_seconds": "30",
+        }
+    )
+
+    assert slow_provider.timeout_seconds == 30.0

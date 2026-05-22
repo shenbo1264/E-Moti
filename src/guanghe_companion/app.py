@@ -675,7 +675,7 @@ class CompanionWindow(QMainWindow):
         self.expression_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.expression_api_key_input.setPlaceholderText("粘贴 API Key")
         self.expression_timeout_input = QDoubleSpinBox()
-        self.expression_timeout_input.setRange(0.1, 5.0)
+        self.expression_timeout_input.setRange(0.1, 60.0)
         self.expression_timeout_input.setDecimals(2)
         self.expression_timeout_input.setSingleStep(0.1)
         self.expression_timeout_input.setValue(float(settings["timeout_seconds"]))

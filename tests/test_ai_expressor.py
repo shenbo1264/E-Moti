@@ -609,19 +609,22 @@ def test_expressor_rejects_overlong_speech_schema_effect_without_changing_state(
     assert expressor.last_fallback_reason == "unsafe_event"
 
 
-def test_expressor_rejects_unknown_speech_schema_effect_before_validation():
+def test_expressor_defaults_unknown_speech_schema_effect_to_attention():
     snapshot = make_snapshot()
-    payload = '[{"type":"speech","speech":"Back online.","effect":"BOOM"}]'
+    payload = '[{"type":"speech","speech":"Back online.","effect":"SOFT_GLOW"}]'
     expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
 
     events = expressor.express(snapshot)
 
-    assert len(events) == 3
-    assert events[0]["speech"] == snapshot["feedback"]
-    assert events[0]["effect"] == "DISAPPOINTED"
-    assert events[1]["character_name"] == "STAT"
-    assert events[2]["character_name"] == "CHOICE"
-    assert expressor.last_fallback_reason == "unsafe_event"
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "Back online.",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert expressor.last_fallback_reason is None
 
 
 def test_expressor_rejects_overlong_speech_schema_text_before_validation():
@@ -1225,6 +1228,12 @@ def test_expressor_rejects_excessive_direct_timeout():
     assert expressor.timeout_seconds == DEFAULT_TIMEOUT_SECONDS
 
 
+def test_expressor_allows_slow_provider_timeout():
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: "[]", timeout_seconds=30)
+
+    assert expressor.timeout_seconds == 30.0
+
+
 def test_expressor_rejects_llm_owned_stat_or_choice_rows():
     snapshot = make_snapshot()
     payload = '[{"character_name":"STAT","speech":"coins 999","sprite":"-1","effect":""}]'
@@ -1549,6 +1558,32 @@ def test_openai_compatible_chat_client_posts_prompt_and_extracts_message_content
     assert '"model": "deepseek-chat"' in captured["payload"]
     assert '"content": "prompt text"' in captured["payload"]
     assert result.startswith('[{"type":"speech"')
+
+
+def test_openai_compatible_chat_client_allows_slow_provider_timeout():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["timeout"] = timeout
+        return (
+            '{"choices":[{"message":{"content":"'
+            '[{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\",\\"effect\\":\\"ATTENTION\\"}]'
+            '"}}]}'
+        ).encode("utf-8")
+
+    client = OpenAICompatibleChatClient(
+        api_key="test-key",
+        model="deepseek-chat",
+        base_url="https://api.deepseek.com",
+        timeout_seconds=30,
+        transport=transport,
+    )
+
+    assert client("prompt text").startswith('[{"type":"speech"')
+    assert client.timeout_seconds == 30.0
+    assert captured["timeout"] == 30.0
 
 
 def test_fetch_provider_model_ids_uses_models_endpoint_without_leaking_state():
@@ -1996,6 +2031,28 @@ def test_openai_responses_client_rejects_control_character_timeout_for_transport
     client("prompt text")
 
     assert captured["timeout"] == DEFAULT_TIMEOUT_SECONDS
+
+
+def test_expressor_accepts_markdown_wrapped_json_array_from_chat_models():
+    snapshot = make_snapshot()
+    payload = (
+        "```json\n"
+        '[{"type":"speech","speech":"我在这里。","effect":"ATTENTION","motion_hint":"TiltHead"}]'
+        "\n```"
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "我在这里。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert expressor.last_fallback_reason is None
 
 
 def test_openai_responses_client_skips_blank_output_text_for_nested_text():

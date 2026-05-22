@@ -1005,6 +1005,7 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert window.expression_api_key_input.echoMode() == QLineEdit.EchoMode.Password
     assert window.expression_api_key_input.placeholderText() == "粘贴 API Key"
     assert window.expression_timeout_input.value() == 2.0
+    assert window.expression_timeout_input.maximum() == 60.0
     assert window.expression_test_button.text() == "测试 LLM 回应"
     assert window.expression_settings_status_label.text() == "LLM 表达：关闭"
 

@@ -19,7 +19,7 @@ from .snapshot import CompanionSnapshot
 LLMClient = Callable[[str], str]
 HTTPTransport = Callable[[request.Request, float], bytes]
 DEFAULT_TIMEOUT_SECONDS = 2.0
-MAX_TIMEOUT_SECONDS = 5.0
+MAX_TIMEOUT_SECONDS = 60.0
 DEFAULT_OPENAI_MODEL = "gpt-5.5"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 MAX_OPENAI_API_KEY_LENGTH = 512
@@ -441,7 +441,7 @@ class ShinsekaiAIExpressor:
 
         try:
             raw = self._call_llm(self.build_prompt(snapshot))
-            raw = _validated_llm_response_text(raw)
+            raw = _json_candidate_from_llm_text(_validated_llm_response_text(raw))
             try:
                 payload = json.loads(raw)
             except json.JSONDecodeError as exc:
@@ -764,7 +764,7 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
     if len(normalized_effect) > MAX_EFFECT_LENGTH:
         return None
     if normalized_effect not in ALLOWED_EFFECTS:
-        return None
+        normalized_effect = "ATTENTION"
     if motion_hint != "" and not isinstance(motion_hint, str):
         return None
     if isinstance(motion_hint, str):
@@ -928,6 +928,29 @@ def _validated_llm_response_text(value: object) -> str:
     if len(value) > MAX_OPENAI_RESPONSE_TEXT_LENGTH:
         raise LLMProviderError("LLM expression provider failed: invalid_response_text")
     return value.strip()
+
+
+def _json_candidate_from_llm_text(value: str) -> str:
+    text = value.strip()
+    if text.startswith("```"):
+        lines = text.splitlines()
+        if lines and lines[0].strip().startswith("```"):
+            lines = lines[1:]
+        if lines and lines[-1].strip().startswith("```"):
+            lines = lines[:-1]
+        text = "\n".join(lines).strip()
+    if text.startswith(("[", "{")):
+        return text
+    first_array = text.find("[")
+    first_object = text.find("{")
+    starts = [index for index in (first_array, first_object) if index >= 0]
+    if not starts:
+        return text
+    start = min(starts)
+    end = max(text.rfind("]"), text.rfind("}"))
+    if end < start:
+        return text
+    return text[start : end + 1].strip()
 
 
 def _parse_timeout(value: str | None) -> float:
