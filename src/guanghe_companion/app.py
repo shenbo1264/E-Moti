@@ -412,6 +412,16 @@ class CompanionWindow(QMainWindow):
         rule_layout.addStretch(1)
         self.content_stack.addWidget(rule_page)
 
+        voice_page = QWidget()
+        voice_layout = QVBoxLayout(voice_page)
+        voice_layout.setContentsMargins(0, 0, 0, 0)
+        voice_layout.setSpacing(12)
+        self.control_panel_page_layouts.append(voice_layout)
+        self.voice_settings_card = self._build_voice_settings_card()
+        voice_layout.addWidget(self.voice_settings_card)
+        voice_layout.addStretch(1)
+        self.content_stack.addWidget(voice_page)
+
     def _build_sidebar_card(self) -> QFrame:
         frame = QFrame()
         frame.setObjectName("SidebarCard")
@@ -424,7 +434,7 @@ class CompanionWindow(QMainWindow):
         self.navigation_hint_label.setObjectName("NavigationHint")
         layout.addWidget(self.navigation_hint_label)
 
-        for index, label in enumerate(("总览", "互动", "背包", "隐私", "表达", "表达规则")):
+        for index, label in enumerate(("总览", "互动", "背包", "隐私", "表达", "表达规则", "语音")):
             button = QPushButton(label)
             button.setObjectName("NavigationButton")
             button.setCheckable(True)
@@ -691,6 +701,25 @@ class CompanionWindow(QMainWindow):
         layout.addWidget(self.expression_rule_status_label)
         return box
 
+    def _build_voice_settings_card(self) -> QGroupBox:
+        box = QGroupBox("语音")
+        layout = QVBoxLayout(box)
+        settings = self.controller.get_expression_settings()
+        self.voice_status_label = QLabel("TTS 暂未启用 / ASR 暂未启用")
+        self.voice_status_label.setWordWrap(True)
+        self.voice_tts_provider_label = QLabel(f"tts_provider: {settings['tts_provider']}")
+        self.voice_asr_provider_label = QLabel(f"asr_provider: {settings['asr_provider']}")
+        self.voice_tts_enable_button = QPushButton("启用 TTS")
+        self.voice_tts_enable_button.setEnabled(False)
+        self.voice_asr_enable_button = QPushButton("启用 ASR")
+        self.voice_asr_enable_button.setEnabled(False)
+        layout.addWidget(self.voice_status_label)
+        layout.addWidget(self.voice_tts_provider_label)
+        layout.addWidget(self.voice_asr_provider_label)
+        layout.addWidget(self.voice_tts_enable_button)
+        layout.addWidget(self.voice_asr_enable_button)
+        return box
+
     def _build_shop_card(self) -> QGroupBox:
         box = QGroupBox("轻量商店")
         layout = QVBoxLayout(box)
@@ -750,6 +779,7 @@ class CompanionWindow(QMainWindow):
         self.perception_card.hide()
         self.expression_settings_card.hide()
         self.expression_rule_card.hide()
+        self.voice_settings_card.hide()
         self.shop_card.hide()
         self.inventory_card.hide()
         self.hero_card.setTitle("")
@@ -914,6 +944,7 @@ class CompanionWindow(QMainWindow):
             self.perception_card,
             self.expression_settings_card,
             self.expression_rule_card,
+            self.voice_settings_card,
             self.shop_card,
             self.inventory_card,
         ):

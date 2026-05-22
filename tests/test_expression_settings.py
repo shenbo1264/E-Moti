@@ -57,3 +57,22 @@ def test_expression_settings_path_uses_user_data_dir(monkeypatch, tmp_path):
     monkeypatch.setenv("E_MOTI_USER_DATA_DIR", str(override))
 
     assert expression_settings_path() == override / "expression_settings.json"
+
+
+def test_voice_settings_are_explicitly_disabled_by_default():
+    from guanghe_companion.expression_settings import ExpressionSettings, normalize_expression_settings
+
+    settings = ExpressionSettings()
+
+    assert settings.tts_provider == "disabled"
+    assert settings.asr_provider == "disabled"
+
+    normalized = normalize_expression_settings(
+        {
+            "tts_provider": "openai",
+            "asr_provider": "local_mic",
+        }
+    )
+
+    assert normalized.tts_provider == "disabled"
+    assert normalized.asr_provider == "disabled"

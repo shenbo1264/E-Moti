@@ -158,7 +158,15 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
     assert window.navigation_hint_label.text() == "控制中心"
-    assert [button.text() for button in window.navigation_buttons] == ["总览", "互动", "背包", "隐私", "表达", "表达规则"]
+    assert [button.text() for button in window.navigation_buttons] == [
+        "总览",
+        "互动",
+        "背包",
+        "隐私",
+        "表达",
+        "表达规则",
+        "语音",
+    ]
 
     window.close()
     app.processEvents()
@@ -231,6 +239,7 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     assert window.inventory_card.isHidden()
     assert window.expression_settings_card.isHidden()
     assert window.expression_rule_card.isHidden()
+    assert window.voice_settings_card.isHidden()
 
     window.close()
     app.processEvents()
@@ -423,6 +432,7 @@ def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_pat
     assert not window.inventory_card.isVisibleTo(window)
     assert not window.expression_settings_card.isVisibleTo(window)
     assert not window.expression_rule_card.isVisibleTo(window)
+    assert not window.voice_settings_card.isVisibleTo(window)
     assert window.character_label.isVisibleTo(window)
     assert window.desktop_feedback_label.isHidden()
     assert window.mask().isEmpty()
@@ -1037,6 +1047,37 @@ def test_expression_rule_preview_page_is_readonly_and_copyable(monkeypatch, tmp_
 
     assert QApplication.clipboard().text() == preview
     assert "已复制" in window.expression_rule_status_label.text()
+    assert window.controller.get_typed_snapshot().stats == before.stats
+    assert window.controller.get_typed_snapshot().inventory == before.inventory
+    assert window.controller.get_typed_snapshot().memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_voice_settings_page_marks_tts_and_asr_disabled(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.navigation_buttons[6].click()
+    app.processEvents()
+
+    assert window.voice_settings_card.isVisibleTo(window)
+    assert "TTS 暂未启用" in window.voice_status_label.text()
+    assert "ASR 暂未启用" in window.voice_status_label.text()
+    assert window.voice_tts_provider_label.text() == "tts_provider: disabled"
+    assert window.voice_asr_provider_label.text() == "asr_provider: disabled"
+    assert not window.voice_tts_enable_button.isEnabled()
+    assert not window.voice_asr_enable_button.isEnabled()
     assert window.controller.get_typed_snapshot().stats == before.stats
     assert window.controller.get_typed_snapshot().inventory == before.inventory
     assert window.controller.get_typed_snapshot().memory_log == before.memory_log

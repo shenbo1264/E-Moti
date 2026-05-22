@@ -941,6 +941,8 @@ def test_controller_updates_expression_settings_without_growth_mutation(tmp_path
         "api_key": "",
         "api_key_set": True,
         "timeout_seconds": 0.5,
+        "tts_provider": "disabled",
+        "asr_provider": "disabled",
     }
     assert controller.ai_expressor.enabled is True
     assert isinstance(controller.ai_expressor.llm_client, OpenAIResponsesClient)

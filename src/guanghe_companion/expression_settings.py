@@ -11,6 +11,7 @@ DEFAULT_EXPRESSION_PROVIDER = "openai"
 DEFAULT_EXPRESSION_MODEL = "gpt-5.5"
 DEFAULT_EXPRESSION_BASE_URL = "https://api.openai.com/v1/responses"
 DEFAULT_EXPRESSION_TIMEOUT_SECONDS = 2.0
+DISABLED_VOICE_PROVIDER = "disabled"
 MAX_EXPRESSION_MODEL_LENGTH = 80
 MAX_EXPRESSION_BASE_URL_LENGTH = 240
 MAX_EXPRESSION_API_KEY_LENGTH = 512
@@ -28,6 +29,8 @@ class ExpressionSettings:
     base_url: str = DEFAULT_EXPRESSION_BASE_URL
     api_key: str = ""
     timeout_seconds: float = DEFAULT_EXPRESSION_TIMEOUT_SECONDS
+    tts_provider: str = DISABLED_VOICE_PROVIDER
+    asr_provider: str = DISABLED_VOICE_PROVIDER
 
     def to_dict(self, *, include_api_key: bool = True) -> dict[str, object]:
         return {
@@ -38,6 +41,8 @@ class ExpressionSettings:
             "api_key": self.api_key if include_api_key else "",
             "api_key_set": bool(self.api_key),
             "timeout_seconds": self.timeout_seconds,
+            "tts_provider": self.tts_provider,
+            "asr_provider": self.asr_provider,
         }
 
     def to_public_dict(self) -> dict[str, object]:
@@ -78,6 +83,8 @@ def normalize_expression_settings(payload: Mapping[str, Any] | object) -> Expres
         base_url=_normalize_base_url(payload.get("base_url")),
         api_key=_normalize_api_key(payload.get("api_key")),
         timeout_seconds=_normalize_timeout(payload.get("timeout_seconds", payload.get("timeout"))),
+        tts_provider=_normalize_disabled_voice_provider(payload.get("tts_provider")),
+        asr_provider=_normalize_disabled_voice_provider(payload.get("asr_provider")),
     )
 
 
@@ -110,6 +117,10 @@ def _normalize_base_url(value: object) -> str:
 
 def _normalize_api_key(value: object) -> str:
     return _clean_string(value, MAX_EXPRESSION_API_KEY_LENGTH)
+
+
+def _normalize_disabled_voice_provider(value: object) -> str:
+    return DISABLED_VOICE_PROVIDER
 
 
 def _normalize_timeout(value: object) -> float:
