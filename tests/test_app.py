@@ -234,7 +234,7 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     app.processEvents()
 
 
-def test_desktop_mode_shows_only_sprite_surface_after_layout(monkeypatch, tmp_path):
+def test_desktop_mode_shows_sprite_with_dialogue_controls_after_layout(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
     from PySide6.QtCore import Qt
@@ -247,8 +247,8 @@ def test_desktop_mode_shows_only_sprite_surface_after_layout(monkeypatch, tmp_pa
     window.show()
     app.processEvents()
 
-    assert window.width() <= 320
-    assert window.height() <= 340
+    assert window.width() <= 360
+    assert window.height() <= 430
     assert window.hero_card.title() == ""
     assert window.root_widget.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert window.hero_card.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -258,9 +258,62 @@ def test_desktop_mode_shows_only_sprite_surface_after_layout(monkeypatch, tmp_pa
     assert window.sprite_label.isVisibleTo(window)
     assert window.sprite_label.pixmap() is not None
     assert not window.sprite_label.pixmap().isNull()
-    assert not window.mask().isEmpty()
+    assert window.mask().isEmpty()
     assert not window.character_label.isVisibleTo(window)
     assert not window.desktop_feedback_label.isVisibleTo(window)
+    assert window.dialogue_input.isVisibleTo(window)
+    assert window.dialogue_send_button.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_pet_has_dialogue_input_and_send_button(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert window.dialogue_input.placeholderText() == "和星汐说点什么"
+    assert window.dialogue_send_button.text() == "发送"
+    assert window.dialogue_input.isVisibleTo(window)
+    assert window.dialogue_send_button.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_pet_dialogue_send_shows_xingxi_response_without_growth_settlement(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.dialogue_input.setText("今天陪我一会儿")
+    window.dialogue_send_button.click()
+    app.processEvents()
+
+    after = window.controller.get_typed_snapshot()
+    assert window.dialogue_input.text() == ""
+    assert window.desktop_feedback_label.isVisibleTo(window)
+    assert "今天陪我一会儿" in window.desktop_feedback_label.text()
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
 
     window.close()
     app.processEvents()

@@ -14,6 +14,7 @@ from PySide6.QtWidgets import (
     QGroupBox,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QMainWindow,
@@ -28,6 +29,7 @@ from PySide6.QtWidgets import (
 )
 
 from .controller import CompanionController
+from .dialogue import DialogueRequest
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_default_motion_catalog
 from .storage import DEMO_SAVE_PATH
@@ -37,6 +39,8 @@ DESKTOP_DOCK_THRESHOLD_PX = 32
 CONTROL_PANEL_SPRITE_MIN_HEIGHT = 300
 DESKTOP_SPRITE_WIDTH = 288
 DESKTOP_SPRITE_HEIGHT = 312
+DESKTOP_WINDOW_WIDTH = 320
+DESKTOP_WINDOW_HEIGHT = 424
 MAX_QT_WIDGET_SIZE = 16_777_215
 CONTROL_PANEL_SPRITE_STYLE = (
     "QLabel { border: 1px solid #cbdde5; border-radius: 8px; "
@@ -467,6 +471,30 @@ class CompanionWindow(QMainWindow):
         )
         self.desktop_feedback_label.hide()
         layout.addWidget(self.desktop_feedback_label)
+        self.dialogue_bar = QFrame()
+        self.dialogue_bar.setObjectName("DesktopDialogueBar")
+        self.dialogue_bar.setStyleSheet(
+            "QFrame#DesktopDialogueBar { border: 1px solid rgba(80, 112, 126, 150); border-radius: 8px; "
+            "background: rgba(255, 255, 255, 232); }"
+        )
+        dialogue_layout = QHBoxLayout(self.dialogue_bar)
+        dialogue_layout.setContentsMargins(8, 6, 8, 6)
+        dialogue_layout.setSpacing(6)
+        self.dialogue_input = QLineEdit()
+        self.dialogue_input.setPlaceholderText("和星汐说点什么")
+        self.dialogue_input.setMinimumHeight(30)
+        self.dialogue_input.setStyleSheet(
+            "QLineEdit { border: 1px solid #b8c9d2; border-radius: 6px; padding: 4px 8px; "
+            "background: #ffffff; }"
+        )
+        self.dialogue_input.returnPressed.connect(self._handle_dialogue_submit)
+        self.dialogue_send_button = QPushButton("发送")
+        self.dialogue_send_button.setMinimumHeight(30)
+        self.dialogue_send_button.clicked.connect(self._handle_dialogue_submit)
+        dialogue_layout.addWidget(self.dialogue_input, stretch=1)
+        dialogue_layout.addWidget(self.dialogue_send_button)
+        self.dialogue_bar.hide()
+        layout.addWidget(self.dialogue_bar)
         self.item_feedback_label = QLabel()
         self.item_feedback_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.item_feedback_label.setFixedSize(72, 72)
@@ -638,13 +666,19 @@ class CompanionWindow(QMainWindow):
         self.hero_card.setTitle("")
         self.hero_card.setStyleSheet(DESKTOP_HERO_STYLE)
         self.hero_layout.setContentsMargins(0, 0, 0, 0)
-        self.hero_layout.setSpacing(0)
+        self.hero_layout.setSpacing(6)
+        self.hero_layout.setAlignment(self.sprite_label, Qt.AlignmentFlag.AlignHCenter)
+        self.hero_layout.setAlignment(self.desktop_feedback_label, Qt.AlignmentFlag.AlignHCenter)
+        self.hero_layout.setAlignment(self.dialogue_bar, Qt.AlignmentFlag.AlignHCenter)
         self.character_label.hide()
         self.desktop_feedback_label.hide()
+        self.dialogue_bar.show()
         self.item_feedback_label.hide()
         self.sprite_label.setStyleSheet(DESKTOP_SPRITE_STYLE)
         self.sprite_label.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
-        self.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
+        self.desktop_feedback_label.setFixedWidth(DESKTOP_WINDOW_WIDTH)
+        self.dialogue_bar.setFixedWidth(DESKTOP_WINDOW_WIDTH)
+        self.setFixedSize(DESKTOP_WINDOW_WIDTH, DESKTOP_WINDOW_HEIGHT)
 
     def _enter_desktop_mode(self) -> None:
         if self.desktop_mode:
@@ -764,6 +798,7 @@ class CompanionWindow(QMainWindow):
         self.sprite_label.setStyleSheet(CONTROL_PANEL_SPRITE_STYLE)
         self.clearMask()
         self.desktop_feedback_label.hide()
+        self.dialogue_bar.hide()
         self.resize(1180, 760)
         self.show()
         self._apply_snapshot(self.controller.get_snapshot())
@@ -845,6 +880,14 @@ class CompanionWindow(QMainWindow):
             self.move(self._dock_desktop_position(self.pos()))
         self._apply_snapshot(self.controller.perform_action(action_id, include_ai_expression=False))
 
+    @Slot()
+    def _handle_dialogue_submit(self) -> None:
+        request = DialogueRequest(text=self.dialogue_input.text())
+        snapshot = self.controller.submit_dialogue_request(request, include_ai_expression=False)
+        self.dialogue_input.clear()
+        self._apply_snapshot(snapshot)
+        self.desktop_feedback_label.show()
+
     def _handle_demo_proactive(self, scenario: str) -> None:
         self._reset_countdown()
         self._apply_snapshot(self.controller.trigger_demo_proactive(scenario, include_ai_expression=False))
@@ -917,13 +960,7 @@ class CompanionWindow(QMainWindow):
         self.delta_label.setText(f"最近变化：{snapshot['delta_text']}")
         self.events_label.setText(self._format_event_summary(snapshot["events"]))
         self.memory_label.setText(self._format_memory_log(snapshot["memory_log"]))
-        self.desktop_feedback_label.setText(
-            f"模式：{snapshot['mode']}\n"
-            f"能量 {int(float(snapshot['charge']))} / 心情 {int(float(snapshot['mood']))} / "
-            f"信任 {int(float(snapshot['trust']))}\n"
-            f"动作：{snapshot['motion_caption']}\n"
-            f"{snapshot['feedback']}"
-        )
+        self.desktop_feedback_label.setText(f"{snapshot['character_name']}：{snapshot['feedback']}")
 
         actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
         for action_id, button in self.action_buttons.items():
@@ -950,7 +987,7 @@ class CompanionWindow(QMainWindow):
         )
         self.sprite_label.setPixmap(scaled)
         if self.desktop_mode:
-            self.setMask(scaled.mask())
+            self.clearMask()
 
     def _fill_list(self, widget: QListWidget, items: object, kind: str) -> None:
         current = self._current_item_id(widget)

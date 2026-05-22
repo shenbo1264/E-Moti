@@ -8,6 +8,7 @@ from typing import Protocol
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
 from .ai_expressor import ExpressionRequest, ShinsekaiAIExpressor, build_default_ai_expressor
 from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
+from .dialogue import DialogueRequest
 from .engine import BUYABLE_ITEMS, TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
 from .events import (
     ActionDomainEventRequest,
@@ -139,6 +140,27 @@ class CompanionController:
             CompanionActionRequest(action_id=action_id, source="control_panel"),
             include_ai_expression=include_ai_expression,
         )
+
+    def submit_dialogue_request(
+        self,
+        request: DialogueRequest,
+        *,
+        include_ai_expression: bool = False,
+    ) -> dict[str, object]:
+        text = request.normalized_text()
+        self.last_motion = "Default"
+        if text:
+            self.last_feedback = f"我听见了：{text}"
+            self.last_delta_text = "对话输入不改变养成状态"
+        else:
+            self.last_feedback = "我在这里。你可以慢慢说。"
+            self.last_delta_text = "空白对话未改变养成状态"
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_proactive_feedback = None
+        self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
+        self._persist()
+        return self.get_snapshot()
 
     def perform_action_request(
         self,

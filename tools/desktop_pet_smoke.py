@@ -48,9 +48,11 @@ def validate_desktop_pet_window(app: QApplication, window: CompanionWindow) -> l
         errors.append("desktop pet should not show a framed hero title")
     if window.character_label.isVisibleTo(window):
         errors.append("desktop pet should not show the control-panel character detail")
-    if window.desktop_feedback_label.isVisibleTo(window):
-        errors.append("desktop pet should not show a persistent feedback overlay")
-    if window.width() > 320 or window.height() > 340:
+    if not window.dialogue_input.isVisibleTo(window):
+        errors.append("desktop pet dialogue input is not visible")
+    if not window.dialogue_send_button.isVisibleTo(window):
+        errors.append("desktop pet dialogue send button is not visible")
+    if window.width() > 360 or window.height() > 430:
         errors.append(f"desktop pet surface is too large: {window.width()}x{window.height()}")
 
     menu_labels = tuple(action.text() for action in window._build_desktop_context_menu().actions() if not action.isSeparator())

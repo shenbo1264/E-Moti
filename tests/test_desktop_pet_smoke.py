@@ -32,6 +32,31 @@ def test_desktop_pet_smoke_validator_accepts_current_window(monkeypatch, tmp_pat
     app.processEvents()
 
 
+def test_desktop_pet_smoke_validator_accepts_dialogue_controls(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+    from tools.desktop_pet_smoke import validate_desktop_pet_window
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(
+        controller=CompanionController(save_path=tmp_path / "smoke-save.json", auto_load=False),
+        desktop_mode=True,
+    )
+    window.show()
+    app.processEvents()
+
+    assert window.dialogue_input.isVisibleTo(window)
+    assert window.dialogue_send_button.isVisibleTo(window)
+    assert validate_desktop_pet_window(app, window) == []
+
+    window.close()
+    app.processEvents()
+
+
 def test_desktop_pet_smoke_validator_reports_window_escape(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
