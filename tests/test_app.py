@@ -163,7 +163,7 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
         "互动",
         "背包",
         "隐私",
-        "表达",
+        "LLM表达",
         "表达规则",
         "语音",
     ]
@@ -990,12 +990,23 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     app.processEvents()
 
     assert window.expression_settings_card.isVisibleTo(window)
-    assert window.expression_enabled_checkbox.text() == "启用表达增强"
+    assert window.expression_settings_card.title() == "LLM 表达接入"
+    assert window.expression_enabled_checkbox.text() == "启用 LLM 表达增强"
+    assert window.expression_provider_label.text() == "服务商"
+    assert window.expression_model_label.text() == "模型 ID"
+    assert window.expression_base_url_label.text() == "Base URL"
+    assert window.expression_api_key_label.text() == "API Key"
+    assert window.expression_timeout_label.text() == "超时（秒）"
     assert window.expression_provider_combo.currentText() == "openai"
     assert window.expression_model_input.text()
+    assert window.expression_model_input.placeholderText() == "例如 gpt-5.5"
     assert window.expression_base_url_input.text().startswith("https://")
+    assert window.expression_base_url_input.placeholderText() == "OpenAI-compatible /v1/responses 地址"
     assert window.expression_api_key_input.echoMode() == QLineEdit.EchoMode.Password
+    assert window.expression_api_key_input.placeholderText() == "粘贴 API Key"
     assert window.expression_timeout_input.value() == 2.0
+    assert window.expression_test_button.text() == "测试 LLM 回应"
+    assert window.expression_settings_status_label.text() == "LLM 表达：关闭"
 
     window.expression_enabled_checkbox.setChecked(True)
     window.expression_model_input.setText("demo-model")
@@ -1012,7 +1023,79 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert settings["base_url"] == "https://example.test/v1/responses"
     assert settings["api_key_set"] is True
     assert settings["timeout_seconds"] == 0.5
-    assert "已保存" in window.expression_settings_status_label.text()
+    assert window.expression_settings_status_label.text() == "LLM 表达设置已保存"
+
+    window.close()
+    app.processEvents()
+
+
+def test_expression_settings_test_button_saves_and_tests_llm_without_mutating_state(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.controller as controller_module
+    from guanghe_companion.app import CompanionWindow
+
+    class FakeExpressor:
+        def __init__(self):
+            self.last_fallback_reason = None
+            self.requests = []
+
+        def close(self):
+            pass
+
+        def express(self, snapshot, effect=None):
+            self.requests.append((snapshot, effect))
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "LLM 连接成功",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    created = []
+
+    def fake_build_default_ai_expressor(*, settings=None):
+        fake = FakeExpressor()
+        created.append((settings, fake))
+        return fake
+
+    monkeypatch.setattr(controller_module, "build_default_ai_expressor", fake_build_default_ai_expressor)
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[4].click()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.expression_enabled_checkbox.setChecked(True)
+    window.expression_model_input.setText("demo-model")
+    window.expression_base_url_input.setText("https://example.test/v1/responses")
+    window.expression_api_key_input.setText("test-key")
+    window.expression_timeout_input.setValue(0.5)
+    window.expression_test_button.click()
+    app.processEvents()
+
+    after = window.controller.get_typed_snapshot()
+    settings, fake = created[-1]
+    assert settings.enabled is True
+    assert settings.model == "demo-model"
+    assert settings.base_url == "https://example.test/v1/responses"
+    assert settings.api_key == "test-key"
+    assert fake.requests
+    assert "LLM 测试通过" in window.expression_settings_status_label.text()
+    assert "LLM 连接成功" in window.expression_settings_status_label.text()
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.unlocks == before.unlocks
+    assert after.memory_log == before.memory_log
 
     window.close()
     app.processEvents()

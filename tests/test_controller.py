@@ -44,6 +44,47 @@ def test_controller_keeps_runtime_events_typed_while_exporting_legacy_snapshot_e
     assert set(snapshot["events"][0]) == {"character_name", "speech", "sprite", "effect"}
 
 
+def test_controller_expression_provider_test_does_not_mutate_growth_state():
+    class FakeExpressor:
+        def __init__(self):
+            self.last_fallback_reason = None
+            self.requests = []
+
+        def express(self, snapshot, effect=None):
+            self.requests.append((snapshot, effect))
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "LLM 连接成功",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    fake_expressor = FakeExpressor()
+    controller = CompanionController(auto_load=False, ai_expressor=fake_expressor)
+    before = controller.get_typed_snapshot()
+    before_events = tuple(controller.last_events)
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result == {
+        "ok": True,
+        "speech": "LLM 连接成功",
+        "effect": "ATTENTION",
+        "fallback_reason": "",
+    }
+    assert isinstance(fake_expressor.requests[0][0], ExpressionRequest)
+    assert fake_expressor.requests[0][1] == "ATTENTION"
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.unlocks == before.unlocks
+    assert after.memory_log == before.memory_log
+    assert tuple(controller.last_events) == before_events
+
+
 def test_controller_adds_typed_inventory_event_without_changing_legacy_events():
     controller = CompanionController(auto_load=False)
     controller.state.coins = 120

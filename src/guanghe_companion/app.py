@@ -434,7 +434,7 @@ class CompanionWindow(QMainWindow):
         self.navigation_hint_label.setObjectName("NavigationHint")
         layout.addWidget(self.navigation_hint_label)
 
-        for index, label in enumerate(("总览", "互动", "背包", "隐私", "表达", "表达规则", "语音")):
+        for index, label in enumerate(("总览", "互动", "背包", "隐私", "LLM表达", "表达规则", "语音")):
             button = QPushButton(label)
             button.setObjectName("NavigationButton")
             button.setCheckable(True)
@@ -641,13 +641,13 @@ class CompanionWindow(QMainWindow):
         return box
 
     def _build_expression_settings_card(self) -> QGroupBox:
-        box = QGroupBox("表达增强")
+        box = QGroupBox("LLM 表达接入")
         layout = QGridLayout(box)
         layout.setHorizontalSpacing(10)
         layout.setVerticalSpacing(8)
 
         settings = self.controller.get_expression_settings(include_api_key=True)
-        self.expression_enabled_checkbox = QCheckBox("启用表达增强")
+        self.expression_enabled_checkbox = QCheckBox("启用 LLM 表达增强")
         self.expression_enabled_checkbox.setChecked(bool(settings["enabled"]))
 
         self.expression_provider_combo = QComboBox()
@@ -656,9 +656,12 @@ class CompanionWindow(QMainWindow):
         self.expression_provider_combo.setCurrentIndex(max(0, provider_index))
 
         self.expression_model_input = QLineEdit(str(settings["model"]))
+        self.expression_model_input.setPlaceholderText("例如 gpt-5.5")
         self.expression_base_url_input = QLineEdit(str(settings["base_url"]))
+        self.expression_base_url_input.setPlaceholderText("OpenAI-compatible /v1/responses 地址")
         self.expression_api_key_input = QLineEdit(str(settings["api_key"]))
         self.expression_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.expression_api_key_input.setPlaceholderText("粘贴 API Key")
         self.expression_timeout_input = QDoubleSpinBox()
         self.expression_timeout_input.setRange(0.1, 5.0)
         self.expression_timeout_input.setDecimals(2)
@@ -666,22 +669,30 @@ class CompanionWindow(QMainWindow):
         self.expression_timeout_input.setValue(float(settings["timeout_seconds"]))
         self.expression_save_button = QPushButton("保存表达设置")
         self.expression_save_button.clicked.connect(self._handle_expression_settings_save)
-        self.expression_settings_status_label = QLabel("表达增强：关闭" if not settings["enabled"] else "表达增强：已启用")
+        self.expression_test_button = QPushButton("测试 LLM 回应")
+        self.expression_test_button.clicked.connect(self._handle_expression_settings_test)
+        self.expression_settings_status_label = QLabel("LLM 表达：关闭" if not settings["enabled"] else "LLM 表达：已启用")
         self.expression_settings_status_label.setWordWrap(True)
+        self.expression_provider_label = QLabel("服务商")
+        self.expression_model_label = QLabel("模型 ID")
+        self.expression_base_url_label = QLabel("Base URL")
+        self.expression_api_key_label = QLabel("API Key")
+        self.expression_timeout_label = QLabel("超时（秒）")
 
         layout.addWidget(self.expression_enabled_checkbox, 0, 0, 1, 2)
-        layout.addWidget(QLabel("provider"), 1, 0)
+        layout.addWidget(self.expression_provider_label, 1, 0)
         layout.addWidget(self.expression_provider_combo, 1, 1)
-        layout.addWidget(QLabel("model"), 2, 0)
+        layout.addWidget(self.expression_model_label, 2, 0)
         layout.addWidget(self.expression_model_input, 2, 1)
-        layout.addWidget(QLabel("base_url"), 3, 0)
+        layout.addWidget(self.expression_base_url_label, 3, 0)
         layout.addWidget(self.expression_base_url_input, 3, 1)
-        layout.addWidget(QLabel("api_key"), 4, 0)
+        layout.addWidget(self.expression_api_key_label, 4, 0)
         layout.addWidget(self.expression_api_key_input, 4, 1)
-        layout.addWidget(QLabel("timeout"), 5, 0)
+        layout.addWidget(self.expression_timeout_label, 5, 0)
         layout.addWidget(self.expression_timeout_input, 5, 1)
         layout.addWidget(self.expression_save_button, 6, 0)
-        layout.addWidget(self.expression_settings_status_label, 6, 1)
+        layout.addWidget(self.expression_test_button, 6, 1)
+        layout.addWidget(self.expression_settings_status_label, 7, 0, 1, 2)
         return box
 
     def _build_expression_rule_card(self) -> QGroupBox:
@@ -1069,6 +1080,19 @@ class CompanionWindow(QMainWindow):
         self._manual_perception_summary = MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
 
     def _handle_expression_settings_save(self) -> None:
+        self._save_expression_settings_from_form()
+        self.expression_settings_status_label.setText("LLM 表达设置已保存")
+
+    def _handle_expression_settings_test(self) -> None:
+        self._save_expression_settings_from_form()
+        result = self.controller.test_expression_provider()
+        if result["ok"]:
+            self.expression_settings_status_label.setText(f"LLM 测试通过：{result['speech']}")
+            return
+        reason = self._format_expression_test_failure(str(result["fallback_reason"]))
+        self.expression_settings_status_label.setText(f"LLM 测试失败：{reason}")
+
+    def _save_expression_settings_from_form(self) -> dict[str, object]:
         settings = normalize_expression_settings(
             {
                 "enabled": self.expression_enabled_checkbox.isChecked(),
@@ -1083,7 +1107,21 @@ class CompanionWindow(QMainWindow):
         self.expression_model_input.setText(str(public_settings["model"]))
         self.expression_base_url_input.setText(str(public_settings["base_url"]))
         self.expression_timeout_input.setValue(float(public_settings["timeout_seconds"]))
-        self.expression_settings_status_label.setText("表达增强设置已保存")
+        return public_settings
+
+    def _format_expression_test_failure(self, reason: str) -> str:
+        labels = {
+            "disabled": "未启用或缺少 API Key",
+            "timeout": "请求超时",
+            "provider_error": "Provider 调用失败",
+            "invalid_json": "返回不是合法 JSON",
+            "invalid_payload": "返回内容为空或格式不符合规则",
+            "unsafe_event": "返回包含不允许的字段",
+            "invalid_event": "返回事件未通过本地校验",
+            "too_many_events": "返回事件过多",
+            "closed": "表达器已关闭",
+        }
+        return labels.get(reason, reason or "未知错误")
 
     def _handle_expression_rule_copy(self) -> None:
         text = self.expression_rule_preview_text.toPlainText()

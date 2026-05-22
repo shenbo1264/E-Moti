@@ -237,6 +237,46 @@ class CompanionController:
         self._replace_ai_expressor(build_default_ai_expressor(settings=normalized))
         return normalized.to_public_dict()
 
+    def test_expression_provider(self) -> dict[str, object]:
+        request = ExpressionRequest.from_snapshot(
+            self.get_typed_snapshot(),
+            context=self._expression_context(),
+        )
+        try:
+            expressed_events = self.ai_expressor.express(request, effect="ATTENTION")
+        except Exception:
+            return {"ok": False, "speech": "", "effect": "", "fallback_reason": "provider_error"}
+
+        choices = [entry["label"] for entry in self._build_actions()]
+        validated_events = EventValidator(self.state).validate(
+            events=expressed_events,
+            fallback_feedback=self.last_feedback,
+            choices=choices,
+        )
+        speech_event = next(
+            (
+                event
+                for event in validated_events
+                if event.event_type == "speech" and event.character_name == self.state.character_name
+            ),
+            None,
+        )
+        fallback_reason = str(getattr(self.ai_expressor, "last_fallback_reason", "") or "")
+        is_local_fallback = _is_local_fallback_expression(validated_events, self.last_feedback)
+        if speech_event is None:
+            return {
+                "ok": False,
+                "speech": "",
+                "effect": "",
+                "fallback_reason": fallback_reason or "invalid_event",
+            }
+        return {
+            "ok": not fallback_reason and not is_local_fallback,
+            "speech": speech_event.speech,
+            "effect": speech_event.effect,
+            "fallback_reason": "" if not fallback_reason and not is_local_fallback else fallback_reason or "invalid_event",
+        }
+
     def clear_dialogue_history(self) -> dict[str, object]:
         self.dialogue_history = ()
         self.dialogue_history_store.clear()
