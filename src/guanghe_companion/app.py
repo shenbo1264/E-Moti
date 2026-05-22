@@ -6,9 +6,10 @@ import sys
 from collections.abc import Callable
 
 from PySide6.QtCore import QPoint, QRect, QSize, QTimer, Qt, Slot
-from PySide6.QtGui import QAction, QIcon, QPixmap
+from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QFrame,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -20,6 +21,8 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QProgressBar,
+    QStackedWidget,
+    QStyleFactory,
     QVBoxLayout,
     QWidget,
 )
@@ -36,11 +39,151 @@ DESKTOP_SPRITE_WIDTH = 288
 DESKTOP_SPRITE_HEIGHT = 312
 MAX_QT_WIDGET_SIZE = 16_777_215
 CONTROL_PANEL_SPRITE_STYLE = (
-    "QLabel { border: 2px dashed #4f6d7a; border-radius: 18px; "
+    "QLabel { border: 1px solid #cbdde5; border-radius: 8px; "
     "padding: 12px; background: #f7fbfd; }"
 )
 DESKTOP_SPRITE_STYLE = "QLabel { border: none; padding: 0; background: transparent; }"
 DESKTOP_HERO_STYLE = "QGroupBox { border: none; margin: 0; padding: 0; background: transparent; }"
+APP_FONT_FAMILY = "Microsoft YaHei UI"
+STAT_LABELS = {
+    "focus": "专注",
+    "charge": "能量",
+    "stability": "稳定",
+    "mood": "心情",
+    "trust": "信任",
+}
+APP_STYLE_SHEET = """
+QWidget {
+    font-family: "Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "Arial";
+    color: #263238;
+    font-size: 13px;
+}
+#CompanionRoot {
+    background: #f4f7f8;
+}
+QFrame#LauncherCard {
+    background: #ffffff;
+    border-bottom: 1px solid #d6e1e7;
+}
+QFrame#SidebarCard {
+    background: #ffffff;
+    border: 1px solid #d6e1e7;
+    border-radius: 8px;
+}
+QLabel#NavigationHint {
+    color: #445b66;
+    font-size: 13px;
+    font-weight: 800;
+}
+QPushButton#NavigationButton {
+    text-align: left;
+    padding: 9px 12px;
+}
+QPushButton#NavigationButton:checked {
+    background: #e6f2f5;
+    border-color: #7ba5b5;
+    color: #1f5360;
+}
+QLabel#LauncherEyebrow {
+    color: #5d7380;
+    font-size: 12px;
+    font-weight: 700;
+}
+QLabel#LauncherTitle {
+    color: #1f343d;
+    font-size: 26px;
+    font-weight: 800;
+}
+QLabel#LauncherSubtitle {
+    color: #536a75;
+    font-size: 13px;
+}
+QPushButton#PrimaryLaunchButton {
+    background: #1f7a8c;
+    border-color: #1f7a8c;
+    color: #ffffff;
+    font-size: 15px;
+    padding: 10px 22px;
+}
+QPushButton#PrimaryLaunchButton:hover {
+    background: #256f7c;
+    border-color: #256f7c;
+}
+QGroupBox {
+    background: #ffffff;
+    border: 1px solid #d6e1e7;
+    border-radius: 8px;
+    margin-top: 16px;
+    padding: 12px;
+    font-weight: 600;
+}
+QGroupBox::title {
+    subcontrol-origin: margin;
+    left: 12px;
+    padding: 0 6px;
+    color: #39525f;
+}
+QPushButton {
+    background: #ffffff;
+    border: 1px solid #b8c9d2;
+    border-radius: 8px;
+    padding: 8px 14px;
+    color: #263238;
+    font-weight: 600;
+}
+QPushButton:hover {
+    background: #edf5f8;
+    border-color: #6d94a6;
+}
+QPushButton:pressed {
+    background: #dfecef;
+}
+QPushButton:disabled {
+    color: #94a3ab;
+    background: #f4f6f7;
+    border-color: #d7e0e5;
+}
+QProgressBar {
+    border: 1px solid #c9d7dd;
+    border-radius: 7px;
+    background: #f7fafb;
+    text-align: center;
+    min-height: 16px;
+}
+QProgressBar::chunk {
+    border-radius: 6px;
+    background: #5b9db4;
+}
+QListWidget {
+    background: #ffffff;
+    border: 1px solid #d6e1e7;
+    border-radius: 8px;
+    padding: 6px;
+}
+QListWidget::item {
+    min-height: 38px;
+    padding: 4px 8px;
+    border-radius: 6px;
+}
+QListWidget::item:selected {
+    background: #e6f2f5;
+    color: #20333c;
+}
+"""
+
+
+def configure_application_style(app: QApplication | None = None) -> bool:
+    target = app if app is not None else QApplication.instance()
+    if target is None:
+        return False
+    fusion = QStyleFactory.create("Fusion")
+    if fusion is not None and hasattr(target, "setStyle"):
+        target.setStyle(fusion)
+    if hasattr(target, "setFont"):
+        target.setFont(QFont(APP_FONT_FAMILY, 10))
+    if hasattr(target, "setStyleSheet"):
+        target.setStyleSheet(APP_STYLE_SHEET)
+    return True
 
 
 class SpriteInteractionLabel(QLabel):
@@ -94,23 +237,38 @@ class SpriteInteractionLabel(QLabel):
 
 
 class CompanionWindow(QMainWindow):
-    def __init__(self, controller: CompanionController | None = None, desktop_mode: bool = False) -> None:
+    def __init__(
+        self,
+        controller: CompanionController | None = None,
+        desktop_mode: bool = False,
+        *,
+        advance_ticks: bool = True,
+        owns_controller: bool = True,
+    ) -> None:
         super().__init__()
         self.controller = controller or CompanionController()
         self.desktop_mode = desktop_mode
+        self._advance_ticks = advance_ticks
+        self._owns_controller = owns_controller
+        self.desktop_pet_window: CompanionWindow | None = None
+        self._return_target_window: CompanionWindow | None = None
+        self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
         self.motion_catalog = load_default_motion_catalog()
         self.motion_animator = MotionAnimator(self.motion_catalog)
         self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
         self.remaining_seconds = 15
         self.action_buttons: dict[str, QPushButton] = {}
+        self.navigation_buttons: list[QPushButton] = []
         self.status_bars: dict[str, QProgressBar] = {}
+        self.stat_name_labels: list[QLabel] = []
         self._manual_perception_summary = ""
         self._base_expression_context_provider = self.controller.expression_context_provider
         self.controller.expression_context_provider = ExpressionContextChain(
             [self._base_expression_context_provider, self._manual_perception_context]
         )
 
-        self.setWindowTitle("光核 AI 桌面伴侣 Demo")
+        configure_application_style(QApplication.instance())
+        self.setWindowTitle("星汐 E-Moti 桌面伴侣")
         self.resize(1180, 760)
         self._build_ui()
         if self.desktop_mode:
@@ -118,28 +276,62 @@ class CompanionWindow(QMainWindow):
         self._setup_timers()
         self._apply_snapshot(self.controller.get_snapshot())
 
+    def _register_close_callback(self, callback: Callable[["CompanionWindow"], None]) -> None:
+        self._close_callbacks.append(callback)
+
     def closeEvent(self, event) -> None:
+        pet_window = self.desktop_pet_window
+        if pet_window is not None:
+            self.desktop_pet_window = None
+            pet_window.close()
         self._manual_perception_summary = ""
         self.controller.expression_context_provider = self._base_expression_context_provider
         try:
-            self.controller.close()
+            if self._owns_controller:
+                self.controller.close()
         except Exception:
             pass
         finally:
             super().closeEvent(event)
+            for callback in tuple(self._close_callbacks):
+                callback(self)
 
     def _build_ui(self) -> None:
         root = QWidget(self)
+        root.setObjectName("CompanionRoot")
         self.root_widget = root
         self.setCentralWidget(root)
         shell = QVBoxLayout(root)
         self.shell_layout = shell
-        shell.setContentsMargins(16, 16, 16, 16)
-        shell.setSpacing(12)
+        shell.setContentsMargins(0, 0, 0, 0)
+        shell.setSpacing(0)
+
+        self.launcher_card = self._build_launcher_card()
+        shell.addWidget(self.launcher_card)
+
+        content = QWidget()
+        content_layout = QHBoxLayout(content)
+        self.control_panel_content_layout = content_layout
+        content_layout.setContentsMargins(16, 16, 16, 16)
+        content_layout.setSpacing(12)
+        shell.addWidget(content, stretch=1)
+
+        self.sidebar_card = self._build_sidebar_card()
+        content_layout.addWidget(self.sidebar_card)
+
+        self.content_stack = QStackedWidget()
+        self.control_panel_page_layouts: list[QVBoxLayout] = []
+        content_layout.addWidget(self.content_stack, stretch=1)
+
+        overview_page = QWidget()
+        overview_layout = QVBoxLayout(overview_page)
+        overview_layout.setContentsMargins(0, 0, 0, 0)
+        overview_layout.setSpacing(12)
+        self.control_panel_page_layouts.append(overview_layout)
 
         top = QHBoxLayout()
         top.setSpacing(12)
-        shell.addLayout(top, stretch=1)
+        overview_layout.addLayout(top, stretch=1)
 
         self.hero_card = self._build_hero_card()
         top.addWidget(self.hero_card, stretch=3)
@@ -148,24 +340,106 @@ class CompanionWindow(QMainWindow):
         top.addWidget(self.status_card, stretch=2)
 
         self.feedback_card = self._build_feedback_card()
-        shell.addWidget(self.feedback_card)
+        overview_layout.addWidget(self.feedback_card)
+        self.content_stack.addWidget(overview_page)
+
+        interaction_page = QWidget()
+        interaction_layout = QVBoxLayout(interaction_page)
+        interaction_layout.setContentsMargins(0, 0, 0, 0)
+        interaction_layout.setSpacing(12)
+        self.control_panel_page_layouts.append(interaction_layout)
 
         self.actions_card = self._build_actions_card()
-        shell.addWidget(self.actions_card)
+        interaction_layout.addWidget(self.actions_card)
 
         self.demo_card = self._build_demo_card()
-        shell.addWidget(self.demo_card)
+        interaction_layout.addWidget(self.demo_card)
+        interaction_layout.addStretch(1)
+        self.content_stack.addWidget(interaction_page)
 
-        self.perception_card = self._build_perception_card()
-        shell.addWidget(self.perception_card)
+        inventory_page = QWidget()
+        inventory_layout = QVBoxLayout(inventory_page)
+        inventory_layout.setContentsMargins(0, 0, 0, 0)
+        inventory_layout.setSpacing(12)
+        self.control_panel_page_layouts.append(inventory_layout)
 
         lower = QHBoxLayout()
         lower.setSpacing(12)
-        shell.addLayout(lower, stretch=1)
+        inventory_layout.addLayout(lower, stretch=1)
         self.shop_card = self._build_shop_card()
         self.inventory_card = self._build_inventory_card()
         lower.addWidget(self.shop_card, stretch=1)
         lower.addWidget(self.inventory_card, stretch=1)
+        self.content_stack.addWidget(inventory_page)
+
+        privacy_page = QWidget()
+        privacy_layout = QVBoxLayout(privacy_page)
+        privacy_layout.setContentsMargins(0, 0, 0, 0)
+        privacy_layout.setSpacing(12)
+        self.control_panel_page_layouts.append(privacy_layout)
+        self.perception_card = self._build_perception_card()
+        privacy_layout.addWidget(self.perception_card)
+        privacy_layout.addStretch(1)
+        self.content_stack.addWidget(privacy_page)
+
+    def _build_sidebar_card(self) -> QFrame:
+        frame = QFrame()
+        frame.setObjectName("SidebarCard")
+        frame.setFixedWidth(154)
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(12, 14, 12, 14)
+        layout.setSpacing(8)
+
+        self.navigation_hint_label = QLabel("控制中心")
+        self.navigation_hint_label.setObjectName("NavigationHint")
+        layout.addWidget(self.navigation_hint_label)
+
+        for index, label in enumerate(("总览", "互动", "背包", "隐私")):
+            button = QPushButton(label)
+            button.setObjectName("NavigationButton")
+            button.setCheckable(True)
+            button.clicked.connect(lambda checked=False, current=index: self._select_navigation_button(current))
+            self.navigation_buttons.append(button)
+            layout.addWidget(button)
+        self.navigation_buttons[0].setChecked(True)
+
+        layout.addStretch(1)
+        return frame
+
+    def _select_navigation_button(self, selected_index: int) -> None:
+        for index, button in enumerate(self.navigation_buttons):
+            button.setChecked(index == selected_index)
+        if hasattr(self, "content_stack"):
+            self.content_stack.setCurrentIndex(selected_index)
+
+    def _build_launcher_card(self) -> QFrame:
+        frame = QFrame()
+        frame.setObjectName("LauncherCard")
+        layout = QHBoxLayout(frame)
+        layout.setContentsMargins(24, 18, 24, 18)
+        layout.setSpacing(16)
+
+        copy = QVBoxLayout()
+        copy.setSpacing(4)
+        self.launcher_eyebrow_label = QLabel("原创 OC 桌面伴侣 Demo")
+        self.launcher_eyebrow_label.setObjectName("LauncherEyebrow")
+        self.launcher_title_label = QLabel("星汐 E-Moti")
+        self.launcher_title_label.setObjectName("LauncherTitle")
+        self.launcher_subtitle_label = QLabel("控制面板用于演示状态、背包和关系；桌宠模式是独立桌面演出窗口。")
+        self.launcher_subtitle_label.setObjectName("LauncherSubtitle")
+        self.launcher_subtitle_label.setWordWrap(True)
+        copy.addWidget(self.launcher_eyebrow_label)
+        copy.addWidget(self.launcher_title_label)
+        copy.addWidget(self.launcher_subtitle_label)
+
+        self.enter_desktop_mode_button = QPushButton("进入桌宠模式")
+        self.enter_desktop_mode_button.setObjectName("PrimaryLaunchButton")
+        self.enter_desktop_mode_button.setMinimumHeight(44)
+        self.enter_desktop_mode_button.clicked.connect(self._enter_desktop_mode)
+
+        layout.addLayout(copy, stretch=1)
+        layout.addWidget(self.enter_desktop_mode_button)
+        return frame
 
     def _build_hero_card(self) -> QGroupBox:
         box = QGroupBox("角色动画区")
@@ -211,7 +485,7 @@ class CompanionWindow(QMainWindow):
         return box
 
     def _build_status_card(self) -> QGroupBox:
-        box = QGroupBox("状态面板")
+        box = QGroupBox("星汐状态")
         layout = QVBoxLayout(box)
 
         self.mode_label = QLabel()
@@ -226,7 +500,8 @@ class CompanionWindow(QMainWindow):
         grid = QGridLayout()
         layout.addLayout(grid)
         for row, stat_name in enumerate(("focus", "charge", "stability", "mood", "trust")):
-            label = QLabel(stat_name)
+            label = QLabel(STAT_LABELS[stat_name])
+            self.stat_name_labels.append(label)
             bar = QProgressBar()
             bar.setRange(0, 100)
             bar.setFormat("%v / 100")
@@ -236,21 +511,21 @@ class CompanionWindow(QMainWindow):
         return box
 
     def _build_feedback_card(self) -> QGroupBox:
-        box = QGroupBox("反馈气泡")
+        box = QGroupBox("近期回应")
         layout = QVBoxLayout(box)
         self.feedback_label = QLabel()
         self.feedback_label.setWordWrap(True)
-        self.feedback_label.setStyleSheet("font-size: 16px;")
+        self.feedback_label.setStyleSheet("font-size: 16px; font-weight: 700; color: #1f343d;")
         self.delta_label = QLabel()
         self.delta_label.setWordWrap(True)
         self.events_label = QLabel()
         self.events_label.setWordWrap(True)
         self.events_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.events_label.setStyleSheet("font-family: Consolas, monospace; font-size: 12px; background: #f7fbfd; padding: 8px; border-radius: 8px;")
+        self.events_label.setStyleSheet("font-size: 13px; background: #f7fbfd; padding: 8px; border-radius: 8px;")
         self.memory_label = QLabel()
         self.memory_label.setWordWrap(True)
         self.memory_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.memory_label.setStyleSheet("font-size: 13px; background: #fffaf0; padding: 8px; border-radius: 8px;")
+        self.memory_label.setStyleSheet("font-size: 13px; background: #fff8ef; padding: 8px; border-radius: 8px;")
         layout.addWidget(self.feedback_label)
         layout.addWidget(self.delta_label)
         layout.addWidget(self.events_label)
@@ -258,7 +533,7 @@ class CompanionWindow(QMainWindow):
         return box
 
     def _build_actions_card(self) -> QGroupBox:
-        box = QGroupBox("主按钮动作")
+        box = QGroupBox("互动动作")
         layout = QHBoxLayout(box)
         for action_id in ("touch", "soothe", "rest", "study", "play", "drag"):
             button = QPushButton(action_id)
@@ -269,7 +544,7 @@ class CompanionWindow(QMainWindow):
         return box
 
     def _build_demo_card(self) -> QGroupBox:
-        box = QGroupBox("演示触发")
+        box = QGroupBox("演示工具")
         layout = QHBoxLayout(box)
         self.demo_reset_button = QPushButton("重置演示状态")
         self.demo_reset_button.clicked.connect(self._handle_demo_reset)
@@ -277,7 +552,11 @@ class CompanionWindow(QMainWindow):
         self.demo_low_charge_button.clicked.connect(lambda: self._handle_demo_proactive("low_charge"))
         self.demo_quiet_mood_button = QPushButton("模拟久未互动")
         self.demo_quiet_mood_button.clicked.connect(lambda: self._handle_demo_proactive("quiet_mood"))
-        for button in (self.demo_reset_button, self.demo_low_charge_button, self.demo_quiet_mood_button):
+        for button in (
+            self.demo_reset_button,
+            self.demo_low_charge_button,
+            self.demo_quiet_mood_button,
+        ):
             button.setMinimumHeight(36)
             layout.addWidget(button)
         return box
@@ -343,6 +622,12 @@ class CompanionWindow(QMainWindow):
         self.root_widget.setStyleSheet("background: transparent;")
         self.shell_layout.setContentsMargins(0, 0, 0, 0)
         self.shell_layout.setSpacing(0)
+        self.control_panel_content_layout.setContentsMargins(0, 0, 0, 0)
+        self.control_panel_content_layout.setSpacing(0)
+        for page_layout in self.control_panel_page_layouts:
+            page_layout.setSpacing(0)
+        self.launcher_card.hide()
+        self.sidebar_card.hide()
         self.status_card.hide()
         self.feedback_card.hide()
         self.actions_card.hide()
@@ -360,6 +645,30 @@ class CompanionWindow(QMainWindow):
         self.sprite_label.setStyleSheet(DESKTOP_SPRITE_STYLE)
         self.sprite_label.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
         self.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
+
+    def _enter_desktop_mode(self) -> None:
+        if self.desktop_mode:
+            return
+        if self.desktop_pet_window is not None:
+            self.desktop_pet_window.show()
+            self.desktop_pet_window.raise_()
+            self.desktop_pet_window.activateWindow()
+            return
+        pet_window = CompanionWindow(
+            controller=self.controller,
+            desktop_mode=True,
+            advance_ticks=False,
+            owns_controller=False,
+        )
+        pet_window._return_target_window = self
+        pet_window._register_close_callback(self._handle_desktop_pet_closed)
+        self.desktop_pet_window = pet_window
+        pet_window.show()
+        pet_window._apply_snapshot(self.controller.get_snapshot())
+
+    def _handle_desktop_pet_closed(self, window: "CompanionWindow") -> None:
+        if self.desktop_pet_window is window:
+            self.desktop_pet_window = None
 
     def _build_desktop_context_menu(self) -> QMenu:
         menu = QMenu(self)
@@ -406,6 +715,12 @@ class CompanionWindow(QMainWindow):
     def _return_to_control_panel(self) -> None:
         if not self.desktop_mode:
             return
+        if self._return_target_window is not None:
+            self._return_target_window.show()
+            self._return_target_window.raise_()
+            self._return_target_window.activateWindow()
+            self.close()
+            return
         self.desktop_mode = False
         flags = self.windowFlags()
         flags &= ~Qt.WindowType.FramelessWindowHint
@@ -420,8 +735,14 @@ class CompanionWindow(QMainWindow):
         self.setMinimumSize(0, 0)
         self.setMaximumSize(MAX_QT_WIDGET_SIZE, MAX_QT_WIDGET_SIZE)
         self.root_widget.setStyleSheet("")
-        self.shell_layout.setContentsMargins(16, 16, 16, 16)
-        self.shell_layout.setSpacing(12)
+        self.shell_layout.setContentsMargins(0, 0, 0, 0)
+        self.shell_layout.setSpacing(0)
+        self.control_panel_content_layout.setContentsMargins(16, 16, 16, 16)
+        self.control_panel_content_layout.setSpacing(12)
+        for page_layout in self.control_panel_page_layouts:
+            page_layout.setSpacing(12)
+        self.launcher_card.show()
+        self.sidebar_card.show()
         for card in (
             self.status_card,
             self.feedback_card,
@@ -493,7 +814,8 @@ class CompanionWindow(QMainWindow):
 
         self.tick_timer = QTimer(self)
         self.tick_timer.timeout.connect(self._handle_tick)
-        self.tick_timer.start(15_000)
+        if self._advance_ticks:
+            self.tick_timer.start(15_000)
 
         self.countdown_timer = QTimer(self)
         self.countdown_timer.timeout.connect(self._update_countdown)
@@ -580,7 +902,7 @@ class CompanionWindow(QMainWindow):
         )
         self.mode_label.setText(f"当前模式：{snapshot['mode']}")
         self.resources_label.setText(
-            f"coins {snapshot['coins']} / level {snapshot['level']} / exp {snapshot['exp']}"
+            f"金币 {snapshot['coins']} / 等级 {snapshot['level']} / 经验 {snapshot['exp']}"
         )
         self.goal_label.setText(str(snapshot["goal"]))
         self.relationship_label.setText(
@@ -593,7 +915,7 @@ class CompanionWindow(QMainWindow):
 
         self.feedback_label.setText(str(snapshot["feedback"]))
         self.delta_label.setText(f"最近变化：{snapshot['delta_text']}")
-        self.events_label.setText("\n".join(str(line) for line in snapshot["event_preview"].splitlines()))
+        self.events_label.setText(self._format_event_summary(snapshot["events"]))
         self.memory_label.setText(self._format_memory_log(snapshot["memory_log"]))
         self.desktop_feedback_label.setText(
             f"模式：{snapshot['mode']}\n"
@@ -679,6 +1001,25 @@ class CompanionWindow(QMainWindow):
             lines.append(f"- {entry['kind']}：{entry['summary']}")
         return "\n".join(lines)
 
+    def _format_event_summary(self, events: object) -> str:
+        if not isinstance(events, list) or not events:
+            return "最近事件：暂无"
+        lines: list[str] = []
+        for event in events[:3]:
+            if not isinstance(event, dict):
+                continue
+            character_name = str(event.get("character_name", ""))
+            speech = str(event.get("speech", "")).strip()
+            if not speech:
+                continue
+            if character_name == "STAT":
+                lines.append(f"状态：{speech}")
+            elif character_name == "CHOICE":
+                lines.append(f"可选动作：{speech}")
+            elif character_name:
+                lines.append(f"{character_name}：{speech}")
+        return "\n".join(lines) if lines else "最近事件：暂无"
+
     def _sync_inventory_buttons(self, items: object) -> None:
         selected_id = self._current_item_id(self.inventory_list)
         current = None
@@ -718,6 +1059,7 @@ def should_reset_demo_save(argv: list[str]) -> bool:
 def launch(argv: list[str] | None = None) -> int:
     args = sys.argv if argv is None else argv
     app = QApplication.instance() or QApplication(args)
+    configure_application_style(app)
     controller = CompanionController(save_path=DEMO_SAVE_PATH) if should_use_demo_save(args) else CompanionController()
     if should_reset_demo_save(args):
         controller.reset_demo_state(include_ai_expression=False)

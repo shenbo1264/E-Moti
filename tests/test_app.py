@@ -83,6 +83,129 @@ def test_companion_window_character_panel_omits_obsolete_placeholder_copy(monkey
     app.processEvents()
 
 
+def test_companion_window_title_positions_xingxi_as_desktop_companion(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert window.windowTitle() == "星汐 E-Moti 桌面伴侣"
+
+    window.close()
+    app.processEvents()
+
+
+def test_application_style_uses_fusion_and_chinese_font(monkeypatch):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import configure_application_style
+
+    app = QApplication.instance() or QApplication([])
+
+    assert configure_application_style(app) is True
+    assert app.font().family() in {"Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "Arial"}
+    assert "QGroupBox" in app.styleSheet()
+    assert "font-family" in app.styleSheet()
+
+
+def test_control_panel_presents_desktop_pet_as_primary_launch(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert window.launcher_title_label.text() == "星汐 E-Moti"
+    assert "桌宠模式" in window.launcher_subtitle_label.text()
+    assert window.enter_desktop_mode_button.text() == "进入桌宠模式"
+    assert window.enter_desktop_mode_button.objectName() == "PrimaryLaunchButton"
+
+    window.close()
+    app.processEvents()
+
+
+def test_control_panel_launches_separate_desktop_pet_window(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window.enter_desktop_mode_button.click()
+    app.processEvents()
+
+    pet_window = window.desktop_pet_window
+    assert window.desktop_mode is False
+    assert window.status_card.isVisibleTo(window)
+    assert pet_window is not window
+    assert pet_window.desktop_mode is True
+    assert pet_window.sprite_label.isVisibleTo(pet_window)
+    assert not pet_window.tick_timer.isActive()
+
+    pet_window.close()
+    app.processEvents()
+
+    assert window.desktop_pet_window is None
+
+    window.close()
+    app.processEvents()
+
+
+def test_control_panel_uses_readable_chinese_status_labels(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert [label.text() for label in window.stat_name_labels] == ["专注", "能量", "稳定", "心情", "信任"]
+    assert "金币" in window.resources_label.text()
+    assert "coins" not in window.resources_label.text()
+    assert "level" not in window.resources_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert window.navigation_hint_label.text() == "控制中心"
+    assert [button.text() for button in window.navigation_buttons] == ["总览", "互动", "背包", "隐私"]
+
+    window.close()
+    app.processEvents()
+
+
+def test_control_panel_navigation_switches_right_hand_pages(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert window.content_stack.currentIndex() == 0
+    assert window.hero_card.isVisibleTo(window)
+
+    window.navigation_buttons[2].click()
+    app.processEvents()
+
+    assert window.content_stack.currentIndex() == 2
+    assert window.shop_card.isVisibleTo(window)
+    assert window.inventory_card.isVisibleTo(window)
+    assert not window.hero_card.isVisibleTo(window)
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    assert window.content_stack.currentIndex() == 3
+    assert window.perception_card.isVisibleTo(window)
+    assert not window.shop_card.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
+def test_window_event_panel_uses_presentational_summary_not_raw_json(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window._handle_action("touch")
+    app.processEvents()
+    text = window.events_label.text()
+
+    assert "{" not in text
+    assert "}" not in text
+    assert "星汐" in text
+    assert "状态" in text
+    assert "可选动作" in text
+
+    window.close()
+    app.processEvents()
+
+
 def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
@@ -232,13 +355,16 @@ def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_pat
     assert not bool(flags & Qt.WindowType.FramelessWindowHint)
     assert not bool(flags & Qt.WindowType.WindowStaysOnTopHint)
     assert not window.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    assert window.launcher_card.isVisibleTo(window)
+    assert window.sidebar_card.isVisibleTo(window)
+    assert window.content_stack.currentIndex() == 0
     assert window.status_card.isVisibleTo(window)
     assert window.feedback_card.isVisibleTo(window)
-    assert window.actions_card.isVisibleTo(window)
-    assert window.demo_card.isVisibleTo(window)
-    assert window.perception_card.isVisibleTo(window)
-    assert window.shop_card.isVisibleTo(window)
-    assert window.inventory_card.isVisibleTo(window)
+    assert not window.actions_card.isVisibleTo(window)
+    assert not window.demo_card.isVisibleTo(window)
+    assert not window.perception_card.isVisibleTo(window)
+    assert not window.shop_card.isVisibleTo(window)
+    assert not window.inventory_card.isVisibleTo(window)
     assert window.character_label.isVisibleTo(window)
     assert window.desktop_feedback_label.isHidden()
     assert window.mask().isEmpty()
@@ -710,6 +836,9 @@ def test_window_shows_relationship_stage_and_next_unlock(monkeypatch, tmp_path):
 
 def test_window_shows_screen_perception_disabled_by_default(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
 
     assert window.perception_card.isVisibleTo(window)
     assert window.observe_screen_button.isEnabled()
