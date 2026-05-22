@@ -32,7 +32,15 @@ from .storage import DEMO_SAVE_PATH
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
 DESKTOP_DOCK_THRESHOLD_PX = 32
 CONTROL_PANEL_SPRITE_MIN_HEIGHT = 300
-DESKTOP_SPRITE_MIN_HEIGHT = 260
+DESKTOP_SPRITE_WIDTH = 288
+DESKTOP_SPRITE_HEIGHT = 312
+MAX_QT_WIDGET_SIZE = 16_777_215
+CONTROL_PANEL_SPRITE_STYLE = (
+    "QLabel { border: 2px dashed #4f6d7a; border-radius: 18px; "
+    "padding: 12px; background: #f7fbfd; }"
+)
+DESKTOP_SPRITE_STYLE = "QLabel { border: none; padding: 0; background: transparent; }"
+DESKTOP_HERO_STYLE = "QGroupBox { border: none; margin: 0; padding: 0; background: transparent; }"
 
 
 class SpriteInteractionLabel(QLabel):
@@ -46,41 +54,41 @@ class SpriteInteractionLabel(QLabel):
         self.on_click = on_click
         self.on_drag = on_drag
         self.on_drag_move = on_drag_move
-        self._press_pos: QPoint | None = None
-        self._last_drag_pos: QPoint | None = None
+        self._press_global_pos: QPoint | None = None
+        self._last_drag_global_pos: QPoint | None = None
         self._dragged = False
 
     def mousePressEvent(self, event) -> None:
         if event.button() != Qt.MouseButton.LeftButton:
             super().mousePressEvent(event)
             return
-        self._press_pos = event.position().toPoint()
-        self._last_drag_pos = self._press_pos
+        self._press_global_pos = event.globalPosition().toPoint()
+        self._last_drag_global_pos = self._press_global_pos
         self._dragged = False
         event.accept()
 
     def mouseMoveEvent(self, event) -> None:
-        if self._press_pos is None:
+        if self._press_global_pos is None:
             super().mouseMoveEvent(event)
             return
-        current_pos = event.position().toPoint()
-        if (current_pos - self._press_pos).manhattanLength() >= 12:
+        current_pos = event.globalPosition().toPoint()
+        if (current_pos - self._press_global_pos).manhattanLength() >= 12:
             self._dragged = True
-            if self.on_drag_move is not None and self._last_drag_pos is not None:
-                self.on_drag_move(current_pos - self._last_drag_pos)
-                self._last_drag_pos = current_pos
+            if self.on_drag_move is not None and self._last_drag_global_pos is not None:
+                self.on_drag_move(current_pos - self._last_drag_global_pos)
+                self._last_drag_global_pos = current_pos
         event.accept()
 
     def mouseReleaseEvent(self, event) -> None:
-        if event.button() != Qt.MouseButton.LeftButton or self._press_pos is None:
+        if event.button() != Qt.MouseButton.LeftButton or self._press_global_pos is None:
             super().mouseReleaseEvent(event)
             return
-        if self._dragged or (event.position().toPoint() - self._press_pos).manhattanLength() >= 12:
+        if self._dragged or (event.globalPosition().toPoint() - self._press_global_pos).manhattanLength() >= 12:
             self.on_drag()
         else:
             self.on_click()
-        self._press_pos = None
-        self._last_drag_pos = None
+        self._press_global_pos = None
+        self._last_drag_global_pos = None
         self._dragged = False
         event.accept()
 
@@ -122,8 +130,10 @@ class CompanionWindow(QMainWindow):
 
     def _build_ui(self) -> None:
         root = QWidget(self)
+        self.root_widget = root
         self.setCentralWidget(root)
         shell = QVBoxLayout(root)
+        self.shell_layout = shell
         shell.setContentsMargins(16, 16, 16, 16)
         shell.setSpacing(12)
 
@@ -160,6 +170,7 @@ class CompanionWindow(QMainWindow):
     def _build_hero_card(self) -> QGroupBox:
         box = QGroupBox("角色动画区")
         layout = QVBoxLayout(box)
+        self.hero_layout = layout
         self.sprite_label = SpriteInteractionLabel(
             on_click=lambda: self._handle_action("touch"),
             on_drag=lambda: self._handle_action("drag"),
@@ -170,9 +181,7 @@ class CompanionWindow(QMainWindow):
             lambda pos: self._show_desktop_context_menu(self.sprite_label.mapToGlobal(pos))
         )
         self.sprite_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.sprite_label.setStyleSheet(
-            "QLabel { border: 2px dashed #4f6d7a; border-radius: 18px; padding: 12px; background: #f7fbfd; }"
-        )
+        self.sprite_label.setStyleSheet(CONTROL_PANEL_SPRITE_STYLE)
         self.sprite_label.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         layout.addWidget(self.sprite_label)
         self.desktop_feedback_label = QLabel()
@@ -324,8 +333,16 @@ class CompanionWindow(QMainWindow):
             self.windowFlags()
             | Qt.WindowType.FramelessWindowHint
             | Qt.WindowType.WindowStaysOnTopHint
+            | Qt.WindowType.NoDropShadowWindowHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        for widget in (self.root_widget, self.hero_card, self.sprite_label):
+            widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+            widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
+            widget.setAutoFillBackground(False)
+        self.root_widget.setStyleSheet("background: transparent;")
+        self.shell_layout.setContentsMargins(0, 0, 0, 0)
+        self.shell_layout.setSpacing(0)
         self.status_card.hide()
         self.feedback_card.hide()
         self.actions_card.hide()
@@ -333,17 +350,27 @@ class CompanionWindow(QMainWindow):
         self.perception_card.hide()
         self.shop_card.hide()
         self.inventory_card.hide()
+        self.hero_card.setTitle("")
+        self.hero_card.setStyleSheet(DESKTOP_HERO_STYLE)
+        self.hero_layout.setContentsMargins(0, 0, 0, 0)
+        self.hero_layout.setSpacing(0)
         self.character_label.hide()
-        self.sprite_label.setMinimumHeight(DESKTOP_SPRITE_MIN_HEIGHT)
-        self.desktop_feedback_label.show()
-        self.resize(360, 420)
+        self.desktop_feedback_label.hide()
+        self.item_feedback_label.hide()
+        self.sprite_label.setStyleSheet(DESKTOP_SPRITE_STYLE)
+        self.sprite_label.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
+        self.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
 
     def _build_desktop_context_menu(self) -> QMenu:
         menu = QMenu(self)
+        status_action = QAction("状态面板", self)
+        status_action.triggered.connect(self._show_desktop_status_panel)
         return_action = QAction("返回控制面板", self)
         return_action.triggered.connect(self._return_to_control_panel)
         exit_action = QAction("退出", self)
         exit_action.triggered.connect(self.close)
+        menu.addAction(status_action)
+        menu.addSeparator()
         menu.addAction(return_action)
         menu.addAction(exit_action)
         return menu
@@ -360,6 +387,22 @@ class CompanionWindow(QMainWindow):
             return
         self._build_desktop_context_menu().exec(global_pos)
 
+    def _show_desktop_status_panel(self) -> None:
+        QMessageBox.information(
+            self,
+            "状态面板",
+            self._format_desktop_status_panel(self.controller.get_snapshot()),
+        )
+
+    def _format_desktop_status_panel(self, snapshot: dict[str, object]) -> str:
+        return (
+            f"模式：{snapshot['mode']}\n"
+            f"能量 {int(float(snapshot['charge']))} / 心情 {int(float(snapshot['mood']))} / "
+            f"信任 {int(float(snapshot['trust']))}\n"
+            f"动作：{snapshot['motion_caption']}\n"
+            f"{snapshot['feedback']}"
+        )
+
     def _return_to_control_panel(self) -> None:
         if not self.desktop_mode:
             return
@@ -367,8 +410,18 @@ class CompanionWindow(QMainWindow):
         flags = self.windowFlags()
         flags &= ~Qt.WindowType.FramelessWindowHint
         flags &= ~Qt.WindowType.WindowStaysOnTopHint
+        flags &= ~Qt.WindowType.NoDropShadowWindowHint
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+        for widget in (self.root_widget, self.hero_card, self.sprite_label):
+            widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
+            widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, False)
+            widget.setAutoFillBackground(False)
+        self.setMinimumSize(0, 0)
+        self.setMaximumSize(MAX_QT_WIDGET_SIZE, MAX_QT_WIDGET_SIZE)
+        self.root_widget.setStyleSheet("")
+        self.shell_layout.setContentsMargins(16, 16, 16, 16)
+        self.shell_layout.setSpacing(12)
         for card in (
             self.status_card,
             self.feedback_card,
@@ -379,8 +432,16 @@ class CompanionWindow(QMainWindow):
             self.inventory_card,
         ):
             card.show()
+        self.hero_card.setTitle("角色动画区")
+        self.hero_card.setStyleSheet("")
+        self.hero_layout.setContentsMargins(9, 9, 9, 9)
+        self.hero_layout.setSpacing(6)
         self.character_label.show()
+        self.sprite_label.setMaximumSize(MAX_QT_WIDGET_SIZE, MAX_QT_WIDGET_SIZE)
+        self.sprite_label.setMinimumSize(0, CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         self.sprite_label.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
+        self.sprite_label.setStyleSheet(CONTROL_PANEL_SPRITE_STYLE)
+        self.clearMask()
         self.desktop_feedback_label.hide()
         self.resize(1180, 760)
         self.show()
@@ -566,6 +627,8 @@ class CompanionWindow(QMainWindow):
             Qt.TransformationMode.SmoothTransformation,
         )
         self.sprite_label.setPixmap(scaled)
+        if self.desktop_mode:
+            self.setMask(scaled.mask())
 
     def _fill_list(self, widget: QListWidget, items: object, kind: str) -> None:
         current = self._current_item_id(widget)

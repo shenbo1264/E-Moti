@@ -4,6 +4,7 @@ import time
 def make_window(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
+    from PySide6.QtCore import Qt
     from PySide6.QtWidgets import QApplication
 
     from guanghe_companion.app import CompanionWindow
@@ -20,6 +21,52 @@ def make_controller(tmp_path, ai_expressor=None):
     from guanghe_companion.controller import CompanionController
 
     return CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=ai_expressor)
+
+
+def test_sprite_drag_uses_global_cursor_delta_when_window_moves(monkeypatch):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtCore import QEvent, QPoint, QPointF, Qt
+    from PySide6.QtGui import QMouseEvent
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import SpriteInteractionLabel
+
+    app = QApplication.instance() or QApplication([])
+    drag_deltas = []
+    label = SpriteInteractionLabel(
+        on_click=lambda: None,
+        on_drag=lambda: None,
+        on_drag_move=drag_deltas.append,
+    )
+    label.show()
+    app.processEvents()
+
+    label.mousePressEvent(
+        QMouseEvent(
+            QEvent.Type.MouseButtonPress,
+            QPointF(10, 10),
+            QPointF(100, 100),
+            Qt.MouseButton.LeftButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+    )
+    label.mouseMoveEvent(
+        QMouseEvent(
+            QEvent.Type.MouseMove,
+            QPointF(10, 10),
+            QPointF(124, 100),
+            Qt.MouseButton.NoButton,
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+        )
+    )
+
+    assert drag_deltas == [QPoint(24, 0)]
+
+    label.close()
+    app.processEvents()
 
 
 def test_companion_window_character_panel_omits_obsolete_placeholder_copy(monkeypatch, tmp_path):
@@ -51,6 +98,7 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
 
     assert bool(flags & Qt.WindowType.FramelessWindowHint)
     assert bool(flags & Qt.WindowType.WindowStaysOnTopHint)
+    assert bool(flags & Qt.WindowType.NoDropShadowWindowHint)
     assert window.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert window.hero_card.isVisibleTo(window)
     assert window.status_card.isHidden()
@@ -63,9 +111,10 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     app.processEvents()
 
 
-def test_desktop_mode_uses_compact_pet_surface_after_layout(monkeypatch, tmp_path):
+def test_desktop_mode_shows_only_sprite_surface_after_layout(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
+    from PySide6.QtCore import Qt
     from PySide6.QtWidgets import QApplication
 
     from guanghe_companion.app import CompanionWindow
@@ -75,39 +124,56 @@ def test_desktop_mode_uses_compact_pet_surface_after_layout(monkeypatch, tmp_pat
     window.show()
     app.processEvents()
 
-    assert window.width() <= 430
-    assert window.height() <= 460
+    assert window.width() <= 320
+    assert window.height() <= 340
+    assert window.hero_card.title() == ""
+    assert window.root_widget.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    assert window.hero_card.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    assert window.sprite_label.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    assert "border: none" in window.hero_card.styleSheet()
+    assert "background: transparent" in window.sprite_label.styleSheet()
+    assert window.sprite_label.isVisibleTo(window)
+    assert window.sprite_label.pixmap() is not None
+    assert not window.sprite_label.pixmap().isNull()
+    assert not window.mask().isEmpty()
     assert not window.character_label.isVisibleTo(window)
-    assert window.desktop_feedback_label.isVisibleTo(window)
+    assert not window.desktop_feedback_label.isVisibleTo(window)
 
     window.close()
     app.processEvents()
 
 
-def test_desktop_mode_shows_minimal_feedback_overlay(monkeypatch, tmp_path):
+def test_desktop_mode_context_menu_status_panel_shows_feedback(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
-    from PySide6.QtWidgets import QApplication
+    from PySide6.QtWidgets import QApplication, QMessageBox
 
     from guanghe_companion.app import CompanionWindow
 
+    captured = {}
+
+    def fake_information(parent, title, message):
+        captured["title"] = title
+        captured["message"] = message
+
+    monkeypatch.setattr(QMessageBox, "information", fake_information)
     app = QApplication.instance() or QApplication([])
     window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
     window.show()
     app.processEvents()
 
-    text = window.desktop_feedback_label.text()
+    menu = window._build_desktop_context_menu()
+    menu.actions()[0].trigger()
+    app.processEvents()
 
-    assert window.desktop_feedback_label.isVisibleTo(window)
-    assert "模式：Calm" in text
-    assert "能量 65" in text
-    assert "心情 58" in text
-    assert "信任 5" in text
-    assert "待机呼吸" in text
-    assert "信号稳定" in text
-    assert "{" not in text
-    assert "STAT" not in text
-    assert "CHOICE" not in text
+    assert captured["title"] == "状态面板"
+    assert "模式" in captured["message"]
+    assert "能量 65" in captured["message"]
+    assert "心情 58" in captured["message"]
+    assert "信任 5" in captured["message"]
+    assert "{" not in captured["message"]
+    assert "STAT" not in captured["message"]
+    assert "CHOICE" not in captured["message"]
 
     window.close()
     app.processEvents()
@@ -129,7 +195,7 @@ def test_desktop_mode_feedback_overlay_updates_after_sprite_touch(monkeypatch, t
 
     QTest.mouseClick(window.sprite_label, Qt.MouseButton.LeftButton, pos=QPoint(24, 24))
     app.processEvents()
-    text = window.desktop_feedback_label.text()
+    text = window._format_desktop_status_panel(window.controller.get_snapshot())
 
     assert "模式：Calm" in text
     assert "靠近回应" in text
@@ -154,11 +220,11 @@ def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_pat
     app.processEvents()
 
     menu = window._build_desktop_context_menu()
-    labels = [action.text() for action in menu.actions()]
+    labels = [action.text() for action in menu.actions() if not action.isSeparator()]
 
-    assert labels == ["返回控制面板", "退出"]
+    assert labels == ["状态面板", "返回控制面板", "退出"]
 
-    menu.actions()[0].trigger()
+    menu.actions()[2].trigger()
     app.processEvents()
     flags = window.windowFlags()
 
@@ -173,6 +239,9 @@ def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_pat
     assert window.perception_card.isVisibleTo(window)
     assert window.shop_card.isVisibleTo(window)
     assert window.inventory_card.isVisibleTo(window)
+    assert window.character_label.isVisibleTo(window)
+    assert window.desktop_feedback_label.isHidden()
+    assert window.mask().isEmpty()
     assert window.controller.get_snapshot()["motion"] == "Default"
 
     window.close()
@@ -233,7 +302,7 @@ def test_desktop_mode_context_menu_exit_closes_window_and_controller(monkeypatch
     app.processEvents()
 
     menu = window._build_desktop_context_menu()
-    menu.actions()[1].trigger()
+    menu.actions()[-1].trigger()
     app.processEvents()
 
     assert not window.isVisible()

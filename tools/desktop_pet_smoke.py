@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -17,7 +18,7 @@ from PySide6.QtWidgets import QApplication
 from guanghe_companion.app import CompanionWindow
 from guanghe_companion.controller import CompanionController
 
-EXPECTED_MENU_LABELS = ("\u8fd4\u56de\u63a7\u5236\u9762\u677f", "\u9000\u51fa")
+EXPECTED_MENU_LABELS = ("\u72b6\u6001\u9762\u677f", "\u8fd4\u56de\u63a7\u5236\u9762\u677f", "\u9000\u51fa")
 
 
 @dataclass(frozen=True, slots=True)
@@ -43,10 +44,16 @@ def validate_desktop_pet_window(app: QApplication, window: CompanionWindow) -> l
     if pixmap is None or pixmap.isNull():
         errors.append("current sprite frame did not render")
 
-    if not window.desktop_feedback_label.isVisibleTo(window):
-        errors.append("desktop feedback overlay is not visible")
+    if window.hero_card.title():
+        errors.append("desktop pet should not show a framed hero title")
+    if window.character_label.isVisibleTo(window):
+        errors.append("desktop pet should not show the control-panel character detail")
+    if window.desktop_feedback_label.isVisibleTo(window):
+        errors.append("desktop pet should not show a persistent feedback overlay")
+    if window.width() > 320 or window.height() > 340:
+        errors.append(f"desktop pet surface is too large: {window.width()}x{window.height()}")
 
-    menu_labels = tuple(action.text() for action in window._build_desktop_context_menu().actions())
+    menu_labels = tuple(action.text() for action in window._build_desktop_context_menu().actions() if not action.isSeparator())
     if menu_labels != EXPECTED_MENU_LABELS:
         errors.append(f"desktop context menu labels are invalid: {menu_labels!r}")
 
@@ -61,6 +68,24 @@ def validate_desktop_pet_window(app: QApplication, window: CompanionWindow) -> l
         errors.append("window is outside available screen bounds")
 
     return errors
+
+
+def _pump_events_for(
+    app: QApplication,
+    seconds: float,
+    *,
+    step: float = 0.016,
+    monotonic: Callable[[], float] = time.monotonic,
+    sleep: Callable[[float], None] = time.sleep,
+) -> None:
+    deadline = monotonic() + max(0.0, seconds)
+    while monotonic() < deadline:
+        app.processEvents()
+        remaining = deadline - monotonic()
+        if remaining <= 0:
+            break
+        sleep(min(max(step, 0.001), remaining))
+    app.processEvents()
 
 
 def run_desktop_pet_smoke(seconds: float, interval: float) -> DesktopPetSmokeReport:
@@ -80,7 +105,8 @@ def run_desktop_pet_smoke(seconds: float, interval: float) -> DesktopPetSmokeRep
                 if errors:
                     raise RuntimeError("; ".join(errors))
                 iterations += 1
-                time.sleep(interval)
+                remaining = seconds - (time.monotonic() - started_at)
+                _pump_events_for(app, min(interval, max(0.0, remaining)))
             return DesktopPetSmokeReport(
                 platform=app.platformName(),
                 seconds=round(time.monotonic() - started_at, 2),

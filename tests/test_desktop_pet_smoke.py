@@ -60,6 +60,32 @@ def test_desktop_pet_smoke_validator_reports_window_escape(monkeypatch, tmp_path
     app.processEvents()
 
 
+def test_desktop_pet_smoke_pumps_events_between_validation_intervals():
+    from tools.desktop_pet_smoke import _pump_events_for
+
+    class FakeApp:
+        def __init__(self):
+            self.process_events_calls = 0
+
+        def processEvents(self):
+            self.process_events_calls += 1
+
+    current_time = 0.0
+
+    def monotonic():
+        return current_time
+
+    def sleep(seconds):
+        nonlocal current_time
+        current_time += seconds
+
+    app = FakeApp()
+
+    _pump_events_for(app, seconds=0.2, step=0.05, monotonic=monotonic, sleep=sleep)
+
+    assert app.process_events_calls >= 4
+
+
 def test_desktop_pet_smoke_cli_runs_from_repo_root_without_pythonpath(monkeypatch):
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
