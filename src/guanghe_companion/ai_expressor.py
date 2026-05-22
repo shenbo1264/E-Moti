@@ -12,6 +12,7 @@ from urllib import request
 from .dialogue_parser import DialogueStreamParser
 from .engine import create_initial_state
 from .events import ALLOWED_EFFECTS, build_fallback_events, validate_events
+from .expression_settings import ExpressionSettings
 from .snapshot import CompanionSnapshot
 
 
@@ -23,6 +24,7 @@ DEFAULT_OPENAI_MODEL = "gpt-5.5"
 OPENAI_RESPONSES_URL = "https://api.openai.com/v1/responses"
 MAX_OPENAI_API_KEY_LENGTH = 512
 MAX_OPENAI_MODEL_LENGTH = 80
+MAX_OPENAI_BASE_URL_LENGTH = 240
 MAX_PERCEPTION_SUMMARY_LENGTH = 240
 MAX_TOOL_RESULTS = 3
 MAX_ACTION_LABEL_LENGTH = 40
@@ -59,6 +61,7 @@ class _ExpressionPayloadError(ValueError):
 class _OpenAIProviderConfig:
     api_key: str
     model: str
+    base_url: str
     timeout_seconds: float
 
 
@@ -135,11 +138,13 @@ class OpenAIResponsesClient:
         self,
         api_key: str,
         model: str = DEFAULT_OPENAI_MODEL,
+        base_url: str = OPENAI_RESPONSES_URL,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         transport: HTTPTransport | None = None,
     ) -> None:
         self.api_key = _normalize_api_key(api_key)
         self.model = _normalize_model(model)
+        self.base_url = _normalize_base_url(base_url)
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.transport = transport or _default_transport
         self._closed = False
@@ -169,7 +174,7 @@ class OpenAIResponsesClient:
             ensure_ascii=False,
         ).encode("utf-8")
         api_request = request.Request(
-            OPENAI_RESPONSES_URL,
+            self.base_url,
             data=payload,
             headers={
                 "Authorization": f"Bearer {self.api_key}",
@@ -636,13 +641,20 @@ def _is_fallback_events(state, events: list[dict[str, str]], fallback_feedback: 
     )
 
 
-def build_default_ai_expressor(env: Mapping[str, object] | None = None) -> ShinsekaiAIExpressor:
+def build_default_ai_expressor(
+    env: Mapping[str, object] | None = None,
+    *,
+    settings: ExpressionSettings | None = None,
+) -> ShinsekaiAIExpressor:
+    if settings is not None:
+        return _build_ai_expressor_from_settings(settings)
     config = _openai_config_from_env(env)
     if config is None:
         return ShinsekaiAIExpressor(enabled=False)
     client = OpenAIResponsesClient(
         api_key=config.api_key,
         model=config.model,
+        base_url=config.base_url,
         timeout_seconds=config.timeout_seconds,
     )
     return ShinsekaiAIExpressor(
@@ -665,7 +677,24 @@ def _openai_config_from_env(env: Mapping[str, object] | None = None) -> _OpenAIP
     return _OpenAIProviderConfig(
         api_key=api_key,
         model=_normalize_model(source.get("GUANGHE_LLM_MODEL")),
+        base_url=_normalize_base_url(source.get("GUANGHE_LLM_BASE_URL")),
         timeout_seconds=_parse_timeout(source.get("GUANGHE_LLM_TIMEOUT_SECONDS")),
+    )
+
+
+def _build_ai_expressor_from_settings(settings: ExpressionSettings) -> ShinsekaiAIExpressor:
+    if not settings.enabled or settings.provider != "openai" or not settings.api_key:
+        return ShinsekaiAIExpressor(enabled=False)
+    client = OpenAIResponsesClient(
+        api_key=settings.api_key,
+        model=settings.model,
+        base_url=settings.base_url,
+        timeout_seconds=settings.timeout_seconds,
+    )
+    return ShinsekaiAIExpressor(
+        llm_client=client,
+        timeout_seconds=settings.timeout_seconds,
+        enabled=True,
     )
 
 
@@ -739,6 +768,20 @@ def _normalize_model(value: object) -> str:
     if not model or len(model) > MAX_OPENAI_MODEL_LENGTH or _has_control_character(model):
         return DEFAULT_OPENAI_MODEL
     return model
+
+
+def _normalize_base_url(value: object) -> str:
+    if not isinstance(value, str):
+        return OPENAI_RESPONSES_URL
+    base_url = value.strip()
+    if (
+        not base_url
+        or len(base_url) > MAX_OPENAI_BASE_URL_LENGTH
+        or _has_control_character(base_url)
+        or not base_url.startswith(("https://", "http://"))
+    ):
+        return OPENAI_RESPONSES_URL
+    return base_url
 
 
 def _normalize_api_key(value: object) -> str:

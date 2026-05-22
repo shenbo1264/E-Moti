@@ -1828,6 +1828,50 @@ def test_openai_responses_client_uses_default_model_for_control_character_direct
     assert "gpt\\nbad" not in captured["payload"]
 
 
+def test_openai_responses_client_uses_custom_base_url_for_compatible_provider():
+    from guanghe_companion.ai_expressor import OpenAIResponsesClient
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["url"] = request.full_url
+        return b'{"output_text":"[]"}'
+
+    client = OpenAIResponsesClient(
+        api_key="test-key",
+        base_url=" https://example.test/v1/responses ",
+        transport=transport,
+    )
+
+    assert client("{}") == "[]"
+    assert client.base_url == "https://example.test/v1/responses"
+    assert captured["url"] == "https://example.test/v1/responses"
+
+
+def test_default_expressor_can_be_built_from_saved_expression_settings():
+    from guanghe_companion.ai_expressor import OpenAIResponsesClient, build_default_ai_expressor
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "openai",
+            "model": "demo-model",
+            "base_url": "https://example.test/v1/responses",
+            "api_key": "test-key",
+            "timeout_seconds": "0.5",
+        }
+    )
+
+    expressor = build_default_ai_expressor(settings=settings)
+
+    assert expressor.enabled is True
+    assert isinstance(expressor.llm_client, OpenAIResponsesClient)
+    assert expressor.llm_client.model == "demo-model"
+    assert expressor.llm_client.base_url == "https://example.test/v1/responses"
+    assert expressor.timeout_seconds == 0.5
+
+
 def test_openai_responses_client_rejects_non_finite_timeout_for_transport():
     captured = {}
 

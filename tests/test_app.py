@@ -158,7 +158,7 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
     assert window.navigation_hint_label.text() == "控制中心"
-    assert [button.text() for button in window.navigation_buttons] == ["总览", "互动", "背包", "隐私"]
+    assert [button.text() for button in window.navigation_buttons] == ["总览", "互动", "背包", "隐私", "表达"]
 
     window.close()
     app.processEvents()
@@ -229,6 +229,7 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     assert window.actions_card.isHidden()
     assert window.shop_card.isHidden()
     assert window.inventory_card.isHidden()
+    assert window.expression_settings_card.isHidden()
 
     window.close()
     app.processEvents()
@@ -419,6 +420,7 @@ def test_desktop_mode_context_menu_returns_to_control_panel(monkeypatch, tmp_pat
     assert not window.perception_card.isVisibleTo(window)
     assert not window.shop_card.isVisibleTo(window)
     assert not window.inventory_card.isVisibleTo(window)
+    assert not window.expression_settings_card.isVisibleTo(window)
     assert window.character_label.isVisibleTo(window)
     assert window.desktop_feedback_label.isHidden()
     assert window.mask().isEmpty()
@@ -955,6 +957,50 @@ def test_window_shows_screen_perception_disabled_by_default(monkeypatch, tmp_pat
     assert "屏幕感知：关闭" in window.perception_status_label.text()
     assert "默认不会读取屏幕" in window.perception_privacy_label.text()
     assert "不会自动截图" in window.perception_privacy_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_expression_settings_page_shows_required_fields_and_saves_local_config(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication, QLineEdit
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[4].click()
+    app.processEvents()
+
+    assert window.expression_settings_card.isVisibleTo(window)
+    assert window.expression_enabled_checkbox.text() == "启用表达增强"
+    assert window.expression_provider_combo.currentText() == "openai"
+    assert window.expression_model_input.text()
+    assert window.expression_base_url_input.text().startswith("https://")
+    assert window.expression_api_key_input.echoMode() == QLineEdit.EchoMode.Password
+    assert window.expression_timeout_input.value() == 2.0
+
+    window.expression_enabled_checkbox.setChecked(True)
+    window.expression_model_input.setText("demo-model")
+    window.expression_base_url_input.setText("https://example.test/v1/responses")
+    window.expression_api_key_input.setText("test-key")
+    window.expression_timeout_input.setValue(0.5)
+    window.expression_save_button.click()
+    app.processEvents()
+
+    settings = window.controller.get_expression_settings()
+    assert settings["enabled"] is True
+    assert settings["provider"] == "openai"
+    assert settings["model"] == "demo-model"
+    assert settings["base_url"] == "https://example.test/v1/responses"
+    assert settings["api_key_set"] is True
+    assert settings["timeout_seconds"] == 0.5
+    assert "已保存" in window.expression_settings_status_label.text()
 
     window.close()
     app.processEvents()

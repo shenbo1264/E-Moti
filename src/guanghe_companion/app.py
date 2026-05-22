@@ -9,6 +9,9 @@ from PySide6.QtCore import QPoint, QRect, QSize, QTimer, Qt, Slot
 from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
+    QCheckBox,
+    QComboBox,
+    QDoubleSpinBox,
     QFrame,
     QGridLayout,
     QGroupBox,
@@ -30,6 +33,7 @@ from PySide6.QtWidgets import (
 
 from .controller import CompanionController
 from .dialogue import DialogueRequest
+from .expression_settings import normalize_expression_settings
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_default_motion_catalog
 from .storage import DEMO_SAVE_PATH
@@ -386,6 +390,16 @@ class CompanionWindow(QMainWindow):
         privacy_layout.addStretch(1)
         self.content_stack.addWidget(privacy_page)
 
+        expression_page = QWidget()
+        expression_layout = QVBoxLayout(expression_page)
+        expression_layout.setContentsMargins(0, 0, 0, 0)
+        expression_layout.setSpacing(12)
+        self.control_panel_page_layouts.append(expression_layout)
+        self.expression_settings_card = self._build_expression_settings_card()
+        expression_layout.addWidget(self.expression_settings_card)
+        expression_layout.addStretch(1)
+        self.content_stack.addWidget(expression_page)
+
     def _build_sidebar_card(self) -> QFrame:
         frame = QFrame()
         frame.setObjectName("SidebarCard")
@@ -398,7 +412,7 @@ class CompanionWindow(QMainWindow):
         self.navigation_hint_label.setObjectName("NavigationHint")
         layout.addWidget(self.navigation_hint_label)
 
-        for index, label in enumerate(("总览", "互动", "背包", "隐私")):
+        for index, label in enumerate(("总览", "互动", "背包", "隐私", "表达")):
             button = QPushButton(label)
             button.setObjectName("NavigationButton")
             button.setCheckable(True)
@@ -604,6 +618,50 @@ class CompanionWindow(QMainWindow):
         layout.addWidget(self.observe_screen_button)
         return box
 
+    def _build_expression_settings_card(self) -> QGroupBox:
+        box = QGroupBox("表达增强")
+        layout = QGridLayout(box)
+        layout.setHorizontalSpacing(10)
+        layout.setVerticalSpacing(8)
+
+        settings = self.controller.get_expression_settings(include_api_key=True)
+        self.expression_enabled_checkbox = QCheckBox("启用表达增强")
+        self.expression_enabled_checkbox.setChecked(bool(settings["enabled"]))
+
+        self.expression_provider_combo = QComboBox()
+        self.expression_provider_combo.addItems(["openai"])
+        provider_index = self.expression_provider_combo.findText(str(settings["provider"]))
+        self.expression_provider_combo.setCurrentIndex(max(0, provider_index))
+
+        self.expression_model_input = QLineEdit(str(settings["model"]))
+        self.expression_base_url_input = QLineEdit(str(settings["base_url"]))
+        self.expression_api_key_input = QLineEdit(str(settings["api_key"]))
+        self.expression_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
+        self.expression_timeout_input = QDoubleSpinBox()
+        self.expression_timeout_input.setRange(0.1, 5.0)
+        self.expression_timeout_input.setDecimals(2)
+        self.expression_timeout_input.setSingleStep(0.1)
+        self.expression_timeout_input.setValue(float(settings["timeout_seconds"]))
+        self.expression_save_button = QPushButton("保存表达设置")
+        self.expression_save_button.clicked.connect(self._handle_expression_settings_save)
+        self.expression_settings_status_label = QLabel("表达增强：关闭" if not settings["enabled"] else "表达增强：已启用")
+        self.expression_settings_status_label.setWordWrap(True)
+
+        layout.addWidget(self.expression_enabled_checkbox, 0, 0, 1, 2)
+        layout.addWidget(QLabel("provider"), 1, 0)
+        layout.addWidget(self.expression_provider_combo, 1, 1)
+        layout.addWidget(QLabel("model"), 2, 0)
+        layout.addWidget(self.expression_model_input, 2, 1)
+        layout.addWidget(QLabel("base_url"), 3, 0)
+        layout.addWidget(self.expression_base_url_input, 3, 1)
+        layout.addWidget(QLabel("api_key"), 4, 0)
+        layout.addWidget(self.expression_api_key_input, 4, 1)
+        layout.addWidget(QLabel("timeout"), 5, 0)
+        layout.addWidget(self.expression_timeout_input, 5, 1)
+        layout.addWidget(self.expression_save_button, 6, 0)
+        layout.addWidget(self.expression_settings_status_label, 6, 1)
+        return box
+
     def _build_shop_card(self) -> QGroupBox:
         box = QGroupBox("轻量商店")
         layout = QVBoxLayout(box)
@@ -661,6 +719,7 @@ class CompanionWindow(QMainWindow):
         self.actions_card.hide()
         self.demo_card.hide()
         self.perception_card.hide()
+        self.expression_settings_card.hide()
         self.shop_card.hide()
         self.inventory_card.hide()
         self.hero_card.setTitle("")
@@ -823,6 +882,7 @@ class CompanionWindow(QMainWindow):
             self.actions_card,
             self.demo_card,
             self.perception_card,
+            self.expression_settings_card,
             self.shop_card,
             self.inventory_card,
         ):
@@ -945,6 +1005,23 @@ class CompanionWindow(QMainWindow):
         self.perception_status_label.setText("屏幕感知：已手动触发（未读取屏幕内容）")
 
         self._manual_perception_summary = MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
+
+    def _handle_expression_settings_save(self) -> None:
+        settings = normalize_expression_settings(
+            {
+                "enabled": self.expression_enabled_checkbox.isChecked(),
+                "provider": self.expression_provider_combo.currentText(),
+                "model": self.expression_model_input.text(),
+                "base_url": self.expression_base_url_input.text(),
+                "api_key": self.expression_api_key_input.text(),
+                "timeout_seconds": self.expression_timeout_input.value(),
+            }
+        )
+        public_settings = self.controller.update_expression_settings(settings)
+        self.expression_model_input.setText(str(public_settings["model"]))
+        self.expression_base_url_input.setText(str(public_settings["base_url"]))
+        self.expression_timeout_input.setValue(float(public_settings["timeout_seconds"]))
+        self.expression_settings_status_label.setText("表达增强设置已保存")
 
     def _manual_perception_context(self) -> dict[str, object]:
         return ManualPerceptionExpressionContextProvider(

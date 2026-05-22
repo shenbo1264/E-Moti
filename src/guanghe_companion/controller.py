@@ -28,10 +28,12 @@ from .events import (
     build_typed_fallback_events,
 )
 from .expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
+from .expression_settings import ExpressionSettings, ExpressionSettingsStore, normalize_expression_settings
 from .inventory import InventoryService, InventoryUseRequest, ShopPurchaseRequest, ShopService, format_item_effect
 from .memory import MemoryLogService, memory_kind_for_inventory_usage
 from .models import CompanionState
 from .relationship import ProactiveCompanionDecision, ProactiveCompanionService, RelationshipService
+from .runtime_paths import expression_settings_path as default_expression_settings_path
 from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory, format_delta_text
 from .storage import DEFAULT_SAVE_PATH, SaveManager, logical_time_from_state
 
@@ -57,6 +59,14 @@ class CompanionDialogueHistoryStore(Protocol):
         ...
 
 
+class CompanionExpressionSettingsStore(Protocol):
+    def load(self) -> ExpressionSettings:
+        ...
+
+    def save(self, settings: ExpressionSettings) -> None:
+        ...
+
+
 class CompanionController:
     def __init__(
         self,
@@ -67,6 +77,8 @@ class CompanionController:
         save_manager: CompanionSaveManager | None = None,
         dialogue_history_path: Path | None = None,
         dialogue_history_store: CompanionDialogueHistoryStore | None = None,
+        expression_settings_path: Path | None = None,
+        expression_settings_store: CompanionExpressionSettingsStore | None = None,
     ) -> None:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
         self.save_manager = save_manager or SaveManager(self.save_path)
@@ -77,8 +89,19 @@ class CompanionController:
         )
         self.dialogue_history_store = dialogue_history_store or DialogueHistoryStore(self.dialogue_history_path)
         self.dialogue_history = self.dialogue_history_store.load()
+        self.expression_settings_path = (
+            Path(expression_settings_path)
+            if expression_settings_path is not None
+            else _expression_settings_path_for_save_path(self.save_path)
+        )
+        self.expression_settings_store = expression_settings_store or ExpressionSettingsStore(
+            self.expression_settings_path
+        )
+        self.expression_settings = self.expression_settings_store.load()
         self.character_pack = load_default_character_pack()
-        self.ai_expressor = ai_expressor or build_default_ai_expressor()
+        self.ai_expressor = ai_expressor or build_default_ai_expressor(
+            settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
+        )
         self._closed = False
         self.expression_context_provider = expression_context_provider or ExpressionContextChain(
             [CharacterProfileExpressionContextProvider(self.character_pack)]
@@ -203,6 +226,16 @@ class CompanionController:
 
     def copy_dialogue_history_text(self) -> str:
         return format_dialogue_history_text(self.dialogue_history)
+
+    def get_expression_settings(self, *, include_api_key: bool = False) -> dict[str, object]:
+        return self.expression_settings.to_dict(include_api_key=include_api_key)
+
+    def update_expression_settings(self, settings: ExpressionSettings | dict[str, object]) -> dict[str, object]:
+        normalized = settings if isinstance(settings, ExpressionSettings) else normalize_expression_settings(settings)
+        self.expression_settings = normalized
+        self.expression_settings_store.save(normalized)
+        self._replace_ai_expressor(build_default_ai_expressor(settings=normalized))
+        return normalized.to_public_dict()
 
     def clear_dialogue_history(self) -> dict[str, object]:
         self.dialogue_history = ()
@@ -493,6 +526,17 @@ class CompanionController:
     def _persist(self) -> None:
         self.save_manager.save(self.state)
 
+    def _replace_ai_expressor(self, next_expressor: ShinsekaiAIExpressor) -> None:
+        current = self.ai_expressor
+        if current is not next_expressor:
+            close = getattr(current, "close", None)
+            try:
+                if callable(close):
+                    close()
+            except Exception:
+                pass
+        self.ai_expressor = next_expressor
+
     def _set_dialogue_history_feedback(self, *, feedback: str, delta_text: str, effect: str) -> None:
         self.last_motion = "Default"
         self.last_feedback = feedback
@@ -619,3 +663,11 @@ def _dialogue_history_path_for_save_path(save_path: Path) -> Path:
     if save_path.name == "companion_demo_save.json":
         return save_path.with_name("companion_demo_dialogue_history.json")
     return save_path.with_name(f"{save_path.stem}_dialogue_history.json")
+
+
+def _expression_settings_path_for_save_path(save_path: Path) -> Path:
+    if save_path.name == "companion_save.json":
+        return default_expression_settings_path()
+    if save_path.name == "companion_demo_save.json":
+        return save_path.with_name("companion_demo_expression_settings.json")
+    return save_path.with_name(f"{save_path.stem}_expression_settings.json")

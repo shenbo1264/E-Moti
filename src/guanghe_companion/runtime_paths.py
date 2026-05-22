@@ -48,6 +48,10 @@ def dialogue_history_path() -> Path:
     return user_data_dir() / "dialogue_history.json"
 
 
+def expression_settings_path() -> Path:
+    return user_data_dir() / "expression_settings.json"
+
+
 def _asset_candidates() -> list[Path]:
     candidates: list[Path] = []
     if is_frozen():

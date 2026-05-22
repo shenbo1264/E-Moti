@@ -907,3 +907,52 @@ def test_controller_clear_replay_and_revert_dialogue_history_do_not_touch_growth
     assert controller.get_typed_snapshot().inventory == baseline.inventory
     assert controller.get_typed_snapshot().relationship_stage == baseline.relationship_stage
     assert controller.get_typed_snapshot().memory_log == baseline.memory_log
+
+
+def test_controller_updates_expression_settings_without_growth_mutation(tmp_path):
+    from guanghe_companion.ai_expressor import OpenAIResponsesClient
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    settings_path = tmp_path / "expression-settings.json"
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        expression_settings_path=settings_path,
+    )
+    baseline = controller.get_typed_snapshot()
+    settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "openai",
+            "model": "demo-model",
+            "base_url": "https://example.test/v1/responses",
+            "api_key": "test-key",
+            "timeout_seconds": "0.5",
+        }
+    )
+
+    public_settings = controller.update_expression_settings(settings)
+
+    assert public_settings == {
+        "enabled": True,
+        "provider": "openai",
+        "model": "demo-model",
+        "base_url": "https://example.test/v1/responses",
+        "api_key": "",
+        "api_key_set": True,
+        "timeout_seconds": 0.5,
+    }
+    assert controller.ai_expressor.enabled is True
+    assert isinstance(controller.ai_expressor.llm_client, OpenAIResponsesClient)
+    assert controller.get_typed_snapshot().stats == baseline.stats
+    assert controller.get_typed_snapshot().inventory == baseline.inventory
+    assert controller.get_typed_snapshot().relationship_stage == baseline.relationship_stage
+    assert controller.get_typed_snapshot().memory_log == baseline.memory_log
+
+    reloaded = CompanionController(
+        save_path=tmp_path / "save.json",
+        expression_settings_path=settings_path,
+    )
+
+    assert reloaded.get_expression_settings()["api_key_set"] is True
+    assert reloaded.get_expression_settings()["model"] == "demo-model"
