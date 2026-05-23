@@ -48,3 +48,13 @@ def test_user_data_dir_can_be_overridden_for_smoke_runs(monkeypatch, tmp_path):
     assert user_data_dir() == override
     assert default_save_path() == override / "companion_save.json"
     assert dialogue_history_path() == override / "dialogue_history.json"
+
+
+def test_capability_paths_use_user_data_dir(monkeypatch, tmp_path):
+    from guanghe_companion.runtime_paths import capability_settings_path, tts_cache_dir
+
+    override = tmp_path / "runtime-data"
+    monkeypatch.setenv("E_MOTI_USER_DATA_DIR", str(override))
+
+    assert capability_settings_path() == override / "capability_settings.json"
+    assert tts_cache_dir() == override / "cache" / "tts"

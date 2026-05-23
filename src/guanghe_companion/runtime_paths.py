@@ -52,6 +52,14 @@ def expression_settings_path() -> Path:
     return user_data_dir() / "expression_settings.json"
 
 
+def capability_settings_path() -> Path:
+    return user_data_dir() / "capability_settings.json"
+
+
+def tts_cache_dir() -> Path:
+    return user_data_dir() / "cache" / "tts"
+
+
 def _asset_candidates() -> list[Path]:
     candidates: list[Path] = []
     if is_frozen():
