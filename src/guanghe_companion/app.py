@@ -51,6 +51,7 @@ from .expression_settings import (
 )
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_default_motion_catalog
+from .screen_observation import ScreenObservationService
 from .storage import DEMO_SAVE_PATH
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
@@ -273,6 +274,9 @@ class CompanionWindow(QMainWindow):
         self.desktop_mode = desktop_mode
         self._advance_ticks = advance_ticks
         self._owns_controller = owns_controller
+        self.screen_observation_service = ScreenObservationService()
+        self.screen_observation_timer = QTimer(self)
+        self.screen_observation_timer.timeout.connect(self._run_screen_observation)
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
@@ -307,6 +311,7 @@ class CompanionWindow(QMainWindow):
         if pet_window is not None:
             self.desktop_pet_window = None
             pet_window.close()
+        self.screen_observation_timer.stop()
         self._manual_perception_summary = ""
         self.controller.expression_context_provider = self._base_expression_context_provider
         try:
@@ -691,8 +696,8 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.screen_observation_api_key_input.setPlaceholderText("视觉 API Key")
         self.screen_observation_run_button = QPushButton("观察一次")
-        self.screen_observation_run_button.setEnabled(False)
-        self.screen_observation_status_label = QLabel("屏幕观察尚未接入真实服务")
+        self.screen_observation_run_button.clicked.connect(self._run_screen_observation)
+        self.screen_observation_status_label = QLabel("屏幕观察未运行")
         self.screen_observation_status_label.setWordWrap(True)
 
         layout.addWidget(self.screen_observation_enabled_check, 0, 0)
@@ -951,6 +956,7 @@ class CompanionWindow(QMainWindow):
 
     def _apply_desktop_mode(self) -> None:
         self.desktop_mode = True
+        self.screen_observation_timer.stop()
         self.setWindowFlags(
             self.windowFlags()
             | Qt.WindowType.FramelessWindowHint
@@ -1167,6 +1173,7 @@ class CompanionWindow(QMainWindow):
         self.resize(1180, 760)
         self.show()
         self._apply_snapshot(self.controller.get_snapshot())
+        self._update_screen_observation_timer()
 
     def _move_desktop_window_by(self, delta: QPoint) -> None:
         if not self.desktop_mode:
@@ -1270,6 +1277,24 @@ class CompanionWindow(QMainWindow):
         self.perception_status_label.setText("屏幕感知：已手动触发（未读取屏幕内容）")
 
         self._manual_perception_summary = MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
+
+    def _run_screen_observation(self) -> None:
+        self._save_capability_settings_from_ui()
+        result = self.screen_observation_service.observe(
+            self.controller.get_capability_settings().screen_observation
+        )
+        if result.summary:
+            self.controller.set_perception_summary(result.summary)
+            self.screen_observation_status_label.setText(f"{result.message}：{result.summary}")
+            return
+        self.screen_observation_status_label.setText(result.message)
+
+    def _update_screen_observation_timer(self) -> None:
+        settings = self.controller.get_capability_settings().screen_observation
+        if self.desktop_mode or not settings.enabled or not settings.auto_enabled:
+            self.screen_observation_timer.stop()
+            return
+        self.screen_observation_timer.start(settings.interval_seconds * 1000)
 
     def _handle_expression_settings_save(self) -> None:
         self._save_expression_settings_from_form()
@@ -1407,6 +1432,7 @@ class CompanionWindow(QMainWindow):
         self.asr_api_key_input.setText(asr.api_key)
         self.asr_auto_send_check.setChecked(asr.auto_send)
         self.dialogue_asr_button.setEnabled(False)
+        self._update_screen_observation_timer()
 
     def _set_combo_current_text(self, combo: QComboBox, value: str) -> None:
         index = combo.findText(value)

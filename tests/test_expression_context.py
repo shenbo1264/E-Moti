@@ -494,3 +494,15 @@ def test_expression_context_chain_can_reuse_one_shot_provider_iterables():
         ],
     }
     assert second_context == first_context
+
+
+def test_runtime_perception_summary_is_sanitized_in_expression_context(tmp_path):
+    from guanghe_companion.controller import CompanionController
+
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+
+    controller.set_perception_summary("A" * 400 + "\n")
+    context = controller._expression_context()
+
+    assert len(context["perception_summary"]) == 240
+    assert "\n" not in context["perception_summary"]

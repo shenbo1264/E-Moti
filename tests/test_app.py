@@ -1028,6 +1028,66 @@ def test_capability_ui_save_round_trips_to_controller(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_screen_observation_button_updates_readonly_context_without_growth_mutation(monkeypatch, tmp_path):
+    from guanghe_companion.screen_observation import ScreenObservationResult
+
+    app, window = make_window(monkeypatch, tmp_path)
+    before = window.controller.get_typed_snapshot()
+
+    class FakeObservationService:
+        def __init__(self):
+            self.settings = []
+
+        def observe(self, settings):
+            self.settings.append(settings)
+            return ScreenObservationResult(True, "屏幕观察完成", "看到 IDE 和测试结果")
+
+    fake_service = FakeObservationService()
+    window.screen_observation_service = fake_service
+    window.screen_observation_enabled_check.setChecked(True)
+    window.screen_observation_model_input.setText("vision-test")
+    window.screen_observation_base_url_input.setText("https://vision.example.test/v1")
+    window.screen_observation_api_key_input.setText("secret")
+
+    window.screen_observation_run_button.click()
+    app.processEvents()
+
+    context = window.controller._expression_context()
+    after = window.controller.get_typed_snapshot()
+    assert fake_service.settings[0].enabled is True
+    assert context["perception_summary"] == "看到 IDE 和测试结果"
+    assert "屏幕观察完成" in window.screen_observation_status_label.text()
+    assert "看到 IDE 和测试结果" in window.screen_observation_status_label.text()
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_screen_observation_auto_timer_tracks_saved_settings(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window.screen_observation_enabled_check.setChecked(True)
+    window.screen_observation_auto_check.setChecked(True)
+    window.screen_observation_interval_input.setValue(10)
+    window.capability_save_button.click()
+    app.processEvents()
+
+    assert window.screen_observation_timer.isActive()
+    assert window.screen_observation_timer.interval() == 10_000
+
+    window.screen_observation_auto_check.setChecked(False)
+    window.capability_save_button.click()
+    app.processEvents()
+
+    assert not window.screen_observation_timer.isActive()
+
+    window.close()
+    app.processEvents()
+
+
 def test_expression_settings_page_shows_required_fields_and_saves_local_config(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
