@@ -53,6 +53,7 @@ from .expression_context import ExpressionContextChain, ManualPerceptionExpressi
 from .motion import MotionAnimator, load_default_motion_catalog
 from .screen_observation import ScreenObservationService
 from .storage import DEMO_SAVE_PATH
+from .voice_asr import ASRService
 from .voice_tts import TTSManager
 from .web_search import WebSearchService
 
@@ -281,6 +282,7 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_timer.timeout.connect(self._run_screen_observation)
         self.web_search_service = WebSearchService()
         self.tts_manager = TTSManager()
+        self.asr_service = ASRService()
         self._last_auto_tts_key: tuple[str, str] | None = None
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
@@ -900,8 +902,11 @@ class CompanionWindow(QMainWindow):
         self.asr_auto_send_check.setChecked(asr_settings.auto_send)
         self.asr_start_button = QPushButton("开始录音")
         self.asr_start_button.setEnabled(False)
+        self.asr_start_button.clicked.connect(self._handle_asr_start)
         self.asr_stop_button = QPushButton("停止并识别")
         self.asr_stop_button.setEnabled(False)
+        self.asr_stop_button.clicked.connect(self._handle_asr_stop)
+        self.asr_enabled_check.toggled.connect(self._sync_voice_controls_enabled)
 
         self.voice_tts_enable_button = QPushButton("启用 TTS")
         self.voice_tts_enable_button.setEnabled(False)
@@ -1347,6 +1352,31 @@ class CompanionWindow(QMainWindow):
         tts_enabled = self.tts_enabled_check.isChecked()
         self.tts_test_button.setEnabled(tts_enabled)
         self.tts_stop_button.setEnabled(tts_enabled)
+        asr_enabled = self.asr_enabled_check.isChecked()
+        self.asr_start_button.setEnabled(asr_enabled)
+        self.asr_stop_button.setEnabled(asr_enabled)
+        self.dialogue_asr_button.setEnabled(False)
+
+    def _handle_asr_start(self) -> None:
+        settings = self._save_capability_settings_from_ui().asr
+        result = self.asr_service.start_recording(settings)
+        self.voice_status_label.setText(result.message)
+
+    def _handle_asr_stop(self) -> None:
+        settings = self._save_capability_settings_from_ui().asr
+        result = self.asr_service.stop_and_transcribe(settings)
+        self.voice_status_label.setText(result.message)
+        if not result.text:
+            return
+        self.dialogue_input.setText(result.text)
+        if settings.auto_send:
+            snapshot = self.controller.submit_dialogue_request(
+                DialogueRequest(text=result.text, source="asr"),
+                include_ai_expression=False,
+            )
+            self.dialogue_input.clear()
+            self._apply_snapshot(snapshot)
+            self.desktop_feedback_label.show()
 
     def _handle_expression_settings_save(self) -> None:
         self._save_expression_settings_from_form()

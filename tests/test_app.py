@@ -1482,6 +1482,94 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
     app.processEvents()
 
 
+def test_asr_stop_button_fills_dialogue_input(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class FakeASRService:
+        def __init__(self):
+            self.started = []
+            self.stopped = []
+
+        def start_recording(self, settings):
+            from guanghe_companion.voice_asr import ASRResult
+
+            self.started.append(settings)
+            return ASRResult(True, "录音中")
+
+        def stop_and_transcribe(self, settings):
+            from guanghe_companion.voice_asr import ASRResult
+
+            self.stopped.append(settings)
+            return ASRResult(True, "识别完成", "你好星汐")
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    fake_asr = FakeASRService()
+    window.asr_service = fake_asr
+    window.asr_enabled_check.setChecked(True)
+    window.capability_save_button.click()
+
+    window.asr_start_button.click()
+    window.asr_stop_button.click()
+    app.processEvents()
+
+    assert fake_asr.started[0].enabled is True
+    assert fake_asr.stopped[0].enabled is True
+    assert window.dialogue_input.text() == "你好星汐"
+    assert "识别完成" in window.voice_status_label.text()
+    assert window.controller.dialogue_history == ()
+
+    window.close()
+    app.processEvents()
+
+
+def test_asr_auto_send_uses_dialogue_request_without_growth_mutation(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class FakeASRService:
+        def start_recording(self, settings):
+            from guanghe_companion.voice_asr import ASRResult
+
+            return ASRResult(True, "录音中")
+
+        def stop_and_transcribe(self, settings):
+            from guanghe_companion.voice_asr import ASRResult
+
+            return ASRResult(True, "识别完成", "你好星汐")
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    window.asr_service = FakeASRService()
+    window.asr_enabled_check.setChecked(True)
+    window.asr_auto_send_check.setChecked(True)
+    window.capability_save_button.click()
+    before = window.controller.get_typed_snapshot()
+
+    window.asr_start_button.click()
+    window.asr_stop_button.click()
+    app.processEvents()
+    after = window.controller.get_typed_snapshot()
+    user_entries = [entry for entry in window.controller.dialogue_history if entry.role == "user"]
+
+    assert window.dialogue_input.text() == ""
+    assert user_entries[-1].source == "asr"
+    assert user_entries[-1].text == "你好星汐"
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_manual_screen_perception_trigger_shows_privacy_prompt_and_status(monkeypatch, tmp_path):
     from PySide6.QtWidgets import QMessageBox
 
