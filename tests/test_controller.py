@@ -1043,3 +1043,56 @@ def test_controller_updates_expression_settings_without_growth_mutation(tmp_path
 
     assert reloaded.get_expression_settings()["api_key_set"] is True
     assert reloaded.get_expression_settings()["model"] == "demo-model"
+
+
+def test_capability_settings_round_trip_does_not_change_growth_state(tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, WebSearchSettings
+
+    settings_path = tmp_path / "capability-settings.json"
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        capability_settings_path=settings_path,
+    )
+    before = controller.get_typed_snapshot()
+
+    updated = controller.update_capability_settings(
+        CapabilitySettings(web_search=WebSearchSettings(enabled=True, max_results=5))
+    )
+    after = controller.get_typed_snapshot()
+
+    assert updated.web_search.enabled is True
+    assert updated.web_search.max_results == 5
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+    reloaded = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        capability_settings_path=settings_path,
+    )
+    assert reloaded.get_capability_settings().web_search.enabled is True
+
+
+def test_read_only_expression_context_can_be_updated_without_saving_growth_state(tmp_path):
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    before = controller.get_typed_snapshot()
+
+    controller.set_perception_summary("  屏幕里有一个代码编辑器和测试结果。  ")
+    controller.set_tool_results(
+        [
+            {"source": "web", "title": "文档", "summary": "检索到的来源"},
+            {"source": "web", "title": "额外", "summary": "第二条来源"},
+        ]
+    )
+    context = controller._expression_context()
+    after = controller.get_typed_snapshot()
+
+    assert context["perception_summary"] == "屏幕里有一个代码编辑器和测试结果。"
+    assert context["tool_results"][0]["title"] == "文档"
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log

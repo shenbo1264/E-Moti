@@ -162,6 +162,7 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
         "总览",
         "互动",
         "背包",
+        "感知与搜索",
         "隐私",
         "LLM表达",
         "表达规则",
@@ -190,6 +191,13 @@ def test_control_panel_navigation_switches_right_hand_pages(monkeypatch, tmp_pat
     app.processEvents()
 
     assert window.content_stack.currentIndex() == 3
+    assert window.perception_search_page.isVisibleTo(window)
+    assert not window.shop_card.isVisibleTo(window)
+
+    window.navigation_buttons[4].click()
+    app.processEvents()
+
+    assert window.content_stack.currentIndex() == 4
     assert window.perception_card.isVisibleTo(window)
     assert not window.shop_card.isVisibleTo(window)
 
@@ -237,6 +245,8 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     assert window.actions_card.isHidden()
     assert window.shop_card.isHidden()
     assert window.inventory_card.isHidden()
+    assert window.screen_observation_settings_card.isHidden()
+    assert window.web_search_settings_card.isHidden()
     assert window.expression_settings_card.isHidden()
     assert window.expression_rule_card.isHidden()
     assert window.voice_settings_card.isHidden()
@@ -961,7 +971,7 @@ def test_window_shows_relationship_stage_and_next_unlock(monkeypatch, tmp_path):
 def test_window_shows_screen_perception_disabled_by_default(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
-    window.navigation_buttons[3].click()
+    window.navigation_buttons[4].click()
     app.processEvents()
 
     assert window.perception_card.isVisibleTo(window)
@@ -969,6 +979,50 @@ def test_window_shows_screen_perception_disabled_by_default(monkeypatch, tmp_pat
     assert "屏幕感知：关闭" in window.perception_status_label.text()
     assert "默认不会读取屏幕" in window.perception_privacy_label.text()
     assert "不会自动截图" in window.perception_privacy_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_capability_pages_have_safe_defaults(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    nav_labels = [button.text() for button in window.navigation_buttons]
+
+    assert "感知与搜索" in nav_labels
+    assert "语音" in nav_labels
+    assert window.screen_observation_enabled_check.isChecked() is False
+    assert window.screen_observation_auto_check.isChecked() is False
+    assert window.web_search_enabled_check.isChecked() is False
+    assert window.tts_enabled_check.isChecked() is False
+    assert window.asr_enabled_check.isChecked() is False
+    assert "不会自动点击" in window.perception_privacy_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_capability_ui_save_round_trips_to_controller(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+    before = window.controller.get_typed_snapshot()
+
+    window.screen_observation_enabled_check.setChecked(True)
+    window.web_search_enabled_check.setChecked(True)
+    window.tts_enabled_check.setChecked(True)
+    window.asr_enabled_check.setChecked(True)
+    window.capability_save_button.click()
+    app.processEvents()
+
+    settings = window.controller.get_capability_settings()
+    after = window.controller.get_typed_snapshot()
+    assert settings.screen_observation.enabled is True
+    assert settings.web_search.enabled is True
+    assert settings.tts.enabled is True
+    assert settings.asr.enabled is True
+    assert "已保存" in window.capability_feedback_label.text()
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.memory_log == before.memory_log
 
     window.close()
     app.processEvents()
@@ -986,7 +1040,7 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[4].click()
+    window.navigation_buttons[5].click()
     app.processEvents()
 
     assert window.expression_settings_card.isVisibleTo(window)
@@ -1071,7 +1125,7 @@ def test_expression_settings_test_button_saves_and_tests_llm_without_mutating_st
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[4].click()
+    window.navigation_buttons[5].click()
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
@@ -1121,7 +1175,7 @@ def test_expression_settings_fetches_provider_model_list_without_saving_or_mutat
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[4].click()
+    window.navigation_buttons[5].click()
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
@@ -1175,7 +1229,7 @@ def test_expression_rule_preview_page_is_readonly_and_copyable(monkeypatch, tmp_
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
-    window.navigation_buttons[5].click()
+    window.navigation_buttons[6].click()
     app.processEvents()
 
     preview = window.expression_rule_preview_text.toPlainText()
@@ -1212,7 +1266,7 @@ def test_voice_settings_page_marks_tts_and_asr_disabled(monkeypatch, tmp_path):
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
-    window.navigation_buttons[6].click()
+    window.navigation_buttons[7].click()
     app.processEvents()
 
     assert window.voice_settings_card.isVisibleTo(window)

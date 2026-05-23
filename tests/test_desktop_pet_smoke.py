@@ -51,6 +51,8 @@ def test_desktop_pet_smoke_validator_accepts_dialogue_controls(monkeypatch, tmp_
 
     assert window.dialogue_input.isVisibleTo(window)
     assert window.dialogue_send_button.isVisibleTo(window)
+    assert window.dialogue_asr_button.text() in {"Mic", "🎙"}
+    assert window.dialogue_asr_button.isEnabled() is False
     assert validate_desktop_pet_window(app, window) == []
 
     window.close()

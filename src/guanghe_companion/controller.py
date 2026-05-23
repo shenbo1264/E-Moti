@@ -12,6 +12,7 @@ from .ai_expressor import (
     build_default_ai_expressor,
     fetch_provider_model_ids,
 )
+from .capability_settings import CapabilitySettings, CapabilitySettingsStore
 from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
 from .dialogue import DialogueRequest
 from .dialogue_history import (
@@ -38,7 +39,10 @@ from .inventory import InventoryService, InventoryUseRequest, ShopPurchaseReques
 from .memory import MemoryLogService, memory_kind_for_inventory_usage
 from .models import CompanionState
 from .relationship import ProactiveCompanionDecision, ProactiveCompanionService, RelationshipService
-from .runtime_paths import expression_settings_path as default_expression_settings_path
+from .runtime_paths import (
+    capability_settings_path as default_capability_settings_path,
+    expression_settings_path as default_expression_settings_path,
+)
 from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory, format_delta_text
 from .storage import DEFAULT_SAVE_PATH, SaveManager, logical_time_from_state
 
@@ -72,6 +76,14 @@ class CompanionExpressionSettingsStore(Protocol):
         ...
 
 
+class CompanionCapabilitySettingsStore(Protocol):
+    def load(self) -> CapabilitySettings:
+        ...
+
+    def save(self, settings: CapabilitySettings) -> CapabilitySettings:
+        ...
+
+
 class CompanionController:
     def __init__(
         self,
@@ -84,6 +96,8 @@ class CompanionController:
         dialogue_history_store: CompanionDialogueHistoryStore | None = None,
         expression_settings_path: Path | None = None,
         expression_settings_store: CompanionExpressionSettingsStore | None = None,
+        capability_settings_path: Path | None = None,
+        capability_settings_store: CompanionCapabilitySettingsStore | None = None,
     ) -> None:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
         self.save_manager = save_manager or SaveManager(self.save_path)
@@ -103,6 +117,17 @@ class CompanionController:
             self.expression_settings_path
         )
         self.expression_settings = self.expression_settings_store.load()
+        self.capability_settings_path = (
+            Path(capability_settings_path)
+            if capability_settings_path is not None
+            else _capability_settings_path_for_save_path(self.save_path)
+        )
+        self.capability_settings_store = capability_settings_store or CapabilitySettingsStore(
+            self.capability_settings_path
+        )
+        self.capability_settings = self.capability_settings_store.load()
+        self._perception_summary = ""
+        self._tool_results: list[dict[str, object]] = []
         self.character_pack = load_default_character_pack()
         self.ai_expressor = ai_expressor or build_default_ai_expressor(
             settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
@@ -241,6 +266,20 @@ class CompanionController:
         self.expression_settings_store.save(normalized)
         self._replace_ai_expressor(build_default_ai_expressor(settings=normalized))
         return normalized.to_public_dict()
+
+    def get_capability_settings(self) -> CapabilitySettings:
+        return self.capability_settings
+
+    def update_capability_settings(self, settings: CapabilitySettings | dict[str, object]) -> CapabilitySettings:
+        normalized = settings if isinstance(settings, CapabilitySettings) else CapabilitySettings.from_dict(settings)
+        self.capability_settings = self.capability_settings_store.save(normalized)
+        return self.capability_settings
+
+    def set_perception_summary(self, summary: str) -> None:
+        self._perception_summary = summary if isinstance(summary, str) else ""
+
+    def set_tool_results(self, results: list[dict[str, object]]) -> None:
+        self._tool_results = list(results) if isinstance(results, list) else []
 
     def test_expression_provider(self) -> dict[str, object]:
         request = ExpressionRequest.from_snapshot(
@@ -661,18 +700,26 @@ class CompanionController:
         return [item.to_legacy_dict() for item in InventoryService(self.state, self._item_icon_path).inventory_items()]
 
     def _expression_context(self) -> dict[str, object]:
-        if self.expression_context_provider is None:
-            return {}
-        try:
-            external_context = self.expression_context_provider()
-        except Exception:
-            return {}
-        if not isinstance(external_context, dict):
-            return {}
         context: dict[str, object] = {}
-        for key in ("perception_summary", "tool_results"):
-            if key in external_context:
-                context[key] = external_context[key]
+        if self.expression_context_provider is None:
+            external_context = {}
+        else:
+            try:
+                external_context = self.expression_context_provider()
+            except Exception:
+                external_context = {}
+        if isinstance(external_context, dict):
+            for key in ("perception_summary", "tool_results"):
+                if key in external_context:
+                    context[key] = external_context[key]
+        runtime_context = ExpressionContextChain(
+            [
+                lambda: {"perception_summary": self._perception_summary},
+                lambda: {"tool_results": self._tool_results},
+            ]
+        )()
+        if runtime_context:
+            context.update(runtime_context)
         return context
 
     def _item_icon_path(self, item) -> str:
@@ -734,3 +781,11 @@ def _expression_settings_path_for_save_path(save_path: Path) -> Path:
     if save_path.name == "companion_demo_save.json":
         return save_path.with_name("companion_demo_expression_settings.json")
     return save_path.with_name(f"{save_path.stem}_expression_settings.json")
+
+
+def _capability_settings_path_for_save_path(save_path: Path) -> Path:
+    if save_path.name == "companion_save.json":
+        return default_capability_settings_path()
+    if save_path.name == "companion_demo_save.json":
+        return save_path.with_name("companion_demo_capability_settings.json")
+    return save_path.with_name(f"{save_path.stem}_capability_settings.json")
