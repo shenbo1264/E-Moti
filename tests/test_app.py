@@ -1405,11 +1405,78 @@ def test_voice_settings_page_marks_tts_and_asr_disabled(monkeypatch, tmp_path):
     assert "ASR 暂未启用" in window.voice_status_label.text()
     assert window.voice_tts_provider_label.text() == "tts_provider: disabled"
     assert window.voice_asr_provider_label.text() == "asr_provider: disabled"
+    assert window.tts_model_variant_combo.currentText() == "qwen3tts_1.6b"
     assert not window.voice_tts_enable_button.isEnabled()
     assert not window.voice_asr_enable_button.isEnabled()
     assert window.controller.get_typed_snapshot().stats == before.stats
     assert window.controller.get_typed_snapshot().inventory == before.inventory
     assert window.controller.get_typed_snapshot().memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class CapturingExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "character_name": "星汐",
+                    "speech": "LLM 连接成功",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                },
+                {
+                    "character_name": "STAT",
+                    "speech": "专注 50 / 能量 50",
+                    "sprite": "-1",
+                    "effect": "",
+                },
+            ]
+
+    class FakeTTSManager:
+        def __init__(self):
+            self.calls = []
+
+        def speak(self, text, settings):
+            from guanghe_companion.voice_tts import TTSResult
+
+            self.calls.append((text, settings))
+            return TTSResult(True, "朗读完成")
+
+        def stop(self, settings=None):
+            from guanghe_companion.voice_tts import TTSResult
+
+            return TTSResult(True, "已停止朗读")
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path, ai_expressor=CapturingExpressor()))
+    fake_tts = FakeTTSManager()
+    window.tts_manager = fake_tts
+    window.tts_enabled_check.setChecked(True)
+    window.tts_auto_speak_check.setChecked(True)
+    window.tts_model_variant_combo.setCurrentText("qwen3tts_0.7b")
+    window.capability_save_button.click()
+
+    snapshot = window.controller.perform_action("touch", include_ai_expression=True)
+    before_tts = window.controller.get_typed_snapshot()
+    window._apply_snapshot(snapshot)
+    app.processEvents()
+    after = window.controller.get_typed_snapshot()
+
+    assert fake_tts.calls == [("LLM 连接成功", window.controller.get_capability_settings().tts)]
+    assert fake_tts.calls[0][1].model_variant == "qwen3tts_0.7b"
+    assert "STAT" not in fake_tts.calls[0][0]
+    assert "web_search" not in fake_tts.calls[0][0]
+    assert after.stats == before_tts.stats
+    assert after.inventory == before_tts.inventory
+    assert after.memory_log == before_tts.memory_log
 
     window.close()
     app.processEvents()

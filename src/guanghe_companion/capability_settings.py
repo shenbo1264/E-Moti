@@ -8,6 +8,7 @@ from typing import Any, Mapping
 DEFAULT_SCREEN_OBSERVATION_PROVIDER = "openai_compatible"
 DEFAULT_WEB_SEARCH_ENGINE = "duckduckgo"
 DEFAULT_TTS_PROVIDER = "windows_sapi"
+DEFAULT_TTS_MODEL_VARIANT = "qwen3tts_1.6b"
 DEFAULT_ASR_PROVIDER = "openai_compatible"
 
 SCREEN_OBSERVATION_PROVIDER_ALIASES = {
@@ -23,6 +24,20 @@ TTS_PROVIDER_ALIASES = {
     "sapi": "windows_sapi",
     "http_qwen3tts": "http_qwen3tts",
     "qwen3tts": "http_qwen3tts",
+}
+TTS_MODEL_VARIANT_ALIASES = {
+    "1.6b": "qwen3tts_1.6b",
+    "1_6b": "qwen3tts_1.6b",
+    "qwen3tts_1.6b": "qwen3tts_1.6b",
+    "qwen3tts_1_6b": "qwen3tts_1.6b",
+    "standard": "qwen3tts_1.6b",
+    "std": "qwen3tts_1.6b",
+    "0.7b": "qwen3tts_0.7b",
+    "0_7b": "qwen3tts_0.7b",
+    "qwen3tts_0.7b": "qwen3tts_0.7b",
+    "qwen3tts_0_7b": "qwen3tts_0.7b",
+    "low": "qwen3tts_0.7b",
+    "lite": "qwen3tts_0.7b",
 }
 ASR_PROVIDER_ALIASES = {
     "openai": "openai_compatible",
@@ -102,6 +117,7 @@ class TTSSettings:
     api_url: str = "http://127.0.0.1:9880/"
     language: str = "zh"
     voice: str = ""
+    model_variant: str = DEFAULT_TTS_MODEL_VARIANT
     rate: int = 0
     volume: float = 1.0
     auto_speak: bool = False
@@ -119,6 +135,11 @@ class TTSSettings:
             api_url=_clean_string(source.get("api_url"), max_length=240) or "http://127.0.0.1:9880/",
             language=_clean_string(source.get("language"), max_length=16) or "zh",
             voice=_clean_string(source.get("voice"), max_length=120),
+            model_variant=_clean_provider(
+                source.get("model_variant"),
+                default=DEFAULT_TTS_MODEL_VARIANT,
+                aliases=TTS_MODEL_VARIANT_ALIASES,
+            ),
             rate=_clean_int(source.get("rate"), default=0, minimum=-10, maximum=10),
             volume=_clean_float(source.get("volume"), default=1.0, minimum=0.0, maximum=1.0),
             auto_speak=_clean_bool(source.get("auto_speak")),

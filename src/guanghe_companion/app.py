@@ -53,6 +53,7 @@ from .expression_context import ExpressionContextChain, ManualPerceptionExpressi
 from .motion import MotionAnimator, load_default_motion_catalog
 from .screen_observation import ScreenObservationService
 from .storage import DEMO_SAVE_PATH
+from .voice_tts import TTSManager
 from .web_search import WebSearchService
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
@@ -279,6 +280,8 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_timer = QTimer(self)
         self.screen_observation_timer.timeout.connect(self._run_screen_observation)
         self.web_search_service = WebSearchService()
+        self.tts_manager = TTSManager()
+        self._last_auto_tts_key: tuple[str, str] | None = None
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
@@ -868,12 +871,18 @@ class CompanionWindow(QMainWindow):
         self.tts_provider_combo.setCurrentText(tts_settings.provider)
         self.tts_api_url_input = QLineEdit(tts_settings.api_url)
         self.tts_api_url_input.setPlaceholderText("http://127.0.0.1:9880/")
+        self.tts_model_variant_combo = QComboBox()
+        self.tts_model_variant_combo.addItems(["qwen3tts_1.6b", "qwen3tts_0.7b"])
+        self.tts_model_variant_combo.setCurrentText(tts_settings.model_variant)
         self.tts_auto_speak_check = QCheckBox("自动朗读星汐回复")
         self.tts_auto_speak_check.setChecked(tts_settings.auto_speak)
         self.tts_test_button = QPushButton("测试朗读")
         self.tts_test_button.setEnabled(False)
+        self.tts_test_button.clicked.connect(self._handle_tts_test)
         self.tts_stop_button = QPushButton("停止朗读")
         self.tts_stop_button.setEnabled(False)
+        self.tts_stop_button.clicked.connect(self._handle_tts_stop)
+        self.tts_enabled_check.toggled.connect(self._sync_voice_controls_enabled)
 
         self.asr_enabled_check = QCheckBox("启用 ASR")
         self.asr_enabled_check.setChecked(asr_settings.enabled)
@@ -907,23 +916,26 @@ class CompanionWindow(QMainWindow):
         layout.addWidget(self.tts_provider_combo, 3, 1)
         layout.addWidget(QLabel("TTS API URL"), 4, 0)
         layout.addWidget(self.tts_api_url_input, 4, 1, 1, 3)
-        layout.addWidget(self.tts_auto_speak_check, 5, 0)
-        layout.addWidget(self.tts_test_button, 5, 1)
-        layout.addWidget(self.tts_stop_button, 5, 2)
-        layout.addWidget(self.asr_enabled_check, 6, 0)
-        layout.addWidget(QLabel("ASR provider"), 7, 0)
-        layout.addWidget(self.asr_provider_combo, 7, 1)
-        layout.addWidget(QLabel("ASR model"), 7, 2)
-        layout.addWidget(self.asr_model_input, 7, 3)
-        layout.addWidget(QLabel("ASR Base URL"), 8, 0)
-        layout.addWidget(self.asr_base_url_input, 8, 1, 1, 3)
-        layout.addWidget(QLabel("ASR API Key"), 9, 0)
-        layout.addWidget(self.asr_api_key_input, 9, 1, 1, 3)
-        layout.addWidget(self.asr_auto_send_check, 10, 0)
-        layout.addWidget(self.asr_start_button, 10, 1)
-        layout.addWidget(self.asr_stop_button, 10, 2)
-        layout.addWidget(self.voice_tts_enable_button, 11, 0)
-        layout.addWidget(self.voice_asr_enable_button, 11, 1)
+        layout.addWidget(QLabel("Qwen3TTS model"), 5, 0)
+        layout.addWidget(self.tts_model_variant_combo, 5, 1)
+        layout.addWidget(self.tts_auto_speak_check, 6, 0)
+        layout.addWidget(self.tts_test_button, 6, 1)
+        layout.addWidget(self.tts_stop_button, 6, 2)
+        layout.addWidget(self.asr_enabled_check, 7, 0)
+        layout.addWidget(QLabel("ASR provider"), 8, 0)
+        layout.addWidget(self.asr_provider_combo, 8, 1)
+        layout.addWidget(QLabel("ASR model"), 8, 2)
+        layout.addWidget(self.asr_model_input, 8, 3)
+        layout.addWidget(QLabel("ASR Base URL"), 9, 0)
+        layout.addWidget(self.asr_base_url_input, 9, 1, 1, 3)
+        layout.addWidget(QLabel("ASR API Key"), 10, 0)
+        layout.addWidget(self.asr_api_key_input, 10, 1, 1, 3)
+        layout.addWidget(self.asr_auto_send_check, 11, 0)
+        layout.addWidget(self.asr_start_button, 11, 1)
+        layout.addWidget(self.asr_stop_button, 11, 2)
+        layout.addWidget(self.voice_tts_enable_button, 12, 0)
+        layout.addWidget(self.voice_asr_enable_button, 12, 1)
+        self._sync_voice_controls_enabled()
         return box
 
     def _build_shop_card(self) -> QGroupBox:
@@ -1322,6 +1334,20 @@ class CompanionWindow(QMainWindow):
             return
         self.screen_observation_timer.start(settings.interval_seconds * 1000)
 
+    def _handle_tts_test(self) -> None:
+        settings = self._save_capability_settings_from_ui().tts
+        result = self.tts_manager.speak("星汐在这里，语音测试正常。", settings)
+        self.voice_status_label.setText(result.message)
+
+    def _handle_tts_stop(self) -> None:
+        result = self.tts_manager.stop(self.controller.get_capability_settings().tts)
+        self.voice_status_label.setText(result.message)
+
+    def _sync_voice_controls_enabled(self) -> None:
+        tts_enabled = self.tts_enabled_check.isChecked()
+        self.tts_test_button.setEnabled(tts_enabled)
+        self.tts_stop_button.setEnabled(tts_enabled)
+
     def _handle_expression_settings_save(self) -> None:
         self._save_expression_settings_from_form()
         self.expression_settings_status_label.setText("LLM 表达设置已保存")
@@ -1412,6 +1438,7 @@ class CompanionWindow(QMainWindow):
                 enabled=self.tts_enabled_check.isChecked(),
                 provider=self.tts_provider_combo.currentText(),
                 api_url=self.tts_api_url_input.text(),
+                model_variant=self.tts_model_variant_combo.currentText(),
                 auto_speak=self.tts_auto_speak_check.isChecked(),
             ),
             asr=ASRSettings(
@@ -1448,6 +1475,7 @@ class CompanionWindow(QMainWindow):
         self.tts_enabled_check.setChecked(tts.enabled)
         self._set_combo_current_text(self.tts_provider_combo, tts.provider)
         self.tts_api_url_input.setText(tts.api_url)
+        self._set_combo_current_text(self.tts_model_variant_combo, tts.model_variant)
         self.tts_auto_speak_check.setChecked(tts.auto_speak)
 
         asr = settings.asr
@@ -1458,6 +1486,7 @@ class CompanionWindow(QMainWindow):
         self.asr_api_key_input.setText(asr.api_key)
         self.asr_auto_send_check.setChecked(asr.auto_send)
         self.dialogue_asr_button.setEnabled(False)
+        self._sync_voice_controls_enabled()
         self._update_screen_observation_timer()
 
     def _set_combo_current_text(self, combo: QComboBox, value: str) -> None:
@@ -1556,6 +1585,36 @@ class CompanionWindow(QMainWindow):
         self._fill_list(self.inventory_list, snapshot["inventory_items"], kind="inventory")
         self._sync_inventory_buttons(snapshot["inventory_items"])
         self._show_item_feedback(str(snapshot.get("item_feedback_icon") or ""))
+        self._maybe_auto_speak_snapshot(snapshot)
+
+    def _maybe_auto_speak_snapshot(self, snapshot: dict[str, object]) -> None:
+        settings = self.controller.get_capability_settings().tts
+        if not settings.enabled or not settings.auto_speak:
+            return
+        speech = self._snapshot_tts_speech(snapshot)
+        if not speech:
+            return
+        key = (str(snapshot.get("event_preview", "")), speech)
+        if key == self._last_auto_tts_key:
+            return
+        self._last_auto_tts_key = key
+        result = self.tts_manager.speak(speech, settings)
+        self.voice_status_label.setText(result.message)
+
+    def _snapshot_tts_speech(self, snapshot: dict[str, object]) -> str:
+        character_name = str(snapshot.get("character_name", ""))
+        events = snapshot.get("events")
+        if not isinstance(events, list):
+            return ""
+        for event in events:
+            if not isinstance(event, dict):
+                continue
+            if event.get("character_name") != character_name:
+                continue
+            speech = str(event.get("speech", "")).strip()
+            if speech:
+                return speech
+        return ""
 
     def _render_current_frame(self) -> None:
         if self.spritesheet.isNull():
