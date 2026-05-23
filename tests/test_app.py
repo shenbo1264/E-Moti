@@ -1088,6 +1088,77 @@ def test_screen_observation_auto_timer_tracks_saved_settings(monkeypatch, tmp_pa
     app.processEvents()
 
 
+def test_web_search_button_updates_tool_results_without_growth_mutation(monkeypatch, tmp_path):
+    from guanghe_companion.web_search import WebSearchResult
+
+    app, window = make_window(monkeypatch, tmp_path)
+    before = window.controller.get_typed_snapshot()
+
+    class FakeSearchService:
+        def __init__(self):
+            self.calls = []
+
+        def search(self, query, settings):
+            self.calls.append((query, settings))
+            return WebSearchResult(
+                ok=True,
+                message="搜索完成",
+                tool_results=[{"source": "web_search", "title": query, "summary": "摘要"}],
+            )
+
+    fake_service = FakeSearchService()
+    window.web_search_service = fake_service
+    window.web_search_enabled_check.setChecked(True)
+    window.web_search_query_input.setText("星汐")
+
+    window.web_search_run_button.click()
+    app.processEvents()
+
+    context = window.controller._expression_context()
+    after = window.controller.get_typed_snapshot()
+    assert fake_service.calls[0][0] == "星汐"
+    assert fake_service.calls[0][1].enabled is True
+    assert context["tool_results"][0]["title"] == "星汐"
+    assert "搜索完成" in window.web_search_results_label.text()
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_search_shortcut_updates_tool_results_without_dialogue_submit(monkeypatch, tmp_path):
+    from guanghe_companion.web_search import WebSearchResult
+
+    app, window = make_window(monkeypatch, tmp_path)
+    before_history = window.controller.dialogue_history
+
+    class FakeSearchService:
+        def search(self, query, settings):
+            return WebSearchResult(
+                ok=True,
+                message="搜索完成",
+                tool_results=[{"source": "web_search", "title": query, "summary": "摘要"}],
+            )
+
+    window.web_search_service = FakeSearchService()
+    window.web_search_enabled_check.setChecked(True)
+    window.capability_save_button.click()
+    window.dialogue_input.setText("/search 星汐")
+
+    window._handle_dialogue_submit()
+    app.processEvents()
+
+    assert window.dialogue_input.text() == ""
+    assert window.controller.dialogue_history == before_history
+    assert window.controller._expression_context()["tool_results"][0]["title"] == "星汐"
+    assert "搜索完成" in window.web_search_results_label.text()
+
+    window.close()
+    app.processEvents()
+
+
 def test_expression_settings_page_shows_required_fields_and_saves_local_config(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 

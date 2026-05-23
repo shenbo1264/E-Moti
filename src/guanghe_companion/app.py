@@ -53,6 +53,7 @@ from .expression_context import ExpressionContextChain, ManualPerceptionExpressi
 from .motion import MotionAnimator, load_default_motion_catalog
 from .screen_observation import ScreenObservationService
 from .storage import DEMO_SAVE_PATH
+from .web_search import WebSearchService
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
 DESKTOP_DOCK_THRESHOLD_PX = 32
@@ -277,6 +278,7 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_service = ScreenObservationService()
         self.screen_observation_timer = QTimer(self)
         self.screen_observation_timer.timeout.connect(self._run_screen_observation)
+        self.web_search_service = WebSearchService()
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
@@ -734,7 +736,7 @@ class CompanionWindow(QMainWindow):
         self.web_search_query_input = QLineEdit()
         self.web_search_query_input.setPlaceholderText("输入要搜索的内容")
         self.web_search_run_button = QPushButton("搜索并提供给星汐")
-        self.web_search_run_button.setEnabled(False)
+        self.web_search_run_button.clicked.connect(self._run_web_search_from_ui)
         self.web_search_results_label = QLabel("暂无搜索结果")
         self.web_search_results_label.setWordWrap(True)
 
@@ -1254,7 +1256,13 @@ class CompanionWindow(QMainWindow):
 
     @Slot()
     def _handle_dialogue_submit(self) -> None:
-        request = DialogueRequest(text=self.dialogue_input.text())
+        text = self.dialogue_input.text().strip()
+        if text.startswith("/search "):
+            query = text[len("/search ") :].strip()
+            self.dialogue_input.clear()
+            self._run_web_search(query)
+            return
+        request = DialogueRequest(text=text)
         snapshot = self.controller.submit_dialogue_request(request, include_ai_expression=False)
         self.dialogue_input.clear()
         self._apply_snapshot(snapshot)
@@ -1288,6 +1296,24 @@ class CompanionWindow(QMainWindow):
             self.screen_observation_status_label.setText(f"{result.message}：{result.summary}")
             return
         self.screen_observation_status_label.setText(result.message)
+
+    def _run_web_search_from_ui(self) -> None:
+        self._run_web_search(self.web_search_query_input.text())
+
+    def _run_web_search(self, query: str) -> None:
+        self._save_capability_settings_from_ui()
+        result = self.web_search_service.search(query, self.controller.get_capability_settings().web_search)
+        if result.tool_results:
+            self.controller.set_tool_results(result.tool_results)
+            lines = [result.message]
+            for item in result.tool_results:
+                title = item.get("title", "")
+                summary = item.get("summary", "")
+                url = item.get("url", "")
+                lines.append(f"{title} - {summary}" + (f" ({url})" if url else ""))
+            self.web_search_results_label.setText("\n".join(lines))
+            return
+        self.web_search_results_label.setText(result.message)
 
     def _update_screen_observation_timer(self) -> None:
         settings = self.controller.get_capability_settings().screen_observation

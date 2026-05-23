@@ -1096,3 +1096,21 @@ def test_read_only_expression_context_can_be_updated_without_saving_growth_state
     assert after.inventory == before.inventory
     assert after.relationship_stage == before.relationship_stage
     assert after.memory_log == before.memory_log
+
+
+def test_web_search_results_do_not_change_growth_state(tmp_path):
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    before = controller.get_typed_snapshot()
+
+    controller.set_tool_results(
+        [{"source": "web_search", "title": "A", "summary": "B", "timestamp": "2026-05-23"}]
+    )
+    context = controller._expression_context()
+    after = controller.get_typed_snapshot()
+
+    assert context["tool_results"][0]["source"] == "web_search"
+    assert context["tool_results"][0]["title"] == "A"
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
