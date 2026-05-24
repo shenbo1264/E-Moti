@@ -23,6 +23,59 @@ def make_controller(tmp_path, ai_expressor=None):
     return CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=ai_expressor)
 
 
+class FakeSignal:
+    def __init__(self):
+        self._callbacks = []
+
+    def connect(self, callback):
+        self._callbacks.append(callback)
+
+    def emit(self, *args):
+        for callback in tuple(self._callbacks):
+            callback(*args)
+
+
+class FakeSystemTrayIcon:
+    class ActivationReason:
+        Trigger = object()
+        DoubleClick = object()
+
+    class MessageIcon:
+        Information = object()
+
+    available = True
+    instances = []
+
+    def __init__(self, icon=None, parent=None):
+        self.icon = icon
+        self.parent = parent
+        self.context_menu = None
+        self.tool_tip = ""
+        self.visible = False
+        self.messages = []
+        self.activated = FakeSignal()
+        self.__class__.instances.append(self)
+
+    @classmethod
+    def isSystemTrayAvailable(cls):
+        return cls.available
+
+    def setToolTip(self, text):
+        self.tool_tip = text
+
+    def setContextMenu(self, menu):
+        self.context_menu = menu
+
+    def show(self):
+        self.visible = True
+
+    def hide(self):
+        self.visible = False
+
+    def showMessage(self, title, message, icon=None, msecs=0):
+        self.messages.append((title, message, icon, msecs))
+
+
 def test_sprite_drag_uses_global_cursor_delta_when_window_moves(monkeypatch):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
@@ -1724,6 +1777,187 @@ def test_window_close_closes_controller(monkeypatch, tmp_path):
     app.processEvents()
 
     assert controller.close_calls == 1
+
+
+def test_control_panel_close_hides_to_tray_without_closing_controller(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    class CloseAwareController(CompanionController):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.close_calls = 0
+
+        def close(self):
+            self.close_calls += 1
+            super().close()
+
+    FakeSystemTrayIcon.instances = []
+    FakeSystemTrayIcon.available = True
+    monkeypatch.setattr(app_module, "QSystemTrayIcon", FakeSystemTrayIcon, raising=False)
+    app = QApplication.instance() or QApplication([])
+    controller = CloseAwareController(save_path=tmp_path / "save.json", auto_load=False)
+    window = app_module.CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.close()
+    app.processEvents()
+
+    assert not window.isVisible()
+    assert controller.close_calls == 0
+    assert FakeSystemTrayIcon.instances[-1].visible is True
+    assert FakeSystemTrayIcon.instances[-1].messages
+
+    labels_to_actions = {
+        action.text(): action
+        for action in FakeSystemTrayIcon.instances[-1].context_menu.actions()
+        if not action.isSeparator()
+    }
+    labels_to_actions["退出"].trigger()
+    app.processEvents()
+
+    assert controller.close_calls == 1
+    assert FakeSystemTrayIcon.instances[-1].visible is False
+
+
+def test_control_panel_minimize_hides_to_tray_without_closing_controller(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    class CloseAwareController(CompanionController):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.close_calls = 0
+
+        def close(self):
+            self.close_calls += 1
+            super().close()
+
+    FakeSystemTrayIcon.instances = []
+    FakeSystemTrayIcon.available = True
+    monkeypatch.setattr(app_module, "QSystemTrayIcon", FakeSystemTrayIcon, raising=False)
+    app = QApplication.instance() or QApplication([])
+    controller = CloseAwareController(save_path=tmp_path / "save.json", auto_load=False)
+    window = app_module.CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.showMinimized()
+    app.processEvents()
+    app.processEvents()
+
+    assert not window.isVisible()
+    assert controller.close_calls == 0
+    assert FakeSystemTrayIcon.instances[-1].visible is True
+
+    labels_to_actions = {
+        action.text(): action
+        for action in FakeSystemTrayIcon.instances[-1].context_menu.actions()
+        if not action.isSeparator()
+    }
+    labels_to_actions["退出"].trigger()
+    app.processEvents()
+
+
+def test_desktop_pet_child_window_does_not_create_tray_icon(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+
+    FakeSystemTrayIcon.instances = []
+    FakeSystemTrayIcon.available = True
+    monkeypatch.setattr(app_module, "QSystemTrayIcon", FakeSystemTrayIcon, raising=False)
+    app = QApplication.instance() or QApplication([])
+    window = app_module.CompanionWindow(
+        controller=make_controller(tmp_path),
+        desktop_mode=True,
+        owns_controller=False,
+    )
+    window.show()
+    app.processEvents()
+
+    assert FakeSystemTrayIcon.instances == []
+
+    window.close()
+    app.processEvents()
+
+
+def test_tray_show_control_panel_restores_hidden_window(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+
+    FakeSystemTrayIcon.instances = []
+    FakeSystemTrayIcon.available = True
+    monkeypatch.setattr(app_module, "QSystemTrayIcon", FakeSystemTrayIcon, raising=False)
+    app = QApplication.instance() or QApplication([])
+    window = app_module.CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+
+    window.close()
+    app.processEvents()
+    assert not window.isVisible()
+
+    labels_to_actions = {
+        action.text(): action
+        for action in FakeSystemTrayIcon.instances[-1].context_menu.actions()
+        if not action.isSeparator()
+    }
+    labels_to_actions["显示控制面板"].trigger()
+    app.processEvents()
+
+    assert window.isVisible()
+
+    labels_to_actions["退出"].trigger()
+    app.processEvents()
+
+
+def test_window_close_falls_back_when_system_tray_unavailable(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    class CloseAwareController(CompanionController):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.close_calls = 0
+
+        def close(self):
+            self.close_calls += 1
+            super().close()
+
+    FakeSystemTrayIcon.instances = []
+    FakeSystemTrayIcon.available = False
+    monkeypatch.setattr(app_module, "QSystemTrayIcon", FakeSystemTrayIcon, raising=False)
+    app = QApplication.instance() or QApplication([])
+    controller = CloseAwareController(save_path=tmp_path / "save.json", auto_load=False)
+    window = app_module.CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.close()
+    app.processEvents()
+
+    assert not window.isVisible()
+    assert controller.close_calls == 1
+    assert FakeSystemTrayIcon.instances == []
 
 
 def test_window_close_ignores_controller_close_errors(monkeypatch, tmp_path):

@@ -5,7 +5,7 @@ import sys
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QPoint, QRect, QSize, QTimer, Qt, Slot
+from PySide6.QtCore import QEvent, QPoint, QRect, QSize, QTimer, Qt, Slot
 from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -29,6 +29,7 @@ from PySide6.QtWidgets import (
     QStackedWidget,
     QTextEdit,
     QStyleFactory,
+    QSystemTrayIcon,
     QVBoxLayout,
     QWidget,
 )
@@ -287,6 +288,10 @@ class CompanionWindow(QMainWindow):
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
+        self._tray_icon: QSystemTrayIcon | None = None
+        self._tray_close_message_shown = False
+        self._force_exit = False
+        self._previous_quit_on_last_window_closed: bool | None = None
         self.motion_catalog = load_default_motion_catalog()
         self.motion_animator = MotionAnimator(self.motion_catalog)
         self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
@@ -309,15 +314,33 @@ class CompanionWindow(QMainWindow):
             self._apply_desktop_mode()
         self._setup_timers()
         self._apply_snapshot(self.controller.get_snapshot())
+        self._setup_system_tray()
 
     def _register_close_callback(self, callback: Callable[["CompanionWindow"], None]) -> None:
         self._close_callbacks.append(callback)
 
+    def changeEvent(self, event) -> None:
+        super().changeEvent(event)
+        if (
+            event.type() == QEvent.Type.WindowStateChange
+            and self.isMinimized()
+            and self._should_hide_to_tray()
+        ):
+            QTimer.singleShot(0, self._hide_to_tray)
+
     def closeEvent(self, event) -> None:
+        if self._should_hide_to_tray():
+            event.ignore()
+            self._hide_to_tray()
+            return
         pet_window = self.desktop_pet_window
         if pet_window is not None:
             self.desktop_pet_window = None
             pet_window.close()
+        tray_icon = self._tray_icon
+        if tray_icon is not None:
+            tray_icon.hide()
+            self._tray_icon = None
         self.screen_observation_timer.stop()
         self._manual_perception_summary = ""
         self.controller.expression_context_provider = self._base_expression_context_provider
@@ -327,9 +350,115 @@ class CompanionWindow(QMainWindow):
         except Exception:
             pass
         finally:
+            self._restore_quit_on_last_window_closed()
             super().closeEvent(event)
             for callback in tuple(self._close_callbacks):
                 callback(self)
+
+    def _setup_system_tray(self) -> None:
+        if not self._owns_controller:
+            return
+        try:
+            if not QSystemTrayIcon.isSystemTrayAvailable():
+                return
+        except Exception:
+            return
+
+        tray_icon = QSystemTrayIcon(self._build_tray_icon(), self)
+        tray_icon.setToolTip("星汐 E-Moti")
+        tray_icon.setContextMenu(self._build_tray_menu())
+        tray_icon.activated.connect(self._handle_tray_activated)
+        tray_icon.show()
+        self._tray_icon = tray_icon
+        app = QApplication.instance()
+        if app is not None and self._previous_quit_on_last_window_closed is None:
+            self._previous_quit_on_last_window_closed = app.quitOnLastWindowClosed()
+            app.setQuitOnLastWindowClosed(False)
+
+    def _build_tray_icon(self) -> QIcon:
+        pixmap = self.spritesheet.copy(self.motion_animator.current_frame_rect())
+        if not pixmap.isNull():
+            pixmap = pixmap.scaled(
+                QSize(64, 64),
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+        return QIcon(pixmap)
+
+    def _build_tray_menu(self) -> QMenu:
+        menu = QMenu(self)
+        show_panel_action = QAction("显示控制面板", self)
+        show_panel_action.triggered.connect(self._show_control_panel_from_tray)
+        show_pet_action = QAction("显示/进入桌宠模式", self)
+        show_pet_action.triggered.connect(self._show_desktop_pet_from_tray)
+        hide_action = QAction("隐藏到托盘", self)
+        hide_action.triggered.connect(self._hide_to_tray)
+        exit_action = QAction("退出", self)
+        exit_action.triggered.connect(self._quit_from_tray)
+        menu.addAction(show_panel_action)
+        menu.addAction(show_pet_action)
+        menu.addAction(hide_action)
+        menu.addSeparator()
+        menu.addAction(exit_action)
+        return menu
+
+    def _handle_tray_activated(self, reason) -> None:
+        if reason in (
+            QSystemTrayIcon.ActivationReason.Trigger,
+            QSystemTrayIcon.ActivationReason.DoubleClick,
+        ):
+            self._show_control_panel_from_tray()
+
+    def _should_hide_to_tray(self) -> bool:
+        return self._tray_icon is not None and not self._force_exit
+
+    def _hide_to_tray(self) -> None:
+        if self._tray_icon is None or self._force_exit:
+            return
+        self.hide()
+        if self._tray_close_message_shown:
+            return
+        self._tray_close_message_shown = True
+        try:
+            self._tray_icon.showMessage(
+                "星汐 E-Moti",
+                "星汐已隐藏到托盘，可从托盘菜单恢复或退出。",
+                QSystemTrayIcon.MessageIcon.Information,
+                2500,
+            )
+        except Exception:
+            pass
+
+    def _show_control_panel_from_tray(self) -> None:
+        if self.desktop_mode:
+            self._return_to_control_panel()
+            return
+        self.showNormal()
+        self.show()
+        self.raise_()
+        self.activateWindow()
+
+    def _show_desktop_pet_from_tray(self) -> None:
+        if self.desktop_mode:
+            self.show()
+            self.raise_()
+            self.activateWindow()
+            return
+        self._enter_desktop_mode()
+
+    def _quit_from_tray(self) -> None:
+        self._force_exit = True
+        self.close()
+        if self._owns_controller:
+            app = QApplication.instance()
+            if app is not None:
+                app.quit()
+
+    def _restore_quit_on_last_window_closed(self) -> None:
+        app = QApplication.instance()
+        if app is not None and self._previous_quit_on_last_window_closed is not None:
+            app.setQuitOnLastWindowClosed(self._previous_quit_on_last_window_closed)
+            self._previous_quit_on_last_window_closed = None
 
     def _build_ui(self) -> None:
         root = QWidget(self)
@@ -1066,7 +1195,7 @@ class CompanionWindow(QMainWindow):
         return_action = QAction("返回控制面板", self)
         return_action.triggered.connect(self._return_to_control_panel)
         exit_action = QAction("退出", self)
-        exit_action.triggered.connect(self.close)
+        exit_action.triggered.connect(self._quit_from_tray)
         menu.addAction(status_action)
         menu.addAction(history_action)
         menu.addAction(clear_history_action)
