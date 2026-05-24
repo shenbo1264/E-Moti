@@ -99,3 +99,13 @@ python -m guanghe_companion.app --desktop-mode
 - `python -m json.tool assets\companion\original_oc\shop_items.json`：通过。
 - `powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1`：通过。
 - `powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild`：通过。
+
+## 2026-05-24 验证记录
+
+- `python -m pytest`：383 passed。
+- `python -m json.tool assets\companion\original_oc\shop_items.json`：通过。
+- `python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py`：66 passed。
+- `powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1`：通过，已生成 `dist\E-Moti\E-Moti.exe`。
+- 冻结版控制面板 5 秒 smoke：通过，进程存活 5 秒后由脚本停止。
+- 冻结版 `--pet-mode --demo-save` 5 秒 smoke：通过，进程存活 5 秒后由脚本停止。
+- `powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild`：通过，已生成 `dist\installer\E-Moti_Setup_0.1.0.exe`。
