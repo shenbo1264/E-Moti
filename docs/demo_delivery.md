@@ -58,6 +58,7 @@ python -m guanghe_companion.app --desktop-mode
 - Web 搜索：显式触发搜索，结果只作为表达上下文，不写入状态机。
 - TTS：支持 `http_qwen3tts` 与 `windows_sapi`，`http_qwen3tts` 可切换 `qwen3tts_1.6b` 标准版和 `qwen3tts_0.7b` 低参数版。
 - ASR：支持 OpenAI-compatible `/audio/transcriptions` 与 Vosk 配置路径；默认录音链路使用 PySide6 QtMultimedia，识别结果只作为玩家输入文本。
+- 系统托盘：控制面板关闭或最小化会隐藏到托盘；托盘菜单支持恢复控制面板、进入桌宠模式和退出；桌宠右键菜单支持退出。
 
 ## AI 使用边界
 
@@ -92,6 +93,19 @@ python -m guanghe_companion.app --desktop-mode
 - ASR 的 OpenAI-compatible 路径需要真实 ASR API Key/Base URL；Vosk 路径需要用户自行提供本地模型目录。
 - 麦克风、扬声器、系统权限和云端服务连通性需要在演示机上做人工 QA。
 - 桌宠演示模式已具备窗口形态和直接交互，但还没有完整桌面游走、吸附边缘或长期驻留行为。
+- 冻结版 smoke 只验证进程能启动并存活，不等同于人工点击托盘菜单；托盘恢复、托盘退出和桌宠右键退出仍建议在演示机前台 QA。
+
+## 托盘与桌宠人工 QA 清单
+
+本清单用于演示机前台验证。自动化测试已覆盖主要逻辑路径；冻结版 smoke 只验证启动和短时间存活。
+
+- 控制面板最小化后隐藏到托盘，不关闭控制器。
+- 控制面板关闭按钮隐藏到托盘。
+- 托盘菜单“显示控制面板”可以恢复窗口。
+- 托盘菜单“显示/进入桌宠模式”可以打开或显示桌宠窗口。
+- 托盘菜单“退出”会关闭托盘图标、桌宠子窗口和控制器。
+- 桌宠右键菜单“退出”可以关闭应用。
+- 桌宠右键菜单“复制对话”是显式用户操作，不是 AI、屏幕观察或搜索自动写剪贴板。
 
 ## 2026-05-23 验证记录
 
@@ -102,10 +116,10 @@ python -m guanghe_companion.app --desktop-mode
 
 ## 2026-05-24 验证记录
 
-- `python -m pytest`：383 passed。
+- `python -m pytest`：388 passed。
 - `python -m json.tool assets\companion\original_oc\shop_items.json`：通过。
-- `python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py`：66 passed。
-- `powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1`：通过，已生成 `dist\E-Moti\E-Moti.exe`。
+- `python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py`：71 passed。
+- `powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1`：通过，已生成 `dist\E-Moti\E-Moti.exe`，本轮产物时间为 2026-05-24 18:08。
 - 冻结版控制面板 5 秒 smoke：通过，进程存活 5 秒后由脚本停止。
 - 冻结版 `--pet-mode --demo-save` 5 秒 smoke：通过，进程存活 5 秒后由脚本停止。
-- `powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild`：通过，已生成 `dist\installer\E-Moti_Setup_0.1.0.exe`。
+- `powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild`：通过，已生成 `dist\installer\E-Moti_Setup_0.1.0.exe`，本轮产物时间为 2026-05-24 18:10。
