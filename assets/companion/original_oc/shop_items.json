@@ -1,0 +1,66 @@
+[
+  {
+    "item_id": "warm_milk",
+    "name": "热牛奶",
+    "category": "food",
+    "icon": "item_icons/warm_milk.png",
+    "price": 12,
+    "effects": { "charge": 12, "mood": 2 }
+  },
+  {
+    "item_id": "energy_candy",
+    "name": "能量糖",
+    "category": "food",
+    "icon": "item_icons/energy_candy.png",
+    "price": 18,
+    "effects": { "charge": 20, "stability": -2 }
+  },
+  {
+    "item_id": "berry_tart",
+    "name": "浆果挞",
+    "category": "food",
+    "icon": "item_icons/berry_tart.png",
+    "price": 16,
+    "effects": { "charge": 8, "mood": 6 }
+  },
+  {
+    "item_id": "star_hairpin",
+    "name": "星形发夹",
+    "category": "gift",
+    "icon": "item_icons/star_hairpin.png",
+    "price": 24,
+    "effects": { "mood": 8, "trust": 3 }
+  },
+  {
+    "item_id": "comet_ribbon",
+    "name": "彗尾丝带",
+    "category": "gift",
+    "icon": "item_icons/comet_ribbon.png",
+    "price": 28,
+    "effects": { "mood": 7, "trust": 5 }
+  },
+  {
+    "item_id": "memory_shell",
+    "name": "回声贝壳",
+    "category": "gift",
+    "icon": "item_icons/memory_shell.png",
+    "price": 30,
+    "effects": { "mood": 6, "trust": 6 }
+  },
+  {
+    "item_id": "comfort_blanket",
+    "name": "安抚毯",
+    "category": "tool",
+    "icon": "item_icons/comfort_blanket.png",
+    "price": 30,
+    "effects": { "stability": 12 }
+  },
+  {
+    "item_id": "learning_sticker",
+    "name": "学习贴纸",
+    "category": "tool",
+    "icon": "item_icons/learning_sticker.png",
+    "price": 16,
+    "effects": { "study_bonus_exp": 4 }
+  }
+]
