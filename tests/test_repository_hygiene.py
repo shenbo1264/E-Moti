@@ -1,0 +1,55 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
+FORBIDDEN_TEXT = (
+    "C:" + "\\Users\\",
+    "D:" + "\\",
+    "199" + "70",
+    "学工" + "文档",
+    "首" + "选",
+    "_Shinsekai" + "_latest",
+    "_VPet" + "_latest",
+    "AI" + "不用看" + ".md",
+)
+TEXT_SUFFIXES = {
+    ".bat",
+    ".cfg",
+    ".cmd",
+    ".ini",
+    ".iss",
+    ".json",
+    ".md",
+    ".ps1",
+    ".py",
+    ".toml",
+    ".txt",
+    ".yaml",
+    ".yml",
+}
+TEXT_NAMES = {".gitignore"}
+
+
+def _tracked_files() -> list[Path]:
+    from subprocess import check_output
+
+    output = check_output(["git", "ls-files"], cwd=REPO_ROOT, text=True, encoding="utf-8")
+    return [REPO_ROOT / line for line in output.splitlines() if line]
+
+
+def test_tracked_text_files_do_not_expose_local_paths_or_private_note_names() -> None:
+    leaks: list[str] = []
+    for path in _tracked_files():
+        if not path.exists():
+            continue
+        if path.suffix.lower() not in TEXT_SUFFIXES and path.name not in TEXT_NAMES:
+            continue
+        text = path.read_text(encoding="utf-8-sig")
+        relative = path.relative_to(REPO_ROOT).as_posix()
+        for token in FORBIDDEN_TEXT:
+            if token in text:
+                leaks.append(f"{relative}: {token}")
+
+    assert leaks == []

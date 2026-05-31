@@ -144,4 +144,4 @@ These capabilities are expression helpers. They do not own pet progression or sa
 
 ## License
 
-No open-source license file is included yet. Add a `LICENSE` file before publishing if you want others to reuse, modify, or redistribute this repository under explicit open-source terms.
+MIT. See `LICENSE`.
