@@ -126,13 +126,24 @@ If Inno Setup is installed somewhere else, pass `-ISCCPath` to `tools\build_wind
 
 The demo can run without network services. Optional capabilities must be configured by the user in the app UI:
 
-- LLM expression: OpenAI-compatible chat completion settings.
+- LLM expression: OpenAI Responses, OpenAI-compatible cloud providers, or local OpenAI-compatible servers.
 - Screen observation: OpenAI-compatible vision endpoint.
 - Web search: DuckDuckGo search through `ddgs`.
 - TTS: Windows SAPI or a local HTTP Qwen3TTS-compatible service.
 - ASR: OpenAI-compatible transcription endpoint or a local Vosk model.
 
 These capabilities are expression helpers. They do not own pet progression or save data.
+
+LLM expression provider presets:
+
+| Provider | Default Base URL | API Key | Notes |
+| --- | --- | --- | --- |
+| `openai` | `https://api.openai.com/v1/responses` | Required | Uses the Responses API path. |
+| `deepseek` | `https://api.deepseek.com` | Required | Uses OpenAI-compatible chat completions. |
+| `openrouter` | `https://openrouter.ai/api/v1` | Required | Uses OpenAI-compatible chat completions. |
+| `ollama` | `http://127.0.0.1:11434/v1` | Optional | Start Ollama locally, pull a model, then use the model list button or type the model ID. |
+| `lmstudio` | `http://127.0.0.1:1234/v1` | Optional | Start the LM Studio local server, load a model, then use the model list button or type the model ID. |
+| `custom` | `https://api.openai.com/v1` | Optional | For other OpenAI-compatible services. Fill an API key when that service requires one. |
 
 ## Repository Notes
 

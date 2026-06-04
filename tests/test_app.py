@@ -1364,7 +1364,7 @@ def test_expression_settings_fetches_provider_model_list_without_saving_or_mutat
     before = window.controller.get_typed_snapshot()
 
     provider_items = [window.expression_provider_combo.itemText(index) for index in range(window.expression_provider_combo.count())]
-    assert provider_items == ["openai", "deepseek", "openrouter", "custom"]
+    assert provider_items == ["openai", "deepseek", "openrouter", "ollama", "lmstudio", "custom"]
     assert not window.expression_model_list_combo.isVisibleTo(window)
 
     window.expression_provider_combo.setCurrentText("deepseek")

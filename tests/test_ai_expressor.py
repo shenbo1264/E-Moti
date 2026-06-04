@@ -1586,6 +1586,34 @@ def test_openai_compatible_chat_client_allows_slow_provider_timeout():
     assert captured["timeout"] == 30.0
 
 
+def test_openai_compatible_chat_client_allows_local_provider_without_api_key_or_auth_header():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["payload"] = request.data.decode("utf-8")
+        captured["timeout"] = timeout
+        return b'{"choices":[{"message":{"content":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"local ok\\"}]"}}]}'
+
+    client = OpenAICompatibleChatClient(
+        api_key="",
+        model="llama3.2",
+        base_url="http://127.0.0.1:11434/v1",
+        timeout_seconds=5,
+        transport=transport,
+        require_api_key=False,
+    )
+
+    assert client("prompt text") == '[{"type":"speech","speech":"local ok"}]'
+    assert captured["url"] == "http://127.0.0.1:11434/v1/chat/completions"
+    assert "Authorization" not in captured["headers"]
+    assert '"model": "llama3.2"' in captured["payload"]
+    assert captured["timeout"] == 5.0
+
+
 def test_fetch_provider_model_ids_uses_models_endpoint_without_leaking_state():
     from guanghe_companion.ai_expressor import fetch_provider_model_ids
 
@@ -1611,6 +1639,57 @@ def test_fetch_provider_model_ids_uses_models_endpoint_without_leaking_state():
     assert captured["headers"]["Authorization"] == "Bearer test-key"
     assert captured["timeout"] == 0.5
     assert models == ("deepseek-v4-flash", "deepseek-v4-pro")
+
+
+def test_fetch_provider_model_ids_allows_local_provider_without_api_key_or_auth_header():
+    from guanghe_companion.ai_expressor import fetch_provider_model_ids
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["timeout"] = timeout
+        return b'{"data":[{"id":"llama3.2"},{"id":"qwen2.5:7b"}]}'
+
+    models = fetch_provider_model_ids(
+        provider="ollama",
+        base_url="http://127.0.0.1:11434/v1",
+        api_key="",
+        timeout_seconds=1.5,
+        transport=transport,
+    )
+
+    assert captured["url"] == "http://127.0.0.1:11434/v1/models"
+    assert "Authorization" not in captured["headers"]
+    assert captured["timeout"] == 1.5
+    assert models == ("llama3.2", "qwen2.5:7b")
+
+
+def test_default_expressor_builds_ollama_chat_client_without_api_key_from_saved_settings():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient, build_default_ai_expressor
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "ollama",
+            "model": "llama3.2",
+            "base_url": "http://127.0.0.1:11434/v1",
+            "api_key": "",
+            "timeout_seconds": "5",
+        }
+    )
+
+    expressor = build_default_ai_expressor(settings=settings)
+
+    assert expressor.enabled is True
+    assert isinstance(expressor.llm_client, OpenAICompatibleChatClient)
+    assert expressor.llm_client.model == "llama3.2"
+    assert expressor.llm_client.base_url == "http://127.0.0.1:11434/v1"
+    assert expressor.llm_client.api_key == ""
+    assert expressor.llm_client.require_api_key is False
+    assert expressor.timeout_seconds == 5.0
 
 
 def test_openai_responses_client_context_manager_keeps_call_contract():

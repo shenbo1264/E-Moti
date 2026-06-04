@@ -12,7 +12,7 @@ from urllib import request
 from .dialogue_parser import DialogueStreamParser
 from .engine import create_initial_state
 from .events import ALLOWED_EFFECTS, build_fallback_events, validate_events
-from .expression_settings import ExpressionSettings, provider_api_style
+from .expression_settings import ExpressionSettings, provider_api_key_required, provider_api_style
 from .snapshot import CompanionSnapshot
 
 
@@ -219,12 +219,14 @@ class OpenAICompatibleChatClient:
         base_url: str = "https://api.openai.com/v1",
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         transport: HTTPTransport | None = None,
+        require_api_key: bool = True,
     ) -> None:
         self.api_key = _normalize_api_key(api_key)
         self.model = _normalize_model(model)
         self.base_url = _normalize_base_url(base_url)
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.transport = transport or _default_transport
+        self.require_api_key = bool(require_api_key)
         self._closed = False
 
     def __enter__(self) -> "OpenAICompatibleChatClient":
@@ -236,7 +238,7 @@ class OpenAICompatibleChatClient:
     def __call__(self, prompt: str) -> str:
         if self._closed:
             raise LLMProviderError("OpenAI-compatible expression provider failed: closed")
-        if not self.api_key:
+        if self.require_api_key and not self.api_key:
             raise LLMProviderError("OpenAI-compatible expression provider failed: missing_api_key")
         if not isinstance(prompt, str):
             raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
@@ -254,10 +256,7 @@ class OpenAICompatibleChatClient:
         api_request = request.Request(
             _chat_completions_url(self.base_url),
             data=payload,
-            headers={
-                "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json",
-            },
+            headers=_json_request_headers(self.api_key),
             method="POST",
         )
         try:
@@ -298,15 +297,12 @@ def fetch_provider_model_ids(
     transport: HTTPTransport | None = None,
 ) -> tuple[str, ...]:
     normalized_api_key = _normalize_api_key(api_key)
-    if not normalized_api_key:
+    if provider_api_key_required(provider) and not normalized_api_key:
         raise LLMProviderError("model list fetch failed: missing_api_key")
     normalized_base_url = _normalize_base_url(base_url)
     api_request = request.Request(
         _models_url(normalized_base_url),
-        headers={
-            "Authorization": f"Bearer {normalized_api_key}",
-            "Content-Type": "application/json",
-        },
+        headers=_json_request_headers(normalized_api_key),
         method="GET",
     )
     try:
@@ -832,7 +828,8 @@ def _openai_config_from_env(env: Mapping[str, object] | None = None) -> _OpenAIP
 
 
 def _build_ai_expressor_from_settings(settings: ExpressionSettings) -> ShinsekaiAIExpressor:
-    if not settings.enabled or not settings.api_key:
+    require_api_key = provider_api_key_required(settings.provider)
+    if not settings.enabled or (require_api_key and not settings.api_key):
         return ShinsekaiAIExpressor(enabled=False)
     if provider_api_style(settings.provider) == "responses":
         client = OpenAIResponsesClient(
@@ -847,6 +844,7 @@ def _build_ai_expressor_from_settings(settings: ExpressionSettings) -> Shinsekai
             model=settings.model,
             base_url=settings.base_url,
             timeout_seconds=settings.timeout_seconds,
+            require_api_key=require_api_key,
         )
     return ShinsekaiAIExpressor(
         llm_client=client,
@@ -858,6 +856,13 @@ def _build_ai_expressor_from_settings(settings: ExpressionSettings) -> Shinsekai
 def _default_transport(api_request: request.Request, timeout: float) -> bytes:
     with request.urlopen(api_request, timeout=timeout) as response:
         return response.read()
+
+
+def _json_request_headers(api_key: str) -> dict[str, str]:
+    headers = {"Content-Type": "application/json"}
+    if api_key:
+        headers["Authorization"] = f"Bearer {api_key}"
+    return headers
 
 
 def _extract_response_text(response: dict[str, Any]) -> str:

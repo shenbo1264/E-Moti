@@ -14,6 +14,10 @@ DEFAULT_DEEPSEEK_EXPRESSION_MODEL = "deepseek-v4-flash"
 DEFAULT_DEEPSEEK_EXPRESSION_BASE_URL = "https://api.deepseek.com"
 DEFAULT_OPENROUTER_EXPRESSION_MODEL = "openai/gpt-5.5"
 DEFAULT_OPENROUTER_EXPRESSION_BASE_URL = "https://openrouter.ai/api/v1"
+DEFAULT_OLLAMA_EXPRESSION_MODEL = "llama3.2"
+DEFAULT_OLLAMA_EXPRESSION_BASE_URL = "http://127.0.0.1:11434/v1"
+DEFAULT_LMSTUDIO_EXPRESSION_MODEL = "local-model"
+DEFAULT_LMSTUDIO_EXPRESSION_BASE_URL = "http://127.0.0.1:1234/v1"
 DEFAULT_CUSTOM_EXPRESSION_MODEL = "gpt-5.5"
 DEFAULT_CUSTOM_EXPRESSION_BASE_URL = "https://api.openai.com/v1"
 DEFAULT_EXPRESSION_TIMEOUT_SECONDS = 2.0
@@ -29,21 +33,37 @@ EXPRESSION_PROVIDER_PRESETS: dict[str, dict[str, str]] = {
         "model": DEFAULT_EXPRESSION_MODEL,
         "base_url": DEFAULT_EXPRESSION_BASE_URL,
         "api_style": "responses",
+        "requires_api_key": "true",
     },
     "deepseek": {
         "model": DEFAULT_DEEPSEEK_EXPRESSION_MODEL,
         "base_url": DEFAULT_DEEPSEEK_EXPRESSION_BASE_URL,
         "api_style": "chat_completions",
+        "requires_api_key": "true",
     },
     "openrouter": {
         "model": DEFAULT_OPENROUTER_EXPRESSION_MODEL,
         "base_url": DEFAULT_OPENROUTER_EXPRESSION_BASE_URL,
         "api_style": "chat_completions",
+        "requires_api_key": "true",
+    },
+    "ollama": {
+        "model": DEFAULT_OLLAMA_EXPRESSION_MODEL,
+        "base_url": DEFAULT_OLLAMA_EXPRESSION_BASE_URL,
+        "api_style": "chat_completions",
+        "requires_api_key": "false",
+    },
+    "lmstudio": {
+        "model": DEFAULT_LMSTUDIO_EXPRESSION_MODEL,
+        "base_url": DEFAULT_LMSTUDIO_EXPRESSION_BASE_URL,
+        "api_style": "chat_completions",
+        "requires_api_key": "false",
     },
     "custom": {
         "model": DEFAULT_CUSTOM_EXPRESSION_MODEL,
         "base_url": DEFAULT_CUSTOM_EXPRESSION_BASE_URL,
         "api_style": "chat_completions",
+        "requires_api_key": "false",
     },
 }
 ALLOWED_EXPRESSION_PROVIDERS = frozenset(EXPRESSION_PROVIDER_PRESETS)
@@ -157,6 +177,11 @@ def provider_default_base_url(provider: str) -> str:
 def provider_api_style(provider: str) -> str:
     preset = EXPRESSION_PROVIDER_PRESETS.get(provider, EXPRESSION_PROVIDER_PRESETS[DEFAULT_EXPRESSION_PROVIDER])
     return preset["api_style"]
+
+
+def provider_api_key_required(provider: str) -> bool:
+    preset = EXPRESSION_PROVIDER_PRESETS.get(provider, EXPRESSION_PROVIDER_PRESETS[DEFAULT_EXPRESSION_PROVIDER])
+    return preset.get("requires_api_key", "true") == "true"
 
 
 def _normalize_api_key(value: object) -> str:
