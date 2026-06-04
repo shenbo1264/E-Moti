@@ -36,12 +36,19 @@ from .events import (
 from .expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
 from .expression_settings import ExpressionSettings, ExpressionSettingsStore, normalize_expression_settings
 from .inventory import InventoryService, InventoryUseRequest, ShopPurchaseRequest, ShopService, format_item_effect
-from .memory import MemoryLogService, memory_kind_for_inventory_usage
+from .memory import (
+    LongTermMemoryEntry,
+    LongTermMemoryService,
+    LongTermMemoryStore,
+    MemoryLogService,
+    memory_kind_for_inventory_usage,
+)
 from .models import CompanionState
 from .relationship import ProactiveCompanionDecision, ProactiveCompanionService, RelationshipService
 from .runtime_paths import (
     capability_settings_path as default_capability_settings_path,
     expression_settings_path as default_expression_settings_path,
+    long_term_memory_path as default_long_term_memory_path,
 )
 from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory, format_delta_text
 from .storage import DEFAULT_SAVE_PATH, SaveManager, logical_time_from_state
@@ -84,6 +91,14 @@ class CompanionCapabilitySettingsStore(Protocol):
         ...
 
 
+class CompanionLongTermMemoryStore(Protocol):
+    def load(self) -> tuple[LongTermMemoryEntry, ...]:
+        ...
+
+    def save(self, entries: Iterable[LongTermMemoryEntry]) -> None:
+        ...
+
+
 class CompanionController:
     def __init__(
         self,
@@ -98,6 +113,8 @@ class CompanionController:
         expression_settings_store: CompanionExpressionSettingsStore | None = None,
         capability_settings_path: Path | None = None,
         capability_settings_store: CompanionCapabilitySettingsStore | None = None,
+        long_term_memory_path: Path | None = None,
+        long_term_memory_store: CompanionLongTermMemoryStore | None = None,
     ) -> None:
         self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
         self.save_manager = save_manager or SaveManager(self.save_path)
@@ -126,6 +143,18 @@ class CompanionController:
             self.capability_settings_path
         )
         self.capability_settings = self.capability_settings_store.load()
+        self.long_term_memory_path = (
+            Path(long_term_memory_path)
+            if long_term_memory_path is not None
+            else _long_term_memory_path_for_save_path(self.save_path)
+        )
+        self._long_term_memory_enabled = (
+            auto_load or long_term_memory_path is not None or long_term_memory_store is not None
+        )
+        self.long_term_memory_store = long_term_memory_store or LongTermMemoryStore(self.long_term_memory_path)
+        self.long_term_memory_service = LongTermMemoryService(
+            self.long_term_memory_store.load() if self._long_term_memory_enabled else ()
+        )
         self._perception_summary = ""
         self._tool_results: list[dict[str, object]] = []
         self.character_pack = load_default_character_pack()
@@ -214,6 +243,7 @@ class CompanionController:
             item_feedback_icon=self.last_item_feedback_icon,
             proactive_feedback=self.last_proactive_feedback,
             dialogue_history=self.dialogue_history,
+            long_term_memory=self.long_term_memory_service.summaries(),
         ).build_input()
         return SnapshotBuilder(builder_input).build()
 
@@ -280,6 +310,23 @@ class CompanionController:
 
     def set_tool_results(self, results: list[dict[str, object]]) -> None:
         self._tool_results = list(results) if isinstance(results, list) else []
+
+    def upsert_long_term_memory(
+        self,
+        *,
+        key: str,
+        category: str,
+        summary: str,
+        source: str = "local_api",
+    ) -> dict[str, object]:
+        self._upsert_long_term_memory(
+            key=key,
+            category=category,
+            summary=summary,
+            source=source,
+            now=self.now,
+        )
+        return self.get_snapshot()
 
     def test_expression_provider(self) -> dict[str, object]:
         request = ExpressionRequest.from_snapshot(
@@ -750,6 +797,34 @@ class CompanionController:
             at=self.now,
             drafts=RelationshipService(self.state).unlock_memory_drafts(unlocks, motion=self.last_motion),
         )
+        for payload in RelationshipService(self.state).unlock_event_payloads(unlocks):
+            self._upsert_long_term_memory(
+                key=f"relationship:{payload['unlock_id']}",
+                category="relationship_unlock",
+                summary=payload["message"],
+                source="relationship_unlock",
+                now=self.now,
+            )
+
+    def _upsert_long_term_memory(
+        self,
+        *,
+        key: str,
+        category: str,
+        summary: str,
+        source: str,
+        now: int,
+    ) -> None:
+        if not self._long_term_memory_enabled:
+            return
+        self.long_term_memory_service.upsert(
+            key=key,
+            category=category,
+            summary=summary,
+            source=source,
+            now=now,
+        )
+        self.long_term_memory_store.save(self.long_term_memory_service.entries)
 
     def _relationship_event_payloads(self, unlocks: list[str]) -> list[dict[str, str]]:
         return RelationshipService(self.state).unlock_event_payloads(unlocks)
@@ -789,3 +864,11 @@ def _capability_settings_path_for_save_path(save_path: Path) -> Path:
     if save_path.name == "companion_demo_save.json":
         return save_path.with_name("companion_demo_capability_settings.json")
     return save_path.with_name(f"{save_path.stem}_capability_settings.json")
+
+
+def _long_term_memory_path_for_save_path(save_path: Path) -> Path:
+    if save_path.name == "companion_save.json":
+        return default_long_term_memory_path()
+    if save_path.name == "companion_demo_save.json":
+        return save_path.with_name("companion_demo_long_term_memory.json")
+    return save_path.with_name(f"{save_path.stem}_long_term_memory.json")

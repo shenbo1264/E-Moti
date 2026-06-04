@@ -7,6 +7,7 @@ import json
 from .dialogue_history import DialogueHistoryEntry, format_dialogue_history_text
 from .engine import describe_goal
 from .events import CompanionEvent
+from .memory import MAX_LONG_TERM_MEMORY_SUMMARIES
 from .models import CompanionState
 from .relationship import RelationshipService
 
@@ -107,6 +108,7 @@ class CompanionSnapshot:
     inventory_items: list[dict[str, object]]
     item_feedback_icon: str | None = None
     dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
+    long_term_memory: tuple[dict[str, str], ...] = ()
 
     def to_compatible_dict(self) -> dict[str, object]:
         return SnapshotCompatibleSerializer(self).to_dict()
@@ -157,6 +159,7 @@ class SnapshotCompatibleSerializer:
             "inventory_items": deepcopy(self.snapshot.inventory_items),
             "dialogue_history": [entry.to_dict() for entry in self.snapshot.dialogue_history],
             "dialogue_history_text": format_dialogue_history_text(self.snapshot.dialogue_history),
+            "long_term_memory": [dict(entry) for entry in self.snapshot.long_term_memory],
         }
 
 
@@ -181,6 +184,7 @@ class SnapshotBuilderInput:
     item_feedback_icon: str | None
     proactive_feedback: dict[str, str] | None
     dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
+    long_term_memory: tuple[dict[str, str], ...] = ()
 
 
 @dataclass(frozen=True, slots=True)
@@ -201,6 +205,7 @@ class SnapshotContextFactory:
     item_feedback_icon: str | None
     proactive_feedback: dict[str, str] | None
     dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
+    long_term_memory: tuple[dict[str, str], ...] = ()
 
     def build_input(self) -> SnapshotBuilderInput:
         relationship = RelationshipService(self.state)
@@ -224,6 +229,7 @@ class SnapshotContextFactory:
             item_feedback_icon=self.item_feedback_icon,
             proactive_feedback=self.proactive_feedback,
             dialogue_history=self.dialogue_history,
+            long_term_memory=self.long_term_memory,
         )
 
 
@@ -260,4 +266,5 @@ class SnapshotBuilder:
             inventory_items=deepcopy(source.inventory_items),
             item_feedback_icon=source.item_feedback_icon,
             dialogue_history=tuple(source.dialogue_history),
+            long_term_memory=tuple(dict(entry) for entry in source.long_term_memory[:MAX_LONG_TERM_MEMORY_SUMMARIES]),
         )

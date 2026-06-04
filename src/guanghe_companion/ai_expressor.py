@@ -13,6 +13,7 @@ from .dialogue_parser import DialogueStreamParser
 from .engine import create_initial_state
 from .events import ALLOWED_EFFECTS, build_fallback_events, validate_events
 from .expression_settings import ExpressionSettings, provider_api_key_required, provider_api_style
+from .memory import MAX_LONG_TERM_MEMORY_SUMMARIES
 from .snapshot import CompanionSnapshot
 
 
@@ -44,6 +45,8 @@ MAX_GOAL_LENGTH = 160
 MAX_MEMORY_KIND_LENGTH = 40
 MAX_MEMORY_SUMMARY_LENGTH = 160
 MAX_MEMORY_MOTION_LENGTH = 40
+MAX_LONG_TERM_MEMORY_CATEGORY_LENGTH = 40
+MAX_LONG_TERM_MEMORY_SOURCE_LENGTH = 40
 MAX_TOOL_TIMESTAMP_LENGTH = 40
 
 
@@ -80,6 +83,7 @@ class ExpressionRequest:
     goal: str
     actions: tuple[dict[str, str], ...]
     recent_memory: tuple[dict[str, str], ...]
+    long_term_memory: tuple[dict[str, str], ...] = ()
     perception_summary: str = ""
     tool_results: tuple[dict[str, str], ...] = ()
 
@@ -95,6 +99,7 @@ class ExpressionRequest:
             source = {**source, **context_payload}
         actions = _sanitize_actions(source.get("actions", []))
         recent_memory = _sanitize_recent_memory(source.get("memory_log", []))
+        long_term_memory = _sanitize_long_term_memory(source.get("long_term_memory", []))
         return cls(
             character_name=_short_string(source.get("character_name", ""), MAX_CHARACTER_NAME_LENGTH),
             mode=_short_string(source.get("mode", ""), MAX_MODE_LENGTH),
@@ -109,6 +114,7 @@ class ExpressionRequest:
             goal=_short_string(source.get("goal", ""), MAX_GOAL_LENGTH),
             actions=actions,
             recent_memory=recent_memory,
+            long_term_memory=long_term_memory,
             perception_summary=_short_string(source.get("perception_summary", ""), MAX_PERCEPTION_SUMMARY_LENGTH),
             tool_results=_sanitize_tool_results(source.get("tool_results", [])),
         )
@@ -128,6 +134,7 @@ class ExpressionRequest:
             "goal": self.goal,
             "actions": [dict(action) for action in self.actions],
             "recent_memory": [dict(entry) for entry in self.recent_memory],
+            "long_term_memory": [dict(entry) for entry in self.long_term_memory],
             "perception_summary": self.perception_summary,
             "tool_results": [dict(entry) for entry in self.tool_results],
         }
@@ -386,6 +393,9 @@ class ShinsekaiAIExpressor:
         memory = " / ".join(
             f"{entry['kind']}: {entry['summary']}" for entry in prompt_payload["recent_memory"]
         )
+        long_term_memory = " / ".join(
+            f"{entry['category']}: {entry['summary']}" for entry in prompt_payload["long_term_memory"]
+        )
         tool_results = " / ".join(_format_tool_result(entry) for entry in prompt_payload["tool_results"])
         return "\n".join(
             [
@@ -406,6 +416,7 @@ class ShinsekaiAIExpressor:
                 f"goal: {prompt_payload['goal']}",
                 f"choices: {choices}",
                 f"recent_memory: {memory}",
+                f"long_term_memory: {long_term_memory}",
                 f"perception_summary: {prompt_payload['perception_summary']}",
                 f"tool_results: {tool_results}",
                 '示例字段：{"type":"speech","speech":"短句","effect":"ATTENTION","motion_hint":"Raised"}',
@@ -572,6 +583,7 @@ def _expression_payload_from_snapshot(snapshot: dict[str, object] | CompanionSna
             "goal": snapshot.goal,
             "actions": snapshot.actions,
             "memory_log": snapshot.memory_log,
+            "long_term_memory": snapshot.long_term_memory,
         }
     if isinstance(snapshot, dict):
         return snapshot
@@ -665,6 +677,20 @@ def _sanitize_recent_memory(value: object) -> tuple[dict[str, str], ...]:
             continue
         memory.append({"kind": kind, "summary": summary, "motion": motion})
         if len(memory) >= MAX_RECENT_MEMORY:
+            break
+    return tuple(memory)
+
+
+def _sanitize_long_term_memory(value: object) -> tuple[dict[str, str], ...]:
+    memory: list[dict[str, str]] = []
+    for entry in _as_dict_list(value):
+        category = _short_string(entry.get("category", ""), MAX_LONG_TERM_MEMORY_CATEGORY_LENGTH)
+        summary = _short_string(entry.get("summary", ""), MAX_MEMORY_SUMMARY_LENGTH)
+        source = _short_string(entry.get("source", ""), MAX_LONG_TERM_MEMORY_SOURCE_LENGTH)
+        if not category or not summary or not source:
+            continue
+        memory.append({"category": category, "summary": summary, "source": source})
+        if len(memory) >= MAX_LONG_TERM_MEMORY_SUMMARIES:
             break
     return tuple(memory)
 

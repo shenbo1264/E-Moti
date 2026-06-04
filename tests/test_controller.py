@@ -1114,3 +1114,111 @@ def test_web_search_results_do_not_change_growth_state(tmp_path):
     assert after.inventory == before.inventory
     assert after.relationship_stage == before.relationship_stage
     assert after.memory_log == before.memory_log
+
+
+def test_controller_loads_bad_long_term_memory_file_as_empty(tmp_path):
+    long_term_memory_path = tmp_path / "long-term-memory.json"
+    long_term_memory_path.write_text("{not json", encoding="utf-8")
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        long_term_memory_path=long_term_memory_path,
+    )
+
+    assert controller.get_typed_snapshot().long_term_memory == ()
+    assert controller.get_snapshot()["long_term_memory"] == []
+
+
+def test_controller_relationship_unlock_upserts_long_term_memory_and_reloads(tmp_path):
+    save_path = tmp_path / "save.json"
+    long_term_memory_path = tmp_path / "long-term-memory.json"
+    controller = CompanionController(
+        save_path=save_path,
+        auto_load=False,
+        long_term_memory_path=long_term_memory_path,
+    )
+    controller.state.trust = 19
+
+    snapshot = controller.perform_action("touch", include_ai_expression=False)
+
+    assert snapshot["relationship_stage"] == "熟悉的陪伴"
+    assert snapshot["long_term_memory"] == [
+        {
+            "category": "relationship_unlock",
+            "summary": "第一次主动称呼解锁了。她开始用更亲近的方式回应你。",
+            "source": "relationship_unlock",
+        }
+    ]
+
+    reloaded = CompanionController(
+        save_path=save_path,
+        auto_load=False,
+        long_term_memory_path=long_term_memory_path,
+    )
+    assert reloaded.get_snapshot()["long_term_memory"] == snapshot["long_term_memory"]
+
+
+def test_controller_dialogue_and_llm_output_do_not_write_long_term_memory(tmp_path):
+    class OverreachingExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "type": "speech",
+                    "speech": "我只是一句表达。",
+                    "effect": "ATTENTION",
+                    "memory": {"key": "llm:memory", "summary": "should not persist"},
+                    "state": {"trust": 99},
+                    "relationship": "rewrite",
+                    "goal": "rewrite",
+                    "save": "rewrite",
+                    "coins": 999,
+                    "inventory": {"warm_milk": 99},
+                }
+            ]
+
+    long_term_memory_path = tmp_path / "long-term-memory.json"
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=OverreachingExpressor(),
+        long_term_memory_path=long_term_memory_path,
+    )
+
+    dialogue_snapshot = controller.submit_dialogue_request(DialogueRequest("记住这句话"))
+    action_snapshot = controller.perform_action("touch")
+
+    assert dialogue_snapshot["long_term_memory"] == []
+    assert action_snapshot["long_term_memory"] == []
+    assert not long_term_memory_path.exists()
+    assert "llm:memory" not in action_snapshot["event_preview"]
+
+
+def test_controller_explicit_local_api_upserts_long_term_memory_without_growth_mutation(tmp_path):
+    long_term_memory_path = tmp_path / "long-term-memory.json"
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        long_term_memory_path=long_term_memory_path,
+    )
+    before = controller.get_typed_snapshot()
+
+    snapshot = controller.upsert_long_term_memory(
+        key="local:favorite_drink",
+        category="local_note",
+        summary="你说过热牛奶适合睡前。",
+        source="local_api",
+    )
+    after = controller.get_typed_snapshot()
+
+    assert snapshot["long_term_memory"] == [
+        {
+            "category": "local_note",
+            "summary": "你说过热牛奶适合睡前。",
+            "source": "local_api",
+        }
+    ]
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log

@@ -88,6 +88,7 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
         "goal",
         "actions",
         "recent_memory",
+        "long_term_memory",
         "perception_summary",
         "tool_results",
     }
@@ -97,6 +98,7 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
     assert "coins" not in prompt_payload
     assert prompt_payload["actions"][0] == {"label": original_action_label}
     assert prompt_payload["recent_memory"][0]["kind"] == original_memory_kind
+    assert prompt_payload["long_term_memory"] == []
     assert prompt_payload["perception_summary"] == "current window: draft note"
     assert prompt_payload["tool_results"] == [
         {
@@ -121,6 +123,7 @@ def test_expression_request_accepts_typed_companion_snapshot_without_state_write
     assert request.mood == typed_snapshot.stats.mood
     assert request.actions[0] == {"label": "轻触"}
     assert request.recent_memory[0]["motion"] == "TouchHead"
+    assert request.long_term_memory == ()
     assert "inventory" not in prompt_payload
     assert "shop_items" not in prompt_payload
     assert "coins" not in prompt_payload
@@ -155,6 +158,7 @@ def test_expression_request_merges_readonly_context_for_typed_snapshot_without_w
     assert request.focus == typed_snapshot.stats.focus
     assert request.actions[0] == {"label": typed_snapshot.actions[0]["label"]}
     assert request.recent_memory[0]["motion"] == typed_snapshot.memory_log[0]["motion"]
+    assert request.long_term_memory == ()
     assert request.perception_summary == "current window: draft note"
     assert request.tool_results == (
         {
@@ -302,6 +306,59 @@ def test_expression_request_sanitizes_recent_memory_before_prompt_payload():
             "motion": "Tick",
         },
     )
+
+
+def test_expression_request_sanitizes_long_term_memory_summaries_before_prompt_payload():
+    snapshot = make_snapshot()
+    snapshot["long_term_memory"] = [
+        {
+            "category": "  relationship_unlock  ",
+            "summary": "  第一次主动称呼解锁了。  ",
+            "source": " relationship_unlock ",
+            "key": "relationship:unlock_first_nickname",
+            "coins": 999,
+            "inventory": {"warm_milk": 99},
+        },
+        {"category": "bad", "summary": "", "source": "local_api"},
+        {"category": {"nested": "bad"}, "summary": "bad category", "source": "local_api"},
+        {"category": "c" * 80, "summary": "s" * 220, "source": "source\nwith newline"},
+    ]
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+
+    assert request.long_term_memory == (
+        {
+            "category": "relationship_unlock",
+            "summary": "第一次主动称呼解锁了。",
+            "source": "relationship_unlock",
+        },
+        {
+            "category": "c" * 40,
+            "summary": "s" * 160,
+            "source": "source with newline",
+        },
+    )
+
+
+def test_prompt_builder_includes_long_term_memory_summaries_without_write_surfaces():
+    snapshot = make_snapshot()
+    snapshot["long_term_memory"] = [
+        {
+            "category": "relationship_unlock",
+            "summary": "第一次主动称呼解锁了。",
+            "source": "relationship_unlock",
+            "key": "relationship:unlock_first_nickname",
+            "coins": 999,
+            "inventory": {"warm_milk": 99},
+        }
+    ]
+
+    prompt = ShinsekaiAIExpressor().build_prompt(snapshot)
+
+    assert "long_term_memory: relationship_unlock: 第一次主动称呼解锁了。" in prompt
+    assert "relationship:unlock_first_nickname" not in prompt
+    assert "inventory" not in prompt
+    assert "coins:" not in prompt
 
 
 def test_expression_request_sanitizes_core_prompt_strings_before_prompt_payload():

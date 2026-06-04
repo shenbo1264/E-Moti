@@ -29,6 +29,7 @@ def test_controller_exposes_typed_snapshot_with_required_stage_one_fields(tmp_pa
     assert "信任达到 20" in typed_snapshot.next_relationship_unlock
     assert typed_snapshot.unlocks == []
     assert typed_snapshot.memory_log == []
+    assert typed_snapshot.long_term_memory == ()
     assert typed_snapshot.current_motion == "Default"
     assert typed_snapshot.feedback
     assert all(isinstance(event, CompanionEvent) for event in typed_snapshot.events)
@@ -62,6 +63,7 @@ def test_typed_snapshot_exports_controller_compatible_dict_without_ui_shape_chan
     assert compatible["events"] == snapshot["events"]
     assert compatible["event_preview"] == snapshot["event_preview"]
     assert compatible["actions"] == snapshot["actions"]
+    assert compatible["long_term_memory"] == snapshot["long_term_memory"]
 
 
 def test_snapshot_legacy_event_helpers_filter_domain_events_and_format_preview():
@@ -146,6 +148,46 @@ def test_snapshot_builder_accepts_single_typed_input_context(tmp_path):
     assert snapshot.shop_items == shop_items
     assert snapshot.inventory_items == inventory_items
     assert [event.event_type for event in snapshot.events] == ["speech", "stat", "choice"]
+
+
+def test_snapshot_builder_exports_bounded_long_term_memory_summaries(tmp_path):
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    long_term_memory = tuple(
+        {
+            "category": "local_note",
+            "summary": f"长期记忆 {index}",
+            "source": "local_api",
+        }
+        for index in range(6)
+    )
+    builder_input = SnapshotBuilderInput(
+        state=controller.state,
+        character_title=controller.character_pack.title,
+        character_description=controller.character_pack.description,
+        goal="目标：信任达到 20",
+        relationship_stage="初识",
+        next_relationship_unlock="信任达到 20：解锁第一次主动称呼",
+        current_motion="Default",
+        motion_caption="默认待机",
+        feedback="信号稳定。",
+        delta_text="暂无变化",
+        allowed=True,
+        tick_count=0,
+        events=controller.last_events,
+        actions=controller._build_actions(),
+        shop_items=controller._build_shop_items(),
+        inventory_items=controller._build_inventory_items(),
+        item_feedback_icon=None,
+        proactive_feedback=None,
+        long_term_memory=long_term_memory,
+    )
+
+    snapshot = SnapshotBuilder(builder_input).build()
+    compatible = snapshot.to_compatible_dict()
+
+    assert snapshot.long_term_memory == long_term_memory[:5]
+    assert compatible["long_term_memory"] == list(long_term_memory[:5])
+
 
 
 def test_snapshot_context_factory_derives_state_owned_snapshot_fields(tmp_path):
