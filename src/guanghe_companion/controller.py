@@ -7,7 +7,6 @@ from typing import Protocol
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
 from .ai_expressor import (
-    ExpressionRequest,
     ShinsekaiAIExpressor,
     build_default_ai_expressor,
 )
@@ -27,10 +26,8 @@ from .events import (
     ActionDomainEventRequest,
     CompanionEvent,
     DomainEventComposer,
-    EventValidator,
     InventoryDomainEventRequest,
     ProactiveDomainEventRequest,
-    build_typed_fallback_events,
 )
 from .expression_diagnostics import ExpressionDiagnosticsService, fetch_provider_model_ids
 from .expression_context import (
@@ -38,6 +35,7 @@ from .expression_context import (
     ExpressionContextChain,
     RuntimeExpressionContextService,
 )
+from .expression_event_pipeline import ExpressionEventPipeline
 from .expression_settings import (
     ExpressionSettings,
     ExpressionSettingsStore,
@@ -696,40 +694,19 @@ class CompanionController:
         *,
         include_ai_expression: bool = True,
     ) -> list[CompanionEvent]:
-        actions = self._build_actions()
-        choices = [entry["label"] for entry in actions]
-        fallback_events = build_typed_fallback_events(
+        return ExpressionEventPipeline(
             state=self.state,
-            feedback=self.last_feedback,
-            choices=choices,
+            expressor=self.ai_expressor,
+            snapshot_provider=self.get_typed_snapshot,
+            context_provider=self._expression_context,
+            actions_provider=self._build_actions,
+        ).build_events(
             effect=effect,
+            feedback=self.last_feedback,
+            domain_events=domain_events,
+            include_ai_expression=include_ai_expression,
+            closed=self._closed,
         )
-        if self._closed or not include_ai_expression:
-            return fallback_events + list(domain_events or [])
-        expression_request = ExpressionRequest.from_snapshot(
-            self.get_typed_snapshot(),
-            context=self._expression_context(),
-        )
-        try:
-            expressed_events = self.ai_expressor.express(expression_request, effect=effect)
-        except Exception:
-            return fallback_events + list(domain_events or [])
-        if not expressed_events:
-            return fallback_events + list(domain_events or [])
-        if expressed_events == [event.to_legacy_dict() for event in fallback_events]:
-            return fallback_events + list(domain_events or [])
-        validated_events = EventValidator(self.state).validate(
-            events=expressed_events,
-            fallback_feedback=self.last_feedback,
-            choices=choices,
-        )
-        if _is_local_fallback_expression(validated_events, self.last_feedback):
-            return fallback_events + list(domain_events or [])
-        local_context_events = [event for event in fallback_events if event.event_type in {"stat", "choice"}]
-        expression_events = [event for event in validated_events if event.event_type == "speech"]
-        if not expression_events:
-            return fallback_events + list(domain_events or [])
-        return expression_events[:1] + local_context_events + list(domain_events or [])
 
     def _build_actions(self) -> list[dict[str, object]]:
         return [action.to_legacy_dict() for action in CompanionActionLayer(self.state).available_actions()]
@@ -832,10 +809,6 @@ class CompanionController:
             perception_summary=str(expression_context.get("perception_summary", "")),
             tool_results=expression_context.get("tool_results", []),
         ).select_decision(motion=self.last_motion)
-
-
-def _is_local_fallback_expression(events: list[CompanionEvent], feedback: str) -> bool:
-    return [event.event_type for event in events] == ["speech", "stat", "choice"] and events[0].speech == feedback
 
 
 def _dialogue_history_path_for_save_path(save_path: Path) -> Path:
