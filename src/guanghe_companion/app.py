@@ -35,6 +35,7 @@ from PySide6.QtWidgets import (
 )
 
 from .ai_expressor import build_expression_prompt_preview
+from .capability_runtime import CapabilityRuntime
 from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
 from .capability_settings import CapabilitySettings
 from .controller import CompanionController
@@ -279,6 +280,16 @@ class CompanionWindow(QMainWindow):
         self.web_search_service = WebSearchService()
         self.tts_manager = TTSManager()
         self.asr_service = ASRService()
+        self.capability_runtime = CapabilityRuntime(
+            settings_saver=self._save_capability_settings_from_ui,
+            settings_reader=self.controller.get_capability_settings,
+            set_perception_summary=self.controller.set_perception_summary,
+            set_tool_results=self.controller.set_tool_results,
+            screen_observation_service=lambda: self.screen_observation_service,
+            web_search_service=lambda: self.web_search_service,
+            tts_manager=lambda: self.tts_manager,
+            asr_service=lambda: self.asr_service,
+        )
         self._last_auto_tts_key: tuple[str, str] | None = None
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
@@ -1329,12 +1340,8 @@ class CompanionWindow(QMainWindow):
         self._manual_perception_summary = MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
 
     def _run_screen_observation(self) -> None:
-        self._save_capability_settings_from_ui()
-        result = self.screen_observation_service.observe(
-            self.controller.get_capability_settings().screen_observation
-        )
+        result = self.capability_runtime.run_screen_observation()
         if result.summary:
-            self.controller.set_perception_summary(result.summary)
             self.screen_observation_status_label.setText(f"{result.message}：{result.summary}")
             return
         self.screen_observation_status_label.setText(result.message)
@@ -1343,19 +1350,8 @@ class CompanionWindow(QMainWindow):
         self._run_web_search(self.web_search_query_input.text())
 
     def _run_web_search(self, query: str) -> None:
-        self._save_capability_settings_from_ui()
-        result = self.web_search_service.search(query, self.controller.get_capability_settings().web_search)
-        if result.tool_results:
-            self.controller.set_tool_results(result.tool_results)
-            lines = [result.message]
-            for item in result.tool_results:
-                title = item.get("title", "")
-                summary = item.get("summary", "")
-                url = item.get("url", "")
-                lines.append(f"{title} - {summary}" + (f" ({url})" if url else ""))
-            self.web_search_results_label.setText("\n".join(lines))
-            return
-        self.web_search_results_label.setText(result.message)
+        result = self.capability_runtime.run_web_search(query)
+        self.web_search_results_label.setText(result.display_text)
 
     def _update_screen_observation_timer(self) -> None:
         settings = self.controller.get_capability_settings().screen_observation
@@ -1365,12 +1361,11 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_timer.start(settings.interval_seconds * 1000)
 
     def _handle_tts_test(self) -> None:
-        settings = self._save_capability_settings_from_ui().tts
-        result = self.tts_manager.speak("星汐在这里，语音测试正常。", settings)
+        result = self.capability_runtime.run_tts_test("星汐在这里，语音测试正常。")
         self.voice_status_label.setText(result.message)
 
     def _handle_tts_stop(self) -> None:
-        result = self.tts_manager.stop(self.controller.get_capability_settings().tts)
+        result = self.capability_runtime.stop_tts()
         self.voice_status_label.setText(result.message)
 
     def _sync_voice_controls_enabled(self) -> None:
@@ -1378,20 +1373,18 @@ class CompanionWindow(QMainWindow):
         self.dialogue_asr_button.setEnabled(False)
 
     def _handle_asr_start(self) -> None:
-        settings = self._save_capability_settings_from_ui().asr
-        result = self.asr_service.start_recording(settings)
+        result = self.capability_runtime.start_asr()
         self.voice_status_label.setText(result.message)
 
     def _handle_asr_stop(self) -> None:
-        settings = self._save_capability_settings_from_ui().asr
-        result = self.asr_service.stop_and_transcribe(settings)
+        result = self.capability_runtime.stop_asr()
         self.voice_status_label.setText(result.message)
         if not result.text:
             return
         self.dialogue_input.setText(result.text)
-        if settings.auto_send:
+        if result.dialogue_request is not None:
             snapshot = self.controller.submit_dialogue_request(
-                DialogueRequest(text=result.text, source="asr"),
+                result.dialogue_request,
                 include_ai_expression=self._llm_expression_enabled(),
             )
             self.dialogue_input.clear()
@@ -1624,7 +1617,7 @@ class CompanionWindow(QMainWindow):
         if key == self._last_auto_tts_key:
             return
         self._last_auto_tts_key = key
-        result = self.tts_manager.speak(speech, settings)
+        result = self.capability_runtime.speak_text(speech)
         self.voice_status_label.setText(result.message)
 
     def _snapshot_tts_speech(self, snapshot: dict[str, object]) -> str:
