@@ -745,6 +745,14 @@ class CompanionWindow(QMainWindow):
         for widget in (self.mode_label, self.resources_label, self.goal_label, self.relationship_label, self.tick_label):
             widget.setWordWrap(True)
             layout.addWidget(widget)
+        alias_row = QHBoxLayout()
+        self.player_alias_input = QLineEdit()
+        self.player_alias_input.setPlaceholderText("本地称呼")
+        self.player_alias_save_button = QPushButton("记住称呼")
+        self.player_alias_save_button.clicked.connect(self._handle_player_alias_save)
+        alias_row.addWidget(self.player_alias_input, stretch=1)
+        alias_row.addWidget(self.player_alias_save_button)
+        layout.addLayout(alias_row)
 
         grid = QGridLayout()
         layout.addLayout(grid)
@@ -1464,6 +1472,13 @@ class CompanionWindow(QMainWindow):
         self._apply_snapshot(snapshot)
         self.desktop_feedback_label.show()
 
+    def _handle_player_alias_save(self) -> None:
+        snapshot = self.controller.set_player_alias(
+            self.player_alias_input.text(),
+            include_ai_expression=False,
+        )
+        self._apply_snapshot(snapshot)
+
     def _handle_demo_proactive(self, scenario: str) -> None:
         self._reset_countdown()
         self._apply_snapshot(self.controller.trigger_demo_proactive(scenario, include_ai_expression=False))
@@ -1793,9 +1808,9 @@ class CompanionWindow(QMainWindow):
             f"金币 {snapshot['coins']} / 等级 {snapshot['level']} / 经验 {snapshot['exp']}"
         )
         self.goal_label.setText(str(snapshot["goal"]))
-        self.relationship_label.setText(
-            f"当前关系：{snapshot['relationship_stage']}\n下个解锁：{snapshot['next_relationship_unlock']}"
-        )
+        self.relationship_label.setText(self._format_relationship_presentation(snapshot))
+        if not self.player_alias_input.hasFocus():
+            self.player_alias_input.setText(str(snapshot.get("player_alias") or ""))
         self.tick_label.setText(f"15 秒 tick：已结算 {snapshot['tick_count']} 次，下一轮 {self.remaining_seconds} 秒后")
 
         for stat_name, bar in self.status_bars.items():
@@ -1848,6 +1863,23 @@ class CompanionWindow(QMainWindow):
             if speech:
                 return speech
         return ""
+
+    def _format_relationship_presentation(self, snapshot: dict[str, object]) -> str:
+        presentation = snapshot.get("relationship_presentation")
+        if not isinstance(presentation, dict):
+            return f"当前关系：{snapshot['relationship_stage']}\n下个解锁：{snapshot['next_relationship_unlock']}"
+        decorations = presentation.get("unlocked_decorations")
+        if isinstance(decorations, list) and decorations:
+            decoration_text = " / ".join(str(entry.get("label", "")) for entry in decorations if isinstance(entry, dict))
+        else:
+            decoration_text = "暂无"
+        return (
+            f"当前关系：{snapshot['relationship_stage']}\n"
+            f"{presentation.get('address_line', '')}\n"
+            f"语气：{presentation.get('tone_label', '')} / 小动作：{presentation.get('micro_motion', '')}\n"
+            f"装饰：{decoration_text}\n"
+            f"下个解锁：{snapshot['next_relationship_unlock']}"
+        )
 
     def _render_current_frame(self) -> None:
         if self.spritesheet.isNull():

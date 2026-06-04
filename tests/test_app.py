@@ -1084,6 +1084,138 @@ def test_window_shows_relationship_stage_and_next_unlock(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_window_shows_local_alias_relationship_presentation_and_badges(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window.player_alias_input.setText("小沈")
+    window.player_alias_save_button.click()
+    window.controller.state.trust = 20
+    window.controller.state.unlocks = ["unlock_first_nickname"]
+    window._apply_snapshot(window.controller.get_snapshot())
+    app.processEvents()
+
+    text = window.relationship_label.text()
+    assert "小沈" in text
+    assert "熟悉陪伴" in text
+    assert "靠近一点" in text
+    assert "星形发夹" in text
+    assert window.controller.state.player_alias == "小沈"
+
+    window.close()
+    app.processEvents()
+
+
+def test_llm_expression_reads_relationship_presentation_without_alias_write_surface(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.ai_expressor import ExpressionRequest
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    class CapturingExpressor:
+        def __init__(self):
+            self.requests = []
+
+        def express(self, snapshot, effect=None):
+            self.requests.append(snapshot)
+            return []
+
+    app = QApplication.instance() or QApplication([])
+    expressor = CapturingExpressor()
+    controller = make_controller(tmp_path, ai_expressor=expressor)
+    controller.set_player_alias("小沈")
+    controller.state.trust = 20
+    controller.state.unlocks = ["unlock_first_nickname"]
+    controller.update_expression_settings(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "custom",
+                "model": "local-model",
+                "base_url": "http://127.0.0.1:1234/v1",
+                "api_key": "",
+            }
+        )
+    )
+    controller.ai_expressor = expressor
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    window.dialogue_input.setText("今天陪我一会儿")
+    window.dialogue_send_button.click()
+    app.processEvents()
+
+    request = expressor.requests[-1]
+    relationship_context = [
+        entry for entry in request.tool_results if entry["source"] == "local_relationship_presentation"
+    ]
+    assert isinstance(request, ExpressionRequest)
+    assert relationship_context
+    assert "小沈" in relationship_context[0]["summary"]
+    assert "熟悉陪伴" in relationship_context[0]["summary"]
+    assert "靠近一点" in relationship_context[0]["summary"]
+    assert not hasattr(request, "player_alias")
+    assert not hasattr(request, "unlocks")
+
+    window.close()
+    app.processEvents()
+
+
+def test_llm_expression_cannot_write_player_alias_or_relationship_unlocks(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    class OverreachingExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "type": "speech",
+                    "speech": "我来改称呼。",
+                    "effect": "ATTENTION",
+                    "player_alias": "被 LLM 改写",
+                    "unlocks": ["unlock_shared_ritual"],
+                }
+            ]
+
+    app = QApplication.instance() or QApplication([])
+    controller = make_controller(tmp_path, ai_expressor=OverreachingExpressor())
+    controller.set_player_alias("小沈")
+    controller.update_expression_settings(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "custom",
+                "model": "local-model",
+                "base_url": "http://127.0.0.1:1234/v1",
+                "api_key": "",
+            }
+        )
+    )
+    controller.ai_expressor = OverreachingExpressor()
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+    before_unlocks = list(window.controller.state.unlocks)
+
+    window.dialogue_input.setText("今天陪我一会儿")
+    window.dialogue_send_button.click()
+    app.processEvents()
+
+    assert window.controller.state.player_alias == "小沈"
+    assert window.controller.state.unlocks == before_unlocks
+    assert "我来改称呼" not in window.desktop_feedback_label.text()
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_shows_screen_perception_disabled_by_default(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 

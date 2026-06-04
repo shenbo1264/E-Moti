@@ -21,6 +21,7 @@ class CharacterPack:
     modes: tuple[str, ...]
     mode_descriptions: dict[str, str]
     motion_labels: dict[str, str]
+    relationship_decorations: tuple[dict[str, str], ...] = ()
 
 
 def load_default_character_pack() -> CharacterPack:
@@ -40,6 +41,11 @@ def load_character_pack(character_id: str) -> CharacterPack:
         modes=tuple(payload["modes"]),
         mode_descriptions=dict(payload["mode_descriptions"]),
         motion_labels=dict(payload["motion_labels"]),
+        relationship_decorations=tuple(
+            dict(entry)
+            for entry in payload.get("relationship_decorations", [])
+            if isinstance(entry, dict)
+        ),
     )
 
 

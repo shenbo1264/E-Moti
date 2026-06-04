@@ -38,6 +38,7 @@ class CompanionState:
     last_gift_at: int | None = None
     same_gift_chain: int = 0
     study_bonus_exp: int = 0
+    player_alias: str = ""
     memory_log: list[dict[str, object]] = field(default_factory=list)
     schema_version: int = 1
 

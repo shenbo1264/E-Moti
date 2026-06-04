@@ -30,6 +30,10 @@ def test_controller_exposes_typed_snapshot_with_required_stage_one_fields(tmp_pa
     assert typed_snapshot.unlocks == []
     assert typed_snapshot.memory_log == []
     assert typed_snapshot.long_term_memory == ()
+    assert typed_snapshot.relationship_presentation.address_line == "星汐还在认识你"
+    assert typed_snapshot.relationship_presentation.tone_label == "轻声试探"
+    assert typed_snapshot.relationship_presentation.micro_motion == "轻轻眨眼"
+    assert typed_snapshot.relationship_presentation.unlocked_decorations == []
     assert typed_snapshot.current_motion == "Default"
     assert typed_snapshot.feedback
     assert all(isinstance(event, CompanionEvent) for event in typed_snapshot.events)
@@ -64,6 +68,7 @@ def test_typed_snapshot_exports_controller_compatible_dict_without_ui_shape_chan
     assert compatible["event_preview"] == snapshot["event_preview"]
     assert compatible["actions"] == snapshot["actions"]
     assert compatible["long_term_memory"] == snapshot["long_term_memory"]
+    assert compatible["relationship_presentation"] == typed_snapshot.relationship_presentation.to_dict()
 
 
 def test_snapshot_legacy_event_helpers_filter_domain_events_and_format_preview():
@@ -188,6 +193,28 @@ def test_snapshot_builder_exports_bounded_long_term_memory_summaries(tmp_path):
     assert snapshot.long_term_memory == long_term_memory[:5]
     assert compatible["long_term_memory"] == list(long_term_memory[:5])
 
+
+def test_snapshot_exposes_player_alias_and_relationship_badges_as_readonly_presentation(tmp_path):
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    controller.set_player_alias("小沈")
+    controller.state.trust = 20
+    controller.state.unlocks = ["unlock_first_nickname"]
+
+    typed_snapshot = controller.get_typed_snapshot()
+    compatible = typed_snapshot.to_compatible_dict()
+
+    assert typed_snapshot.relationship_presentation.address_line == "星汐会这样称呼你：小沈"
+    assert typed_snapshot.relationship_presentation.tone_label == "熟悉陪伴"
+    assert typed_snapshot.relationship_presentation.micro_motion == "靠近一点"
+    assert typed_snapshot.relationship_presentation.unlocked_decorations == [
+        {
+            "item_id": "star_hairpin",
+            "label": "星形发夹",
+            "icon": "item_icons/star_hairpin.png",
+        }
+    ]
+    assert compatible["relationship_presentation"] == typed_snapshot.relationship_presentation.to_dict()
+    assert compatible["player_alias"] == "小沈"
 
 
 def test_snapshot_context_factory_derives_state_owned_snapshot_fields(tmp_path):

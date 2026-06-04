@@ -5,6 +5,7 @@ from guanghe_companion.relationship import (
     ProactiveCompanionDecision,
     ProactiveCompanionService,
     ProactiveFeedback,
+    RelationshipPresentation,
     RelationshipService,
 )
 
@@ -43,6 +44,55 @@ def test_relationship_service_reports_final_stage_after_ritual_unlock():
 
     assert service.stage() == "共同日常"
     assert "继续保持稳定陪伴" in service.next_unlock()
+
+
+def test_relationship_service_sets_local_player_alias_and_derives_presentation():
+    state = create_initial_state(now=0)
+    service = RelationshipService(state)
+
+    alias = service.set_player_alias("  小沈\n同学  ")
+    presentation = service.presentation(
+        [
+            {
+                "unlock_id": "unlock_first_nickname",
+                "item_id": "star_hairpin",
+                "label": "星形发夹",
+                "icon": "item_icons/star_hairpin.png",
+            }
+        ]
+    )
+
+    assert alias == "小沈 同学"
+    assert state.player_alias == "小沈 同学"
+    assert isinstance(presentation, RelationshipPresentation)
+    assert presentation.address_line == "星汐记得你：小沈 同学"
+    assert presentation.tone_label == "轻声试探"
+    assert presentation.micro_motion == "轻轻眨眼"
+    assert presentation.unlocked_decorations == []
+
+    state.trust = 20
+    state.unlocks = ["unlock_first_nickname"]
+    advanced = service.presentation(
+        [
+            {
+                "unlock_id": "unlock_first_nickname",
+                "item_id": "star_hairpin",
+                "label": "星形发夹",
+                "icon": "item_icons/star_hairpin.png",
+            }
+        ]
+    )
+
+    assert advanced.address_line == "星汐会这样称呼你：小沈 同学"
+    assert advanced.tone_label == "熟悉陪伴"
+    assert advanced.micro_motion == "靠近一点"
+    assert advanced.unlocked_decorations == [
+        {
+            "item_id": "star_hairpin",
+            "label": "星形发夹",
+            "icon": "item_icons/star_hairpin.png",
+        }
+    ]
 
 
 def test_relationship_service_builds_unlock_event_payloads_for_typed_events():

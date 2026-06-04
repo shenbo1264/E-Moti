@@ -249,6 +249,7 @@ class CompanionController:
             proactive_feedback=self.last_proactive_feedback,
             dialogue_history=self.dialogue_history,
             long_term_memory=self.long_term_memory_service.summaries(),
+            relationship_decorations=self.character_pack.relationship_decorations,
         ).build_input()
         return SnapshotBuilder(builder_input).build()
 
@@ -309,6 +310,21 @@ class CompanionController:
         normalized = settings if isinstance(settings, CapabilitySettings) else CapabilitySettings.from_dict(settings)
         self.capability_settings = self.capability_settings_store.save(normalized)
         return self.capability_settings
+
+    def set_player_alias(self, alias: str, *, include_ai_expression: bool = False) -> dict[str, object]:
+        normalized = RelationshipService(self.state).set_player_alias(alias)
+        self.last_motion = "Default"
+        if normalized:
+            self.last_feedback = f"我记住这个称呼了：{normalized}"
+        else:
+            self.last_feedback = "本地称呼已清空。"
+        self.last_delta_text = "本地称呼更新，不改变成长数值"
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_proactive_feedback = None
+        self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
+        self._persist()
+        return self.get_snapshot()
 
     def set_perception_summary(self, summary: str) -> None:
         self._perception_summary = summary if isinstance(summary, str) else ""
@@ -775,7 +791,30 @@ class CompanionController:
         )()
         if runtime_context:
             context.update(runtime_context)
+        relationship_result = self._relationship_presentation_tool_result()
+        tool_results = context.get("tool_results")
+        existing_tool_results = tool_results if isinstance(tool_results, list) else []
+        if relationship_result is not None:
+            context["tool_results"] = [*existing_tool_results, relationship_result]
         return context
+
+    def _relationship_presentation_tool_result(self) -> dict[str, str] | None:
+        presentation = RelationshipService(self.state).presentation(self.character_pack.relationship_decorations)
+        if (
+            not getattr(self.state, "player_alias", "")
+            and not presentation.unlocked_decorations
+            and self.state.trust < 20
+        ):
+            return None
+        badges = " / ".join(badge["label"] for badge in presentation.unlocked_decorations) or "none"
+        return {
+            "source": "local_relationship_presentation",
+            "title": "relationship presentation",
+            "summary": (
+                f"{presentation.address_line}；语气：{presentation.tone_label}；"
+                f"小动作：{presentation.micro_motion}；装饰：{badges}"
+            ),
+        }
 
     def _item_icon_path(self, item) -> str:
         if not item.icon:
