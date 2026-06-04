@@ -1557,6 +1557,59 @@ def test_expression_settings_test_button_saves_and_tests_llm_without_mutating_st
     app.processEvents()
 
 
+def test_expression_settings_test_button_shows_diagnostic_stage_and_reason(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[5].click()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    def fake_test_expression_provider():
+        return {
+            "ok": False,
+            "stage": "provider_call",
+            "reason": "timeout",
+            "fallback_reason": "timeout",
+            "provider": "deepseek",
+            "model": "deepseek-v4-flash",
+            "base_url": "https://api.deepseek.com",
+            "timeout_seconds": 0.5,
+            "speech": "",
+            "effect": "",
+        }
+
+    window.controller.test_expression_provider = fake_test_expression_provider
+    window.expression_provider_combo.setCurrentText("deepseek")
+    window.expression_enabled_checkbox.setChecked(True)
+    window.expression_api_key_input.setText("test-key")
+    window.expression_timeout_input.setValue(0.5)
+    window.expression_test_button.click()
+    app.processEvents()
+
+    after = window.controller.get_typed_snapshot()
+    status = window.expression_settings_status_label.text()
+    assert "LLM 测试失败" in status
+    assert "调用服务" in status
+    assert "请求超时" in status
+    assert "deepseek-v4-flash" in status
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
 def test_expression_settings_fetches_provider_model_list_without_saving_or_mutating_state(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 

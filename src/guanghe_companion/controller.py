@@ -34,7 +34,12 @@ from .events import (
     build_typed_fallback_events,
 )
 from .expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
-from .expression_settings import ExpressionSettings, ExpressionSettingsStore, normalize_expression_settings
+from .expression_settings import (
+    ExpressionSettings,
+    ExpressionSettingsStore,
+    normalize_expression_settings,
+    provider_api_key_required,
+)
 from .inventory import InventoryService, InventoryUseRequest, ShopPurchaseRequest, ShopService, format_item_effect
 from .memory import (
     LongTermMemoryEntry,
@@ -350,6 +355,14 @@ class CompanionController:
         return self.get_snapshot()
 
     def test_expression_provider(self) -> dict[str, object]:
+        settings_issue = self._expression_settings_diagnostic_issue()
+        if settings_issue:
+            return self._expression_provider_test_result(
+                ok=False,
+                stage="settings",
+                reason=settings_issue,
+            )
+
         request = ExpressionRequest.from_snapshot(
             self.get_typed_snapshot(),
             context=self._expression_context(),
@@ -357,7 +370,11 @@ class CompanionController:
         try:
             expressed_events = self.ai_expressor.express(request, effect="ATTENTION")
         except Exception:
-            return {"ok": False, "speech": "", "effect": "", "fallback_reason": "provider_error"}
+            return self._expression_provider_test_result(
+                ok=False,
+                stage="provider_call",
+                reason="provider_error",
+            )
 
         choices = [entry["label"] for entry in self._build_actions()]
         validated_events = EventValidator(self.state).validate(
@@ -376,18 +393,20 @@ class CompanionController:
         fallback_reason = str(getattr(self.ai_expressor, "last_fallback_reason", "") or "")
         is_local_fallback = _is_local_fallback_expression(validated_events, self.last_feedback)
         if speech_event is None:
-            return {
-                "ok": False,
-                "speech": "",
-                "effect": "",
-                "fallback_reason": fallback_reason or "invalid_event",
-            }
-        return {
-            "ok": not fallback_reason and not is_local_fallback,
-            "speech": speech_event.speech,
-            "effect": speech_event.effect,
-            "fallback_reason": "" if not fallback_reason and not is_local_fallback else fallback_reason or "invalid_event",
-        }
+            reason = fallback_reason or "invalid_event"
+            return self._expression_provider_test_result(
+                ok=False,
+                stage=_expression_diagnostic_stage(reason),
+                reason=reason,
+            )
+        reason = "" if not fallback_reason and not is_local_fallback else fallback_reason or "local_fallback"
+        return self._expression_provider_test_result(
+            ok=not reason,
+            stage=_expression_diagnostic_stage(reason),
+            reason=reason,
+            speech=speech_event.speech,
+            effect=speech_event.effect,
+        )
 
     def fetch_expression_models(
         self,
@@ -710,6 +729,42 @@ class CompanionController:
                 pass
         self.ai_expressor = next_expressor
 
+    def _expression_settings_diagnostic_issue(self) -> str:
+        if (
+            self.expression_settings.enabled
+            and provider_api_key_required(self.expression_settings.provider)
+            and not self.expression_settings.api_key
+        ):
+            return "missing_api_key"
+        expressor_enabled = getattr(self.ai_expressor, "enabled", None)
+        if not self.expression_settings.enabled and expressor_enabled is False:
+            return "disabled"
+        if self.expression_settings.enabled and expressor_enabled is False:
+            return "disabled"
+        return ""
+
+    def _expression_provider_test_result(
+        self,
+        *,
+        ok: bool,
+        stage: str,
+        reason: str,
+        speech: str = "",
+        effect: str = "",
+    ) -> dict[str, object]:
+        return {
+            "ok": ok,
+            "stage": stage,
+            "reason": reason,
+            "provider": self.expression_settings.provider,
+            "model": self.expression_settings.model,
+            "base_url": self.expression_settings.base_url,
+            "timeout_seconds": self.expression_settings.timeout_seconds,
+            "speech": speech,
+            "effect": effect,
+            "fallback_reason": reason,
+        }
+
     def _set_dialogue_history_feedback(self, *, feedback: str, delta_text: str, effect: str) -> None:
         self.last_motion = "Default"
         self.last_feedback = feedback
@@ -903,6 +958,27 @@ class CompanionController:
 
 def _is_local_fallback_expression(events: list[CompanionEvent], feedback: str) -> bool:
     return [event.event_type for event in events] == ["speech", "stat", "choice"] and events[0].speech == feedback
+
+
+def _expression_diagnostic_stage(reason: str) -> str:
+    if not reason:
+        return "event_validation"
+    if reason in {"disabled", "missing_api_key", "invalid_prompt"}:
+        return "settings"
+    if reason in {"timeout", "provider_error", "closed"}:
+        return "provider_call"
+    if reason in {
+        "invalid_json",
+        "invalid_payload",
+        "invalid_response_bytes",
+        "invalid_response_size",
+        "invalid_response_encoding",
+        "invalid_response_json",
+        "invalid_response_shape",
+        "invalid_response_text",
+    }:
+        return "provider_parse"
+    return "event_validation"
 
 
 def _dialogue_history_path_for_save_path(save_path: Path) -> Path:

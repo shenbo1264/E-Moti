@@ -1580,10 +1580,15 @@ class CompanionWindow(QMainWindow):
         self._save_expression_settings_from_form()
         result = self.controller.test_expression_provider()
         if result["ok"]:
-            self.expression_settings_status_label.setText(f"LLM 测试通过：{result['speech']}")
+            self.expression_settings_status_label.setText(
+                f"LLM 测试通过：{result['speech']}（{self._format_expression_diagnostic_target(result)}）"
+            )
             return
-        reason = self._format_expression_test_failure(str(result["fallback_reason"]))
-        self.expression_settings_status_label.setText(f"LLM 测试失败：{reason}")
+        stage = self._format_expression_test_stage(str(result.get("stage", "")))
+        reason = self._format_expression_test_failure(str(result.get("reason", result.get("fallback_reason", ""))))
+        self.expression_settings_status_label.setText(
+            f"LLM 测试失败：{stage} / {reason}（{self._format_expression_diagnostic_target(result)}）"
+        )
 
     def _handle_expression_provider_change(self, provider: str) -> None:
         normalized_provider = str(provider).strip()
@@ -1747,9 +1752,11 @@ class CompanionWindow(QMainWindow):
         labels = {
             "disabled": "未启用或缺少 API Key",
             "missing_api_key": "缺少 API Key",
+            "local_fallback": "已回退到本地表达",
             "timeout": "请求超时",
             "provider_error": "Provider 调用失败",
             "invalid_json": "返回不是合法 JSON",
+            "invalid_response_text": "返回文本为空或过长",
             "invalid_response_json": "返回不是合法 JSON",
             "invalid_response_shape": "返回结构不符合模型列表格式",
             "invalid_payload": "返回内容为空或格式不符合规则",
@@ -1760,6 +1767,25 @@ class CompanionWindow(QMainWindow):
             "closed": "表达器已关闭",
         }
         return labels.get(reason, reason or "未知错误")
+
+    def _format_expression_test_stage(self, stage: str) -> str:
+        labels = {
+            "settings": "设置检查",
+            "model_list": "模型列表",
+            "prompt": "构造提示",
+            "provider_call": "调用服务",
+            "provider_parse": "解析响应",
+            "event_validation": "事件校验",
+        }
+        return labels.get(stage, stage or "未知阶段")
+
+    def _format_expression_diagnostic_target(self, result: dict[str, object]) -> str:
+        provider = str(result.get("provider", "") or "unknown")
+        model = str(result.get("model", "") or "unknown")
+        timeout = result.get("timeout_seconds", "")
+        if timeout == "":
+            return f"{provider}/{model}"
+        return f"{provider}/{model}，超时 {timeout}s"
 
     def _handle_expression_rule_copy(self) -> None:
         text = self.expression_rule_preview_text.toPlainText()

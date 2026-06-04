@@ -69,12 +69,16 @@ def test_controller_expression_provider_test_does_not_mutate_growth_state():
     result = controller.test_expression_provider()
 
     after = controller.get_typed_snapshot()
-    assert result == {
-        "ok": True,
-        "speech": "LLM 连接成功",
-        "effect": "ATTENTION",
-        "fallback_reason": "",
-    }
+    assert result["ok"] is True
+    assert result["stage"] == "event_validation"
+    assert result["reason"] == ""
+    assert result["speech"] == "LLM 连接成功"
+    assert result["effect"] == "ATTENTION"
+    assert result["fallback_reason"] == ""
+    assert result["provider"] == "openai"
+    assert result["model"]
+    assert result["base_url"].startswith("https://")
+    assert "api_key" not in result
     assert isinstance(fake_expressor.requests[0][0], ExpressionRequest)
     assert fake_expressor.requests[0][1] == "ATTENTION"
     assert after.stats == before.stats
@@ -83,6 +87,114 @@ def test_controller_expression_provider_test_does_not_mutate_growth_state():
     assert after.unlocks == before.unlocks
     assert after.memory_log == before.memory_log
     assert tuple(controller.last_events) == before_events
+
+
+def test_controller_expression_provider_test_reports_disabled_diagnostic_without_growth_mutation():
+    controller = CompanionController(auto_load=False)
+    before = controller.get_typed_snapshot()
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result["ok"] is False
+    assert result["stage"] == "settings"
+    assert result["reason"] == "disabled"
+    assert result["fallback_reason"] == "disabled"
+    assert result["provider"] == "openai"
+    assert result["speech"] == ""
+    assert "api_key" not in result
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.unlocks == before.unlocks
+    assert after.memory_log == before.memory_log
+
+
+def test_controller_expression_provider_test_reports_missing_key_before_provider_call(tmp_path):
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    class FailingIfCalledExpressor:
+        enabled = False
+
+        def express(self, snapshot, effect=None):
+            raise AssertionError("missing API key should be diagnosed before provider call.")
+
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    controller.expression_settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "deepseek",
+            "model": "deepseek-v4-flash",
+            "base_url": "https://api.deepseek.com",
+            "api_key": "",
+        }
+    )
+    controller.ai_expressor = FailingIfCalledExpressor()
+    before = controller.get_typed_snapshot()
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result["ok"] is False
+    assert result["stage"] == "settings"
+    assert result["reason"] == "missing_api_key"
+    assert result["provider"] == "deepseek"
+    assert result["model"] == "deepseek-v4-flash"
+    assert result["base_url"] == "https://api.deepseek.com"
+    assert "api_key" not in result
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+
+def test_controller_expression_provider_test_reports_provider_call_failure_stage():
+    class BrokenExpressor:
+        enabled = True
+
+        def express(self, snapshot, effect=None):
+            raise RuntimeError("network down")
+
+    controller = CompanionController(auto_load=False, ai_expressor=BrokenExpressor())
+    before = controller.get_typed_snapshot()
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result["ok"] is False
+    assert result["stage"] == "provider_call"
+    assert result["reason"] == "provider_error"
+    assert result["fallback_reason"] == "provider_error"
+    assert result["speech"] == ""
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+
+def test_controller_expression_provider_test_reports_event_validation_failure_stage():
+    from guanghe_companion.ai_expressor import ShinsekaiAIExpressor
+
+    controller = CompanionController(
+        auto_load=False,
+        ai_expressor=ShinsekaiAIExpressor(
+            llm_client=lambda prompt: '[{"type":"speech","speech":"try write","effect":"ATTENTION","coins":999}]'
+        ),
+    )
+    before = controller.get_typed_snapshot()
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result["ok"] is False
+    assert result["stage"] == "event_validation"
+    assert result["reason"] == "unsafe_event"
+    assert result["fallback_reason"] == "unsafe_event"
+    assert result["speech"] == controller.last_feedback
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
 
 
 def test_controller_fetches_expression_models_without_mutating_growth_state(monkeypatch):
