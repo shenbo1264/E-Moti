@@ -4,7 +4,8 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Protocol
 
-from .ai_expressor import ExpressionRequest, fetch_provider_model_ids
+from .ai_expressor import ExpressionRequest
+from .expression_clients import fetch_provider_model_ids
 from .events import CompanionEvent, EventValidator
 from .expression_settings import (
     ExpressionSettings,
