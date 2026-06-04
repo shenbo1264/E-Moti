@@ -1,18 +1,24 @@
 from __future__ import annotations
 
+from collections.abc import Mapping
 from collections.abc import Callable
 from dataclasses import dataclass
 from typing import Literal
 
-from .engine import BUYABLE_ITEMS, purchase_item, use_inventory_item
+from .engine import BUYABLE_ITEMS, purchase_item, use_inventory_item_with_catalog
 from .models import CompanionState, ItemDefinition
 
 InventoryUsage = Literal["feed", "gift", "use"]
 ItemIconResolver = Callable[[ItemDefinition], str]
 
 
-def format_item_effect(item_id: str, usage: InventoryUsage) -> str:
-    item = BUYABLE_ITEMS[item_id]
+def format_item_effect(
+    item_id: str,
+    usage: InventoryUsage,
+    buyable_items: Mapping[str, ItemDefinition] | None = None,
+) -> str:
+    items = buyable_items or BUYABLE_ITEMS
+    item = items[item_id]
     parts: list[str] = []
     for stat_name, amount in item.effects.items():
         if usage == "gift" and stat_name not in {"mood", "trust"}:
@@ -82,13 +88,19 @@ class InventoryItemRow:
 
 
 class ShopService:
-    def __init__(self, state: CompanionState, item_icon_path: ItemIconResolver) -> None:
+    def __init__(
+        self,
+        state: CompanionState,
+        item_icon_path: ItemIconResolver,
+        buyable_items: Mapping[str, ItemDefinition] | None = None,
+    ) -> None:
         self.state = state
         self.item_icon_path = item_icon_path
+        self.buyable_items = buyable_items or BUYABLE_ITEMS
 
     def shop_items(self) -> list[ShopItemRow]:
         rows: list[ShopItemRow] = []
-        for item in BUYABLE_ITEMS.values():
+        for item in self.buyable_items.values():
             unlocked = self.state.level >= item.unlock_level and self.state.trust >= item.unlock_trust
             rows.append(
                 ShopItemRow(
@@ -104,18 +116,24 @@ class ShopService:
         return rows
 
     def purchase(self, request: ShopPurchaseRequest) -> CompanionState:
-        return purchase_item(self.state, request.item_id)
+        return purchase_item(self.state, request.item_id, self.buyable_items)
 
 
 class InventoryService:
-    def __init__(self, state: CompanionState, item_icon_path: ItemIconResolver) -> None:
+    def __init__(
+        self,
+        state: CompanionState,
+        item_icon_path: ItemIconResolver,
+        buyable_items: Mapping[str, ItemDefinition] | None = None,
+    ) -> None:
         self.state = state
         self.item_icon_path = item_icon_path
+        self.buyable_items = buyable_items or BUYABLE_ITEMS
 
     def inventory_items(self) -> list[InventoryItemRow]:
         rows: list[InventoryItemRow] = []
-        for item in BUYABLE_ITEMS.values():
-            count = self.state.inventory[item.item_id]
+        for item in self.buyable_items.values():
+            count = self.state.inventory.get(item.item_id, 0)
             rows.append(
                 InventoryItemRow(
                     item_id=item.item_id,
@@ -131,4 +149,10 @@ class InventoryService:
         return rows
 
     def use(self, request: InventoryUseRequest, now: int) -> CompanionState:
-        return use_inventory_item(self.state, item_id=request.item_id, usage=request.usage, now=now)
+        return use_inventory_item_with_catalog(
+            self.state,
+            item_id=request.item_id,
+            usage=request.usage,
+            now=now,
+            buyable_items=self.buyable_items,
+        )

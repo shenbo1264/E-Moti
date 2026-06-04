@@ -1,0 +1,121 @@
+import json
+
+from PIL import Image
+
+from guanghe_companion.character_registry import CharacterRegistry, validate_character_pack_dir
+
+
+def _write_json(path, payload):
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+
+def _write_minimal_pack(
+    root,
+    character_id="custom_character",
+    *,
+    icon_path="item_icons/snack.png",
+    spritesheet="spritesheet.png",
+):
+    pack_dir = root / character_id
+    (pack_dir / "item_icons").mkdir(parents=True)
+    (pack_dir / "preview").mkdir()
+    Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
+    Image.new("RGBA", (32, 32), (255, 0, 0, 255)).save(pack_dir / "item_icons" / "snack.png")
+    Image.new("RGBA", (64, 64), (255, 0, 0, 255)).save(pack_dir / "preview" / "contact-sheet.png")
+    _write_json(
+        pack_dir / "character.json",
+        {
+            "character_id": character_id,
+            "name": "澄光",
+            "title": "桌面回声同伴",
+            "description": "一个原创桌面伴侣。",
+            "spritesheet": spritesheet,
+            "motion_manifest": "motion_manifest.json",
+            "default_mode": "Calm",
+            "modes": ["Calm"],
+            "mode_descriptions": {"Calm": "安静回应。"},
+            "motion_labels": {"Default": "待机"},
+        },
+    )
+    _write_json(
+        pack_dir / "dialogue_style.json",
+        {
+            "tone": "安静、清晰",
+            "keywords": ["回声", "桌面"],
+            "fallback_style": "短句回应",
+        },
+    )
+    _write_json(
+        pack_dir / "motion_manifest.json",
+        {
+            "sheet_columns": 8,
+            "sheet_rows": 9,
+            "frame_width": 192,
+            "frame_height": 208,
+            "motions": {"Default": {"row": 0, "frame_count": 1, "fps": 4}},
+        },
+    )
+    _write_json(
+        pack_dir / "shop_items.json",
+        [
+            {
+                "item_id": "snack",
+                "name": "小点心",
+                "category": "food",
+                "icon": icon_path,
+                "price": 1,
+                "effects": {"mood": 1},
+            }
+        ],
+    )
+    return pack_dir
+
+
+def test_character_registry_lists_valid_packs_and_excludes_invalid_ones(tmp_path):
+    _write_minimal_pack(tmp_path, "custom_character")
+    invalid_dir = tmp_path / "broken_pack"
+    invalid_dir.mkdir()
+    _write_json(invalid_dir / "character.json", {"character_id": "broken_pack"})
+
+    registry = CharacterRegistry(builtin_root=tmp_path)
+
+    assert [pack.character_id for pack in registry.list_available_packs()] == ["custom_character"]
+    assert registry.get_available_pack("custom_character").name == "澄光"
+    assert registry.get_available_pack("custom_character").source == "builtin"
+
+    reports = {report.character_id: report for report in registry.validate_all()}
+    assert reports["custom_character"].ok
+    assert not reports["broken_pack"].ok
+    assert any("missing required file" in error for error in reports["broken_pack"].errors)
+
+
+def test_validate_character_pack_rejects_icon_paths_outside_pack(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path, icon_path="../outside.png")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("must stay inside item_icons" in error for error in report.errors)
+
+
+def test_validate_character_pack_rejects_spritesheet_paths_outside_pack(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path, spritesheet="../outside.png")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("spritesheet path must be a safe relative filename" in error for error in report.errors)
+
+
+def test_character_registry_can_merge_builtin_and_user_packs(tmp_path):
+    builtin_root = tmp_path / "builtin"
+    user_root = tmp_path / "user"
+    _write_minimal_pack(builtin_root, "builtin_character")
+    _write_minimal_pack(user_root, "user_character")
+
+    registry = CharacterRegistry(builtin_root=builtin_root, user_root=user_root)
+
+    packs = {pack.character_id: pack for pack in registry.list_available_packs()}
+    assert packs["builtin_character"].source == "builtin"
+    assert packs["user_character"].source == "user"
+    assert packs["user_character"].preview_path.name == "contact-sheet.png"

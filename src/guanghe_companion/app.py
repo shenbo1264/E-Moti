@@ -38,6 +38,7 @@ from .ai_expressor import build_expression_prompt_preview
 from .capability_runtime import CapabilityRuntime
 from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
 from .capability_settings import CapabilitySettings
+from .character_registry import CharacterPackSummary, CharacterRegistry
 from .controller import CompanionController
 from .dialogue import DialogueRequest
 from .desktop_shell import DesktopShell
@@ -48,7 +49,7 @@ from .expression_settings import (
     provider_default_model,
 )
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
-from .motion import MotionAnimator, load_default_motion_catalog
+from .motion import MotionAnimator, load_motion_catalog_from_dir
 from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
 from .storage import DEMO_SAVE_PATH
@@ -298,7 +299,16 @@ class CompanionWindow(QMainWindow):
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
         self.snapshot_renderer = SnapshotRenderer()
-        self.motion_catalog = load_default_motion_catalog()
+        user_pack_root = (
+            self.controller.user_data_root / "character_packs"
+            if self.controller.user_data_root is not None
+            else None
+        )
+        self.character_registry = CharacterRegistry(
+            builtin_root=self.controller.resources.asset_dir.parent,
+            user_root=user_pack_root,
+        )
+        self.motion_catalog = load_motion_catalog_from_dir(self.controller.resources.asset_dir)
         self.motion_animator = MotionAnimator(self.motion_catalog)
         self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
         self.desktop_shell = DesktopShell(self, dock_threshold_px=DESKTOP_DOCK_THRESHOLD_PX)
@@ -472,6 +482,9 @@ class CompanionWindow(QMainWindow):
         lower.addWidget(self.inventory_card, stretch=1)
         self.content_stack.addWidget(inventory_page)
 
+        self.character_library_page = self._build_character_library_page()
+        self.content_stack.addWidget(self.character_library_page)
+
         self.capability_settings_panel = CapabilitySettingsPanel(self.controller.get_capability_settings())
         self.capability_settings_panel.saveRequested.connect(self._save_capability_settings_from_ui)
         self.capability_settings_panel.screenObservationRequested.connect(self._run_screen_observation)
@@ -611,7 +624,7 @@ class CompanionWindow(QMainWindow):
         self.navigation_hint_label.setObjectName("NavigationHint")
         layout.addWidget(self.navigation_hint_label)
 
-        for index, label in enumerate(("总览", "互动", "背包", "感知与搜索", "隐私", "LLM表达", "表达规则", "语音")):
+        for index, label in enumerate(("总览", "互动", "背包", "角色库", "感知与搜索", "隐私", "LLM表达", "表达规则", "语音")):
             button = QPushButton(label)
             button.setObjectName("NavigationButton")
             button.setCheckable(True)
@@ -623,11 +636,153 @@ class CompanionWindow(QMainWindow):
         layout.addStretch(1)
         return frame
 
+    def _build_character_library_page(self) -> QWidget:
+        page = QWidget()
+        layout = QHBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+        self.control_panel_page_layouts.append(layout)
+
+        list_box = QGroupBox("角色库")
+        list_layout = QVBoxLayout(list_box)
+        self.character_list = QListWidget()
+        self.character_list.currentItemChanged.connect(lambda current, previous=None: self._update_character_detail())
+        list_layout.addWidget(self.character_list)
+        self.character_refresh_button = QPushButton("刷新角色包")
+        self.character_refresh_button.clicked.connect(self._refresh_character_library)
+        list_layout.addWidget(self.character_refresh_button)
+        layout.addWidget(list_box, stretch=2)
+
+        detail_box = QGroupBox("角色详情")
+        detail_layout = QVBoxLayout(detail_box)
+        detail_layout.setSpacing(10)
+        self.character_preview_label = QLabel()
+        self.character_preview_label.setFixedHeight(148)
+        self.character_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.character_preview_label.setStyleSheet(
+            "QLabel { border: 1px solid #cbdde5; border-radius: 8px; background: #f7fbfd; }"
+        )
+        self.character_detail_label = QLabel("选择一个角色包。")
+        self.character_detail_label.setWordWrap(True)
+        self.character_detail_label.setObjectName("CharacterDetailLabel")
+        self.character_switch_button = QPushButton("切换到此角色")
+        self.character_switch_button.clicked.connect(self._handle_character_switch)
+        self.character_import_button = QPushButton("导入角色包")
+        self.character_import_button.setEnabled(False)
+        self.character_import_button.setToolTip("P4：本地导入角色包，先校验再启用。")
+        self.character_generate_button = QPushButton("生成新角色")
+        self.character_generate_button.setEnabled(False)
+        self.character_generate_button.setToolTip("P5：AI 生成工作流输出到临时目录，人工 QA 后导入。")
+        detail_layout.addWidget(self.character_preview_label)
+        detail_layout.addWidget(self.character_detail_label)
+        detail_layout.addWidget(self.character_switch_button)
+        controls = QHBoxLayout()
+        controls.addWidget(self.character_import_button)
+        controls.addWidget(self.character_generate_button)
+        detail_layout.addLayout(controls)
+        detail_layout.addStretch(1)
+        layout.addWidget(detail_box, stretch=3)
+
+        self._character_pack_summaries: dict[str, CharacterPackSummary] = {}
+        self._refresh_character_library()
+        return page
+
     def _select_navigation_button(self, selected_index: int) -> None:
         for index, button in enumerate(self.navigation_buttons):
             button.setChecked(index == selected_index)
         if hasattr(self, "content_stack"):
             self.content_stack.setCurrentIndex(selected_index)
+
+    def _refresh_character_library(self) -> None:
+        if not hasattr(self, "character_list"):
+            return
+        current_id = self._selected_character_id() or self.controller.state.character_id
+        self.character_list.clear()
+        self._character_pack_summaries = {
+            pack.character_id: pack for pack in self.character_registry.list_available_packs()
+        }
+        for pack in self._character_pack_summaries.values():
+            item = QListWidgetItem(f"{pack.name} | {pack.title}")
+            item.setData(Qt.ItemDataRole.UserRole, pack.character_id)
+            if pack.preview_path.is_file():
+                item.setIcon(QIcon(str(pack.preview_path)))
+            self.character_list.addItem(item)
+            if pack.character_id == current_id:
+                self.character_list.setCurrentItem(item)
+        if self.character_list.currentItem() is None and self.character_list.count():
+            self.character_list.setCurrentRow(0)
+        self._update_character_detail()
+
+    def _selected_character_id(self) -> str:
+        if not hasattr(self, "character_list"):
+            return ""
+        item = self.character_list.currentItem()
+        return str(item.data(Qt.ItemDataRole.UserRole) or "") if item is not None else ""
+
+    def _update_character_detail(self) -> None:
+        character_id = self._selected_character_id()
+        pack = self._character_pack_summaries.get(character_id)
+        if pack is None:
+            self.character_detail_label.setText("没有可用角色包。")
+            self.character_preview_label.clear()
+            self.character_switch_button.setEnabled(False)
+            return
+        current = character_id == self.controller.state.character_id
+        self.character_detail_label.setText(
+            f"{pack.name}\n{pack.title}\n\n{pack.description}\n\n"
+            "切换角色会切换外观、语气、商店主题和独立记忆，不改写其他角色会话。"
+        )
+        if pack.preview_path.is_file():
+            preview = QPixmap(str(pack.preview_path))
+            self.character_preview_label.setPixmap(
+                preview.scaled(
+                    220,
+                    132,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
+        else:
+            self.character_preview_label.setText("暂无预览")
+        self.character_switch_button.setEnabled(not current)
+        self.character_switch_button.setText("当前角色" if current else "切换到此角色")
+
+    def _handle_character_switch(self) -> None:
+        character_id = self._selected_character_id()
+        if not character_id:
+            self._show_message("请先选择一个角色。")
+            return
+        try:
+            pack = self._character_pack_summaries.get(character_id)
+            snapshot = self.controller.switch_character(
+                character_id,
+                pack_dir=pack.path if pack is not None else None,
+                include_ai_expression=False,
+            )
+            self._reload_character_assets()
+            self._base_expression_context_provider = self.controller.expression_context_provider
+            self._sync_linked_character_windows(snapshot)
+            self._apply_snapshot(snapshot)
+            self._refresh_character_library()
+        except (KeyError, ValueError, OSError) as exc:
+            self._show_message(str(exc))
+
+    def _sync_linked_character_windows(self, snapshot: dict[str, object]) -> None:
+        linked = []
+        if self.desktop_pet_window is not None and self.desktop_pet_window is not self:
+            linked.append(self.desktop_pet_window)
+        if self._return_target_window is not None and self._return_target_window is not self:
+            linked.append(self._return_target_window)
+        for window in linked:
+            window._reload_character_assets()
+            window._base_expression_context_provider = window.controller.expression_context_provider
+            window._apply_snapshot(snapshot)
+            window._refresh_character_library()
+
+    def _reload_character_assets(self) -> None:
+        self.motion_catalog = load_motion_catalog_from_dir(self.controller.resources.asset_dir)
+        self.motion_animator = MotionAnimator(self.motion_catalog)
+        self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
 
     def _build_launcher_card(self) -> QFrame:
         frame = QFrame()
@@ -1456,6 +1611,7 @@ class CompanionWindow(QMainWindow):
             f"动作：{snapshot['motion_caption']}\n\n"
             f"{snapshot['character_description']}"
         )
+        self.dialogue_input.setPlaceholderText(f"和{snapshot['character_name']}说点什么")
         self.mode_label.setText(f"当前模式：{snapshot['mode']}")
         self.resources_label.setText(
             f"金币 {snapshot['coins']} / 等级 {snapshot['level']} / 经验 {snapshot['exp']}"

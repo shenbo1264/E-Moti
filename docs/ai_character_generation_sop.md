@@ -410,6 +410,48 @@ assets/companion/<character_id>/provenance.md
 
 ## 10. 后续实现 backlog
 
+### 2026-06-05 实现状态
+
+已完成第一版角色个性化运行时地基：
+
+- `src/guanghe_companion/character_registry.py`
+  - 扫描内置角色包和用户角色包目录。
+  - 内置目录来自 `assets/companion/*`；用户目录为应用数据目录下的 `character_packs/*`。
+  - 校验 `character.json`、`dialogue_style.json`、`motion_manifest.json`、`shop_items.json`、图集尺寸和图标路径。
+  - 坏包不会进入角色库 UI。
+
+- `src/guanghe_companion/character_session.py`
+  - 为每个 `character_id` 生成独立会话路径。
+  - 存档、对话历史、长期记忆和表达设置按角色隔离。
+
+- `src/guanghe_companion/controller.py`
+  - 支持用非默认 `character_id` 启动。
+  - 支持 `switch_character()` 切换角色会话。
+  - 商店和库存已改为当前角色的 item catalog，不再硬读全局默认商店。
+
+- `src/guanghe_companion/app.py`
+  - 控制中心新增“角色库”页。
+  - 角色库可列出内置角色包和用户 `character_packs` 目录中的已校验角色包。
+  - 切换角色后会刷新角色说明、输入框称呼、商店、背包、motion catalog 和 spritesheet。
+  - 已打开桌宠窗口时，会同步刷新桌宠窗口角色资源。
+
+- `src/guanghe_companion/character_inspiration.py`
+  - 支持基于联网搜索结果生成“原创灵感 brief”。
+  - 来源只作为抽象特征，不直接复制角色名、台词、立绘或专有设定。
+  - 本地二创模式只返回授权策略，不下载、不内置、不分发受保护素材。
+
+- `src/guanghe_companion/character_generation_workflow.py`
+  - 根据 brief 生成 draft 角色包目录。
+  - 输出 JSON 草稿、art prompts、provenance 和 QA checklist。
+  - 不生成正式 `spritesheet.png`，不写入 `assets/companion/`，必须人工 QA 后再导入。
+
+仍未完成：
+
+- 角色包从 draft 自动导入到用户角色包目录。
+- UI 中直接调用“灵感导入器”和“AI 资产生成工作流”。
+- 图像生成模型、ComfyUI 或其他美术生成后端接入。
+- 角色包 license/provenance 的完整 UI 展示与导入确认流程。
+
 为了真正支持用户个性化选择，后续建议按包实现：
 
 1. 角色包 schema 校验器

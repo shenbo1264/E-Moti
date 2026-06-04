@@ -6,7 +6,7 @@ from pathlib import Path
 
 from PySide6.QtCore import QRect
 
-from .character_pack import ASSETS_ROOT, DEFAULT_CHARACTER_ID, load_character_pack
+from .character_pack import ASSETS_ROOT, DEFAULT_CHARACTER_ID, load_character_pack, load_character_pack_from_dir
 
 
 @dataclass(frozen=True, slots=True)
@@ -66,6 +66,12 @@ def load_default_motion_catalog() -> MotionCatalog:
 def load_motion_catalog(character_id: str) -> MotionCatalog:
     pack = load_character_pack(character_id)
     asset_dir = ASSETS_ROOT / character_id
+    return load_motion_catalog_from_dir(asset_dir, pack=pack)
+
+
+def load_motion_catalog_from_dir(asset_dir: Path | str, pack=None) -> MotionCatalog:
+    asset_dir = Path(asset_dir)
+    pack = pack or load_character_pack_from_dir(asset_dir)
     manifest_path = asset_dir / "motion_manifest.json"
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     motions = {

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import asdict
 from dataclasses import dataclass
 from dataclasses import fields
@@ -27,6 +28,7 @@ def load_state(path: Path | str = DEFAULT_SAVE_PATH) -> CompanionState | None:
 @dataclass(frozen=True, slots=True)
 class SaveManager:
     path: Path | str = DEFAULT_SAVE_PATH
+    inventory_item_ids: Iterable[str] | None = None
 
     def save(self, state: CompanionState) -> None:
         target = Path(self.path)
@@ -46,12 +48,16 @@ class SaveManager:
         if not isinstance(payload, dict):
             return None
         try:
-            return CompanionState(**_migrate_payload(payload))
+            return CompanionState(**_migrate_payload(payload, item_ids=self.inventory_item_ids))
         except (TypeError, ValueError):
             return None
 
 
-def _migrate_payload(payload: dict[str, object]) -> dict[str, object]:
+def _migrate_payload(
+    payload: dict[str, object],
+    *,
+    item_ids: Iterable[str] | None = None,
+) -> dict[str, object]:
     defaults = asdict(create_initial_state(now=0))
     state_fields = {field.name for field in fields(CompanionState)}
     migrated = {
@@ -61,7 +67,7 @@ def _migrate_payload(payload: dict[str, object]) -> dict[str, object]:
     }
     migrated["schema_version"] = _normalize_schema_version(payload.get("schema_version"))
     migrated["memory_log"] = _normalize_memory_log(payload.get("memory_log"))
-    migrated["inventory"] = _normalize_inventory(payload.get("inventory"))
+    migrated["inventory"] = _normalize_inventory(payload.get("inventory"), item_ids=item_ids)
     return migrated
 
 
@@ -79,8 +85,9 @@ def _normalize_memory_log(value: object) -> list[dict[str, object]]:
     return [dict(entry) for entry in value if isinstance(entry, dict)]
 
 
-def _normalize_inventory(value: object) -> dict[str, int]:
-    inventory = {item_id: 0 for item_id in load_default_shop_items()}
+def _normalize_inventory(value: object, *, item_ids: Iterable[str] | None = None) -> dict[str, int]:
+    inventory_keys = tuple(item_ids) if item_ids is not None else tuple(load_default_shop_items())
+    inventory = {item_id: 0 for item_id in inventory_keys}
     if not isinstance(value, dict):
         return inventory
     for item_id in inventory:

@@ -11,7 +11,9 @@ from .ai_expressor import (
     build_default_ai_expressor,
 )
 from .capability_settings import CapabilitySettings, CapabilitySettingsStore
-from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
+from .character_pack import DEFAULT_CHARACTER_ID, resolve_motion_caption
+from .character_resources import CharacterResources, load_character_resources, load_character_resources_from_dir
+from .character_session import build_character_session_paths
 from .dialogue import DialogueRequest
 from .dialogue_history import (
     DialogueHistoryEntry,
@@ -21,7 +23,7 @@ from .dialogue_history import (
     replay_latest_assistant,
     revert_latest_exchange,
 )
-from .engine import BUYABLE_ITEMS, TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
+from .engine import TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
 from .events import (
     ActionDomainEventRequest,
     CompanionEvent,
@@ -122,20 +124,45 @@ class CompanionController:
         capability_settings_store: CompanionCapabilitySettingsStore | None = None,
         long_term_memory_path: Path | None = None,
         long_term_memory_store: CompanionLongTermMemoryStore | None = None,
+        character_id: str = DEFAULT_CHARACTER_ID,
+        character_resources: CharacterResources | None = None,
+        user_data_root: Path | str | None = None,
     ) -> None:
-        self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
-        self.save_manager = save_manager or SaveManager(self.save_path)
+        self._user_data_root = Path(user_data_root) if user_data_root is not None else None
+        session_paths = (
+            build_character_session_paths(character_id, user_data_root=self._user_data_root)
+            if self._user_data_root is not None
+            else None
+        )
+        self.resources = character_resources or load_character_resources(character_id)
+        self.character_pack = self.resources.character_pack
+        self.shop_items = self.resources.shop_items
+        self.save_path = Path(save_path) if save_path is not None else (
+            session_paths.save_path if session_paths is not None else DEFAULT_SAVE_PATH
+        )
+        self.save_manager = save_manager or SaveManager(
+            self.save_path,
+            inventory_item_ids=tuple(self.shop_items),
+        )
         self.dialogue_history_path = (
             Path(dialogue_history_path)
             if dialogue_history_path is not None
-            else _dialogue_history_path_for_save_path(self.save_path)
+            else (
+                session_paths.dialogue_history_path
+                if session_paths is not None
+                else _dialogue_history_path_for_save_path(self.save_path)
+            )
         )
         self.dialogue_history_store = dialogue_history_store or DialogueHistoryStore(self.dialogue_history_path)
         self.dialogue_history = self.dialogue_history_store.load()
         self.expression_settings_path = (
             Path(expression_settings_path)
             if expression_settings_path is not None
-            else _expression_settings_path_for_save_path(self.save_path)
+            else (
+                session_paths.expression_settings_path
+                if session_paths is not None
+                else _expression_settings_path_for_save_path(self.save_path)
+            )
         )
         self.expression_settings_store = expression_settings_store or ExpressionSettingsStore(
             self.expression_settings_path
@@ -153,10 +180,17 @@ class CompanionController:
         self.long_term_memory_path = (
             Path(long_term_memory_path)
             if long_term_memory_path is not None
-            else _long_term_memory_path_for_save_path(self.save_path)
+            else (
+                session_paths.long_term_memory_path
+                if session_paths is not None
+                else _long_term_memory_path_for_save_path(self.save_path)
+            )
         )
         self._long_term_memory_enabled = (
-            auto_load or long_term_memory_path is not None or long_term_memory_store is not None
+            auto_load
+            or session_paths is not None
+            or long_term_memory_path is not None
+            or long_term_memory_store is not None
         )
         self.long_term_memory_store = long_term_memory_store or LongTermMemoryStore(self.long_term_memory_path)
         self.long_term_memory_service = LongTermMemoryService(
@@ -164,7 +198,6 @@ class CompanionController:
         )
         self._perception_summary = ""
         self._tool_results: list[dict[str, object]] = []
-        self.character_pack = load_default_character_pack()
         self.ai_expressor = ai_expressor or build_default_ai_expressor(
             settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
         )
@@ -173,7 +206,14 @@ class CompanionController:
             [CharacterProfileExpressionContextProvider(self.character_pack)]
         )
         loaded_state = self.save_manager.load() if auto_load else None
-        self.state = loaded_state or create_initial_state(now=0)
+        if loaded_state is not None and loaded_state.character_id != self.character_pack.character_id:
+            loaded_state = None
+        self.state = loaded_state or create_initial_state(
+            now=0,
+            character_id=self.character_pack.character_id,
+            character_name=self.character_pack.name,
+            buyable_items=self.shop_items,
+        )
         if self.state.character_id == self.character_pack.character_id:
             self.state = replace(self.state, character_name=self.character_pack.name)
         self.now = logical_time_from_state(self.state) if loaded_state is not None else 0
@@ -209,14 +249,23 @@ class CompanionController:
         finally:
             self._closed = True
 
+    @property
+    def user_data_root(self) -> Path | None:
+        return self._user_data_root
+
     def reset_demo_state(self, *, include_ai_expression: bool = True) -> dict[str, object]:
-        self.state = create_initial_state(now=0)
+        self.state = create_initial_state(
+            now=0,
+            character_id=self.character_pack.character_id,
+            character_name=self.character_pack.name,
+            buyable_items=self.shop_items,
+        )
         if self.state.character_id == self.character_pack.character_id:
             self.state = replace(self.state, character_name=self.character_pack.name)
         self.now = 0
         self.tick_count = 0
         self.last_motion = "Default"
-        self.last_feedback = "演示状态已重置。星汐回到初识、空背包和 20 coins。"
+        self.last_feedback = f"演示状态已重置。{self.character_pack.name} 回到初识、空背包和 20 coins。"
         self.last_delta_text = "演示 seed 已重置"
         self.last_allowed = True
         self.last_item_feedback_icon = None
@@ -258,6 +307,73 @@ class CompanionController:
             relationship_decorations=self.character_pack.relationship_decorations,
         ).build_input()
         return SnapshotBuilder(builder_input).build()
+
+    def switch_character(
+        self,
+        character_id: str,
+        *,
+        pack_dir: Path | str | None = None,
+        include_ai_expression: bool = False,
+    ) -> dict[str, object]:
+        if character_id == self.character_pack.character_id:
+            return self.get_snapshot()
+
+        resources = (
+            load_character_resources_from_dir(pack_dir)
+            if pack_dir is not None
+            else load_character_resources(character_id)
+        )
+        if resources.character_pack.character_id != character_id:
+            raise ValueError("character pack id does not match selected character")
+        session_paths = build_character_session_paths(character_id, user_data_root=self._user_data_root)
+        self.resources = resources
+        self.character_pack = resources.character_pack
+        self.shop_items = resources.shop_items
+        self.save_path = session_paths.save_path
+        self.save_manager = SaveManager(self.save_path, inventory_item_ids=tuple(self.shop_items))
+        self.dialogue_history_path = session_paths.dialogue_history_path
+        self.dialogue_history_store = DialogueHistoryStore(self.dialogue_history_path)
+        self.dialogue_history = self.dialogue_history_store.load()
+        self.expression_settings_path = session_paths.expression_settings_path
+        self.expression_settings_store = ExpressionSettingsStore(self.expression_settings_path)
+        self.expression_settings = self.expression_settings_store.load()
+        self.long_term_memory_path = session_paths.long_term_memory_path
+        self._long_term_memory_enabled = True
+        self.long_term_memory_store = LongTermMemoryStore(self.long_term_memory_path)
+        self.long_term_memory_service = LongTermMemoryService(self.long_term_memory_store.load())
+        self.expression_context_provider = ExpressionContextChain(
+            [CharacterProfileExpressionContextProvider(self.character_pack)]
+        )
+        self._replace_ai_expressor(
+            build_default_ai_expressor(
+                settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
+            )
+        )
+        loaded_state = self.save_manager.load()
+        if loaded_state is not None and loaded_state.character_id != self.character_pack.character_id:
+            loaded_state = None
+        self.state = loaded_state or create_initial_state(
+            now=0,
+            character_id=self.character_pack.character_id,
+            character_name=self.character_pack.name,
+            buyable_items=self.shop_items,
+        )
+        if self.state.character_id == self.character_pack.character_id:
+            self.state = replace(self.state, character_name=self.character_pack.name)
+        self.now = logical_time_from_state(self.state) if loaded_state is not None else 0
+        self.tick_count = 0
+        self.last_motion = "Default"
+        self.last_feedback = f"已切换到 {self.character_pack.name}。"
+        self.last_delta_text = "角色会话已切换"
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_proactive_feedback = None
+        self._perception_summary = ""
+        self._tool_results = []
+        self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
+        if loaded_state is None:
+            self._persist()
+        return self.get_snapshot()
 
     def perform_action(self, action_id: str, *, include_ai_expression: bool = True) -> dict[str, object]:
         return self.perform_action_request(
@@ -459,15 +575,18 @@ class CompanionController:
             include_ai_expression=include_ai_expression,
         )
 
+    def purchase_shop_item(self, item_id: str, *, include_ai_expression: bool = True) -> dict[str, object]:
+        return self.buy_selected_item(item_id, include_ai_expression=include_ai_expression)
+
     def buy_item_request(
         self,
         request: ShopPurchaseRequest,
         *,
         include_ai_expression: bool = True,
     ) -> dict[str, object]:
-        self.state = ShopService(self.state, self._item_icon_path).purchase(request)
+        self.state = ShopService(self.state, self._item_icon_path, self.shop_items).purchase(request)
         item_id = request.item_id
-        item = BUYABLE_ITEMS[item_id]
+        item = self.shop_items[item_id]
         self.last_motion = "Shop"
         self.last_feedback = f"已购买：{item.name}。放进背包里了。"
         self.last_delta_text = f"coins -{item.price}"
@@ -505,6 +624,15 @@ class CompanionController:
             include_ai_expression=include_ai_expression,
         )
 
+    def use_inventory_item(
+        self,
+        item_id: str,
+        usage: str,
+        *,
+        include_ai_expression: bool = True,
+    ) -> dict[str, object]:
+        return self.use_selected_item(item_id, usage, include_ai_expression=include_ai_expression)
+
     def use_inventory_request(
         self,
         request: InventoryUseRequest,
@@ -514,10 +642,10 @@ class CompanionController:
         self.now += 5
         item_id = request.item_id
         usage = request.usage
-        item = BUYABLE_ITEMS[item_id]
+        item = self.shop_items[item_id]
         previous_unlocks = set(self.state.unlocks)
         try:
-            self.state = InventoryService(self.state, self._item_icon_path).use(request, now=self.now)
+            self.state = InventoryService(self.state, self._item_icon_path, self.shop_items).use(request, now=self.now)
         except ValueError as exc:
             self.last_motion = "SwitchDown"
             self.last_feedback = str(exc)
@@ -554,7 +682,7 @@ class CompanionController:
         unlock_feedback = self._relationship_unlock_feedback(new_unlocks)
         if unlock_feedback:
             self.last_feedback = f"{self.last_feedback} {unlock_feedback}"
-        self.last_delta_text = format_item_effect(item_id, usage)
+        self.last_delta_text = format_item_effect(item_id, usage, self.shop_items)
         self.last_allowed = True
         self.last_item_feedback_icon = self._item_icon_path(item)
         self.last_proactive_feedback = None
@@ -712,10 +840,16 @@ class CompanionController:
         return [action.to_legacy_dict() for action in CompanionActionLayer(self.state).available_actions()]
 
     def _build_shop_items(self) -> list[dict[str, object]]:
-        return [item.to_legacy_dict() for item in ShopService(self.state, self._item_icon_path).shop_items()]
+        return [
+            item.to_legacy_dict()
+            for item in ShopService(self.state, self._item_icon_path, self.shop_items).shop_items()
+        ]
 
     def _build_inventory_items(self) -> list[dict[str, object]]:
-        return [item.to_legacy_dict() for item in InventoryService(self.state, self._item_icon_path).inventory_items()]
+        return [
+            item.to_legacy_dict()
+            for item in InventoryService(self.state, self._item_icon_path, self.shop_items).inventory_items()
+        ]
 
     def _expression_context(self) -> dict[str, object]:
         return RuntimeExpressionContextService(
@@ -729,7 +863,7 @@ class CompanionController:
     def _item_icon_path(self, item) -> str:
         if not item.icon:
             return ""
-        return str(ASSETS_ROOT / self.character_pack.character_id / item.icon)
+        return str(self.resources.asset_dir / item.icon)
 
     def _remember(self, kind: str, summary: str, motion: str, item_id: str | None = None) -> None:
         MemoryLogService(self.state.memory_log).append(

@@ -1,4 +1,7 @@
 import time
+import json
+
+from PIL import Image
 
 
 def make_window(monkeypatch, tmp_path):
@@ -21,6 +24,79 @@ def make_controller(tmp_path, ai_expressor=None):
     from guanghe_companion.controller import CompanionController
 
     return CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=ai_expressor)
+
+
+def write_ui_character_pack(root, character_id, *, name, title):
+    pack_dir = root / character_id
+    (pack_dir / "item_icons").mkdir(parents=True)
+    (pack_dir / "preview").mkdir()
+    Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
+    Image.new("RGBA", (32, 32), (40, 80, 120, 255)).save(pack_dir / "item_icons" / "snack.png")
+    Image.new("RGBA", (64, 64), (40, 80, 120, 255)).save(pack_dir / "preview" / "contact-sheet.png")
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": character_id,
+                "name": name,
+                "title": title,
+                "description": f"{name} 是一个原创桌面伴侣。",
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "安静回应。"},
+                "motion_labels": {"Default": "安静待机", "Shop": "补给", "Eat": "收下点心"},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "motion_manifest.json").write_text(
+        json.dumps(
+            {
+                "sheet_columns": 8,
+                "sheet_rows": 9,
+                "frame_width": 192,
+                "frame_height": 208,
+                "motions": {"Default": {"row": 0, "frame_count": 1, "fps": 4}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "dialogue_style.json").write_text(
+        json.dumps(
+            {"tone": "安静、清晰", "keywords": ["桌面", "陪伴"], "fallback_style": "短句回应"},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "shop_items.json").write_text(
+        json.dumps(
+            [
+                {
+                    "item_id": "snack",
+                    "name": "小点心",
+                    "category": "food",
+                    "icon": "item_icons/snack.png",
+                    "price": 1,
+                    "effects": {"mood": 1},
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return pack_dir
+
+
+def patch_ui_character_assets(monkeypatch, root):
+    import guanghe_companion.character_pack as character_pack_module
+    import guanghe_companion.motion as motion_module
+    import guanghe_companion.shop_items as shop_items_module
+
+    monkeypatch.setattr(character_pack_module, "ASSETS_ROOT", root)
+    monkeypatch.setattr(motion_module, "ASSETS_ROOT", root)
+    monkeypatch.setattr(shop_items_module, "ASSETS_ROOT", root)
 
 
 class FakeSignal:
@@ -215,6 +291,7 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
         "总览",
         "互动",
         "背包",
+        "角色库",
         "感知与搜索",
         "隐私",
         "LLM表达",
@@ -244,16 +321,177 @@ def test_control_panel_navigation_switches_right_hand_pages(monkeypatch, tmp_pat
     app.processEvents()
 
     assert window.content_stack.currentIndex() == 3
-    assert window.perception_search_page.isVisibleTo(window)
-    assert not window.shop_card.isVisibleTo(window)
+    assert window.character_library_page.isVisibleTo(window)
 
     window.navigation_buttons[4].click()
     app.processEvents()
 
     assert window.content_stack.currentIndex() == 4
+    assert window.perception_search_page.isVisibleTo(window)
+    assert not window.shop_card.isVisibleTo(window)
+
+    window.navigation_buttons[5].click()
+    app.processEvents()
+
+    assert window.content_stack.currentIndex() == 5
     assert window.perception_card.isVisibleTo(window)
     assert not window.shop_card.isVisibleTo(window)
 
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    write_ui_character_pack(assets_root, "custom_character", name="澄光", title="桌面回声同伴")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    assert window.character_list.count() == 2
+    assert [window.character_list.item(index).text() for index in range(window.character_list.count())] == [
+        "澄光 | 桌面回声同伴",
+        "星汐 | 桌面频率同伴",
+    ]
+    window.character_list.setCurrentRow(0)
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert window.controller.state.character_id == "custom_character"
+    assert "澄光" in window.character_label.text()
+    assert window.dialogue_input.placeholderText() == "和澄光说点什么"
+    assert not window.spritesheet.isNull()
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_switches_user_character_pack(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    monkeypatch.setenv("E_MOTI_USER_DATA_DIR", str(tmp_path / "user-data"))
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    write_ui_character_pack(
+        tmp_path / "user-data" / "character_packs",
+        "custom_character",
+        name="澄光",
+        title="桌面回声同伴",
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from PySide6.QtCore import Qt
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window._show_message = lambda message: None
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "custom_character":
+            window.character_list.setCurrentItem(item)
+            break
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert window.controller.state.character_id == "custom_character"
+    assert window.controller.resources.asset_dir == tmp_path / "user-data" / "character_packs" / "custom_character"
+    assert "澄光" in window.character_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_window_started_with_custom_character_loads_matching_motion_assets(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "custom_character", name="澄光", title="桌面回声同伴")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="custom_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    assert window.motion_catalog.sheet_path == assets_root / "custom_character" / "spritesheet.png"
+    assert "澄光" in window.character_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_switch_updates_open_desktop_pet_window(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    write_ui_character_pack(assets_root, "custom_character", name="澄光", title="桌面回声同伴")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+    window.enter_desktop_mode_button.click()
+    app.processEvents()
+    pet_window = window.desktop_pet_window
+
+    window.navigation_buttons[3].click()
+    window.character_list.setCurrentRow(0)
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert pet_window is not None
+    assert pet_window.controller.state.character_id == "custom_character"
+    assert pet_window.motion_catalog.sheet_path == assets_root / "custom_character" / "spritesheet.png"
+    assert "澄光" in pet_window.character_label.text()
+
+    pet_window.close()
     window.close()
     app.processEvents()
 
@@ -1219,7 +1457,7 @@ def test_llm_expression_cannot_write_player_alias_or_relationship_unlocks(monkey
 def test_window_shows_screen_perception_disabled_by_default(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
-    window.navigation_buttons[4].click()
+    window.navigation_buttons[5].click()
     app.processEvents()
 
     assert window.perception_card.isVisibleTo(window)
@@ -1441,7 +1679,7 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[5].click()
+    window.navigation_buttons[6].click()
     app.processEvents()
 
     assert window.expression_settings_card.isVisibleTo(window)
@@ -1526,7 +1764,7 @@ def test_expression_settings_test_button_saves_and_tests_llm_without_mutating_st
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[5].click()
+    window.navigation_buttons[6].click()
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
@@ -1569,7 +1807,7 @@ def test_expression_settings_test_button_shows_diagnostic_stage_and_reason(monke
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[5].click()
+    window.navigation_buttons[6].click()
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
@@ -1629,7 +1867,7 @@ def test_expression_settings_fetches_provider_model_list_without_saving_or_mutat
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[5].click()
+    window.navigation_buttons[6].click()
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
@@ -1683,7 +1921,7 @@ def test_expression_rule_preview_page_is_readonly_and_copyable(monkeypatch, tmp_
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
-    window.navigation_buttons[6].click()
+    window.navigation_buttons[7].click()
     app.processEvents()
 
     preview = window.expression_rule_preview_text.toPlainText()
@@ -1720,7 +1958,7 @@ def test_voice_settings_page_marks_tts_and_asr_disabled(monkeypatch, tmp_path):
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
-    window.navigation_buttons[7].click()
+    window.navigation_buttons[8].click()
     app.processEvents()
 
     assert window.voice_settings_card.isVisibleTo(window)

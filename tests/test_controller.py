@@ -1,6 +1,10 @@
 from dataclasses import replace
+import json
 import time
 
+import guanghe_companion.character_pack as character_pack_module
+import guanghe_companion.motion as motion_module
+import guanghe_companion.shop_items as shop_items_module
 from guanghe_companion.actions import CompanionActionRequest
 from guanghe_companion.ai_expressor import ExpressionRequest
 from guanghe_companion.controller import CompanionController
@@ -9,6 +13,70 @@ from guanghe_companion.engine import create_initial_state
 from guanghe_companion.events import CompanionEvent
 from guanghe_companion.snapshot import CompanionSnapshot
 from guanghe_companion.storage import save_state
+
+
+def _write_controller_character_pack(root, character_id="custom_character"):
+    pack_dir = root / character_id
+    (pack_dir / "item_icons").mkdir(parents=True)
+    (pack_dir / "spritesheet.png").write_bytes(b"not-used-by-controller-tests")
+    (pack_dir / "item_icons" / "moon_cake.png").write_bytes(b"not-used-by-controller-tests")
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": character_id,
+                "name": "澄光",
+                "title": "桌面回声同伴",
+                "description": "一个原创桌面伴侣。",
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "安静回应。"},
+                "motion_labels": {
+                    "Default": "安静待机",
+                    "Eat": "收下点心",
+                    "Shop": "补给清单",
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "motion_manifest.json").write_text(
+        json.dumps(
+            {
+                "sheet_columns": 8,
+                "sheet_rows": 9,
+                "frame_width": 192,
+                "frame_height": 208,
+                "motions": {"Default": {"row": 0, "frame_count": 1, "fps": 4}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "shop_items.json").write_text(
+        json.dumps(
+            [
+                {
+                    "item_id": "moon_cake",
+                    "name": "月光糕",
+                    "category": "food",
+                    "icon": "item_icons/moon_cake.png",
+                    "price": 3,
+                    "effects": {"mood": 5},
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return pack_dir
+
+
+def _patch_character_assets(monkeypatch, root):
+    monkeypatch.setattr(character_pack_module, "ASSETS_ROOT", root)
+    monkeypatch.setattr(motion_module, "ASSETS_ROOT", root)
+    monkeypatch.setattr(shop_items_module, "ASSETS_ROOT", root)
 
 
 def test_snapshot_exposes_status_actions_shop_and_inventory():
@@ -28,6 +96,133 @@ def test_snapshot_exposes_status_actions_shop_and_inventory():
     assert snapshot["events"][0]["character_name"] == "星汐"
     assert snapshot["relationship_stage"] == "初识"
     assert "信任达到 20" in snapshot["next_relationship_unlock"]
+
+
+def test_controller_can_boot_with_non_default_character_pack(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path)
+    _patch_character_assets(monkeypatch, tmp_path)
+
+    controller = CompanionController(
+        character_id="custom_character",
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+    )
+
+    snapshot = controller.get_snapshot()
+
+    assert snapshot["character_id"] == "custom_character"
+    assert snapshot["character_name"] == "澄光"
+    assert snapshot["character_title"] == "桌面回声同伴"
+    assert snapshot["shop_items"] == [
+        {
+            "item_id": "moon_cake",
+            "name": "月光糕",
+            "category": "food",
+            "icon_path": str(tmp_path / "custom_character" / "item_icons" / "moon_cake.png"),
+            "price": 3,
+            "affordable": True,
+            "unlocked": True,
+        }
+    ]
+    assert snapshot["inventory"] == {"moon_cake": 0}
+
+
+def test_controller_purchase_and_inventory_use_current_character_shop_items(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path)
+    _patch_character_assets(monkeypatch, tmp_path)
+    controller = CompanionController(
+        character_id="custom_character",
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+    )
+
+    purchased = controller.purchase_shop_item("moon_cake")
+    used = controller.use_inventory_item("moon_cake", usage="feed")
+
+    assert purchased["inventory"]["moon_cake"] == 1
+    assert used["inventory"]["moon_cake"] == 0
+    assert used["delta_text"] == "mood +5.0"
+    assert "月光糕" in used["feedback"]
+
+
+def test_controller_character_session_paths_isolate_dialogue_and_memory(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path / "assets", "custom_character")
+    _write_controller_character_pack(tmp_path / "assets", "solar_mender")
+    _patch_character_assets(monkeypatch, tmp_path / "assets")
+
+    first = CompanionController(
+        character_id="custom_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    first.submit_dialogue_request(DialogueRequest("你好", source="desktop_pet"))
+    first.upsert_long_term_memory(
+        key="preference:quiet",
+        category="preference",
+        summary="喜欢安静陪伴",
+    )
+
+    second = CompanionController(
+        character_id="solar_mender",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+
+    assert first.save_path == tmp_path / "user-data" / "characters" / "custom_character" / "companion_save.json"
+    assert first.dialogue_history_path.name == "dialogue_history.json"
+    assert first.long_term_memory_path.name == "long_term_memory.json"
+    assert first.get_snapshot()["dialogue_history"]
+    assert first.get_snapshot()["long_term_memory"]
+    assert second.get_snapshot()["dialogue_history"] == []
+    assert second.get_snapshot()["long_term_memory"] == []
+
+
+def test_controller_reloads_character_session_inventory_with_current_shop_items(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path / "assets", "custom_character")
+    _patch_character_assets(monkeypatch, tmp_path / "assets")
+    user_data_root = tmp_path / "user-data"
+    controller = CompanionController(
+        character_id="custom_character",
+        user_data_root=user_data_root,
+        auto_load=False,
+    )
+
+    controller.purchase_shop_item("moon_cake")
+
+    reloaded = CompanionController(
+        character_id="custom_character",
+        user_data_root=user_data_root,
+    )
+
+    assert reloaded.get_snapshot()["inventory"] == {"moon_cake": 1}
+    assert reloaded.get_snapshot()["inventory_items"][0]["item_id"] == "moon_cake"
+
+
+def test_controller_rebuilds_session_when_saved_character_id_does_not_match(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path / "assets", "custom_character")
+    _patch_character_assets(monkeypatch, tmp_path / "assets")
+    user_data_root = tmp_path / "user-data"
+    wrong_session = user_data_root / "characters" / "custom_character"
+    wrong_session.mkdir(parents=True)
+    wrong_state = create_initial_state(
+        character_id="other_character",
+        character_name="Other",
+        buyable_items={"moon_cake": next(iter(CompanionController(
+            character_id="custom_character",
+            user_data_root=user_data_root,
+            auto_load=False,
+        ).shop_items.values()))},
+    )
+    save_state(wrong_state, wrong_session / "companion_save.json")
+
+    controller = CompanionController(
+        character_id="custom_character",
+        user_data_root=user_data_root,
+    )
+
+    assert controller.get_snapshot()["character_id"] == "custom_character"
+    assert controller.get_snapshot()["character_name"] == "澄光"
+    assert controller.get_snapshot()["inventory"] == {"moon_cake": 0}
 
 
 def test_controller_keeps_runtime_events_typed_while_exporting_legacy_snapshot_events():

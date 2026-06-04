@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
+from pathlib import Path
 
 from .runtime_paths import companion_assets_root
 
@@ -29,7 +30,11 @@ def load_default_character_pack() -> CharacterPack:
 
 
 def load_character_pack(character_id: str) -> CharacterPack:
-    manifest_path = ASSETS_ROOT / character_id / "character.json"
+    return load_character_pack_from_dir(ASSETS_ROOT / character_id)
+
+
+def load_character_pack_from_dir(asset_dir: Path | str) -> CharacterPack:
+    manifest_path = Path(asset_dir) / "character.json"
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
     return CharacterPack(
         character_id=payload["character_id"],
