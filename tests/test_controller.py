@@ -551,6 +551,10 @@ def test_controller_uses_local_character_expression_context_by_default(tmp_path)
     assert snapshot["mood"] == 62
 
 
+def test_controller_does_not_own_relationship_expression_context_builder():
+    assert not hasattr(CompanionController, "_relationship_presentation_tool_result")
+
+
 def test_controller_passes_optional_readonly_expression_context_to_ai_adapter(tmp_path):
     captured = {}
 

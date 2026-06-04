@@ -33,7 +33,11 @@ from .events import (
     ProactiveDomainEventRequest,
     build_typed_fallback_events,
 )
-from .expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
+from .expression_context import (
+    CharacterProfileExpressionContextProvider,
+    ExpressionContextChain,
+    RuntimeExpressionContextService,
+)
 from .expression_settings import (
     ExpressionSettings,
     ExpressionSettingsStore,
@@ -826,50 +830,13 @@ class CompanionController:
         return [item.to_legacy_dict() for item in InventoryService(self.state, self._item_icon_path).inventory_items()]
 
     def _expression_context(self) -> dict[str, object]:
-        context: dict[str, object] = {}
-        if self.expression_context_provider is None:
-            external_context = {}
-        else:
-            try:
-                external_context = self.expression_context_provider()
-            except Exception:
-                external_context = {}
-        if isinstance(external_context, dict):
-            for key in ("perception_summary", "tool_results"):
-                if key in external_context:
-                    context[key] = external_context[key]
-        runtime_context = ExpressionContextChain(
-            [
-                lambda: {"perception_summary": self._perception_summary},
-                lambda: {"tool_results": self._tool_results},
-            ]
+        return RuntimeExpressionContextService(
+            state=self.state,
+            relationship_decorations=self.character_pack.relationship_decorations,
+            external_provider=self.expression_context_provider,
+            perception_summary=self._perception_summary,
+            tool_results=self._tool_results,
         )()
-        if runtime_context:
-            context.update(runtime_context)
-        relationship_result = self._relationship_presentation_tool_result()
-        tool_results = context.get("tool_results")
-        existing_tool_results = tool_results if isinstance(tool_results, list) else []
-        if relationship_result is not None:
-            context["tool_results"] = [*existing_tool_results, relationship_result]
-        return context
-
-    def _relationship_presentation_tool_result(self) -> dict[str, str] | None:
-        presentation = RelationshipService(self.state).presentation(self.character_pack.relationship_decorations)
-        if (
-            not getattr(self.state, "player_alias", "")
-            and not presentation.unlocked_decorations
-            and self.state.trust < 20
-        ):
-            return None
-        badges = " / ".join(badge["label"] for badge in presentation.unlocked_decorations) or "none"
-        return {
-            "source": "local_relationship_presentation",
-            "title": "relationship presentation",
-            "summary": (
-                f"{presentation.address_line}；语气：{presentation.tone_label}；"
-                f"小动作：{presentation.micro_motion}；装饰：{badges}"
-            ),
-        }
 
     def _item_icon_path(self, item) -> str:
         if not item.icon:
