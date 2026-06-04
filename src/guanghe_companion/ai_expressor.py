@@ -42,7 +42,6 @@ from .expression_expressor import (
     TimeoutError,
     _ensure_expression_request,
     _fallback_events_for_invalid_snapshot,
-    _format_tool_result,
     _invalid_snapshot_prompt,
     _is_fallback_events,
     _json_candidate_from_llm_text,

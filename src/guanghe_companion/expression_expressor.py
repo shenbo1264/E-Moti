@@ -5,6 +5,7 @@ import sys
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
+from .companion_dialogue_policy import CompanionDialoguePolicy
 from .engine import create_initial_state
 from .events import build_fallback_events, validate_events
 from .expression_clients import (
@@ -61,10 +62,12 @@ class ShinsekaiAIExpressor:
         llm_client: LLMClient | None = None,
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         enabled: bool = True,
+        dialogue_policy: CompanionDialoguePolicy | None = None,
     ) -> None:
         self.llm_client = llm_client
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.enabled = enabled
+        self.dialogue_policy = dialogue_policy or CompanionDialoguePolicy()
         self.last_fallback_reason: str | None = None
         self._closed = False
         self._executor: ThreadPoolExecutor | None = None
@@ -88,13 +91,13 @@ class ShinsekaiAIExpressor:
         long_term_memory = " / ".join(
             f"{entry['category']}: {entry['summary']}" for entry in prompt_payload["long_term_memory"]
         )
-        tool_results = " / ".join(_format_tool_result(entry) for entry in prompt_payload["tool_results"])
         return "\n".join(
             [
                 "你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。",
                 "AI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。",
                 "请输出 JSON 数组，每个对象只包含 type, speech, effect, motion_hint。",
                 'type 固定为 speech；speech 是星汐说出的短句；effect 和 motion_hint 只是表达提示。',
+                *self.dialogue_policy.prompt_lines(expression_request),
                 f"character_name: {prompt_payload['character_name']}",
                 f"mode: {prompt_payload['mode']}",
                 f"motion: {prompt_payload['motion']}",
@@ -109,8 +112,6 @@ class ShinsekaiAIExpressor:
                 f"choices: {choices}",
                 f"recent_memory: {memory}",
                 f"long_term_memory: {long_term_memory}",
-                f"perception_summary: {prompt_payload['perception_summary']}",
-                f"tool_results: {tool_results}",
                 '示例字段：{"type":"speech","speech":"短句","effect":"ATTENTION","motion_hint":"Raised"}',
             ]
         )
@@ -303,11 +304,6 @@ def _fallback_events_for_invalid_snapshot(snapshot: object) -> list[dict[str, st
         feedback = _short_string(snapshot.get("feedback", ""), MAX_FEEDBACK_LENGTH) or feedback
         choices = [entry["label"] for entry in _sanitize_actions(snapshot.get("actions", []))]
     return build_fallback_events(state, feedback, choices, effect="DISAPPOINTED")
-
-
-def _format_tool_result(entry: dict[str, str]) -> str:
-    timestamp = f" @ {entry['timestamp']}" if entry.get("timestamp") else ""
-    return f"{entry['source']}: {entry['title']}{timestamp} - {entry['summary']}"
 
 
 def _is_fallback_events(state, events: list[dict[str, str]], fallback_feedback: str) -> bool:
