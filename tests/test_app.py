@@ -508,7 +508,7 @@ def test_desktop_mode_feedback_overlay_updates_after_sprite_touch(monkeypatch, t
 
     QTest.mouseClick(window.sprite_label, Qt.MouseButton.LeftButton, pos=QPoint(24, 24))
     app.processEvents()
-    text = window._format_desktop_status_panel(window.controller.get_snapshot())
+    text = window.snapshot_renderer.format_desktop_status_panel(window.controller.get_snapshot())
 
     assert "模式：Calm" in text
     assert "靠近回应" in text

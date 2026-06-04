@@ -49,6 +49,7 @@ from .expression_settings import (
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_default_motion_catalog
 from .screen_observation import ScreenObservationService
+from .snapshot_renderer import SnapshotRenderer
 from .storage import DEMO_SAVE_PATH
 from .voice_asr import ASRService
 from .voice_tts import TTSManager
@@ -294,6 +295,7 @@ class CompanionWindow(QMainWindow):
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
+        self.snapshot_renderer = SnapshotRenderer()
         self._tray_icon: QSystemTrayIcon | None = None
         self._tray_close_message_shown = False
         self._force_exit = False
@@ -1119,7 +1121,7 @@ class CompanionWindow(QMainWindow):
         QMessageBox.information(
             self,
             "状态面板",
-            self._format_desktop_status_panel(self.controller.get_snapshot()),
+            self.snapshot_renderer.format_desktop_status_panel(self.controller.get_snapshot()),
         )
 
     def _show_dialogue_history_panel(self) -> None:
@@ -1146,15 +1148,6 @@ class CompanionWindow(QMainWindow):
     def _revert_dialogue_history(self) -> None:
         self._apply_snapshot(self.controller.revert_dialogue_history())
         self.desktop_feedback_label.show()
-
-    def _format_desktop_status_panel(self, snapshot: dict[str, object]) -> str:
-        return (
-            f"模式：{snapshot['mode']}\n"
-            f"能量 {int(float(snapshot['charge']))} / 心情 {int(float(snapshot['mood']))} / "
-            f"信任 {int(float(snapshot['trust']))}\n"
-            f"动作：{snapshot['motion_caption']}\n"
-            f"{snapshot['feedback']}"
-        )
 
     def _return_to_control_panel(self) -> None:
         if not self.desktop_mode:
@@ -1579,7 +1572,7 @@ class CompanionWindow(QMainWindow):
             f"金币 {snapshot['coins']} / 等级 {snapshot['level']} / 经验 {snapshot['exp']}"
         )
         self.goal_label.setText(str(snapshot["goal"]))
-        self.relationship_label.setText(self._format_relationship_presentation(snapshot))
+        self.relationship_label.setText(self.snapshot_renderer.format_relationship_presentation(snapshot))
         if not self.player_alias_input.hasFocus():
             self.player_alias_input.setText(str(snapshot.get("player_alias") or ""))
         self.tick_label.setText(f"15 秒 tick：已结算 {snapshot['tick_count']} 次，下一轮 {self.remaining_seconds} 秒后")
@@ -1589,9 +1582,9 @@ class CompanionWindow(QMainWindow):
 
         self.feedback_label.setText(str(snapshot["feedback"]))
         self.delta_label.setText(f"最近变化：{snapshot['delta_text']}")
-        self.events_label.setText(self._format_event_summary(snapshot["events"]))
-        self.memory_label.setText(self._format_memory_log(snapshot["memory_log"]))
-        desktop_speech = self._snapshot_tts_speech(snapshot) or str(snapshot["feedback"])
+        self.events_label.setText(self.snapshot_renderer.format_event_summary(snapshot["events"]))
+        self.memory_label.setText(self.snapshot_renderer.format_memory_log(snapshot["memory_log"]))
+        desktop_speech = self.snapshot_renderer.snapshot_tts_speech(snapshot) or str(snapshot["feedback"])
         self.desktop_feedback_label.setText(str(snapshot["character_name"]) + ": " + desktop_speech)
 
         actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
@@ -1610,7 +1603,7 @@ class CompanionWindow(QMainWindow):
         settings = self.controller.get_capability_settings().tts
         if not settings.enabled or not settings.auto_speak:
             return
-        speech = self._snapshot_tts_speech(snapshot)
+        speech = self.snapshot_renderer.snapshot_tts_speech(snapshot)
         if not speech:
             return
         key = (str(snapshot.get("event_preview", "")), speech)
@@ -1619,38 +1612,6 @@ class CompanionWindow(QMainWindow):
         self._last_auto_tts_key = key
         result = self.capability_runtime.speak_text(speech)
         self.voice_status_label.setText(result.message)
-
-    def _snapshot_tts_speech(self, snapshot: dict[str, object]) -> str:
-        character_name = str(snapshot.get("character_name", ""))
-        events = snapshot.get("events")
-        if not isinstance(events, list):
-            return ""
-        for event in events:
-            if not isinstance(event, dict):
-                continue
-            if event.get("character_name") != character_name:
-                continue
-            speech = str(event.get("speech", "")).strip()
-            if speech:
-                return speech
-        return ""
-
-    def _format_relationship_presentation(self, snapshot: dict[str, object]) -> str:
-        presentation = snapshot.get("relationship_presentation")
-        if not isinstance(presentation, dict):
-            return f"当前关系：{snapshot['relationship_stage']}\n下个解锁：{snapshot['next_relationship_unlock']}"
-        decorations = presentation.get("unlocked_decorations")
-        if isinstance(decorations, list) and decorations:
-            decoration_text = " / ".join(str(entry.get("label", "")) for entry in decorations if isinstance(entry, dict))
-        else:
-            decoration_text = "暂无"
-        return (
-            f"当前关系：{snapshot['relationship_stage']}\n"
-            f"{presentation.get('address_line', '')}\n"
-            f"语气：{presentation.get('tone_label', '')} / 小动作：{presentation.get('micro_motion', '')}\n"
-            f"装饰：{decoration_text}\n"
-            f"下个解锁：{snapshot['next_relationship_unlock']}"
-        )
 
     def _render_current_frame(self) -> None:
         if self.spritesheet.isNull():
@@ -1708,33 +1669,6 @@ class CompanionWindow(QMainWindow):
         )
         self.item_feedback_label.show()
         QTimer.singleShot(1_400, self.item_feedback_label.hide)
-
-    def _format_memory_log(self, entries: object) -> str:
-        if not entries:
-            return "回忆日志：暂无回忆"
-        lines = ["回忆日志："]
-        for entry in list(entries)[:5]:
-            lines.append(f"- {entry['kind']}：{entry['summary']}")
-        return "\n".join(lines)
-
-    def _format_event_summary(self, events: object) -> str:
-        if not isinstance(events, list) or not events:
-            return "最近事件：暂无"
-        lines: list[str] = []
-        for event in events[:3]:
-            if not isinstance(event, dict):
-                continue
-            character_name = str(event.get("character_name", ""))
-            speech = str(event.get("speech", "")).strip()
-            if not speech:
-                continue
-            if character_name == "STAT":
-                lines.append(f"状态：{speech}")
-            elif character_name == "CHOICE":
-                lines.append(f"可选动作：{speech}")
-            elif character_name:
-                lines.append(f"{character_name}：{speech}")
-        return "\n".join(lines) if lines else "最近事件：暂无"
 
     def _sync_inventory_buttons(self, items: object) -> None:
         selected_id = self._current_item_id(self.inventory_list)
