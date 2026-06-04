@@ -5,7 +5,7 @@ import sys
 
 from collections.abc import Callable
 
-from PySide6.QtCore import QEvent, QPoint, QRect, QSize, QTimer, Qt, Slot
+from PySide6.QtCore import QEvent, QPoint, QSize, QTimer, Qt, Slot
 from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
@@ -40,6 +40,7 @@ from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, V
 from .capability_settings import CapabilitySettings
 from .controller import CompanionController
 from .dialogue import DialogueRequest
+from .desktop_shell import DesktopShell
 from .expression_settings import (
     EXPRESSION_PROVIDER_PRESETS,
     normalize_expression_settings,
@@ -51,6 +52,7 @@ from .motion import MotionAnimator, load_default_motion_catalog
 from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
 from .storage import DEMO_SAVE_PATH
+from .tray_controller import TrayController
 from .voice_asr import ASRService
 from .voice_tts import TTSManager
 from .web_search import WebSearchService
@@ -296,13 +298,20 @@ class CompanionWindow(QMainWindow):
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
         self.snapshot_renderer = SnapshotRenderer()
-        self._tray_icon: QSystemTrayIcon | None = None
-        self._tray_close_message_shown = False
-        self._force_exit = False
-        self._previous_quit_on_last_window_closed: bool | None = None
         self.motion_catalog = load_default_motion_catalog()
         self.motion_animator = MotionAnimator(self.motion_catalog)
         self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
+        self.desktop_shell = DesktopShell(self, dock_threshold_px=DESKTOP_DOCK_THRESHOLD_PX)
+        self.tray_controller = TrayController(
+            parent=self,
+            tray_icon_class=QSystemTrayIcon,
+            icon_provider=self._build_tray_icon,
+            show_control_panel=self._show_control_panel_from_tray,
+            show_desktop_pet=self._show_desktop_pet_from_tray,
+            hide_window=self.hide,
+            close_window=self.close,
+            application_provider=QApplication.instance,
+        )
         self.remaining_seconds = 15
         self.action_buttons: dict[str, QPushButton] = {}
         self.navigation_buttons: list[QPushButton] = []
@@ -322,7 +331,7 @@ class CompanionWindow(QMainWindow):
             self._apply_desktop_mode()
         self._setup_timers()
         self._apply_snapshot(self.controller.get_snapshot())
-        self._setup_system_tray()
+        self.tray_controller.setup(owns_controller=self._owns_controller)
 
     def _register_close_callback(self, callback: Callable[["CompanionWindow"], None]) -> None:
         self._close_callbacks.append(callback)
@@ -332,23 +341,20 @@ class CompanionWindow(QMainWindow):
         if (
             event.type() == QEvent.Type.WindowStateChange
             and self.isMinimized()
-            and self._should_hide_to_tray()
+            and self.tray_controller.should_hide_to_tray()
         ):
-            QTimer.singleShot(0, self._hide_to_tray)
+            QTimer.singleShot(0, self.tray_controller.hide_to_tray)
 
     def closeEvent(self, event) -> None:
-        if self._should_hide_to_tray():
+        if self.tray_controller.should_hide_to_tray():
             event.ignore()
-            self._hide_to_tray()
+            self.tray_controller.hide_to_tray()
             return
         pet_window = self.desktop_pet_window
         if pet_window is not None:
             self.desktop_pet_window = None
             pet_window.close()
-        tray_icon = self._tray_icon
-        if tray_icon is not None:
-            tray_icon.hide()
-            self._tray_icon = None
+        self.tray_controller.cleanup()
         self.screen_observation_timer.stop()
         self._manual_perception_summary = ""
         self.controller.expression_context_provider = self._base_expression_context_provider
@@ -358,30 +364,10 @@ class CompanionWindow(QMainWindow):
         except Exception:
             pass
         finally:
-            self._restore_quit_on_last_window_closed()
+            self.tray_controller.restore_quit_on_last_window_closed()
             super().closeEvent(event)
             for callback in tuple(self._close_callbacks):
                 callback(self)
-
-    def _setup_system_tray(self) -> None:
-        if not self._owns_controller:
-            return
-        try:
-            if not QSystemTrayIcon.isSystemTrayAvailable():
-                return
-        except Exception:
-            return
-
-        tray_icon = QSystemTrayIcon(self._build_tray_icon(), self)
-        tray_icon.setToolTip("星汐 E-Moti")
-        tray_icon.setContextMenu(self._build_tray_menu())
-        tray_icon.activated.connect(self._handle_tray_activated)
-        tray_icon.show()
-        self._tray_icon = tray_icon
-        app = QApplication.instance()
-        if app is not None and self._previous_quit_on_last_window_closed is None:
-            self._previous_quit_on_last_window_closed = app.quitOnLastWindowClosed()
-            app.setQuitOnLastWindowClosed(False)
 
     def _build_tray_icon(self) -> QIcon:
         pixmap = self.spritesheet.copy(self.motion_animator.current_frame_rect())
@@ -392,50 +378,6 @@ class CompanionWindow(QMainWindow):
                 Qt.TransformationMode.SmoothTransformation,
             )
         return QIcon(pixmap)
-
-    def _build_tray_menu(self) -> QMenu:
-        menu = QMenu(self)
-        show_panel_action = QAction("显示控制面板", self)
-        show_panel_action.triggered.connect(self._show_control_panel_from_tray)
-        show_pet_action = QAction("显示/进入桌宠模式", self)
-        show_pet_action.triggered.connect(self._show_desktop_pet_from_tray)
-        hide_action = QAction("隐藏到托盘", self)
-        hide_action.triggered.connect(self._hide_to_tray)
-        exit_action = QAction("退出", self)
-        exit_action.triggered.connect(self._quit_from_tray)
-        menu.addAction(show_panel_action)
-        menu.addAction(show_pet_action)
-        menu.addAction(hide_action)
-        menu.addSeparator()
-        menu.addAction(exit_action)
-        return menu
-
-    def _handle_tray_activated(self, reason) -> None:
-        if reason in (
-            QSystemTrayIcon.ActivationReason.Trigger,
-            QSystemTrayIcon.ActivationReason.DoubleClick,
-        ):
-            self._show_control_panel_from_tray()
-
-    def _should_hide_to_tray(self) -> bool:
-        return self._tray_icon is not None and not self._force_exit
-
-    def _hide_to_tray(self) -> None:
-        if self._tray_icon is None or self._force_exit:
-            return
-        self.hide()
-        if self._tray_close_message_shown:
-            return
-        self._tray_close_message_shown = True
-        try:
-            self._tray_icon.showMessage(
-                "星汐 E-Moti",
-                "星汐已隐藏到托盘，可从托盘菜单恢复或退出。",
-                QSystemTrayIcon.MessageIcon.Information,
-                2500,
-            )
-        except Exception:
-            pass
 
     def _show_control_panel_from_tray(self) -> None:
         if self.desktop_mode:
@@ -453,20 +395,6 @@ class CompanionWindow(QMainWindow):
             self.activateWindow()
             return
         self._enter_desktop_mode()
-
-    def _quit_from_tray(self) -> None:
-        self._force_exit = True
-        self.close()
-        if self._owns_controller:
-            app = QApplication.instance()
-            if app is not None:
-                app.quit()
-
-    def _restore_quit_on_last_window_closed(self) -> None:
-        app = QApplication.instance()
-        if app is not None and self._previous_quit_on_last_window_closed is not None:
-            app.setQuitOnLastWindowClosed(self._previous_quit_on_last_window_closed)
-            self._previous_quit_on_last_window_closed = None
 
     def _build_ui(self) -> None:
         root = QWidget(self)
@@ -737,7 +665,7 @@ class CompanionWindow(QMainWindow):
         self.sprite_label = SpriteInteractionLabel(
             on_click=lambda: self._handle_action("touch"),
             on_drag=lambda: self._handle_action("drag"),
-            on_drag_move=self._move_desktop_window_by,
+            on_drag_move=lambda delta: self.desktop_shell.move_by(delta, enabled=self.desktop_mode),
         )
         self.sprite_label.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.sprite_label.customContextMenuRequested.connect(
@@ -1093,7 +1021,7 @@ class CompanionWindow(QMainWindow):
         return_action = QAction("返回控制面板", self)
         return_action.triggered.connect(self._return_to_control_panel)
         exit_action = QAction("退出", self)
-        exit_action.triggered.connect(self._quit_from_tray)
+        exit_action.triggered.connect(self.tray_controller.request_quit)
         menu.addAction(status_action)
         menu.addAction(history_action)
         menu.addAction(clear_history_action)
@@ -1213,45 +1141,6 @@ class CompanionWindow(QMainWindow):
         self._apply_snapshot(self.controller.get_snapshot())
         self._update_screen_observation_timer()
 
-    def _move_desktop_window_by(self, delta: QPoint) -> None:
-        if not self.desktop_mode:
-            return
-        self.move(self._clamp_desktop_position(self.pos() + delta))
-
-    def _clamp_desktop_position(self, target: QPoint) -> QPoint:
-        bounds = self._desktop_available_geometry()
-        max_x = max(bounds.left(), bounds.right() - self.width() + 1)
-        max_y = max(bounds.top(), bounds.bottom() - self.height() + 1)
-        x = min(max(target.x(), bounds.left()), max_x)
-        y = min(max(target.y(), bounds.top()), max_y)
-        return QPoint(x, y)
-
-    def _dock_desktop_position(self, target: QPoint) -> QPoint:
-        clamped = self._clamp_desktop_position(target)
-        bounds = self._desktop_available_geometry()
-        max_x = max(bounds.left(), bounds.right() - self.width() + 1)
-        max_y = max(bounds.top(), bounds.bottom() - self.height() + 1)
-
-        x = clamped.x()
-        if x - bounds.left() <= DESKTOP_DOCK_THRESHOLD_PX:
-            x = bounds.left()
-        elif max_x - x <= DESKTOP_DOCK_THRESHOLD_PX:
-            x = max_x
-
-        y = clamped.y()
-        if y - bounds.top() <= DESKTOP_DOCK_THRESHOLD_PX:
-            y = bounds.top()
-        elif max_y - y <= DESKTOP_DOCK_THRESHOLD_PX:
-            y = max_y
-
-        return QPoint(x, y)
-
-    def _desktop_available_geometry(self) -> QRect:
-        screen = QApplication.screenAt(self.frameGeometry().center()) or QApplication.primaryScreen()
-        if screen is None:
-            return QRect(self.pos(), self.size())
-        return screen.availableGeometry()
-
     def _setup_timers(self) -> None:
         self.frame_timer = QTimer(self)
         self.frame_timer.timeout.connect(self._advance_frame)
@@ -1287,7 +1176,7 @@ class CompanionWindow(QMainWindow):
 
     def _handle_action(self, action_id: str) -> None:
         if self.desktop_mode and action_id == "drag":
-            self.move(self._dock_desktop_position(self.pos()))
+            self.move(self.desktop_shell.dock_position(self.pos()))
         self._apply_snapshot(self.controller.perform_action(action_id, include_ai_expression=False))
 
     @Slot()

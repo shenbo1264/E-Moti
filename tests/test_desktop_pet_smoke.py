@@ -107,7 +107,7 @@ def test_desktop_pet_smoke_validator_reports_window_escape(monkeypatch, tmp_path
         controller=CompanionController(save_path=tmp_path / "smoke-save.json", auto_load=False),
         desktop_mode=True,
     )
-    window._desktop_available_geometry = lambda: QRect(0, 0, 100, 100)
+    window.desktop_shell.available_geometry_provider = lambda: QRect(0, 0, 100, 100)
     window.move(120, 120)
     window.show()
     app.processEvents()

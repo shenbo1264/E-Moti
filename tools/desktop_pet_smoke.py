@@ -68,7 +68,7 @@ def validate_desktop_pet_window(app: QApplication, window: CompanionWindow) -> l
     if menu_labels != EXPECTED_MENU_LABELS:
         errors.append(f"desktop context menu labels are invalid: {menu_labels!r}")
 
-    bounds = window._desktop_available_geometry()
+    bounds = window.desktop_shell.available_geometry()
     pos = window.pos()
     if (
         pos.x() < bounds.left()
