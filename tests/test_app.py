@@ -1112,6 +1112,12 @@ def test_capability_pages_have_safe_defaults(monkeypatch, tmp_path):
     assert window.web_search_enabled_check.isChecked() is False
     assert window.tts_enabled_check.isChecked() is False
     assert window.asr_enabled_check.isChecked() is False
+    assert window.proactive_companion_enabled_check.isChecked() is False
+    assert window.proactive_interval_input.value() == 900
+    assert window.proactive_global_cooldown_input.value() == 1800
+    assert window.proactive_daily_limit_input.value() == 8
+    assert window.proactive_quiet_hours_check.isChecked() is False
+    assert window.proactive_allow_context_topic_check.isChecked() is True
     assert "不会自动点击" in window.perception_privacy_label.text()
 
     window.close()
@@ -1126,6 +1132,14 @@ def test_capability_ui_save_round_trips_to_controller(monkeypatch, tmp_path):
     window.web_search_enabled_check.setChecked(True)
     window.tts_enabled_check.setChecked(True)
     window.asr_enabled_check.setChecked(True)
+    window.proactive_companion_enabled_check.setChecked(True)
+    window.proactive_interval_input.setValue(1200)
+    window.proactive_global_cooldown_input.setValue(2400)
+    window.proactive_daily_limit_input.setValue(6)
+    window.proactive_quiet_hours_check.setChecked(True)
+    window.proactive_quiet_start_input.setText("22:30")
+    window.proactive_quiet_end_input.setText("07:30")
+    window.proactive_allow_context_topic_check.setChecked(False)
     window.capability_save_button.click()
     app.processEvents()
 
@@ -1135,6 +1149,14 @@ def test_capability_ui_save_round_trips_to_controller(monkeypatch, tmp_path):
     assert settings.web_search.enabled is True
     assert settings.tts.enabled is True
     assert settings.asr.enabled is True
+    assert settings.proactive_companion.enabled is True
+    assert settings.proactive_companion.interval_seconds == 1200
+    assert settings.proactive_companion.global_cooldown_seconds == 2400
+    assert settings.proactive_companion.daily_limit == 6
+    assert settings.proactive_companion.quiet_hours_enabled is True
+    assert settings.proactive_companion.quiet_start == "22:30"
+    assert settings.proactive_companion.quiet_end == "07:30"
+    assert settings.proactive_companion.allow_context_topic is False
     assert "已保存" in window.capability_feedback_label.text()
     assert after.stats == before.stats
     assert after.inventory == before.inventory
@@ -1795,7 +1817,12 @@ def test_window_manual_screen_perception_reaches_typed_expression_request(monkey
 
 
 def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
     app, window = make_window(monkeypatch, tmp_path)
+    window.controller.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
     window.controller.state.charge = 25
     window.controller.state.mood = 60
     window.controller.state.focus = 70

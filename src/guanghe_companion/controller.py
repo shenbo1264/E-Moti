@@ -44,7 +44,8 @@ from .memory import (
     memory_kind_for_inventory_usage,
 )
 from .models import CompanionState
-from .relationship import ProactiveCompanionDecision, ProactiveCompanionService, RelationshipService
+from .proactive_companion import ProactiveCompanionDecision, ProactiveCompanionService
+from .relationship import RelationshipService
 from .runtime_paths import (
     capability_settings_path as default_capability_settings_path,
     expression_settings_path as default_expression_settings_path,
@@ -178,6 +179,8 @@ class CompanionController:
         self.last_item_feedback_icon: str | None = None
         self.last_proactive_feedback: dict[str, str] | None = None
         self._last_proactive_at: dict[str, int] = {}
+        self._proactive_daily_counts: dict[str, int] = {}
+        self._force_next_proactive = False
         self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
         if loaded_state is None:
             self._persist()
@@ -213,6 +216,8 @@ class CompanionController:
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
         self._last_proactive_at.clear()
+        self._proactive_daily_counts.clear()
+        self._force_next_proactive = False
         self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
         self._persist()
         return self.get_snapshot()
@@ -632,6 +637,8 @@ class CompanionController:
         if proactive_decision.feedback:
             self.last_feedback = proactive_decision.feedback.speech
             self._last_proactive_at.update(proactive_decision.cooldown_updates())
+            for key, count in proactive_decision.daily_count_updates().items():
+                self._proactive_daily_counts[key] = self._proactive_daily_counts.get(key, 0) + count
             MemoryLogService(self.state.memory_log).append_drafts(
                 at=self.now,
                 drafts=proactive_decision.memory_drafts(),
@@ -670,6 +677,7 @@ class CompanionController:
             self._last_proactive_at.pop("low_mood", None)
         else:
             raise ValueError(f"Unknown demo proactive scenario: {scenario}")
+        self._force_next_proactive = True
         return self.advance_tick(include_ai_expression=include_ai_expression)
 
     def _persist(self) -> None:
@@ -830,11 +838,27 @@ class CompanionController:
         return RelationshipService(self.state).unlock_event_payloads(unlocks)
 
     def _select_proactive_decision(self, previous_state: CompanionState) -> ProactiveCompanionDecision:
+        settings = self.capability_settings.proactive_companion
+        if self._force_next_proactive:
+            settings = replace(
+                settings,
+                enabled=True,
+                interval_seconds=60,
+                global_cooldown_seconds=60,
+                daily_limit=max(settings.daily_limit, 1),
+                quiet_hours_enabled=False,
+            )
+            self._force_next_proactive = False
+        expression_context = self._expression_context()
         return ProactiveCompanionService(
             state=self.state,
             previous_state=previous_state,
             now=self.now,
+            settings=settings,
             last_proactive_at=self._last_proactive_at,
+            daily_counts=self._proactive_daily_counts,
+            perception_summary=str(expression_context.get("perception_summary", "")),
+            tool_results=expression_context.get("tool_results", []),
         ).select_decision(motion=self.last_motion)
 
 

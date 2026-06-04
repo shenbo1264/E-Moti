@@ -156,8 +156,16 @@ def test_controller_adds_typed_relationship_event_for_unlock_feedback():
     assert len(snapshot["events"]) == 3
 
 
-def test_controller_adds_typed_proactive_event_for_active_companionship():
-    controller = CompanionController(auto_load=False)
+def test_controller_adds_typed_proactive_event_for_active_companionship(tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    controller = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "capability-settings.json",
+    )
+    controller.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
     controller.state.charge = 25
     controller.state.mood = 60
     controller.state.focus = 70
@@ -744,8 +752,16 @@ def test_controller_tick_updates_status_and_tick_counter():
     assert snapshot["tick_count"] == 1
 
 
-def test_tick_surfaces_low_charge_proactive_companionship_once():
-    controller = CompanionController(auto_load=False)
+def test_tick_surfaces_low_charge_proactive_companionship_once(tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    controller = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "capability-settings.json",
+    )
+    controller.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
     controller.state.charge = 25
     controller.state.mood = 60
     controller.state.focus = 70
@@ -765,8 +781,16 @@ def test_tick_surfaces_low_charge_proactive_companionship_once():
     assert [entry["kind"] for entry in repeated["memory_log"]].count("主动陪伴") == 1
 
 
-def test_tick_surfaces_mood_drop_after_long_quiet():
-    controller = CompanionController(auto_load=False)
+def test_tick_surfaces_mood_drop_after_long_quiet(tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    controller = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "capability-settings.json",
+    )
+    controller.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
     controller.now = 60
     controller.state.last_interaction_at = 0
     controller.state.charge = 80
@@ -780,6 +804,57 @@ def test_tick_surfaces_mood_drop_after_long_quiet():
     assert "我还在这里" in snapshot["feedback"]
     assert snapshot["memory_log"][0]["kind"] == "主动陪伴"
     assert "久未互动" in snapshot["memory_log"][0]["summary"]
+
+
+def test_tick_suppresses_proactive_companionship_by_default(tmp_path):
+    controller = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "capability-settings.json",
+    )
+    controller.state.charge = 25
+    controller.state.mood = 60
+    controller.state.focus = 70
+    controller.state.stability = 70
+
+    snapshot = controller.advance_tick()
+
+    assert snapshot["proactive_feedback"] is None
+    assert not any(event.event_type == "proactive" for event in controller.last_events)
+    assert snapshot["memory_log"] == []
+
+
+def test_enabled_proactive_companionship_does_not_change_growth_fields_or_call_apply_action(monkeypatch, tmp_path):
+    import guanghe_companion.controller as controller_module
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    def fail_apply_action(*args, **kwargs):
+        raise AssertionError("proactive companionship must not call apply_action")
+
+    monkeypatch.setattr(controller_module, "apply_action", fail_apply_action)
+    passive = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "passive-capability-settings.json",
+    )
+    active = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "active-capability-settings.json",
+    )
+    active.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
+    for controller in (passive, active):
+        controller.state.charge = 25
+        controller.state.mood = 60
+        controller.state.focus = 70
+        controller.state.stability = 70
+
+    passive_snapshot = passive.advance_tick()
+    active_snapshot = active.advance_tick()
+
+    assert active_snapshot["proactive_feedback"]["kind"] == "low_charge"
+    for key in ("focus", "charge", "stability", "mood", "trust", "coins", "inventory", "unlocks"):
+        assert active_snapshot[key] == passive_snapshot[key]
+    assert active.state.last_interaction_at == passive.state.last_interaction_at
 
 
 def test_demo_trigger_surfaces_low_charge_proactive_companionship_immediately():

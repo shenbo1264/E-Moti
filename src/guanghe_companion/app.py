@@ -38,6 +38,7 @@ from .ai_expressor import build_expression_prompt_preview
 from .capability_settings import (
     ASRSettings,
     CapabilitySettings,
+    ProactiveCompanionSettings,
     ScreenObservationSettings,
     TTSSettings,
     WebSearchSettings,
@@ -544,8 +545,10 @@ class CompanionWindow(QMainWindow):
         self.control_panel_page_layouts.append(perception_search_layout)
         self.screen_observation_settings_card = self._build_screen_observation_settings_card()
         self.web_search_settings_card = self._build_web_search_settings_card()
+        self.proactive_companion_settings_card = self._build_proactive_companion_settings_card()
         perception_search_layout.addWidget(self.screen_observation_settings_card)
         perception_search_layout.addWidget(self.web_search_settings_card)
+        perception_search_layout.addWidget(self.proactive_companion_settings_card)
         capability_save_row = QHBoxLayout()
         self.capability_save_button = QPushButton("保存能力设置")
         self.capability_save_button.clicked.connect(self._save_capability_settings_from_ui)
@@ -884,6 +887,48 @@ class CompanionWindow(QMainWindow):
         layout.addWidget(self.web_search_results_label, 3, 0, 1, 4)
         return box
 
+    def _build_proactive_companion_settings_card(self) -> QGroupBox:
+        box = QGroupBox("主动陪伴")
+        layout = QGridLayout(box)
+        layout.setHorizontalSpacing(10)
+        layout.setVerticalSpacing(8)
+        settings = self.controller.get_capability_settings().proactive_companion
+
+        self.proactive_companion_enabled_check = QCheckBox("启用低频主动陪伴")
+        self.proactive_companion_enabled_check.setChecked(settings.enabled)
+        self.proactive_interval_input = QSpinBox()
+        self.proactive_interval_input.setRange(60, 86_400)
+        self.proactive_interval_input.setValue(settings.interval_seconds)
+        self.proactive_global_cooldown_input = QSpinBox()
+        self.proactive_global_cooldown_input.setRange(60, 86_400)
+        self.proactive_global_cooldown_input.setValue(settings.global_cooldown_seconds)
+        self.proactive_daily_limit_input = QSpinBox()
+        self.proactive_daily_limit_input.setRange(1, 24)
+        self.proactive_daily_limit_input.setValue(settings.daily_limit)
+        self.proactive_quiet_hours_check = QCheckBox("启用安静时段")
+        self.proactive_quiet_hours_check.setChecked(settings.quiet_hours_enabled)
+        self.proactive_quiet_start_input = QLineEdit(settings.quiet_start)
+        self.proactive_quiet_start_input.setPlaceholderText("23:00")
+        self.proactive_quiet_end_input = QLineEdit(settings.quiet_end)
+        self.proactive_quiet_end_input.setPlaceholderText("08:00")
+        self.proactive_allow_context_topic_check = QCheckBox("允许基于只读上下文轻提醒")
+        self.proactive_allow_context_topic_check.setChecked(settings.allow_context_topic)
+
+        layout.addWidget(self.proactive_companion_enabled_check, 0, 0, 1, 2)
+        layout.addWidget(self.proactive_allow_context_topic_check, 0, 2, 1, 2)
+        layout.addWidget(QLabel("最小间隔秒数"), 1, 0)
+        layout.addWidget(self.proactive_interval_input, 1, 1)
+        layout.addWidget(QLabel("全局冷却秒数"), 1, 2)
+        layout.addWidget(self.proactive_global_cooldown_input, 1, 3)
+        layout.addWidget(QLabel("每日上限"), 2, 0)
+        layout.addWidget(self.proactive_daily_limit_input, 2, 1)
+        layout.addWidget(self.proactive_quiet_hours_check, 2, 2, 1, 2)
+        layout.addWidget(QLabel("安静开始"), 3, 0)
+        layout.addWidget(self.proactive_quiet_start_input, 3, 1)
+        layout.addWidget(QLabel("安静结束"), 3, 2)
+        layout.addWidget(self.proactive_quiet_end_input, 3, 3)
+        return box
+
     def _build_perception_card(self) -> QGroupBox:
         box = QGroupBox("屏幕感知")
         layout = QVBoxLayout(box)
@@ -1131,6 +1176,7 @@ class CompanionWindow(QMainWindow):
         self.demo_card.hide()
         self.screen_observation_settings_card.hide()
         self.web_search_settings_card.hide()
+        self.proactive_companion_settings_card.hide()
         self.perception_card.hide()
         self.expression_settings_card.hide()
         self.expression_rule_card.hide()
@@ -1298,6 +1344,7 @@ class CompanionWindow(QMainWindow):
             self.demo_card,
             self.screen_observation_settings_card,
             self.web_search_settings_card,
+            self.proactive_companion_settings_card,
             self.perception_card,
             self.expression_settings_card,
             self.expression_rule_card,
@@ -1614,6 +1661,16 @@ class CompanionWindow(QMainWindow):
                 api_key=self.asr_api_key_input.text(),
                 auto_send=self.asr_auto_send_check.isChecked(),
             ),
+            proactive_companion=ProactiveCompanionSettings(
+                enabled=self.proactive_companion_enabled_check.isChecked(),
+                interval_seconds=self.proactive_interval_input.value(),
+                global_cooldown_seconds=self.proactive_global_cooldown_input.value(),
+                daily_limit=self.proactive_daily_limit_input.value(),
+                quiet_hours_enabled=self.proactive_quiet_hours_check.isChecked(),
+                quiet_start=self.proactive_quiet_start_input.text(),
+                quiet_end=self.proactive_quiet_end_input.text(),
+                allow_context_topic=self.proactive_allow_context_topic_check.isChecked(),
+            ),
         )
         saved = self.controller.update_capability_settings(settings)
         self._load_capability_settings_into_ui(saved)
@@ -1650,6 +1707,16 @@ class CompanionWindow(QMainWindow):
         self.asr_base_url_input.setText(asr.base_url)
         self.asr_api_key_input.setText(asr.api_key)
         self.asr_auto_send_check.setChecked(asr.auto_send)
+
+        proactive = settings.proactive_companion
+        self.proactive_companion_enabled_check.setChecked(proactive.enabled)
+        self.proactive_interval_input.setValue(proactive.interval_seconds)
+        self.proactive_global_cooldown_input.setValue(proactive.global_cooldown_seconds)
+        self.proactive_daily_limit_input.setValue(proactive.daily_limit)
+        self.proactive_quiet_hours_check.setChecked(proactive.quiet_hours_enabled)
+        self.proactive_quiet_start_input.setText(proactive.quiet_start)
+        self.proactive_quiet_end_input.setText(proactive.quiet_end)
+        self.proactive_allow_context_topic_check.setChecked(proactive.allow_context_topic)
         self.dialogue_asr_button.setEnabled(False)
         self._sync_voice_controls_enabled()
         self._update_screen_observation_timer()
