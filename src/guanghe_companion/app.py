@@ -1409,7 +1409,10 @@ class CompanionWindow(QMainWindow):
             self._run_web_search(query)
             return
         request = DialogueRequest(text=text)
-        snapshot = self.controller.submit_dialogue_request(request, include_ai_expression=False)
+        snapshot = self.controller.submit_dialogue_request(
+            request,
+            include_ai_expression=self._llm_expression_enabled(),
+        )
         self.dialogue_input.clear()
         self._apply_snapshot(snapshot)
         self.desktop_feedback_label.show()
@@ -1501,7 +1504,7 @@ class CompanionWindow(QMainWindow):
         if settings.auto_send:
             snapshot = self.controller.submit_dialogue_request(
                 DialogueRequest(text=result.text, source="asr"),
-                include_ai_expression=False,
+                include_ai_expression=self._llm_expression_enabled(),
             )
             self.dialogue_input.clear()
             self._apply_snapshot(snapshot)
@@ -1576,6 +1579,9 @@ class CompanionWindow(QMainWindow):
             "api_key": self.expression_api_key_input.text(),
             "timeout_seconds": self.expression_timeout_input.value(),
         }
+
+    def _llm_expression_enabled(self) -> bool:
+        return bool(self.controller.get_expression_settings().get("enabled"))
 
     def _save_capability_settings_from_ui(self) -> CapabilitySettings:
         settings = CapabilitySettings(
@@ -1732,7 +1738,8 @@ class CompanionWindow(QMainWindow):
         self.delta_label.setText(f"最近变化：{snapshot['delta_text']}")
         self.events_label.setText(self._format_event_summary(snapshot["events"]))
         self.memory_label.setText(self._format_memory_log(snapshot["memory_log"]))
-        self.desktop_feedback_label.setText(f"{snapshot['character_name']}：{snapshot['feedback']}")
+        desktop_speech = self._snapshot_tts_speech(snapshot) or str(snapshot["feedback"])
+        self.desktop_feedback_label.setText(str(snapshot["character_name"]) + ": " + desktop_speech)
 
         actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
         for action_id, button in self.action_buttons.items():

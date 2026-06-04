@@ -393,6 +393,69 @@ def test_desktop_pet_dialogue_send_shows_xingxi_response_without_growth_settleme
     app.processEvents()
 
 
+def test_dialogue_submit_uses_enabled_llm_expression_without_growth_mutation(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    class FakeExpressor:
+        def __init__(self):
+            self.last_fallback_reason = None
+            self.requests = []
+
+        def express(self, snapshot, effect=None):
+            self.requests.append((snapshot, effect))
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "我会陪你慢慢说。",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    app = QApplication.instance() or QApplication([])
+    fake_expressor = FakeExpressor()
+    controller = make_controller(tmp_path, ai_expressor=fake_expressor)
+    controller.update_expression_settings(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "custom",
+                "model": "local-model",
+                "base_url": "http://127.0.0.1:1234/v1",
+                "api_key": "",
+            }
+        )
+    )
+    controller.ai_expressor = fake_expressor
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.dialogue_input.setText("今天有点累")
+    window.dialogue_send_button.click()
+    app.processEvents()
+
+    after = window.controller.get_typed_snapshot()
+    assert fake_expressor.requests
+    assert fake_expressor.requests[-1][1] == "ATTENTION"
+    assert "我会陪你慢慢说。" in window.desktop_feedback_label.text()
+    assert "我会陪你慢慢说。" in window.events_label.text()
+    assert window.dialogue_input.text() == ""
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
 def test_desktop_mode_context_menu_status_panel_shows_feedback(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
