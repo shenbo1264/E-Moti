@@ -35,14 +35,8 @@ from PySide6.QtWidgets import (
 )
 
 from .ai_expressor import build_expression_prompt_preview
-from .capability_settings import (
-    ASRSettings,
-    CapabilitySettings,
-    ProactiveCompanionSettings,
-    ScreenObservationSettings,
-    TTSSettings,
-    WebSearchSettings,
-)
+from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
+from .capability_settings import CapabilitySettings
 from .controller import CompanionController
 from .dialogue import DialogueRequest
 from .expression_settings import (
@@ -537,27 +531,14 @@ class CompanionWindow(QMainWindow):
         lower.addWidget(self.inventory_card, stretch=1)
         self.content_stack.addWidget(inventory_page)
 
-        self.perception_search_page = QWidget()
-        perception_search_layout = QVBoxLayout(self.perception_search_page)
-        self.perception_search_layout = perception_search_layout
-        perception_search_layout.setContentsMargins(0, 0, 0, 0)
-        perception_search_layout.setSpacing(12)
-        self.control_panel_page_layouts.append(perception_search_layout)
-        self.screen_observation_settings_card = self._build_screen_observation_settings_card()
-        self.web_search_settings_card = self._build_web_search_settings_card()
-        self.proactive_companion_settings_card = self._build_proactive_companion_settings_card()
-        perception_search_layout.addWidget(self.screen_observation_settings_card)
-        perception_search_layout.addWidget(self.web_search_settings_card)
-        perception_search_layout.addWidget(self.proactive_companion_settings_card)
-        capability_save_row = QHBoxLayout()
-        self.capability_save_button = QPushButton("保存能力设置")
-        self.capability_save_button.clicked.connect(self._save_capability_settings_from_ui)
-        self.capability_feedback_label = QLabel("")
-        self.capability_feedback_label.setWordWrap(True)
-        capability_save_row.addWidget(self.capability_save_button)
-        capability_save_row.addWidget(self.capability_feedback_label, stretch=1)
-        perception_search_layout.addLayout(capability_save_row)
-        perception_search_layout.addStretch(1)
+        self.capability_settings_panel = CapabilitySettingsPanel(self.controller.get_capability_settings())
+        self.capability_settings_panel.saveRequested.connect(self._save_capability_settings_from_ui)
+        self.capability_settings_panel.screenObservationRequested.connect(self._run_screen_observation)
+        self.capability_settings_panel.webSearchRequested.connect(self._run_web_search)
+        self._alias_capability_settings_panel_widgets()
+        self.perception_search_page = self.capability_settings_panel
+        self.perception_search_layout = self.capability_settings_panel.perception_search_layout
+        self.control_panel_page_layouts.append(self.perception_search_layout)
         self.content_stack.addWidget(self.perception_search_page)
 
         privacy_page = QWidget()
@@ -565,7 +546,9 @@ class CompanionWindow(QMainWindow):
         privacy_layout.setContentsMargins(0, 0, 0, 0)
         privacy_layout.setSpacing(12)
         self.control_panel_page_layouts.append(privacy_layout)
-        self.perception_card = self._build_perception_card()
+        self.perception_card = ManualPerceptionPanel()
+        self.perception_card.manualPerceptionRequested.connect(self._handle_manual_screen_perception)
+        self._alias_manual_perception_panel_widgets()
         privacy_layout.addWidget(self.perception_card)
         privacy_layout.addStretch(1)
         self.content_stack.addWidget(privacy_page)
@@ -595,11 +578,85 @@ class CompanionWindow(QMainWindow):
         voice_layout.setContentsMargins(0, 0, 0, 0)
         voice_layout.setSpacing(12)
         self.control_panel_page_layouts.append(voice_layout)
-        self.voice_settings_card = self._build_voice_settings_card()
+        self.voice_settings_card = VoiceSettingsPanel(
+            self.controller.get_capability_settings(),
+            self.controller.get_expression_settings(),
+        )
+        self.voice_settings_card.ttsTestRequested.connect(self._handle_tts_test)
+        self.voice_settings_card.ttsStopRequested.connect(self._handle_tts_stop)
+        self.voice_settings_card.asrStartRequested.connect(self._handle_asr_start)
+        self.voice_settings_card.asrStopRequested.connect(self._handle_asr_stop)
+        self._alias_voice_settings_panel_widgets()
         voice_layout.addWidget(self.voice_settings_card)
         voice_layout.addStretch(1)
         self.content_stack.addWidget(voice_page)
         self._load_capability_settings_into_ui()
+
+    def _alias_capability_settings_panel_widgets(self) -> None:
+        for name in (
+            "screen_observation_settings_card",
+            "screen_observation_enabled_check",
+            "screen_observation_auto_check",
+            "screen_observation_interval_input",
+            "screen_observation_max_width_input",
+            "screen_observation_model_input",
+            "screen_observation_base_url_input",
+            "screen_observation_api_key_input",
+            "screen_observation_run_button",
+            "screen_observation_status_label",
+            "web_search_settings_card",
+            "web_search_enabled_check",
+            "web_search_engine_combo",
+            "web_search_max_results_input",
+            "web_search_query_input",
+            "web_search_run_button",
+            "web_search_results_label",
+            "proactive_companion_settings_card",
+            "proactive_companion_enabled_check",
+            "proactive_interval_input",
+            "proactive_global_cooldown_input",
+            "proactive_daily_limit_input",
+            "proactive_quiet_hours_check",
+            "proactive_quiet_start_input",
+            "proactive_quiet_end_input",
+            "proactive_allow_context_topic_check",
+            "capability_save_button",
+            "capability_feedback_label",
+        ):
+            setattr(self, name, getattr(self.capability_settings_panel, name))
+
+    def _alias_manual_perception_panel_widgets(self) -> None:
+        for name in (
+            "perception_status_label",
+            "perception_privacy_label",
+            "observe_screen_button",
+        ):
+            setattr(self, name, getattr(self.perception_card, name))
+
+    def _alias_voice_settings_panel_widgets(self) -> None:
+        for name in (
+            "voice_status_label",
+            "voice_tts_provider_label",
+            "voice_asr_provider_label",
+            "tts_enabled_check",
+            "tts_provider_combo",
+            "tts_api_url_input",
+            "tts_model_variant_combo",
+            "tts_auto_speak_check",
+            "tts_test_button",
+            "tts_stop_button",
+            "asr_enabled_check",
+            "asr_provider_combo",
+            "asr_model_input",
+            "asr_base_url_input",
+            "asr_api_key_input",
+            "asr_auto_send_check",
+            "asr_start_button",
+            "asr_stop_button",
+            "voice_tts_enable_button",
+            "voice_asr_enable_button",
+        ):
+            setattr(self, name, getattr(self.voice_settings_card, name))
 
     def _build_sidebar_card(self) -> QFrame:
         frame = QFrame()
@@ -818,140 +875,6 @@ class CompanionWindow(QMainWindow):
             layout.addWidget(button)
         return box
 
-    def _build_screen_observation_settings_card(self) -> QGroupBox:
-        box = QGroupBox("屏幕观察")
-        layout = QGridLayout(box)
-        layout.setHorizontalSpacing(10)
-        layout.setVerticalSpacing(8)
-        settings = self.controller.get_capability_settings().screen_observation
-
-        self.screen_observation_enabled_check = QCheckBox("启用屏幕观察")
-        self.screen_observation_enabled_check.setChecked(settings.enabled)
-        self.screen_observation_auto_check = QCheckBox("自动观察")
-        self.screen_observation_auto_check.setChecked(settings.auto_enabled)
-        self.screen_observation_interval_input = QSpinBox()
-        self.screen_observation_interval_input.setRange(10, 600)
-        self.screen_observation_interval_input.setValue(settings.interval_seconds)
-        self.screen_observation_max_width_input = QSpinBox()
-        self.screen_observation_max_width_input.setRange(640, 1920)
-        self.screen_observation_max_width_input.setValue(settings.max_screenshot_width)
-        self.screen_observation_model_input = QLineEdit(settings.vision_model)
-        self.screen_observation_model_input.setPlaceholderText("视觉模型 ID")
-        self.screen_observation_base_url_input = QLineEdit(settings.vision_base_url)
-        self.screen_observation_base_url_input.setPlaceholderText("OpenAI-compatible Base URL")
-        self.screen_observation_api_key_input = QLineEdit(settings.vision_api_key)
-        self.screen_observation_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.screen_observation_api_key_input.setPlaceholderText("视觉 API Key")
-        self.screen_observation_run_button = QPushButton("观察一次")
-        self.screen_observation_run_button.clicked.connect(self._run_screen_observation)
-        self.screen_observation_status_label = QLabel("屏幕观察未运行")
-        self.screen_observation_status_label.setWordWrap(True)
-
-        layout.addWidget(self.screen_observation_enabled_check, 0, 0)
-        layout.addWidget(self.screen_observation_auto_check, 0, 1)
-        layout.addWidget(QLabel("间隔秒数"), 1, 0)
-        layout.addWidget(self.screen_observation_interval_input, 1, 1)
-        layout.addWidget(QLabel("最长边"), 1, 2)
-        layout.addWidget(self.screen_observation_max_width_input, 1, 3)
-        layout.addWidget(QLabel("模型"), 2, 0)
-        layout.addWidget(self.screen_observation_model_input, 2, 1, 1, 3)
-        layout.addWidget(QLabel("Base URL"), 3, 0)
-        layout.addWidget(self.screen_observation_base_url_input, 3, 1, 1, 3)
-        layout.addWidget(QLabel("API Key"), 4, 0)
-        layout.addWidget(self.screen_observation_api_key_input, 4, 1, 1, 3)
-        layout.addWidget(self.screen_observation_run_button, 5, 0)
-        layout.addWidget(self.screen_observation_status_label, 5, 1, 1, 3)
-        return box
-
-    def _build_web_search_settings_card(self) -> QGroupBox:
-        box = QGroupBox("联网搜索")
-        layout = QGridLayout(box)
-        layout.setHorizontalSpacing(10)
-        layout.setVerticalSpacing(8)
-        settings = self.controller.get_capability_settings().web_search
-
-        self.web_search_enabled_check = QCheckBox("启用联网搜索")
-        self.web_search_enabled_check.setChecked(settings.enabled)
-        self.web_search_engine_combo = QComboBox()
-        self.web_search_engine_combo.addItems(["duckduckgo"])
-        self.web_search_engine_combo.setCurrentText(settings.engine)
-        self.web_search_max_results_input = QSpinBox()
-        self.web_search_max_results_input.setRange(1, 5)
-        self.web_search_max_results_input.setValue(settings.max_results)
-        self.web_search_query_input = QLineEdit()
-        self.web_search_query_input.setPlaceholderText("输入要搜索的内容")
-        self.web_search_run_button = QPushButton("搜索并提供给星汐")
-        self.web_search_run_button.clicked.connect(self._run_web_search_from_ui)
-        self.web_search_results_label = QLabel("暂无搜索结果")
-        self.web_search_results_label.setWordWrap(True)
-
-        layout.addWidget(self.web_search_enabled_check, 0, 0)
-        layout.addWidget(QLabel("引擎"), 1, 0)
-        layout.addWidget(self.web_search_engine_combo, 1, 1)
-        layout.addWidget(QLabel("结果数"), 1, 2)
-        layout.addWidget(self.web_search_max_results_input, 1, 3)
-        layout.addWidget(self.web_search_query_input, 2, 0, 1, 3)
-        layout.addWidget(self.web_search_run_button, 2, 3)
-        layout.addWidget(self.web_search_results_label, 3, 0, 1, 4)
-        return box
-
-    def _build_proactive_companion_settings_card(self) -> QGroupBox:
-        box = QGroupBox("主动陪伴")
-        layout = QGridLayout(box)
-        layout.setHorizontalSpacing(10)
-        layout.setVerticalSpacing(8)
-        settings = self.controller.get_capability_settings().proactive_companion
-
-        self.proactive_companion_enabled_check = QCheckBox("启用低频主动陪伴")
-        self.proactive_companion_enabled_check.setChecked(settings.enabled)
-        self.proactive_interval_input = QSpinBox()
-        self.proactive_interval_input.setRange(60, 86_400)
-        self.proactive_interval_input.setValue(settings.interval_seconds)
-        self.proactive_global_cooldown_input = QSpinBox()
-        self.proactive_global_cooldown_input.setRange(60, 86_400)
-        self.proactive_global_cooldown_input.setValue(settings.global_cooldown_seconds)
-        self.proactive_daily_limit_input = QSpinBox()
-        self.proactive_daily_limit_input.setRange(1, 24)
-        self.proactive_daily_limit_input.setValue(settings.daily_limit)
-        self.proactive_quiet_hours_check = QCheckBox("启用安静时段")
-        self.proactive_quiet_hours_check.setChecked(settings.quiet_hours_enabled)
-        self.proactive_quiet_start_input = QLineEdit(settings.quiet_start)
-        self.proactive_quiet_start_input.setPlaceholderText("23:00")
-        self.proactive_quiet_end_input = QLineEdit(settings.quiet_end)
-        self.proactive_quiet_end_input.setPlaceholderText("08:00")
-        self.proactive_allow_context_topic_check = QCheckBox("允许基于只读上下文轻提醒")
-        self.proactive_allow_context_topic_check.setChecked(settings.allow_context_topic)
-
-        layout.addWidget(self.proactive_companion_enabled_check, 0, 0, 1, 2)
-        layout.addWidget(self.proactive_allow_context_topic_check, 0, 2, 1, 2)
-        layout.addWidget(QLabel("最小间隔秒数"), 1, 0)
-        layout.addWidget(self.proactive_interval_input, 1, 1)
-        layout.addWidget(QLabel("全局冷却秒数"), 1, 2)
-        layout.addWidget(self.proactive_global_cooldown_input, 1, 3)
-        layout.addWidget(QLabel("每日上限"), 2, 0)
-        layout.addWidget(self.proactive_daily_limit_input, 2, 1)
-        layout.addWidget(self.proactive_quiet_hours_check, 2, 2, 1, 2)
-        layout.addWidget(QLabel("安静开始"), 3, 0)
-        layout.addWidget(self.proactive_quiet_start_input, 3, 1)
-        layout.addWidget(QLabel("安静结束"), 3, 2)
-        layout.addWidget(self.proactive_quiet_end_input, 3, 3)
-        return box
-
-    def _build_perception_card(self) -> QGroupBox:
-        box = QGroupBox("屏幕感知")
-        layout = QVBoxLayout(box)
-        self.perception_status_label = QLabel("屏幕感知：关闭")
-        self.perception_status_label.setWordWrap(True)
-        self.perception_privacy_label = QLabel("默认不会读取屏幕；只在手动触发时显示隐私提示。本轮不会自动截图，不会自动点击、输入或操作电脑。")
-        self.perception_privacy_label.setWordWrap(True)
-        self.observe_screen_button = QPushButton("手动触发屏幕感知")
-        self.observe_screen_button.setMinimumHeight(36)
-        self.observe_screen_button.clicked.connect(self._handle_manual_screen_perception)
-        layout.addWidget(self.perception_status_label)
-        layout.addWidget(self.perception_privacy_label)
-        layout.addWidget(self.observe_screen_button)
-        return box
-
     def _build_expression_settings_card(self) -> QGroupBox:
         box = QGroupBox("LLM 表达接入")
         layout = QGridLayout(box)
@@ -1031,98 +954,6 @@ class CompanionWindow(QMainWindow):
         layout.addWidget(self.expression_rule_preview_text)
         layout.addWidget(self.expression_rule_copy_button)
         layout.addWidget(self.expression_rule_status_label)
-        return box
-
-    def _build_voice_settings_card(self) -> QGroupBox:
-        box = QGroupBox("语音")
-        layout = QGridLayout(box)
-        layout.setHorizontalSpacing(10)
-        layout.setVerticalSpacing(8)
-        expression_settings = self.controller.get_expression_settings()
-        capability_settings = self.controller.get_capability_settings()
-        tts_settings = capability_settings.tts
-        asr_settings = capability_settings.asr
-
-        self.voice_status_label = QLabel("TTS 暂未启用 / ASR 暂未启用")
-        self.voice_status_label.setWordWrap(True)
-        self.voice_tts_provider_label = QLabel(f"tts_provider: {expression_settings['tts_provider']}")
-        self.voice_asr_provider_label = QLabel(f"asr_provider: {expression_settings['asr_provider']}")
-
-        self.tts_enabled_check = QCheckBox("启用 TTS")
-        self.tts_enabled_check.setChecked(tts_settings.enabled)
-        self.tts_provider_combo = QComboBox()
-        self.tts_provider_combo.addItems(["windows_sapi", "http_qwen3tts"])
-        self.tts_provider_combo.setCurrentText(tts_settings.provider)
-        self.tts_api_url_input = QLineEdit(tts_settings.api_url)
-        self.tts_api_url_input.setPlaceholderText("http://127.0.0.1:9880/")
-        self.tts_model_variant_combo = QComboBox()
-        self.tts_model_variant_combo.addItems(["qwen3tts_1.6b", "qwen3tts_0.7b"])
-        self.tts_model_variant_combo.setCurrentText(tts_settings.model_variant)
-        self.tts_auto_speak_check = QCheckBox("自动朗读星汐回复")
-        self.tts_auto_speak_check.setChecked(tts_settings.auto_speak)
-        self.tts_test_button = QPushButton("测试朗读")
-        self.tts_test_button.setEnabled(False)
-        self.tts_test_button.clicked.connect(self._handle_tts_test)
-        self.tts_stop_button = QPushButton("停止朗读")
-        self.tts_stop_button.setEnabled(False)
-        self.tts_stop_button.clicked.connect(self._handle_tts_stop)
-        self.tts_enabled_check.toggled.connect(self._sync_voice_controls_enabled)
-
-        self.asr_enabled_check = QCheckBox("启用 ASR")
-        self.asr_enabled_check.setChecked(asr_settings.enabled)
-        self.asr_provider_combo = QComboBox()
-        self.asr_provider_combo.addItems(["openai_compatible", "vosk"])
-        self.asr_provider_combo.setCurrentText(asr_settings.provider)
-        self.asr_model_input = QLineEdit(asr_settings.model)
-        self.asr_model_input.setPlaceholderText("whisper-1")
-        self.asr_base_url_input = QLineEdit(asr_settings.base_url)
-        self.asr_base_url_input.setPlaceholderText("OpenAI-compatible Base URL")
-        self.asr_api_key_input = QLineEdit(asr_settings.api_key)
-        self.asr_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.asr_api_key_input.setPlaceholderText("ASR API Key")
-        self.asr_auto_send_check = QCheckBox("识别后自动发送")
-        self.asr_auto_send_check.setChecked(asr_settings.auto_send)
-        self.asr_start_button = QPushButton("开始录音")
-        self.asr_start_button.setEnabled(False)
-        self.asr_start_button.clicked.connect(self._handle_asr_start)
-        self.asr_stop_button = QPushButton("停止并识别")
-        self.asr_stop_button.setEnabled(False)
-        self.asr_stop_button.clicked.connect(self._handle_asr_stop)
-        self.asr_enabled_check.toggled.connect(self._sync_voice_controls_enabled)
-
-        self.voice_tts_enable_button = QPushButton("启用 TTS")
-        self.voice_tts_enable_button.setEnabled(False)
-        self.voice_asr_enable_button = QPushButton("启用 ASR")
-        self.voice_asr_enable_button.setEnabled(False)
-
-        layout.addWidget(self.voice_status_label, 0, 0, 1, 4)
-        layout.addWidget(self.voice_tts_provider_label, 1, 0, 1, 2)
-        layout.addWidget(self.voice_asr_provider_label, 1, 2, 1, 2)
-        layout.addWidget(self.tts_enabled_check, 2, 0)
-        layout.addWidget(QLabel("TTS provider"), 3, 0)
-        layout.addWidget(self.tts_provider_combo, 3, 1)
-        layout.addWidget(QLabel("TTS API URL"), 4, 0)
-        layout.addWidget(self.tts_api_url_input, 4, 1, 1, 3)
-        layout.addWidget(QLabel("Qwen3TTS model"), 5, 0)
-        layout.addWidget(self.tts_model_variant_combo, 5, 1)
-        layout.addWidget(self.tts_auto_speak_check, 6, 0)
-        layout.addWidget(self.tts_test_button, 6, 1)
-        layout.addWidget(self.tts_stop_button, 6, 2)
-        layout.addWidget(self.asr_enabled_check, 7, 0)
-        layout.addWidget(QLabel("ASR provider"), 8, 0)
-        layout.addWidget(self.asr_provider_combo, 8, 1)
-        layout.addWidget(QLabel("ASR model"), 8, 2)
-        layout.addWidget(self.asr_model_input, 8, 3)
-        layout.addWidget(QLabel("ASR Base URL"), 9, 0)
-        layout.addWidget(self.asr_base_url_input, 9, 1, 1, 3)
-        layout.addWidget(QLabel("ASR API Key"), 10, 0)
-        layout.addWidget(self.asr_api_key_input, 10, 1, 1, 3)
-        layout.addWidget(self.asr_auto_send_check, 11, 0)
-        layout.addWidget(self.asr_start_button, 11, 1)
-        layout.addWidget(self.asr_stop_button, 11, 2)
-        layout.addWidget(self.voice_tts_enable_button, 12, 0)
-        layout.addWidget(self.voice_asr_enable_button, 12, 1)
-        self._sync_voice_controls_enabled()
         return box
 
     def _build_shop_card(self) -> QGroupBox:
@@ -1543,12 +1374,7 @@ class CompanionWindow(QMainWindow):
         self.voice_status_label.setText(result.message)
 
     def _sync_voice_controls_enabled(self) -> None:
-        tts_enabled = self.tts_enabled_check.isChecked()
-        self.tts_test_button.setEnabled(tts_enabled)
-        self.tts_stop_button.setEnabled(tts_enabled)
-        asr_enabled = self.asr_enabled_check.isChecked()
-        self.asr_start_button.setEnabled(asr_enabled)
-        self.asr_stop_button.setEnabled(asr_enabled)
+        self.voice_settings_card.sync_controls_enabled()
         self.dialogue_asr_button.setEnabled(False)
 
     def _handle_asr_start(self) -> None:
@@ -1651,92 +1477,18 @@ class CompanionWindow(QMainWindow):
         return bool(self.controller.get_expression_settings().get("enabled"))
 
     def _save_capability_settings_from_ui(self) -> CapabilitySettings:
-        settings = CapabilitySettings(
-            screen_observation=ScreenObservationSettings(
-                enabled=self.screen_observation_enabled_check.isChecked(),
-                auto_enabled=self.screen_observation_auto_check.isChecked(),
-                interval_seconds=self.screen_observation_interval_input.value(),
-                max_screenshot_width=self.screen_observation_max_width_input.value(),
-                vision_model=self.screen_observation_model_input.text(),
-                vision_base_url=self.screen_observation_base_url_input.text(),
-                vision_api_key=self.screen_observation_api_key_input.text(),
-            ),
-            web_search=WebSearchSettings(
-                enabled=self.web_search_enabled_check.isChecked(),
-                engine=self.web_search_engine_combo.currentText(),
-                max_results=self.web_search_max_results_input.value(),
-            ),
-            tts=TTSSettings(
-                enabled=self.tts_enabled_check.isChecked(),
-                provider=self.tts_provider_combo.currentText(),
-                api_url=self.tts_api_url_input.text(),
-                model_variant=self.tts_model_variant_combo.currentText(),
-                auto_speak=self.tts_auto_speak_check.isChecked(),
-            ),
-            asr=ASRSettings(
-                enabled=self.asr_enabled_check.isChecked(),
-                provider=self.asr_provider_combo.currentText(),
-                model=self.asr_model_input.text(),
-                base_url=self.asr_base_url_input.text(),
-                api_key=self.asr_api_key_input.text(),
-                auto_send=self.asr_auto_send_check.isChecked(),
-            ),
-            proactive_companion=ProactiveCompanionSettings(
-                enabled=self.proactive_companion_enabled_check.isChecked(),
-                interval_seconds=self.proactive_interval_input.value(),
-                global_cooldown_seconds=self.proactive_global_cooldown_input.value(),
-                daily_limit=self.proactive_daily_limit_input.value(),
-                quiet_hours_enabled=self.proactive_quiet_hours_check.isChecked(),
-                quiet_start=self.proactive_quiet_start_input.text(),
-                quiet_end=self.proactive_quiet_end_input.text(),
-                allow_context_topic=self.proactive_allow_context_topic_check.isChecked(),
-            ),
-        )
+        base = self.controller.get_capability_settings()
+        settings = self.capability_settings_panel.collect_settings(base)
+        settings = self.voice_settings_card.collect_settings(settings)
         saved = self.controller.update_capability_settings(settings)
         self._load_capability_settings_into_ui(saved)
-        self.capability_feedback_label.setText("能力设置已保存")
+        self.capability_settings_panel.set_feedback("能力设置已保存")
         return saved
 
     def _load_capability_settings_into_ui(self, settings: CapabilitySettings | None = None) -> None:
         settings = settings or self.controller.get_capability_settings()
-        screen = settings.screen_observation
-        self.screen_observation_enabled_check.setChecked(screen.enabled)
-        self.screen_observation_auto_check.setChecked(screen.auto_enabled)
-        self.screen_observation_interval_input.setValue(screen.interval_seconds)
-        self.screen_observation_max_width_input.setValue(screen.max_screenshot_width)
-        self.screen_observation_model_input.setText(screen.vision_model)
-        self.screen_observation_base_url_input.setText(screen.vision_base_url)
-        self.screen_observation_api_key_input.setText(screen.vision_api_key)
-
-        search = settings.web_search
-        self.web_search_enabled_check.setChecked(search.enabled)
-        self._set_combo_current_text(self.web_search_engine_combo, search.engine)
-        self.web_search_max_results_input.setValue(search.max_results)
-
-        tts = settings.tts
-        self.tts_enabled_check.setChecked(tts.enabled)
-        self._set_combo_current_text(self.tts_provider_combo, tts.provider)
-        self.tts_api_url_input.setText(tts.api_url)
-        self._set_combo_current_text(self.tts_model_variant_combo, tts.model_variant)
-        self.tts_auto_speak_check.setChecked(tts.auto_speak)
-
-        asr = settings.asr
-        self.asr_enabled_check.setChecked(asr.enabled)
-        self._set_combo_current_text(self.asr_provider_combo, asr.provider)
-        self.asr_model_input.setText(asr.model)
-        self.asr_base_url_input.setText(asr.base_url)
-        self.asr_api_key_input.setText(asr.api_key)
-        self.asr_auto_send_check.setChecked(asr.auto_send)
-
-        proactive = settings.proactive_companion
-        self.proactive_companion_enabled_check.setChecked(proactive.enabled)
-        self.proactive_interval_input.setValue(proactive.interval_seconds)
-        self.proactive_global_cooldown_input.setValue(proactive.global_cooldown_seconds)
-        self.proactive_daily_limit_input.setValue(proactive.daily_limit)
-        self.proactive_quiet_hours_check.setChecked(proactive.quiet_hours_enabled)
-        self.proactive_quiet_start_input.setText(proactive.quiet_start)
-        self.proactive_quiet_end_input.setText(proactive.quiet_end)
-        self.proactive_allow_context_topic_check.setChecked(proactive.allow_context_topic)
+        self.capability_settings_panel.load_settings(settings)
+        self.voice_settings_card.load_settings(settings, self.controller.get_expression_settings())
         self.dialogue_asr_button.setEnabled(False)
         self._sync_voice_controls_enabled()
         self._update_screen_observation_timer()
