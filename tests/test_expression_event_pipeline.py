@@ -2,6 +2,7 @@ from guanghe_companion.engine import create_initial_state
 from guanghe_companion.events import CompanionEvent
 from guanghe_companion.expression_event_pipeline import ExpressionEventPipeline
 from guanghe_companion.expression_request import ExpressionRequest
+from guanghe_companion.interaction_intents import InteractionIntent
 from guanghe_companion.snapshot import SnapshotBuilder, SnapshotContextFactory
 from guanghe_companion.visual_actions import VisualAction
 
@@ -140,6 +141,44 @@ def test_pipeline_appends_llm_visual_actions_as_readonly_presentation_event():
                 "id": "Raised",
                 "ttl_ms": 1800,
                 "priority": 60,
+                "source": "llm",
+            }
+        ]
+    }
+
+
+def test_pipeline_appends_llm_interaction_intents_as_readonly_event():
+    state = create_initial_state()
+    expressor = CapturingExpressor(
+        [
+            {
+                "character_name": state.character_name,
+                "speech": "休息一下也可以。",
+                "sprite": "1",
+                "effect": "ATTENTION",
+            }
+        ]
+    )
+    expressor.last_interaction_intents = (
+        InteractionIntent(intent_id="offer_rest", ttl_ms=5000, priority=50, source="llm"),
+    )
+    pipeline = ExpressionEventPipeline(
+        state=state,
+        expressor=expressor,
+        snapshot_provider=_snapshot_provider(state),
+        context_provider=lambda: {},
+        actions_provider=_actions,
+    )
+
+    events = pipeline.build_events(effect="ATTENTION", feedback="本地反馈")
+
+    assert [event.event_type for event in events] == ["speech", "stat", "choice", "intent"]
+    assert events[-1].payload == {
+        "intents": [
+            {
+                "id": "offer_rest",
+                "ttl_ms": 5000,
+                "priority": 50,
                 "source": "llm",
             }
         ]

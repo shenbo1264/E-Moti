@@ -3,6 +3,7 @@ from dataclasses import replace
 from guanghe_companion.controller import CompanionController
 from guanghe_companion.events import EventBuilder
 from guanghe_companion.events import CompanionEvent
+from guanghe_companion.interaction_intents import InteractionIntent
 from guanghe_companion.snapshot import (
     CompanionSnapshot,
     SnapshotBuilder,
@@ -149,6 +150,29 @@ def test_snapshot_serializer_exports_visual_actions_without_legacy_event_leakage
 
     assert compatible["visual_actions"] == [visual_action.to_dict()]
     assert all(event["character_name"] != "VISUAL" for event in compatible["events"])
+
+
+def test_snapshot_serializer_exports_interaction_intents_without_legacy_event_leakage(tmp_path):
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    intent = InteractionIntent(intent_id="offer_rest", ttl_ms=5000, priority=50, source="llm")
+    typed_snapshot = controller.get_typed_snapshot()
+    typed_snapshot = replace(
+        typed_snapshot,
+        events=[
+            *typed_snapshot.events,
+            CompanionEvent(
+                event_type="intent",
+                character_name="INTENT",
+                speech="llm interaction intent",
+                payload={"intents": [intent.to_dict()]},
+            ),
+        ],
+    )
+
+    compatible = typed_snapshot.to_compatible_dict()
+
+    assert compatible["interaction_intents"] == [intent.to_dict()]
+    assert all(event["character_name"] != "INTENT" for event in compatible["events"])
 
 
 def test_snapshot_builder_accepts_single_typed_input_context(tmp_path):

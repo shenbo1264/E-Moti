@@ -6,6 +6,7 @@ from typing import Protocol
 
 from .events import CompanionEvent, EventValidator, build_typed_fallback_events
 from .expression_request import ExpressionRequest
+from .interaction_intents import InteractionIntent
 from .models import CompanionState
 from .snapshot import CompanionSnapshot
 from .visual_actions import VisualAction
@@ -76,7 +77,9 @@ class ExpressionEventPipeline:
             return fallback_events + domain_event_list
         visual_event = _visual_event_from_actions(getattr(self.expressor, "last_visual_actions", ()))
         visual_events = [visual_event] if visual_event is not None else []
-        return expression_events[:1] + local_context_events + visual_events + domain_event_list
+        intent_event = _intent_event_from_intents(getattr(self.expressor, "last_interaction_intents", ()))
+        intent_events = [intent_event] if intent_event is not None else []
+        return expression_events[:1] + local_context_events + visual_events + intent_events + domain_event_list
 
     def _choices(self) -> list[str]:
         return [str(entry["label"]) for entry in self.actions_provider()]
@@ -96,4 +99,17 @@ def _visual_event_from_actions(actions: object) -> CompanionEvent | None:
         character_name="VISUAL",
         speech="llm visual action",
         payload={"actions": [action.to_dict() for action in actions]},
+    )
+
+
+def _intent_event_from_intents(intents: object) -> CompanionEvent | None:
+    if not isinstance(intents, tuple) or not all(isinstance(intent, InteractionIntent) for intent in intents):
+        return None
+    if not intents:
+        return None
+    return CompanionEvent(
+        event_type="intent",
+        character_name="INTENT",
+        speech="llm interaction intent",
+        payload={"intents": [intent.to_dict() for intent in intents]},
     )

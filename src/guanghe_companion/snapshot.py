@@ -51,6 +51,18 @@ def visual_actions_from_events(events: list[CompanionEvent]) -> list[dict[str, o
     return actions
 
 
+def interaction_intents_from_events(events: list[CompanionEvent]) -> list[dict[str, object]]:
+    intents: list[dict[str, object]] = []
+    for event in events:
+        if event.event_type != "intent":
+            continue
+        raw_intents = event.payload.get("intents")
+        if not isinstance(raw_intents, list):
+            continue
+        intents.extend(dict(intent) for intent in raw_intents if isinstance(intent, dict))
+    return intents
+
+
 def format_event_preview(events: list[dict[str, str]]) -> str:
     return "\n".join(json.dumps(event, ensure_ascii=False) for event in events)
 
@@ -136,6 +148,7 @@ class SnapshotCompatibleSerializer:
         stats = self.snapshot.stats.to_dict()
         legacy_events = legacy_ui_events(self.snapshot.events)
         visual_actions = visual_actions_from_events(self.snapshot.events)
+        interaction_intents = interaction_intents_from_events(self.snapshot.events)
         return {
             "character_id": self.snapshot.character_id,
             "character_name": self.snapshot.character_name,
@@ -169,6 +182,7 @@ class SnapshotCompatibleSerializer:
             "events": legacy_events,
             "event_preview": format_event_preview(legacy_events),
             "visual_actions": deepcopy(visual_actions),
+            "interaction_intents": deepcopy(interaction_intents),
             "item_feedback_icon": self.snapshot.item_feedback_icon,
             "proactive_feedback": deepcopy(self.snapshot.proactive_feedback),
             "memory_log": deepcopy(self.snapshot.memory_log),

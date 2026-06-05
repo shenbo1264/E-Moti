@@ -36,9 +36,11 @@ def test_prompt_builder_includes_state_action_and_ai_boundaries():
     assert '"speech"' in prompt
     assert '"effect"' in prompt
     assert '"motion_hint"' in prompt
+    assert '"intent_hint"' in prompt
     assert "[joy]" in prompt
     assert "Raised" in prompt
     assert "SwitchDown" in prompt
+    assert "offer_rest" in prompt
     assert '"character_name"' not in prompt
     assert '"sprite"' not in prompt
 
@@ -53,6 +55,7 @@ def test_expression_prompt_preview_states_local_authority():
     assert "动作结果" in preview
     assert "[joy]" in preview
     assert "motion_hint" in preview
+    assert "intent_hint" in preview
     assert "SwitchDown" in preview
     assert "背包" in preview
     assert "存档" in preview
@@ -639,6 +642,35 @@ def test_expressor_accepts_single_speech_schema_json_object():
             "source": "llm",
         }
     ]
+
+
+def test_expressor_extracts_readonly_interaction_intent_hint():
+    snapshot = make_snapshot()
+    payload = (
+        '{"type":"speech","speech":"休息一下也可以。",'
+        '"effect":"ATTENTION","intent_hint":"offer_rest"}'
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "休息一下也可以。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert [intent.to_dict() for intent in expressor.last_interaction_intents] == [
+        {
+            "id": "offer_rest",
+            "ttl_ms": 5000,
+            "priority": 50,
+            "source": "llm",
+        }
+    ]
+    assert snapshot["motion"] == "TouchHead"
 
 
 def test_expressor_accepts_adjacent_shinsekai_style_speech_objects():

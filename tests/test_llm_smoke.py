@@ -3,6 +3,7 @@ from pathlib import Path
 
 from guanghe_companion.controller import CompanionController
 from guanghe_companion.expression_settings import normalize_expression_settings
+from guanghe_companion.interaction_intents import InteractionIntent
 from guanghe_companion.llm_smoke import run_configured_llm_dialogue_smoke
 
 
@@ -24,6 +25,9 @@ def test_configured_llm_dialogue_smoke_uses_llm_path_without_growth_mutation(tmp
         last_fallback_reason = ""
 
         def express(self, request, effect=None):
+            self.last_interaction_intents = (
+                InteractionIntent(intent_id="offer_rest", ttl_ms=5000, priority=50, source="llm"),
+            )
             return [
                 {
                     "character_name": request.character_name,
@@ -61,6 +65,14 @@ def test_configured_llm_dialogue_smoke_uses_llm_path_without_growth_mutation(tmp
     assert public["history_len"] == 4
     assert [turn["fallback_reason"] for turn in public["turns"]] == ["", ""]
     assert all(str(turn["speech_preview"]).startswith("LLM says:") for turn in public["turns"])
+    assert public["turns"][0]["interaction_intents"] == [
+        {
+            "id": "offer_rest",
+            "ttl_ms": 5000,
+            "priority": 50,
+            "source": "llm",
+        }
+    ]
     assert "api_key" not in str(public)
     assert "sk-secret" not in str(public)
 

@@ -32,6 +32,7 @@ class LLMDialogueSmokeTurn:
     speech_preview: str
     effect: str
     visual_actions: list[dict[str, object]]
+    interaction_intents: list[dict[str, object]]
     fallback_reason: str
 
     def to_public_dict(self) -> dict[str, object]:
@@ -42,6 +43,7 @@ class LLMDialogueSmokeTurn:
             "speech_preview": self.speech_preview,
             "effect": self.effect,
             "visual_actions": self.visual_actions,
+            "interaction_intents": self.interaction_intents,
             "fallback_reason": self.fallback_reason,
         }
 
@@ -123,6 +125,7 @@ def run_configured_llm_dialogue_smoke(
                 speech_preview=speech[:60],
                 effect=effect,
                 visual_actions=_public_visual_actions(snapshot.get("visual_actions", [])),
+                interaction_intents=_public_interaction_intents(snapshot.get("interaction_intents", [])),
                 fallback_reason=fallback_reason,
             )
         )
@@ -187,6 +190,12 @@ def _public_visual_actions(value: object) -> list[dict[str, object]]:
     if not isinstance(value, list):
         return []
     return [dict(action) for action in value if isinstance(action, dict)]
+
+
+def _public_interaction_intents(value: object) -> list[dict[str, object]]:
+    if not isinstance(value, list):
+        return []
+    return [dict(intent) for intent in value if isinstance(intent, dict)]
 
 
 def _redact_mapping(value: Mapping[str, object]) -> dict[str, object]:

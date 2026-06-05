@@ -8,6 +8,7 @@ from .visual_actions import clean_speech_and_visual_actions
 
 MAX_SPEECH_LENGTH = 80
 MAX_MOTION_HINT_LENGTH = 40
+MAX_INTENT_HINT_LENGTH = 40
 MAX_EFFECT_LENGTH = 20
 
 
@@ -73,7 +74,7 @@ def _is_safe_legacy_sprite(sprite: str) -> bool:
 
 
 def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, str] | None:
-    allowed_keys = {"type", "speech", "effect", "motion_hint"}
+    allowed_keys = {"type", "speech", "effect", "motion_hint", "intent_hint"}
     if not set(event.keys()).issubset(allowed_keys):
         return None
     if event.get("type") != "speech":
@@ -82,6 +83,7 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
     speech = event.get("speech")
     effect = event.get("effect", "")
     motion_hint = event.get("motion_hint", "")
+    intent_hint = event.get("intent_hint", "")
     if not isinstance(speech, str) or not speech.strip():
         return None
     normalized_speech = speech.strip()
@@ -106,6 +108,14 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
         if _has_control_character(normalized_motion_hint):
             return None
         if len(normalized_motion_hint) > MAX_MOTION_HINT_LENGTH:
+            return None
+    if intent_hint != "" and not isinstance(intent_hint, str):
+        return None
+    if isinstance(intent_hint, str):
+        normalized_intent_hint = intent_hint.strip()
+        if _has_control_character(normalized_intent_hint):
+            return None
+        if len(normalized_intent_hint) > MAX_INTENT_HINT_LENGTH:
             return None
 
     return {
