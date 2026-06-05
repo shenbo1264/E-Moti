@@ -22,6 +22,8 @@ MAX_OPENAI_BASE_URL_LENGTH = 240
 MAX_OPENAI_PROMPT_LENGTH = 8192
 MAX_OPENAI_RESPONSE_BYTES = 65_536
 MAX_OPENAI_RESPONSE_TEXT_LENGTH = 4096
+DEFAULT_CHAT_COMPLETION_MAX_TOKENS = 512
+JSON_RESPONSE_PROVIDERS = frozenset({"deepseek"})
 
 
 class LLMProviderError(RuntimeError):
@@ -130,6 +132,8 @@ class OpenAICompatibleChatClient:
         timeout_seconds: float = DEFAULT_TIMEOUT_SECONDS,
         transport: HTTPTransport | None = None,
         require_api_key: bool = True,
+        json_response: bool = False,
+        max_tokens: int | None = None,
     ) -> None:
         self.api_key = _normalize_api_key(api_key)
         self.model = _normalize_model(model)
@@ -137,6 +141,8 @@ class OpenAICompatibleChatClient:
         self.timeout_seconds = _normalize_timeout(timeout_seconds)
         self.transport = transport or _default_transport
         self.require_api_key = bool(require_api_key)
+        self.json_response = bool(json_response)
+        self.max_tokens = _normalize_max_tokens(max_tokens)
         self._closed = False
 
     def __enter__(self) -> "OpenAICompatibleChatClient":
@@ -156,13 +162,15 @@ class OpenAICompatibleChatClient:
             raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
         if len(prompt) > MAX_OPENAI_PROMPT_LENGTH:
             raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
-        payload = json.dumps(
-            {
-                "model": self.model,
-                "messages": [{"role": "user", "content": prompt}],
-            },
-            ensure_ascii=False,
-        ).encode("utf-8")
+        payload_dict: dict[str, object] = {
+            "model": self.model,
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        if self.json_response:
+            payload_dict["response_format"] = {"type": "json_object"}
+        if self.max_tokens is not None:
+            payload_dict["max_tokens"] = self.max_tokens
+        payload = json.dumps(payload_dict, ensure_ascii=False).encode("utf-8")
         api_request = request.Request(
             _chat_completions_url(self.base_url),
             data=payload,
@@ -286,6 +294,8 @@ def client_config_from_settings(settings: ExpressionSettings) -> ExpressionClien
             base_url=settings.base_url,
             timeout_seconds=settings.timeout_seconds,
             require_api_key=require_api_key,
+            json_response=_provider_uses_json_response(settings.provider),
+            max_tokens=DEFAULT_CHAT_COMPLETION_MAX_TOKENS if _provider_uses_json_response(settings.provider) else None,
         )
     return ExpressionClientConfig(
         client=client,
@@ -406,6 +416,22 @@ def _normalize_timeout(value: object) -> float:
     except (TypeError, ValueError):
         return DEFAULT_TIMEOUT_SECONDS
     return parsed if math.isfinite(parsed) and 0 < parsed <= MAX_TIMEOUT_SECONDS else DEFAULT_TIMEOUT_SECONDS
+
+
+def _normalize_max_tokens(value: object) -> int | None:
+    if value is None:
+        return None
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return parsed if 1 <= parsed <= 4096 else None
+
+
+def _provider_uses_json_response(provider: str) -> bool:
+    return provider in JSON_RESPONSE_PROVIDERS
 
 
 def _normalize_model(value: object) -> str:

@@ -95,6 +95,7 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
         "actions",
         "recent_memory",
         "long_term_memory",
+        "player_message",
         "perception_summary",
         "tool_results",
     }
@@ -105,6 +106,7 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
     assert prompt_payload["actions"][0] == {"label": original_action_label}
     assert prompt_payload["recent_memory"][0]["kind"] == original_memory_kind
     assert prompt_payload["long_term_memory"] == []
+    assert prompt_payload["player_message"] == ""
     assert prompt_payload["perception_summary"] == "current window: draft note"
     assert prompt_payload["tool_results"] == [
         {
@@ -150,6 +152,7 @@ def test_expression_request_merges_readonly_context_for_typed_snapshot_without_w
                 "inventory": "warm_milk",
             }
         ],
+        "player_message": "今天有点累，陪我一下。",
         "feedback": "override should be ignored",
         "focus": 1,
         "actions": [{"label": "override action"}],
@@ -165,6 +168,7 @@ def test_expression_request_merges_readonly_context_for_typed_snapshot_without_w
     assert request.actions[0] == {"label": typed_snapshot.actions[0]["label"]}
     assert request.recent_memory[0]["motion"] == typed_snapshot.memory_log[0]["motion"]
     assert request.long_term_memory == ()
+    assert request.player_message == "今天有点累，陪我一下。"
     assert request.perception_summary == "current window: draft note"
     assert request.tool_results == (
         {
@@ -176,6 +180,21 @@ def test_expression_request_merges_readonly_context_for_typed_snapshot_without_w
     assert "inventory" not in prompt_payload
     assert "coins" not in prompt_payload
     assert "unlocks" not in prompt_payload
+
+
+def test_prompt_builder_includes_readonly_player_message_boundary():
+    controller = CompanionController(auto_load=False)
+    snapshot = controller.get_typed_snapshot()
+    request = ExpressionRequest.from_snapshot(
+        snapshot,
+        context={"player_message": "给我一个很短的鼓励。"},
+    )
+
+    prompt = ShinsekaiAIExpressor().build_prompt(request)
+
+    assert "player_message: 给我一个很短的鼓励。" in prompt
+    assert "优先回应 player_message" in prompt
+    assert "player_message 只是只读玩家输入" in prompt
 
 
 def test_expressor_build_prompt_accepts_typed_companion_snapshot():
@@ -593,6 +612,32 @@ def test_expressor_strips_expression_tags_before_tts_and_exposes_visual_actions(
             "priority": 60,
             "source": "llm",
         },
+    ]
+
+
+def test_expressor_accepts_single_speech_schema_json_object():
+    snapshot = make_snapshot()
+    payload = '{"type":"speech","speech":"我在听。","effect":"ATTENTION","motion_hint":"Raised"}'
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "我在听。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert [action.to_dict() for action in expressor.last_visual_actions] == [
+        {
+            "type": "motion",
+            "id": "Raised",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        }
     ]
 
 
@@ -1663,6 +1708,48 @@ def test_openai_compatible_chat_client_posts_prompt_and_extracts_message_content
     assert '"model": "deepseek-chat"' in captured["payload"]
     assert '"content": "prompt text"' in captured["payload"]
     assert result.startswith('[{"type":"speech"')
+
+
+def test_openai_compatible_chat_client_can_request_json_response_format():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["payload"] = request.data.decode("utf-8")
+        return b'{"choices":[{"message":{"content":"{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}"}}]}'
+
+    client = OpenAICompatibleChatClient(
+        api_key="test-key",
+        model="deepseek-v4-flash",
+        base_url="https://api.deepseek.com",
+        transport=transport,
+        json_response=True,
+        max_tokens=512,
+    )
+
+    assert client("prompt text").startswith('{"type":"speech"')
+    assert '"response_format": {"type": "json_object"}' in captured["payload"]
+    assert '"max_tokens": 512' in captured["payload"]
+
+
+def test_default_deepseek_expressor_requests_json_output_from_settings():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient, build_default_ai_expressor
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "deepseek",
+            "api_key": "test-key",
+        }
+    )
+
+    expressor = build_default_ai_expressor(settings=settings)
+
+    assert isinstance(expressor.llm_client, OpenAICompatibleChatClient)
+    assert expressor.llm_client.json_response is True
+    assert expressor.llm_client.max_tokens == 512
 
 
 def test_openai_compatible_chat_client_allows_slow_provider_timeout():

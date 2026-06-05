@@ -1355,6 +1355,83 @@ def test_controller_records_dialogue_history_without_growth_mutation(tmp_path):
     assert reloaded.copy_dialogue_history_text() == controller.copy_dialogue_history_text()
 
 
+def test_controller_records_llm_dialogue_speech_when_expression_enabled(tmp_path):
+    class FakeExpressor:
+        enabled = True
+        last_fallback_reason = ""
+
+        def express(self, request, effect=None):
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "我会陪你慢慢说。",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=FakeExpressor(),
+    )
+    before = controller.get_typed_snapshot()
+
+    snapshot = controller.submit_dialogue_request(
+        DialogueRequest("今天陪我一会儿"),
+        include_ai_expression=True,
+    )
+
+    assert [entry["text"] for entry in snapshot["dialogue_history"]] == [
+        "今天陪我一会儿",
+        "我会陪你慢慢说。",
+    ]
+    assert "我会陪你慢慢说。" in controller.copy_dialogue_history_text()
+    assert controller.get_typed_snapshot().stats == before.stats
+    assert controller.get_typed_snapshot().inventory == before.inventory
+    assert controller.get_typed_snapshot().memory_log == before.memory_log
+
+
+def test_controller_passes_dialogue_text_as_readonly_player_message_to_llm(tmp_path):
+    class CapturingExpressor:
+        enabled = True
+        last_fallback_reason = ""
+
+        def __init__(self):
+            self.requests = []
+
+        def express(self, request, effect=None):
+            self.requests.append(request)
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "我听到你的原话了。",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    expressor = CapturingExpressor()
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=expressor,
+    )
+    before = controller.get_typed_snapshot()
+
+    controller.submit_dialogue_request(
+        DialogueRequest("给我一个很短的鼓励。"),
+        include_ai_expression=True,
+    )
+
+    assert expressor.requests[0].player_message == "给我一个很短的鼓励。"
+    assert controller.get_typed_snapshot().stats == before.stats
+    assert controller.get_typed_snapshot().inventory == before.inventory
+    assert controller.get_typed_snapshot().memory_log == before.memory_log
+
+
 def test_controller_clear_replay_and_revert_dialogue_history_do_not_touch_growth_state(tmp_path):
     controller = CompanionController(
         save_path=tmp_path / "save.json",

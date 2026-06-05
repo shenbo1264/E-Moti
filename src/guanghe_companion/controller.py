@@ -198,6 +198,7 @@ class CompanionController:
         )
         self._perception_summary = ""
         self._tool_results: list[dict[str, object]] = []
+        self._current_player_message = ""
         self.ai_expressor = ai_expressor or build_default_ai_expressor(
             settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
         )
@@ -398,13 +399,22 @@ class CompanionController:
         self.last_allowed = True
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
-        self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
+        self._current_player_message = text
+        try:
+            self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
+        finally:
+            self._current_player_message = ""
         if text:
+            assistant_text = _assistant_dialogue_text_from_events(
+                self.last_events,
+                character_name=self.state.character_name,
+                fallback=self.last_feedback,
+            )
             self.dialogue_history = append_dialogue_exchange(
                 self.dialogue_history,
                 user_text=text,
                 assistant_name=self.state.character_name,
-                assistant_text=self.last_feedback,
+                assistant_text=assistant_text,
                 effect="ATTENTION",
                 source=request.source,
             )
@@ -852,13 +862,16 @@ class CompanionController:
         ]
 
     def _expression_context(self) -> dict[str, object]:
-        return RuntimeExpressionContextService(
+        context = RuntimeExpressionContextService(
             state=self.state,
             relationship_decorations=self.character_pack.relationship_decorations,
             external_provider=self.expression_context_provider,
             perception_summary=self._perception_summary,
             tool_results=self._tool_results,
         )()
+        if self._current_player_message:
+            context["player_message"] = self._current_player_message
+        return context
 
     def _item_icon_path(self, item) -> str:
         if not item.icon:
@@ -975,3 +988,15 @@ def _long_term_memory_path_for_save_path(save_path: Path) -> Path:
     if save_path.name == "companion_demo_save.json":
         return save_path.with_name("companion_demo_long_term_memory.json")
     return save_path.with_name(f"{save_path.stem}_long_term_memory.json")
+
+
+def _assistant_dialogue_text_from_events(
+    events: list[CompanionEvent],
+    *,
+    character_name: str,
+    fallback: str,
+) -> str:
+    for event in events:
+        if event.event_type == "speech" and event.character_name == character_name and event.speech.strip():
+            return event.speech
+    return fallback

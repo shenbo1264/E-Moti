@@ -17,6 +17,7 @@ MAX_MOTION_LENGTH = 40
 MAX_FEEDBACK_LENGTH = 160
 MAX_DELTA_TEXT_LENGTH = 80
 MAX_GOAL_LENGTH = 160
+MAX_PLAYER_MESSAGE_LENGTH = 240
 MAX_MEMORY_KIND_LENGTH = 40
 MAX_MEMORY_SUMMARY_LENGTH = 160
 MAX_MEMORY_MOTION_LENGTH = 40
@@ -40,6 +41,7 @@ class ExpressionRequest:
     goal: str
     actions: tuple[dict[str, str], ...]
     recent_memory: tuple[dict[str, str], ...]
+    player_message: str = ""
     long_term_memory: tuple[dict[str, str], ...] = ()
     perception_summary: str = ""
     tool_results: tuple[dict[str, str], ...] = ()
@@ -69,6 +71,7 @@ class ExpressionRequest:
             feedback=_short_string(source.get("feedback", ""), MAX_FEEDBACK_LENGTH),
             delta_text=_short_string(source.get("delta_text", ""), MAX_DELTA_TEXT_LENGTH),
             goal=_short_string(source.get("goal", ""), MAX_GOAL_LENGTH),
+            player_message=_short_string(source.get("player_message", ""), MAX_PLAYER_MESSAGE_LENGTH),
             actions=actions,
             recent_memory=recent_memory,
             long_term_memory=long_term_memory,
@@ -89,6 +92,7 @@ class ExpressionRequest:
             "feedback": self.feedback,
             "delta_text": self.delta_text,
             "goal": self.goal,
+            "player_message": self.player_message,
             "actions": [dict(action) for action in self.actions],
             "recent_memory": [dict(entry) for entry in self.recent_memory],
             "long_term_memory": [dict(entry) for entry in self.long_term_memory],
@@ -131,7 +135,7 @@ def _expression_payload_from_context(context: Mapping[str, object] | None) -> di
     if not isinstance(context, Mapping):
         return {}
     payload: dict[str, object] = {}
-    for key in ("perception_summary", "tool_results"):
+    for key in ("perception_summary", "tool_results", "player_message"):
         if key in context:
             payload[key] = context[key]
     return payload
