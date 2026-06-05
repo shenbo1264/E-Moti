@@ -50,11 +50,11 @@ from .expression_settings import (
 )
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_motion_catalog_from_dir
+from .presentation_renderer import SpritePresentationAdapter
 from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
 from .storage import DEMO_SAVE_PATH
 from .tray_controller import TrayController
-from .visual_actions import sprite_motion_override
 from .voice_asr import ASRService
 from .voice_tts import TTSManager
 from .web_search import WebSearchService
@@ -300,6 +300,7 @@ class CompanionWindow(QMainWindow):
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
         self.snapshot_renderer = SnapshotRenderer()
+        self.presentation_renderer = SpritePresentationAdapter()
         user_pack_root = (
             self.controller.user_data_root / "character_packs"
             if self.controller.user_data_root is not None
@@ -1613,8 +1614,8 @@ class CompanionWindow(QMainWindow):
             self._show_message(str(exc))
 
     def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
-        visual_motion = sprite_motion_override(snapshot.get("visual_actions"))
-        self.motion_animator.set_motion(visual_motion or str(snapshot["motion"]))
+        frame = self.presentation_renderer.frame_from_snapshot(snapshot)
+        self.motion_animator.set_motion(frame.motion)
         self.frame_timer.setInterval(self.motion_animator.interval_ms())
         self._render_current_frame()
         self.character_label.setText(
