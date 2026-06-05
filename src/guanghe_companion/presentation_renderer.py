@@ -24,9 +24,17 @@ class PresentationRendererAdapter(Protocol):
 class SpritePresentationAdapter:
     backend: RendererBackend = "sprite"
 
+    def __init__(self, motion_map: Mapping[str, str] | None = None) -> None:
+        self.motion_map = {
+            key: value
+            for key, value in dict(motion_map or {}).items()
+            if isinstance(key, str) and isinstance(value, str) and key and value
+        }
+
     def frame_from_snapshot(self, snapshot: Mapping[str, object]) -> PresentationFrame:
         visual_actions = _visual_actions(snapshot.get("visual_actions"))
-        motion = sprite_motion_override(visual_actions) or _snapshot_motion(snapshot)
+        visual_motion = sprite_motion_override(visual_actions)
+        motion = self.motion_map.get(visual_motion, visual_motion) if visual_motion else _snapshot_motion(snapshot)
         return PresentationFrame(
             backend=self.backend,
             motion=motion,

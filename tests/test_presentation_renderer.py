@@ -40,3 +40,22 @@ def test_sprite_presentation_adapter_falls_back_to_snapshot_motion_when_no_motio
     frame = SpritePresentationAdapter().frame_from_snapshot(snapshot)
 
     assert frame.motion == "Study"
+
+
+def test_sprite_presentation_adapter_uses_character_motion_map():
+    snapshot = {
+        "motion": "Default",
+        "visual_actions": [
+            {
+                "type": "motion",
+                "id": "Play",
+                "ttl_ms": 1800,
+                "priority": 60,
+                "source": "llm",
+            }
+        ],
+    }
+
+    frame = SpritePresentationAdapter(motion_map={"Play": "TouchHead"}).frame_from_snapshot(snapshot)
+
+    assert frame.motion == "TouchHead"

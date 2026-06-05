@@ -26,6 +26,8 @@ REQUIRED_FILES = (
 )
 ALLOWED_ITEM_CATEGORIES = frozenset({"food", "gift", "tool"})
 ALLOWED_ITEM_EFFECTS = frozenset({"charge", "mood", "stability", "trust", "study_bonus_exp"})
+ALLOWED_RENDERER_BACKENDS = frozenset({"sprite", "live2d_web", "inochi2d"})
+RENDERER_MAP_FIELDS = ("motion_map", "expression_map", "intent_map")
 
 
 @dataclass(frozen=True, slots=True)
@@ -194,6 +196,38 @@ def _validate_character_payload(payload: dict[str, object], errors: list[str]) -
         errors.append("character.json.mode_descriptions must be an object")
     if not isinstance(payload.get("motion_labels"), dict):
         errors.append("character.json.motion_labels must be an object")
+    _validate_renderer_payload(payload.get("renderer"), errors)
+
+
+def _validate_renderer_payload(value: object, errors: list[str]) -> None:
+    if value is None:
+        return
+    if not isinstance(value, dict):
+        errors.append("character.json.renderer must be an object")
+        return
+    backend = value.get("backend", "sprite")
+    if backend not in ALLOWED_RENDERER_BACKENDS:
+        errors.append("character.json.renderer.backend invalid")
+    for field in RENDERER_MAP_FIELDS:
+        mapping = value.get(field, {})
+        if not isinstance(mapping, dict):
+            errors.append(f"character.json.renderer.{field} must be an object")
+            continue
+        for key, item in mapping.items():
+            if not isinstance(key, str) or not key:
+                errors.append(f"character.json.renderer.{field} keys must be non-empty strings")
+                continue
+            if not _safe_renderer_id(item):
+                errors.append(f"character.json.renderer.{field}.{key} must be a safe renderer id")
+
+
+def _safe_renderer_id(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip() or len(value) > 120:
+        return False
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        return False
+    path = Path(value)
+    return not path.is_absolute() and ".." not in path.parts
 
 
 def _validate_dialogue_payload(payload: dict[str, object], errors: list[str]) -> None:

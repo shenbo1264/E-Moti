@@ -300,7 +300,9 @@ class CompanionWindow(QMainWindow):
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
         self.snapshot_renderer = SnapshotRenderer()
-        self.presentation_renderer = SpritePresentationAdapter()
+        self.presentation_renderer = SpritePresentationAdapter(
+            motion_map=self.controller.character_pack.renderer.motion_map
+        )
         user_pack_root = (
             self.controller.user_data_root / "character_packs"
             if self.controller.user_data_root is not None
@@ -795,6 +797,9 @@ class CompanionWindow(QMainWindow):
         self.motion_catalog = load_motion_catalog_from_dir(self.controller.resources.asset_dir)
         self.motion_animator = MotionAnimator(self.motion_catalog)
         self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
+        self.presentation_renderer = SpritePresentationAdapter(
+            motion_map=self.controller.character_pack.renderer.motion_map
+        )
 
     def _build_launcher_card(self) -> QFrame:
         frame = QFrame()

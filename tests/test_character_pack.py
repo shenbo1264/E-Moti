@@ -16,6 +16,10 @@ def test_load_default_character_pack_reads_spritesheet_filename():
     pack = load_default_character_pack()
 
     assert pack.spritesheet == "spritesheet.png"
+    assert pack.renderer.backend == "sprite"
+    assert pack.renderer.motion_map["Play"] == "Play"
+    assert pack.renderer.expression_map["joy"] == "joy"
+    assert pack.renderer.intent_map["offer_rest"] == "offer_rest"
 
 
 def test_load_default_character_pack_reads_relationship_badges_from_existing_item_icons():
