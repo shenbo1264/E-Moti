@@ -42,6 +42,46 @@ def test_generation_workflow_writes_draft_pack_without_touching_assets(tmp_path)
     assert character["spritesheet"] == "spritesheet.png"
 
 
+def test_generation_workflow_writes_local_fanwork_role_card_with_distribution_boundary(tmp_path):
+    workflow = CharacterGenerationWorkflow(output_root=tmp_path / "generated")
+
+    draft = workflow.create_draft(
+        {
+            **_brief(),
+            "character_id": "ikaros_local_fanwork",
+            "name": "Ikaros Local Draft",
+            "title": "Private fanwork companion draft",
+            "policy": "local_fanwork",
+            "source_character": "Ikaros",
+            "boundaries": [
+                "Private local fanwork only",
+                "Do not bundle or distribute",
+                "No official art, logos, copied lines, or exact asset reproduction",
+            ],
+        },
+        source_notes=(
+            {
+                "title": "Source profile",
+                "summary": "Public profile notes used only by the local user.",
+                "url": "https://example.test/ikaros",
+            },
+        ),
+    )
+
+    card_text = (draft.pack_dir / "character_card.md").read_text(encoding="utf-8")
+    prompts_text = (draft.pack_dir / "art_prompts.json").read_text(encoding="utf-8")
+    provenance_text = (draft.pack_dir / "provenance.md").read_text(encoding="utf-8")
+    qa_text = (draft.pack_dir / "qa_checklist.md").read_text(encoding="utf-8")
+
+    assert "Policy: local_fanwork" in card_text
+    assert "Source character: Ikaros" in card_text
+    assert "Private local fanwork only" in card_text
+    assert "private local fanwork" in prompts_text
+    assert "Do not bundle or distribute" in prompts_text
+    assert "Local fanwork" in provenance_text
+    assert "Do not commit local fanwork packs" in qa_text
+
+
 def test_generation_workflow_rejects_unsafe_or_empty_brief(tmp_path):
     workflow = CharacterGenerationWorkflow(output_root=tmp_path / "generated")
 

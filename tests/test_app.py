@@ -496,6 +496,48 @@ def test_character_switch_updates_open_desktop_pet_window(monkeypatch, tmp_path)
     app.processEvents()
 
 
+def test_character_switch_preserves_manual_perception_expression_context(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="鏄熸睈", title="妗岄潰棰戠巼鍚屼即")
+    write_ui_character_pack(assets_root, "custom_character", name="婢勫厜", title="妗岄潰鍥炲０鍚屼即")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication, QMessageBox
+    from guanghe_companion.app import CompanionWindow, MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
+    from guanghe_companion.controller import CompanionController
+
+    monkeypatch.setattr(QMessageBox, "information", lambda parent, title, message: None)
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "custom_character":
+            window.character_list.setCurrentItem(item)
+            break
+    window.character_switch_button.click()
+    app.processEvents()
+
+    window.observe_screen_button.click()
+    app.processEvents()
+    context = window.controller.expression_context_provider()
+
+    assert context["perception_summary"] == MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_event_panel_uses_presentational_summary_not_raw_json(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 

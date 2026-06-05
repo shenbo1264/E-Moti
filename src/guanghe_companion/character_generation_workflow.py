@@ -44,11 +44,15 @@ class CharacterGenerationWorkflow:
         _write_json(pack_dir / "shop_items.json", _shop_items_json(normalized))
         _write_json(pack_dir / "motion_manifest.json", _motion_manifest_json())
         _write_json(pack_dir / "art_prompts.json", _art_prompts(normalized))
+        (pack_dir / "character_card.md").write_text(
+            _character_card_markdown(normalized),
+            encoding="utf-8",
+        )
         (pack_dir / "provenance.md").write_text(
             _provenance_markdown(normalized, source_notes),
             encoding="utf-8",
         )
-        (pack_dir / "qa_checklist.md").write_text(_qa_checklist(), encoding="utf-8")
+        (pack_dir / "qa_checklist.md").write_text(_qa_checklist(normalized), encoding="utf-8")
         return CharacterDraft(
             character_id=character_id,
             pack_dir=pack_dir,
@@ -74,6 +78,8 @@ def _normalize_brief(brief: Mapping[str, object]) -> dict[str, object]:
         "visual_keywords": _text_list(brief.get("visual_keywords"), 8, 40),
         "personality_keywords": _text_list(brief.get("personality_keywords"), 8, 40),
         "boundaries": _text_list(brief.get("boundaries"), 8, 80),
+        "policy": _policy(brief.get("policy")),
+        "source_character": _required_text(brief.get("source_character"), 80),
     }
 
 
@@ -177,11 +183,21 @@ def _motion_manifest_json() -> dict[str, object]:
 def _art_prompts(brief: Mapping[str, object]) -> dict[str, object]:
     visual = ", ".join(brief["visual_keywords"] or ["original desktop companion"])
     boundaries = "; ".join(brief["boundaries"] or ["No copyrighted characters"])
-    common = (
-        "No copyrighted characters, no fan art, no existing franchise style copying, "
-        "transparent background, consistent outfit, readable at 192x208. "
-        f"Visual keywords: {visual}. Boundaries: {boundaries}."
-    )
+    if brief.get("policy") == "local_fanwork":
+        source = str(brief.get("source_character") or brief["name"])
+        common = (
+            "private local fanwork only. Do not bundle or distribute. "
+            "Do not use official art, screenshots, logos, copied lines, or exact asset reproduction. "
+            f"User-provided source character for private reference: {source}. "
+            "transparent background, consistent outfit, readable at 192x208. "
+            f"Visual keywords: {visual}. Boundaries: {boundaries}."
+        )
+    else:
+        common = (
+            "No copyrighted characters, no fan art, no existing franchise style copying, "
+            "transparent background, consistent outfit, readable at 192x208. "
+            f"Visual keywords: {visual}. Boundaries: {boundaries}."
+        )
     return {
         "reference_sheet": f"Create an original desktop companion character design sheet. {common}",
         "sprite_rows": {
@@ -209,14 +225,27 @@ def _provenance_markdown(
     brief: Mapping[str, object],
     source_notes: Iterable[Mapping[str, str]],
 ) -> str:
+    policy = str(brief.get("policy") or "original_inspiration")
+    source_character = str(brief.get("source_character") or "")
+    if policy == "local_fanwork":
+        origin_line = "Local fanwork: user-authorized private draft only; do not commit, bundle, or distribute."
+    else:
+        origin_line = "Originality: generated from an abstract brief; no copyrighted character assets are included."
     lines = [
         f"# {brief['name']} Provenance",
         "",
         "Status: draft, not import-ready.",
-        "Originality: generated from an abstract brief; no copyrighted character assets are included.",
-        "",
-        "## Source Notes",
+        f"Policy: {policy}.",
+        origin_line,
     ]
+    if source_character:
+        lines.extend(["", f"Source character: {source_character}"])
+    lines.extend(
+        [
+            "",
+            "## Source Notes",
+        ]
+    )
     for note in source_notes:
         title = _required_text(note.get("title"), 80) or "source"
         summary = _required_text(note.get("summary"), 180) or "summary unavailable"
@@ -228,16 +257,68 @@ def _provenance_markdown(
     return "\n".join(lines) + "\n"
 
 
-def _qa_checklist() -> str:
-    return (
-        "# Character Draft QA\n\n"
-        "- [ ] JSON files pass `python -m json.tool`.\n"
-        "- [ ] `spritesheet.png` is generated as 1536x1872 RGBA.\n"
-        "- [ ] Item icons exist under `item_icons/`.\n"
-        "- [ ] `tools/art/validate_companion_atlas.py` passes.\n"
-        "- [ ] Contact sheet and GIF previews are manually inspected.\n"
-        "- [ ] No third-party IP names, logos, protected outfits, or copied lines remain.\n"
+def _qa_checklist(brief: Mapping[str, object]) -> str:
+    lines = [
+        "# Character Draft QA",
+        "",
+        "- [ ] JSON files pass `python -m json.tool`.",
+        "- [ ] `spritesheet.png` is generated as 1536x1872 RGBA.",
+        "- [ ] Item icons exist under `item_icons/`.",
+        "- [ ] `tools/art/validate_companion_atlas.py` passes.",
+        "- [ ] Contact sheet and GIF previews are manually inspected.",
+    ]
+    if brief.get("policy") == "local_fanwork":
+        lines.extend(
+            [
+                "- [ ] Do not commit local fanwork packs into the open-source repository.",
+                "- [ ] Do not bundle or distribute official art, logos, copied lines, or exact assets.",
+            ]
+        )
+    else:
+        lines.append("- [ ] No third-party IP names, logos, protected outfits, or copied lines remain.")
+    return "\n".join(lines) + "\n"
+
+
+def _character_card_markdown(brief: Mapping[str, object]) -> str:
+    policy = str(brief.get("policy") or "original_inspiration")
+    source_character = str(brief.get("source_character") or "")
+    lines = [
+        f"# {brief['name']}",
+        "",
+        f"Policy: {policy}",
+    ]
+    if source_character:
+        lines.append(f"Source character: {source_character}")
+    lines.extend(
+        [
+            f"Character ID: {brief['character_id']}",
+            f"Title: {brief['title']}",
+            "",
+            "## Description",
+            str(brief["description"]),
+            "",
+            "## Visual Keywords",
+        ]
     )
+    visual_keywords = list(brief["visual_keywords"])
+    lines.extend(f"- {item}" for item in visual_keywords)
+    lines.extend(["", "## Personality Keywords"])
+    personality_keywords = list(brief["personality_keywords"])
+    lines.extend(f"- {item}" for item in personality_keywords)
+    lines.extend(["", "## Boundaries"])
+    boundaries = list(brief["boundaries"])
+    if not boundaries and policy == "local_fanwork":
+        boundaries = ["Private local fanwork only", "Do not bundle or distribute"]
+    lines.extend(f"- {item}" for item in boundaries)
+    lines.extend(
+        [
+            "",
+            "## Asset Status",
+            "- Draft metadata exists.",
+            "- Spritesheet and item icons still require manual generation and QA.",
+        ]
+    )
+    return "\n".join(lines) + "\n"
 
 
 def _write_json(path: Path, payload: object) -> None:
@@ -261,3 +342,9 @@ def _text_list(value: object, limit: int, max_length: int) -> list[str]:
         if len(items) >= limit:
             break
     return items
+
+
+def _policy(value: object) -> str:
+    if value == "local_fanwork":
+        return "local_fanwork"
+    return "original_inspiration"

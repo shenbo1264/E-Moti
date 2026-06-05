@@ -329,9 +329,8 @@ class CompanionWindow(QMainWindow):
         self.stat_name_labels: list[QLabel] = []
         self._manual_perception_summary = ""
         self._base_expression_context_provider = self.controller.expression_context_provider
-        self.controller.expression_context_provider = ExpressionContextChain(
-            [self._base_expression_context_provider, self._manual_perception_context]
-        )
+        self._manual_expression_context_provider = self.controller.expression_context_provider
+        self._install_manual_expression_context_provider()
 
         configure_application_style(QApplication.instance())
         self.setWindowTitle("星汐 E-Moti 桌面伴侣")
@@ -342,6 +341,16 @@ class CompanionWindow(QMainWindow):
         self._setup_timers()
         self._apply_snapshot(self.controller.get_snapshot())
         self.tray_controller.setup(owns_controller=self._owns_controller)
+
+    def _install_manual_expression_context_provider(self) -> None:
+        current_provider = self.controller.expression_context_provider
+        if current_provider is self._manual_expression_context_provider:
+            current_provider = self._base_expression_context_provider
+        self._base_expression_context_provider = current_provider
+        self._manual_expression_context_provider = ExpressionContextChain(
+            [self._base_expression_context_provider, self._manual_perception_context]
+        )
+        self.controller.expression_context_provider = self._manual_expression_context_provider
 
     def _register_close_callback(self, callback: Callable[["CompanionWindow"], None]) -> None:
         self._close_callbacks.append(callback)
@@ -367,7 +376,8 @@ class CompanionWindow(QMainWindow):
         self.tray_controller.cleanup()
         self.screen_observation_timer.stop()
         self._manual_perception_summary = ""
-        self.controller.expression_context_provider = self._base_expression_context_provider
+        if self.controller.expression_context_provider is self._manual_expression_context_provider:
+            self.controller.expression_context_provider = self._base_expression_context_provider
         try:
             if self._owns_controller:
                 self.controller.close()
@@ -760,7 +770,7 @@ class CompanionWindow(QMainWindow):
                 include_ai_expression=False,
             )
             self._reload_character_assets()
-            self._base_expression_context_provider = self.controller.expression_context_provider
+            self._install_manual_expression_context_provider()
             self._sync_linked_character_windows(snapshot)
             self._apply_snapshot(snapshot)
             self._refresh_character_library()
@@ -775,7 +785,7 @@ class CompanionWindow(QMainWindow):
             linked.append(self._return_target_window)
         for window in linked:
             window._reload_character_assets()
-            window._base_expression_context_provider = window.controller.expression_context_provider
+            window._install_manual_expression_context_provider()
             window._apply_snapshot(snapshot)
             window._refresh_character_library()
 
