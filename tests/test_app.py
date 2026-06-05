@@ -457,6 +457,30 @@ def test_window_started_with_custom_character_loads_matching_motion_assets(monke
     app.processEvents()
 
 
+def test_window_applies_visual_action_motion_without_mutating_controller_state(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+    snapshot = window.controller.get_snapshot()
+    assert snapshot["motion"] == "Default"
+
+    snapshot["visual_actions"] = [
+        {
+            "type": "motion",
+            "id": "Raised",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        }
+    ]
+    window._apply_snapshot(snapshot)
+    app.processEvents()
+
+    assert window.motion_animator.current_motion.name == "Raised"
+    assert window.controller.get_snapshot()["motion"] == "Default"
+
+    window.close()
+    app.processEvents()
+
+
 def test_character_switch_updates_open_desktop_pet_window(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"

@@ -34,12 +34,15 @@ from .expression_request import (
 )
 from .expression_settings import ExpressionSettings
 from .snapshot import CompanionSnapshot
+from .visual_actions import VisualAction, visual_actions_from_payload_rows
 
 _ExpressionPayloadError = ExpressionPayloadError
 _normalize_expression_event = normalize_expression_event
 _parse_shinsekai_object_stream = parse_shinsekai_object_stream
 _stringify_event = stringify_event
 _DEFAULT_THREAD_POOL_EXECUTOR = ThreadPoolExecutor
+_PROMPT_VISUAL_TAGS = "[joy] [sadness] [sleepy] [excited] [focused] [surprised] [calm]"
+_PROMPT_MOTION_HINTS = "Default, TouchHead, Play, SwitchDown, Sleep, Raised, Study"
 
 
 def build_expression_prompt_preview(character_name: str = "星汐") -> str:
@@ -50,8 +53,10 @@ def build_expression_prompt_preview(character_name: str = "星汐") -> str:
             "AI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。",
             "输出必须是 JSON 数组或连续 JSON 对象；每个对象只允许 type、speech、effect、motion_hint。",
             "type 固定为 speech；speech 是星汐说出的短句；effect 和 motion_hint 只是演出提示。",
+            f"允许 speech 前缀表情标签：{_PROMPT_VISUAL_TAGS}；标签会在播报前移除，只作为当前表情/动作提示。",
+            f"允许 motion_hint：{_PROMPT_MOTION_HINTS}；提示只影响当前呈现，不改变本地 motion 或状态机。",
             "本地状态机拥有最终权威：数值、背包、商店、关系、回忆、目标和存档只由本地代码更新。",
-            '示例：{"type":"speech","speech":"我在这里。","effect":"ATTENTION","motion_hint":"Default"}',
+            '示例：{"type":"speech","speech":"[joy] 我在这里。","effect":"ATTENTION","motion_hint":"Raised"}',
         ]
     )
 
@@ -69,6 +74,7 @@ class ShinsekaiAIExpressor:
         self.enabled = enabled
         self.dialogue_policy = dialogue_policy or CompanionDialoguePolicy()
         self.last_fallback_reason: str | None = None
+        self.last_visual_actions: tuple[VisualAction, ...] = ()
         self._closed = False
         self._executor: ThreadPoolExecutor | None = None
 
@@ -97,6 +103,8 @@ class ShinsekaiAIExpressor:
                 "AI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。",
                 "请输出 JSON 数组，每个对象只包含 type, speech, effect, motion_hint。",
                 'type 固定为 speech；speech 是星汐说出的短句；effect 和 motion_hint 只是表达提示。',
+                f"允许 speech 前缀表情标签：{_PROMPT_VISUAL_TAGS}；标签会在 TTS/显示前移除，只作为当前表情/动作提示。",
+                f"允许 motion_hint：{_PROMPT_MOTION_HINTS}；提示只影响当前呈现，不改变本地 motion 或状态机。",
                 *self.dialogue_policy.prompt_lines(expression_request),
                 f"character_name: {prompt_payload['character_name']}",
                 f"mode: {prompt_payload['mode']}",
@@ -112,7 +120,7 @@ class ShinsekaiAIExpressor:
                 f"choices: {choices}",
                 f"recent_memory: {memory}",
                 f"long_term_memory: {long_term_memory}",
-                '示例字段：{"type":"speech","speech":"短句","effect":"ATTENTION","motion_hint":"Raised"}',
+                '示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised"}',
             ]
         )
 
@@ -121,6 +129,7 @@ class ShinsekaiAIExpressor:
         snapshot: dict[str, object] | CompanionSnapshot | ExpressionRequest,
         effect: str | None = None,
     ) -> list[dict[str, str]]:
+        self.last_visual_actions = ()
         try:
             expression_request = _ensure_expression_request(snapshot)
             prompt_payload = expression_request.to_prompt_dict()
@@ -167,9 +176,11 @@ class ShinsekaiAIExpressor:
         if len(payload) > 4:
             self.last_fallback_reason = "too_many_events"
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
+        visual_actions = visual_actions_from_payload_rows(payload)
         normalized_events = [_normalize_expression_event(state, row) for row in payload]
         if any(row is None for row in normalized_events):
             self.last_fallback_reason = "unsafe_event"
+            self.last_visual_actions = ()
             return build_fallback_events(state, fallback_feedback, choices, effect="DISAPPOINTED")
 
         validated_events = validate_events(
@@ -180,8 +191,10 @@ class ShinsekaiAIExpressor:
         )
         if _is_fallback_events(state, validated_events, fallback_feedback):
             self.last_fallback_reason = "invalid_event"
+            self.last_visual_actions = ()
         else:
             self.last_fallback_reason = None
+            self.last_visual_actions = visual_actions
         return validated_events
 
     def _call_llm(self, prompt: str) -> str:

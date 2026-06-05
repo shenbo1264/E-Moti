@@ -54,6 +54,7 @@ from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
 from .storage import DEMO_SAVE_PATH
 from .tray_controller import TrayController
+from .visual_actions import sprite_motion_override
 from .voice_asr import ASRService
 from .voice_tts import TTSManager
 from .web_search import WebSearchService
@@ -1612,7 +1613,8 @@ class CompanionWindow(QMainWindow):
             self._show_message(str(exc))
 
     def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
-        self.motion_animator.set_motion(str(snapshot["motion"]))
+        visual_motion = sprite_motion_override(snapshot.get("visual_actions"))
+        self.motion_animator.set_motion(visual_motion or str(snapshot["motion"]))
         self.frame_timer.setInterval(self.motion_animator.interval_ms())
         self._render_current_frame()
         self.character_label.setText(

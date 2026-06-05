@@ -1,3 +1,5 @@
+from dataclasses import replace
+
 from guanghe_companion.controller import CompanionController
 from guanghe_companion.events import EventBuilder
 from guanghe_companion.events import CompanionEvent
@@ -11,6 +13,7 @@ from guanghe_companion.snapshot import (
     format_event_preview,
     legacy_ui_events,
 )
+from guanghe_companion.visual_actions import VisualAction
 
 
 def test_controller_exposes_typed_snapshot_with_required_stage_one_fields(tmp_path):
@@ -117,6 +120,35 @@ def test_snapshot_compatible_serializer_exports_legacy_shape_and_copies_mutables
     assert fresh["inventory"]["warm_milk"] == 0
     assert fresh["actions"][0]["label"] == "轻触"
     assert fresh["events"][0]["speech"] != "被外部篡改"
+
+
+def test_snapshot_serializer_exports_visual_actions_without_legacy_event_leakage(tmp_path):
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    visual_action = VisualAction(
+        action_type="motion",
+        action_id="Raised",
+        ttl_ms=1800,
+        priority=60,
+        source="llm",
+    )
+    typed_snapshot = controller.get_typed_snapshot()
+    typed_snapshot = replace(
+        typed_snapshot,
+        events=[
+            *typed_snapshot.events,
+            CompanionEvent(
+                event_type="visual",
+                character_name="VISUAL",
+                speech="llm visual action",
+                payload={"actions": [visual_action.to_dict()]},
+            ),
+        ],
+    )
+
+    compatible = typed_snapshot.to_compatible_dict()
+
+    assert compatible["visual_actions"] == [visual_action.to_dict()]
+    assert all(event["character_name"] != "VISUAL" for event in compatible["events"])
 
 
 def test_snapshot_builder_accepts_single_typed_input_context(tmp_path):

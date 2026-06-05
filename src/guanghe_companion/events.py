@@ -27,6 +27,7 @@ EventType = Literal[
     "inventory",
     "proactive",
     "system",
+    "visual",
 ]
 EVENT_PAYLOAD_FIELDS: dict[EventType, frozenset[str]] = {
     "speech": frozenset(),
@@ -38,11 +39,14 @@ EVENT_PAYLOAD_FIELDS: dict[EventType, frozenset[str]] = {
     "inventory": frozenset({"item_id", "action", "item_name", "icon_path"}),
     "proactive": frozenset({"kind", "summary"}),
     "system": frozenset({"code", "message"}),
+    "visual": frozenset({"actions"}),
 }
 STAT_PAYLOAD_FIELDS = frozenset({"focus", "charge", "stability", "mood", "trust"})
 MAX_PAYLOAD_STRING_LENGTH = 160
 MAX_CHOICE_PAYLOAD_LENGTH = 40
 MAX_CHOICE_PAYLOAD_ITEMS = 6
+MAX_VISUAL_ACTION_PAYLOAD_ITEMS = 4
+VISUAL_ACTION_PAYLOAD_FIELDS = frozenset({"type", "id", "ttl_ms", "priority", "source"})
 TEXT_PAYLOAD_FIELDS: dict[EventType, frozenset[str]] = {
     "motion": frozenset({"motion", "reason"}),
     "memory": frozenset({"kind", "summary", "motion"}),
@@ -529,6 +533,8 @@ def _is_valid_typed_event_payload(event: CompanionEvent) -> bool:
         return _is_valid_stats_payload(event.payload.get("stats"))
     if event.event_type == "choice":
         return _is_valid_choices_payload(event.payload.get("choices"))
+    if event.event_type == "visual":
+        return _is_valid_visual_actions_payload(event.payload.get("actions"))
 
     text_fields = TEXT_PAYLOAD_FIELDS.get(event.event_type)
     if text_fields is None:
@@ -565,6 +571,31 @@ def _is_valid_choices_payload(value: object) -> bool:
         _is_valid_payload_text(choice, allow_empty=False, max_length=MAX_CHOICE_PAYLOAD_LENGTH)
         for choice in value
     )
+
+
+def _is_valid_visual_actions_payload(value: object) -> bool:
+    if not isinstance(value, list) or len(value) > MAX_VISUAL_ACTION_PAYLOAD_ITEMS:
+        return False
+    if not value:
+        return False
+    for action in value:
+        if not isinstance(action, dict):
+            return False
+        if set(action.keys()) != VISUAL_ACTION_PAYLOAD_FIELDS:
+            return False
+        if action.get("type") not in {"expression", "motion"}:
+            return False
+        if not _is_valid_payload_text(action.get("id"), allow_empty=False, max_length=40):
+            return False
+        ttl_ms = action.get("ttl_ms")
+        priority = action.get("priority")
+        if isinstance(ttl_ms, bool) or not isinstance(ttl_ms, int) or ttl_ms <= 0:
+            return False
+        if isinstance(priority, bool) or not isinstance(priority, int):
+            return False
+        if action.get("source") != "llm":
+            return False
+    return True
 
 
 def _is_valid_payload_text(value: object, *, allow_empty: bool, max_length: int) -> bool:

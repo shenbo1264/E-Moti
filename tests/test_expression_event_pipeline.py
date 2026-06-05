@@ -3,6 +3,7 @@ from guanghe_companion.events import CompanionEvent
 from guanghe_companion.expression_event_pipeline import ExpressionEventPipeline
 from guanghe_companion.expression_request import ExpressionRequest
 from guanghe_companion.snapshot import SnapshotBuilder, SnapshotContextFactory
+from guanghe_companion.visual_actions import VisualAction
 
 
 def _actions():
@@ -104,6 +105,45 @@ def test_pipeline_uses_single_valid_ai_speech_while_keeping_local_stat_and_choic
     assert isinstance(request, ExpressionRequest)
     assert request.perception_summary == "screen note"
     assert effect == "ATTENTION"
+
+
+def test_pipeline_appends_llm_visual_actions_as_readonly_presentation_event():
+    state = create_initial_state()
+    expressor = CapturingExpressor(
+        [
+            {
+                "character_name": state.character_name,
+                "speech": "我会靠近一点。",
+                "sprite": "1",
+                "effect": "ATTENTION",
+            }
+        ]
+    )
+    expressor.last_visual_actions = (
+        VisualAction(action_type="motion", action_id="Raised", ttl_ms=1800, priority=60, source="llm"),
+    )
+    pipeline = ExpressionEventPipeline(
+        state=state,
+        expressor=expressor,
+        snapshot_provider=_snapshot_provider(state),
+        context_provider=lambda: {},
+        actions_provider=_actions,
+    )
+
+    events = pipeline.build_events(effect="ATTENTION", feedback="本地反馈")
+
+    assert [event.event_type for event in events] == ["speech", "stat", "choice", "visual"]
+    assert events[-1].payload == {
+        "actions": [
+            {
+                "type": "motion",
+                "id": "Raised",
+                "ttl_ms": 1800,
+                "priority": 60,
+                "source": "llm",
+            }
+        ]
+    }
 
 
 def test_pipeline_falls_back_when_ai_returns_unsafe_or_local_fallback_expression():

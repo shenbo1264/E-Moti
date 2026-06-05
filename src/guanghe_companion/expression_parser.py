@@ -4,6 +4,7 @@ from typing import Any
 
 from .dialogue_parser import DialogueStreamParser
 from .events import ALLOWED_EFFECTS
+from .visual_actions import clean_speech_and_visual_actions
 
 MAX_SPEECH_LENGTH = 80
 MAX_MOTION_HINT_LENGTH = 40
@@ -84,9 +85,12 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
     if not isinstance(speech, str) or not speech.strip():
         return None
     normalized_speech = speech.strip()
+    normalized_speech, _ = clean_speech_and_visual_actions(normalized_speech, "")
     if _has_control_character(normalized_speech):
         return None
     if len(normalized_speech) > MAX_SPEECH_LENGTH:
+        return None
+    if not normalized_speech:
         return None
     if not isinstance(effect, str):
         return None

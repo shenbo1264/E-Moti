@@ -8,6 +8,7 @@ from .events import CompanionEvent, EventValidator, build_typed_fallback_events
 from .expression_request import ExpressionRequest
 from .models import CompanionState
 from .snapshot import CompanionSnapshot
+from .visual_actions import VisualAction
 
 
 class ExpressionEventExpressor(Protocol):
@@ -73,7 +74,9 @@ class ExpressionEventPipeline:
         expression_events = [event for event in validated_events if event.event_type == "speech"]
         if not expression_events:
             return fallback_events + domain_event_list
-        return expression_events[:1] + local_context_events + domain_event_list
+        visual_event = _visual_event_from_actions(getattr(self.expressor, "last_visual_actions", ()))
+        visual_events = [visual_event] if visual_event is not None else []
+        return expression_events[:1] + local_context_events + visual_events + domain_event_list
 
     def _choices(self) -> list[str]:
         return [str(entry["label"]) for entry in self.actions_provider()]
@@ -81,3 +84,16 @@ class ExpressionEventPipeline:
 
 def _is_local_fallback_expression(events: list[CompanionEvent], feedback: str) -> bool:
     return [event.event_type for event in events] == ["speech", "stat", "choice"] and events[0].speech == feedback
+
+
+def _visual_event_from_actions(actions: object) -> CompanionEvent | None:
+    if not isinstance(actions, tuple) or not all(isinstance(action, VisualAction) for action in actions):
+        return None
+    if not actions:
+        return None
+    return CompanionEvent(
+        event_type="visual",
+        character_name="VISUAL",
+        speech="llm visual action",
+        payload={"actions": [action.to_dict() for action in actions]},
+    )

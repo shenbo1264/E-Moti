@@ -36,6 +36,9 @@ def test_prompt_builder_includes_state_action_and_ai_boundaries():
     assert '"speech"' in prompt
     assert '"effect"' in prompt
     assert '"motion_hint"' in prompt
+    assert "[joy]" in prompt
+    assert "Raised" in prompt
+    assert "SwitchDown" in prompt
     assert '"character_name"' not in prompt
     assert '"sprite"' not in prompt
 
@@ -48,6 +51,9 @@ def test_expression_prompt_preview_states_local_authority():
     assert "AI 只能生成表达事件" in preview
     assert "不能修改状态数值" in preview
     assert "动作结果" in preview
+    assert "[joy]" in preview
+    assert "motion_hint" in preview
+    assert "SwitchDown" in preview
     assert "背包" in preview
     assert "存档" in preview
     assert "星汐" in preview
@@ -527,7 +533,7 @@ def test_expressor_uses_valid_llm_json_events_without_changing_snapshot():
     assert snapshot["focus"] == original_focus
 
 
-def test_expressor_accepts_limited_speech_event_schema_without_applying_motion_hint():
+def test_expressor_accepts_limited_speech_event_schema_and_extracts_motion_hint_visual_action():
     snapshot = make_snapshot()
     payload = (
         '[{"type":"speech","speech":"我会轻一点回应。",'
@@ -546,6 +552,48 @@ def test_expressor_accepts_limited_speech_event_schema_without_applying_motion_h
         }
     ]
     assert snapshot["motion"] == "TouchHead"
+    assert [action.to_dict() for action in expressor.last_visual_actions] == [
+        {
+            "type": "motion",
+            "id": "Raised",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        }
+    ]
+
+
+def test_expressor_strips_expression_tags_before_tts_and_exposes_visual_actions():
+    snapshot = make_snapshot()
+    payload = '[{"type":"speech","speech":"[joy] Back online.","effect":"ATTENTION"}]'
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "Back online.",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert [action.to_dict() for action in expressor.last_visual_actions] == [
+        {
+            "type": "expression",
+            "id": "joy",
+            "ttl_ms": 3000,
+            "priority": 70,
+            "source": "llm",
+        },
+        {
+            "type": "motion",
+            "id": "TouchHead",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        },
+    ]
 
 
 def test_expressor_accepts_adjacent_shinsekai_style_speech_objects():
