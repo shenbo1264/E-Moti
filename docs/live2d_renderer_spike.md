@@ -173,3 +173,22 @@ This keeps `VisualAction.action_id` stable while each character decides how that
 Proceed with Live2D as a spike, not a mainline dependency yet.
 
 The correct next package is not to install Live2D immediately. It is to add a renderer backend contract and a local WebEngine prototype gate. The current `SpritePresentationAdapter` is the first step of that contract, and Live2D should be added as a second adapter once licensing and packaging are explicit.
+
+## 2026-06-06 Spike Result
+
+The first developer-only WebEngine spike now exists under `tools/live2d_spike`.
+
+Verified command:
+
+```powershell
+python tools\live2d_spike\smoke_live2d_web.py --timeout-seconds 45
+```
+
+Verified result:
+
+- `QWebEngineView` loaded an official sample `.model3.json` from ignored local `tmp/live2d_research`.
+- `pixi.js` plus `pixi-live2d-display` rendered the model.
+- `visual_actions` using E-Moti's existing payload shape were mapped to Live2D expression and motion IDs.
+- Screenshot validation wrote `artifacts/simulation/live2d_spike.png` and passed a nonblank image check.
+
+This is not yet the production desktop-pet renderer and does not include a rigged Xingxi model. It proves the Live2D runtime route and the LLM-to-renderer presentation boundary.
