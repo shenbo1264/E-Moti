@@ -32,11 +32,13 @@ def _write_minimal_pack(
     *,
     icon_path="item_icons/snack.png",
     spritesheet="spritesheet.png",
+    sheet_columns=8,
+    default_frame_count=1,
 ):
     pack_dir = root / character_id
     (pack_dir / "item_icons").mkdir(parents=True)
     (pack_dir / "preview").mkdir()
-    Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
+    Image.new("RGBA", (sheet_columns * 192, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
     Image.new("RGBA", (32, 32), (255, 0, 0, 255)).save(pack_dir / "item_icons" / "snack.png")
     Image.new("RGBA", (64, 64), (255, 0, 0, 255)).save(pack_dir / "preview" / "contact-sheet.png")
     _write_json(
@@ -65,11 +67,11 @@ def _write_minimal_pack(
     _write_json(
         pack_dir / "motion_manifest.json",
         {
-            "sheet_columns": 8,
+            "sheet_columns": sheet_columns,
             "sheet_rows": 9,
             "frame_width": 192,
             "frame_height": 208,
-            "motions": {"Default": {"row": 0, "frame_count": 1, "fps": 4}},
+            "motions": {"Default": {"row": 0, "frame_count": default_frame_count, "fps": 4}},
         },
     )
     _write_json(
@@ -122,6 +124,18 @@ def test_validate_character_pack_rejects_spritesheet_paths_outside_pack(tmp_path
 
     assert not report.ok
     assert any("spritesheet path must be a safe relative filename" in error for error in report.errors)
+
+
+def test_validate_character_pack_accepts_manifest_declared_wide_sheet(tmp_path):
+    pack_dir = _write_minimal_pack(
+        tmp_path,
+        sheet_columns=15,
+        default_frame_count=15,
+    )
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert report.ok
 
 
 def test_validate_character_pack_rejects_invalid_renderer_mapping(tmp_path):

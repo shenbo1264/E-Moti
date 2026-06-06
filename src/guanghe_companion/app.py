@@ -394,6 +394,9 @@ class CompanionWindow(QMainWindow):
             self.desktop_pet_window = None
             pet_window.close()
         self.tray_controller.cleanup()
+        self.frame_timer.stop()
+        self.tick_timer.stop()
+        self.countdown_timer.stop()
         self.screen_observation_timer.stop()
         self._manual_perception_summary = ""
         if self.controller.expression_context_provider is self._manual_expression_context_provider:

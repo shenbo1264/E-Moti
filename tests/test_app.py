@@ -1,6 +1,7 @@
 import time
 import json
 
+import pytest
 from PIL import Image
 
 
@@ -150,6 +151,40 @@ class FakeSystemTrayIcon:
 
     def showMessage(self, title, message, icon=None, msecs=0):
         self.messages.append((title, message, icon, msecs))
+
+
+@pytest.fixture(autouse=True)
+def disable_system_tray_by_default(monkeypatch):
+    import guanghe_companion.app as app_module
+
+    FakeSystemTrayIcon.instances = []
+    FakeSystemTrayIcon.available = False
+    monkeypatch.setattr(app_module, "QSystemTrayIcon", FakeSystemTrayIcon, raising=False)
+    yield
+
+    from PySide6.QtCore import QCoreApplication, QEvent
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance()
+    if app is None:
+        return
+    for widget in list(QApplication.topLevelWidgets()):
+        for timer_name in (
+            "frame_timer",
+            "tick_timer",
+            "countdown_timer",
+            "screen_observation_timer",
+        ):
+            timer = getattr(widget, timer_name, None)
+            if timer is not None:
+                timer.stop()
+        tray_controller = getattr(widget, "tray_controller", None)
+        if tray_controller is not None:
+            tray_controller.force_exit = True
+        widget.close()
+        widget.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
 
 
 def test_sprite_drag_uses_global_cursor_delta_when_window_moves(monkeypatch):
@@ -2514,6 +2549,21 @@ def test_window_close_closes_controller(monkeypatch, tmp_path):
     app.processEvents()
 
     assert controller.close_calls == 1
+
+
+def test_window_close_stops_runtime_timers(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert window.frame_timer.isActive()
+    assert window.countdown_timer.isActive()
+
+    window.close()
+    app.processEvents()
+
+    assert not window.frame_timer.isActive()
+    assert not window.tick_timer.isActive()
+    assert not window.countdown_timer.isActive()
+    assert not window.screen_observation_timer.isActive()
 
 
 def test_control_panel_close_hides_to_tray_without_closing_controller(monkeypatch, tmp_path):

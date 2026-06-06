@@ -1,23 +1,79 @@
 {
-  "sheet_columns": 8,
+  "sheet_columns": 15,
   "sheet_rows": 9,
   "frame_width": 192,
   "frame_height": 208,
   "background": "transparent",
   "motions": {
-    "Default": { "row": 0, "frame_count": 6, "fps": 4 },
-    "MoveRight": { "row": 1, "frame_count": 8, "fps": 8 },
-    "MoveLeft": { "row": 2, "frame_count": 8, "fps": 8 },
-    "TouchHead": { "row": 3, "frame_count": 4, "fps": 6 },
-    "Play": { "row": 4, "frame_count": 5, "fps": 7 },
-    "SwitchDown": { "row": 5, "frame_count": 8, "fps": 5 },
-    "Sleep": { "row": 6, "frame_count": 6, "fps": 4 },
-    "Raised": { "row": 7, "frame_count": 6, "fps": 7 },
-    "Study": { "row": 8, "frame_count": 6, "fps": 5 },
-    "Comfort": { "row": 6, "frame_count": 6, "fps": 4 },
-    "Eat": { "row": 3, "frame_count": 4, "fps": 6 },
-    "Gift": { "row": 3, "frame_count": 4, "fps": 6 },
-    "Shop": { "row": 4, "frame_count": 5, "fps": 5 },
-    "Tick": { "row": 0, "frame_count": 6, "fps": 4 }
+    "Default": {
+      "row": 0,
+      "frame_count": 11,
+      "fps": 7
+    },
+    "MoveRight": {
+      "row": 1,
+      "frame_count": 15,
+      "fps": 15
+    },
+    "MoveLeft": {
+      "row": 2,
+      "frame_count": 15,
+      "fps": 15
+    },
+    "TouchHead": {
+      "row": 3,
+      "frame_count": 7,
+      "fps": 10
+    },
+    "Play": {
+      "row": 4,
+      "frame_count": 9,
+      "fps": 13
+    },
+    "SwitchDown": {
+      "row": 5,
+      "frame_count": 15,
+      "fps": 9
+    },
+    "Sleep": {
+      "row": 6,
+      "frame_count": 11,
+      "fps": 7
+    },
+    "Raised": {
+      "row": 7,
+      "frame_count": 11,
+      "fps": 13
+    },
+    "Study": {
+      "row": 8,
+      "frame_count": 11,
+      "fps": 9
+    },
+    "Comfort": {
+      "row": 6,
+      "frame_count": 11,
+      "fps": 7
+    },
+    "Eat": {
+      "row": 3,
+      "frame_count": 7,
+      "fps": 10
+    },
+    "Gift": {
+      "row": 3,
+      "frame_count": 7,
+      "fps": 10
+    },
+    "Shop": {
+      "row": 4,
+      "frame_count": 9,
+      "fps": 9
+    },
+    "Tick": {
+      "row": 0,
+      "frame_count": 11,
+      "fps": 7
+    }
   }
 }

@@ -10,14 +10,11 @@ from PIL import Image, UnidentifiedImageError
 from .character_session import is_safe_character_id
 from .runtime_paths import companion_assets_root, user_data_dir
 
-EXPECTED_SHEET_COLUMNS = 8
 EXPECTED_SHEET_ROWS = 9
 EXPECTED_FRAME_WIDTH = 192
 EXPECTED_FRAME_HEIGHT = 208
-EXPECTED_ATLAS_SIZE = (
-    EXPECTED_SHEET_COLUMNS * EXPECTED_FRAME_WIDTH,
-    EXPECTED_SHEET_ROWS * EXPECTED_FRAME_HEIGHT,
-)
+MAX_SHEET_COLUMNS = 32
+EXPECTED_ATLAS_HEIGHT = EXPECTED_SHEET_ROWS * EXPECTED_FRAME_HEIGHT
 REQUIRED_FILES = (
     "character.json",
     "dialogue_style.json",
@@ -291,13 +288,17 @@ def _validate_motion_manifest(
     payload: dict[str, object],
     errors: list[str],
 ) -> None:
-    if payload.get("sheet_columns") != EXPECTED_SHEET_COLUMNS:
-        errors.append("motion_manifest.sheet_columns must be 8")
-    if payload.get("sheet_rows") != EXPECTED_SHEET_ROWS:
+    sheet_columns = payload.get("sheet_columns")
+    sheet_rows = payload.get("sheet_rows")
+    frame_width = payload.get("frame_width")
+    frame_height = payload.get("frame_height")
+    if isinstance(sheet_columns, bool) or not isinstance(sheet_columns, int) or not 1 <= sheet_columns <= MAX_SHEET_COLUMNS:
+        errors.append(f"motion_manifest.sheet_columns must be between 1 and {MAX_SHEET_COLUMNS}")
+    if sheet_rows != EXPECTED_SHEET_ROWS:
         errors.append("motion_manifest.sheet_rows must be 9")
-    if payload.get("frame_width") != EXPECTED_FRAME_WIDTH:
+    if frame_width != EXPECTED_FRAME_WIDTH:
         errors.append("motion_manifest.frame_width must be 192")
-    if payload.get("frame_height") != EXPECTED_FRAME_HEIGHT:
+    if frame_height != EXPECTED_FRAME_HEIGHT:
         errors.append("motion_manifest.frame_height must be 208")
     motions = payload.get("motions")
     if not isinstance(motions, dict) or "Default" not in motions:
@@ -315,7 +316,9 @@ def _validate_motion_manifest(
             if (
                 isinstance(frame_count, bool)
                 or not isinstance(frame_count, int)
-                or not 1 <= frame_count <= EXPECTED_SHEET_COLUMNS
+                or not isinstance(sheet_columns, int)
+                or isinstance(sheet_columns, bool)
+                or not 1 <= frame_count <= sheet_columns
             ):
                 errors.append(f"motion_manifest.{motion_name}.frame_count out of range")
             if isinstance(fps, bool) or not isinstance(fps, int) or fps <= 0:
@@ -323,10 +326,15 @@ def _validate_motion_manifest(
 
     spritesheet = character.get("spritesheet") if isinstance(character, dict) else "spritesheet.png"
     if isinstance(spritesheet, str):
-        _validate_atlas(root, spritesheet, errors)
+        _validate_atlas(root, spritesheet, payload, errors)
 
 
-def _validate_atlas(root: Path, spritesheet: str, errors: list[str]) -> None:
+def _validate_atlas(
+    root: Path,
+    spritesheet: str,
+    manifest: dict[str, object],
+    errors: list[str],
+) -> None:
     if not _safe_relative_path(spritesheet):
         errors.append("spritesheet path must be a safe relative filename")
         return
@@ -342,8 +350,11 @@ def _validate_atlas(root: Path, spritesheet: str, errors: list[str]) -> None:
     except (OSError, UnidentifiedImageError) as exc:
         errors.append(f"spritesheet image invalid: {exc}")
         return
-    if size != EXPECTED_ATLAS_SIZE:
-        errors.append(f"spritesheet must be 1536x1872, got {size[0]}x{size[1]}")
+    sheet_columns = manifest.get("sheet_columns")
+    if isinstance(sheet_columns, int) and not isinstance(sheet_columns, bool):
+        expected_width = sheet_columns * EXPECTED_FRAME_WIDTH
+        if size != (expected_width, EXPECTED_ATLAS_HEIGHT):
+            errors.append(f"spritesheet must be {expected_width}x1872, got {size[0]}x{size[1]}")
     if mode != "RGBA":
         errors.append(f"spritesheet mode must be RGBA, got {mode}")
 

@@ -57,6 +57,33 @@ def test_validate_atlas_accepts_valid_8x9_rgba_sheet(tmp_path: Path):
     assert report.height == 1872
 
 
+def test_validate_atlas_accepts_manifest_declared_wide_sheet(tmp_path: Path):
+    atlas = tmp_path / "spritesheet.png"
+    manifest = tmp_path / "motion_manifest.json"
+    Image.new("RGBA", (2880, 1872), (0, 0, 0, 0)).save(atlas)
+    manifest.write_text(
+        json.dumps(
+            {
+                "sheet_columns": 15,
+                "sheet_rows": 9,
+                "frame_width": 192,
+                "frame_height": 208,
+                "motions": {
+                    "Default": {"row": 0, "frame_count": 15, "fps": 8},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_atlas(atlas, manifest)
+
+    assert report.ok is True
+    assert report.errors == []
+    assert report.width == 2880
+    assert report.height == 1872
+
+
 def test_build_previews_writes_contact_sheet_and_gifs(tmp_path: Path):
     atlas = tmp_path / "spritesheet.png"
     manifest = tmp_path / "motion_manifest.json"
@@ -92,6 +119,73 @@ def test_build_previews_preserves_identical_gif_frames(tmp_path: Path):
 
     with Image.open(output.joinpath("gifs", "Default.gif")) as image:
         assert image.n_frames == 6
+
+
+def test_build_previews_preserves_original_oc_manifest_frame_counts(tmp_path: Path):
+    root = Path(__file__).resolve().parents[1] / "assets" / "companion" / "original_oc"
+    manifest = root / "motion_manifest.json"
+    output = tmp_path / "preview"
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+
+    build_previews(root / "spritesheet.png", manifest, output)
+
+    for name, motion in payload["motions"].items():
+        with Image.open(output.joinpath("gifs", f"{name}.gif")) as image:
+            assert image.n_frames == motion["frame_count"], name
+
+
+def test_build_smooth_sprite_atlas_inserts_blended_frames_and_updates_manifest(tmp_path: Path):
+    from tools.art.build_smooth_sprite_atlas import build_smooth_sprite_atlas
+
+    atlas = tmp_path / "spritesheet.png"
+    manifest = tmp_path / "motion_manifest.json"
+    output_atlas = tmp_path / "smooth.png"
+    output_manifest = tmp_path / "smooth_manifest.json"
+    frame_width = 192
+    frame_height = 208
+    source = Image.new("RGBA", (3 * frame_width, 9 * frame_height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(source)
+    source_colors = [
+        (255, 0, 0, 255),
+        (0, 0, 255, 255),
+        (0, 255, 0, 255),
+    ]
+    for index, color in enumerate(source_colors):
+        draw.rectangle(
+            (index * frame_width, 0, (index + 1) * frame_width - 1, frame_height - 1),
+            fill=color,
+        )
+    source.save(atlas)
+    manifest.write_text(
+        json.dumps(
+            {
+                "sheet_columns": 3,
+                "sheet_rows": 9,
+                "frame_width": frame_width,
+                "frame_height": frame_height,
+                "motions": {"Default": {"row": 0, "frame_count": 3, "fps": 6}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    build_smooth_sprite_atlas(atlas, manifest, output_atlas, output_manifest)
+
+    output_payload = json.loads(output_manifest.read_text(encoding="utf-8"))
+    assert output_payload["sheet_columns"] == 5
+    assert output_payload["motions"]["Default"] == {"row": 0, "frame_count": 5, "fps": 10}
+    with Image.open(output_atlas) as image:
+        assert image.size == (5 * frame_width, 9 * frame_height)
+        pixels = [
+            image.getpixel((index * frame_width + 8, 8))
+            for index in range(5)
+        ]
+    assert pixels[0] == source_colors[0]
+    assert pixels[2] == source_colors[1]
+    assert pixels[4] == source_colors[2]
+    assert pixels[1][:3] in {(127, 0, 127), (128, 0, 128)}
+    assert pixels[3][:3] in {(0, 127, 127), (0, 128, 128)}
+    assert validate_atlas(output_atlas, output_manifest).ok
 
 
 def test_build_previews_rejects_invalid_manifest_without_output(tmp_path: Path):
