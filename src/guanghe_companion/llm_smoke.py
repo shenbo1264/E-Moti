@@ -10,16 +10,16 @@ from .dialogue import DialogueRequest
 from .expression_settings import ExpressionSettings, normalize_expression_settings
 
 DEFAULT_LLM_SMOKE_PROMPTS = (
-    "今天有点累，你能陪我一下吗？",
-    "你现在心情怎么样？",
-    "给我一个很短的鼓励。",
-    "你可以表现得开心一点吗？",
-    "我刚刚完成了一个小目标。",
-    "如果我走神了你会怎么回应？",
-    "我们来玩一下。",
-    "你现在想做什么动作？",
-    "说一句像电子宠物而不是效率工具的话。",
-    "最后用轻松的语气和我告别。",
+    "Smoke turn 1: reply as Xingxi with [calm] and motion_hint Default.",
+    "Smoke turn 2: reply as Xingxi with [excited] and motion_hint Play.",
+    "Smoke turn 3: reply as Xingxi with [surprised] and motion_hint Raised.",
+    "Smoke turn 4: reply as Xingxi with [sleepy] and motion_hint Sleep.",
+    "Smoke turn 5: reply as Xingxi with [focused] and motion_hint Study.",
+    "Smoke turn 6: reply as Xingxi with [sadness] and motion_hint SwitchDown.",
+    "Smoke turn 7: reply as Xingxi with [joy] and motion_hint TouchHead.",
+    "Smoke turn 8: give a gentle companion line with [calm] and motion_hint Default.",
+    "Smoke turn 9: celebrate a tiny win with [excited] and motion_hint Play.",
+    "Smoke turn 10: say goodbye softly with [sleepy] and motion_hint Sleep.",
 )
 GROWTH_FIELDS = ("focus", "charge", "stability", "mood", "trust", "coins", "exp", "level", "motion")
 
@@ -54,6 +54,7 @@ class LLMDialogueSmokeReport:
     reason: str
     diagnostic: dict[str, object]
     turns: tuple[LLMDialogueSmokeTurn, ...]
+    visual_action_coverage: dict[str, object]
     growth_before: dict[str, object]
     growth_after: dict[str, object]
     history_len: int
@@ -64,6 +65,7 @@ class LLMDialogueSmokeReport:
             "reason": self.reason,
             "diagnostic": _redact_mapping(self.diagnostic),
             "turns": [turn.to_public_dict() for turn in self.turns],
+            "visual_action_coverage": dict(self.visual_action_coverage),
             "growth_before": dict(self.growth_before),
             "growth_after": dict(self.growth_after),
             "history_len": self.history_len,
@@ -74,6 +76,8 @@ def run_llm_dialogue_smoke(
     settings: ExpressionSettings | Mapping[str, object],
     *,
     prompts: Iterable[str] = DEFAULT_LLM_SMOKE_PROMPTS,
+    min_expression_actions: int = 0,
+    min_motion_actions: int = 0,
 ) -> LLMDialogueSmokeReport:
     normalized = settings if isinstance(settings, ExpressionSettings) else normalize_expression_settings(settings)
     with TemporaryDirectory() as tmp:
@@ -85,14 +89,23 @@ def run_llm_dialogue_smoke(
             auto_load=False,
         )
         controller.update_expression_settings(normalized)
-        return run_configured_llm_dialogue_smoke(controller, prompts=prompts)
+        return run_configured_llm_dialogue_smoke(
+            controller,
+            prompts=prompts,
+            min_expression_actions=min_expression_actions,
+            min_motion_actions=min_motion_actions,
+        )
 
 
 def run_configured_llm_dialogue_smoke(
     controller: CompanionController,
     *,
     prompts: Iterable[str] = DEFAULT_LLM_SMOKE_PROMPTS,
+    min_expression_actions: int = 0,
+    min_motion_actions: int = 0,
 ) -> LLMDialogueSmokeReport:
+    min_expression_actions = _non_negative_int(min_expression_actions)
+    min_motion_actions = _non_negative_int(min_motion_actions)
     diagnostic = _redact_mapping(controller.test_expression_provider())
     if diagnostic.get("ok") is not True:
         return _report(
@@ -131,13 +144,24 @@ def run_configured_llm_dialogue_smoke(
         )
 
     growth_after = _growth_snapshot(controller.get_snapshot())
+    visual_action_coverage = _visual_action_coverage(turns)
     if growth_after != growth_before and not reason:
         reason = "growth_mutated"
+    if not reason:
+        expression_count = int(visual_action_coverage["expression_count"])
+        motion_count = int(visual_action_coverage["motion_count"])
+        if expression_count < min_expression_actions or motion_count < min_motion_actions:
+            reason = (
+                "visual_action_coverage:"
+                f"expressions={expression_count}/{min_expression_actions},"
+                f"motions={motion_count}/{min_motion_actions}"
+            )
     return LLMDialogueSmokeReport(
         ok=not reason,
         reason=reason,
         diagnostic=diagnostic,
         turns=tuple(turns),
+        visual_action_coverage=visual_action_coverage,
         growth_before=growth_before,
         growth_after=growth_after,
         history_len=len(controller.get_snapshot().get("dialogue_history", [])),
@@ -158,6 +182,7 @@ def _report(
         reason=reason,
         diagnostic=diagnostic,
         turns=turns,
+        visual_action_coverage=_visual_action_coverage(turns),
         growth_before=growth_before,
         growth_after=_growth_snapshot(controller.get_snapshot()),
         history_len=len(controller.get_snapshot().get("dialogue_history", [])),
@@ -166,6 +191,39 @@ def _report(
 
 def _growth_snapshot(snapshot: Mapping[str, object]) -> dict[str, object]:
     return {field: snapshot.get(field) for field in GROWTH_FIELDS}
+
+
+def _visual_action_coverage(turns: Iterable[LLMDialogueSmokeTurn]) -> dict[str, object]:
+    expression_ids: set[str] = set()
+    motion_ids: set[str] = set()
+    for turn in turns:
+        for action in turn.visual_actions:
+            action_type = action.get("type")
+            action_id = action.get("id")
+            if not isinstance(action_id, str) or not action_id:
+                continue
+            if action_type == "expression":
+                expression_ids.add(action_id)
+            elif action_type == "motion":
+                motion_ids.add(action_id)
+    expressions = sorted(expression_ids)
+    motions = sorted(motion_ids)
+    return {
+        "expression_count": len(expressions),
+        "expression_ids": expressions,
+        "motion_count": len(motions),
+        "motion_ids": motions,
+    }
+
+
+def _non_negative_int(value: object) -> int:
+    if isinstance(value, bool):
+        return 0
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return 0
+    return max(0, parsed)
 
 
 def _first_companion_speech(snapshot: Mapping[str, object]) -> tuple[str, str]:

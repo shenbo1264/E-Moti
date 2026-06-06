@@ -25,6 +25,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--base-url", default="")
     parser.add_argument("--api-key-env", default="")
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
+    parser.add_argument("--min-expression-actions", type=int, default=4)
+    parser.add_argument("--min-motion-actions", type=int, default=3)
     parser.add_argument("--prompt", action="append", default=[])
     return parser.parse_args(argv)
 
@@ -49,7 +51,12 @@ def main(argv: list[str] | None = None) -> int:
         "timeout_seconds": args.timeout_seconds,
     }
     prompts = tuple(args.prompt) if args.prompt else DEFAULT_LLM_SMOKE_PROMPTS
-    report = run_llm_dialogue_smoke(settings, prompts=prompts)
+    report = run_llm_dialogue_smoke(
+        settings,
+        prompts=prompts,
+        min_expression_actions=args.min_expression_actions,
+        min_motion_actions=args.min_motion_actions,
+    )
     print(json.dumps(report.to_public_dict(), ensure_ascii=False, indent=2))
     return 0 if report.ok else 1
 
