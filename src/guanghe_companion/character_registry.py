@@ -340,7 +340,7 @@ def _safe_portrait_image_path(value: object) -> bool:
     return (
         not path.is_absolute()
         and ".." not in path.parts
-        and len(path.parts) == 2
+        and len(path.parts) >= 2
         and path.parts[0] == "portraits"
         and path.suffix.lower() == ".png"
     )

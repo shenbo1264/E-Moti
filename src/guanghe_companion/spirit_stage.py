@@ -472,11 +472,13 @@ def _safe_manifest_path(value: str) -> Path:
 def _safe_portrait_image_path(value: object) -> Path:
     if not isinstance(value, str) or not value.strip() or len(value) > 180:
         raise PortraitManifestError("portrait image path invalid")
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        raise PortraitManifestError("portrait image path invalid")
     path = Path(value)
     if (
         path.is_absolute()
         or ".." in path.parts
-        or len(path.parts) != 2
+        or len(path.parts) < 2
         or path.parts[0] != "portraits"
         or path.suffix.lower() != ".png"
     ):

@@ -200,3 +200,15 @@ def test_spirit_stage_enables_breathing_from_manifest(monkeypatch, tmp_path):
     assert surface.breath_cycle_ms == 3600
     surface.close()
     app.processEvents()
+
+
+def test_original_oc_does_not_enable_blink_without_structured_blink_frames():
+    from pathlib import Path
+
+    from guanghe_companion.spirit_stage import load_portrait_manifest
+
+    asset_dir = Path(__file__).resolve().parents[1] / "assets" / "companion" / "original_oc"
+    manifest = load_portrait_manifest(asset_dir, "portrait_manifest.json")
+
+    assert manifest.animation.blink_enabled is False
+    assert all(not frames.can_blink for frames in manifest.expressions.values())

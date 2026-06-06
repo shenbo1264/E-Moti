@@ -380,6 +380,23 @@ def test_validate_character_pack_accepts_structured_portrait_blink_frames(tmp_pa
     assert report.ok
 
 
+def test_validate_character_pack_accepts_nested_portrait_asset_subdirectory(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    expressions = {
+        expression: {
+            "open": f"portraits/vn/{expression}_open.png",
+            "blink_half": f"portraits/vn/{expression}_half.png",
+            "blink_closed": f"portraits/vn/{expression}_closed.png",
+        }
+        for expression in REQUIRED_PORTRAIT_EXPRESSIONS
+    }
+    _add_portrait_renderer(pack_dir, expressions=expressions)
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert report.ok
+
+
 def test_validate_character_pack_rejects_unsafe_structured_portrait_blink_path(tmp_path):
     pack_dir = _write_minimal_pack(tmp_path)
     expressions = {

@@ -44,9 +44,12 @@ Negative constraints included no fan art, no existing franchise style copying, n
 
 ## QA Notes
 
-- All final portrait files are PNG RGBA.
-- All final portrait files have transparent corners.
-- Images are 512x512 and within the pack validator size limit.
-- The six expressions are suitable only for testing the portrait renderer contract.
-- These images are not acceptable as the final Spirit/GalGame art direction because they are square Q-style assets, not tall visual-novel standing portraits.
-- Do not treat this set as final release art. Replace it with an approved high-body VN portrait set before public visual promotion.
+- Legacy smoke baseline files are PNG RGBA.
+- Legacy smoke baseline files have transparent corners.
+- Legacy smoke baseline files are 512x512 and within the pack validator size limit.
+- Legacy smoke baseline files remain suitable only for testing the portrait renderer contract.
+- Legacy smoke baseline files are not the active Spirit/GalGame art direction because they are square Q-style assets, not tall visual-novel standing portraits.
+
+## VN Asset Gate
+
+Future high-body VN portrait assets must pass human visual QA before they are referenced by `portrait_manifest.json`. Required review points include face polish, natural eye closure, mouth readability, edge quality, consistent proportions, and contact-sheet approval across all committed expressions.
