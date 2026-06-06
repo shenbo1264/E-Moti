@@ -49,6 +49,42 @@ The next real asset task is to redraw or separate the reference into a PSD with 
 - Upper arms, forearms, hands/fingers separated enough for small motion.
 - Thighs, socks, shoes, shoe bows, shoe star accessories.
 
+Use stable English layer/group names so Cubism export review can be repeated. Recommended naming pattern:
+
+```text
+head/base
+head/blush
+hair/back
+hair/front_bangs
+hair/side_left
+hair/side_right
+eye_left/white
+eye_left/iris
+eye_left/pupil
+eye_left/highlight
+eye_right/white
+eye_right/iris
+eye_right/pupil
+eye_right/highlight
+mouth/closed
+mouth/open
+body/torso
+body/neck
+arm_left/upper
+arm_left/forearm
+arm_left/hand
+arm_right/upper
+arm_right/forearm
+arm_right/hand
+outfit/hoodie_body
+outfit/hoodie_sleeve_left
+outfit/hoodie_sleeve_right
+outfit/skirt_front
+accessory/star_pin
+accessory/drawstring_left
+accessory/drawstring_right
+```
+
 Recommended first rig scope:
 
 - Idle breathing.
@@ -60,6 +96,28 @@ Recommended first rig scope:
 - Hoodie and accessory secondary motion.
 - Expressions: calm, joy/excited, surprised, sleepy, sadness, focused.
 - Motions: Idle, Play/TapBody, Raised/Surprised, TouchHead, Sleep.
+
+## Cubism Export Acceptance
+
+The first usable Xingxi Live2D character pack should place exported runtime files under:
+
+```text
+character_packs/xingxi_live2d/
+  character.json
+  dialogue_style.json
+  motion_manifest.json
+  shop_items.json
+  spritesheet.png
+  item_icons/
+  live2d/
+    Xingxi.model3.json
+    Xingxi.moc3
+    textures/
+    expressions/
+    motions/
+```
+
+The sprite files remain required as fallback/registry compatibility. They are not the primary renderer for a complete Live2D pack.
 
 ## Runtime Mapping Contract
 
@@ -86,21 +144,43 @@ Example per-character Live2D map:
     "backend": "live2d_web",
     "model": "live2d/Xingxi.model3.json",
     "expression_map": {
-      "calm": "calm.exp3.json",
-      "excited": "joy.exp3.json",
-      "surprised": "surprised.exp3.json",
-      "sleepy": "sleepy.exp3.json",
-      "sadness": "sad.exp3.json",
-      "focused": "focused.exp3.json"
+      "calm": "F01",
+      "excited": "F02",
+      "surprised": "F03",
+      "sleepy": "F05",
+      "sadness": "F04",
+      "focused": "F06"
     },
     "motion_map": {
       "Default": "Idle",
-      "Play": "Play",
-      "Raised": "Surprised",
+      "Play": "TapBody",
+      "Raised": "TapBody",
       "TouchHead": "TapHead",
       "Sleep": "Sleep"
     }
   }
+}
+```
+
+The registry validation now requires a Live2D pack to include:
+
+- Existing safe relative `.model3.json` path.
+- Expression mappings for `calm`, `excited`, `surprised`, `sleepy`, `sadness`, and `focused`.
+- Motion mappings for `Default`, `Play`, `Raised`, `TouchHead`, and `Sleep`.
+
+Run this before trying the asset in the app:
+
+```powershell
+python tools\validate_character_pack.py character_packs\xingxi_live2d
+```
+
+Expected result for an accepted pack:
+
+```json
+{
+  "ok": true,
+  "character_id": "xingxi_live2d",
+  "errors": []
 }
 ```
 
@@ -124,6 +204,7 @@ Verified command:
 ```powershell
 python tools\live2d_spike\smoke_live2d_web.py --timeout-seconds 45
 python tools\live2d_spike\smoke_app_surface.py
+python tools\live2d_spike\smoke_character_pack_window.py
 ```
 
 Verified result on 2026-06-06:
@@ -139,6 +220,9 @@ Verified result on 2026-06-06:
   - `unique_colors` above 15,000.
 - `npm audit --json` for `tools/live2d_spike` reports `0` vulnerabilities after overriding `gh-pages` to a fixed version.
 - The production `Live2DWebSurface` smoke loaded the same model through a scoped localhost server and wrote `artifacts/simulation/live2d_app_surface.png`.
+- A temporary E-Moti character pack drove a real desktop `CompanionWindow` and wrote `artifacts/simulation/live2d_character_pack_window.png`.
+
+These screenshots use the ignored local Haru sample only to verify the runtime path. They are not Xingxi's formal Live2D asset.
 
 ## Licensing Boundary
 

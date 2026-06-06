@@ -28,6 +28,8 @@ ALLOWED_ITEM_CATEGORIES = frozenset({"food", "gift", "tool"})
 ALLOWED_ITEM_EFFECTS = frozenset({"charge", "mood", "stability", "trust", "study_bonus_exp"})
 ALLOWED_RENDERER_BACKENDS = frozenset({"sprite", "live2d_web", "inochi2d"})
 RENDERER_MAP_FIELDS = ("motion_map", "expression_map", "intent_map")
+REQUIRED_LIVE2D_EXPRESSIONS = ("calm", "excited", "surprised", "sleepy", "sadness", "focused")
+REQUIRED_LIVE2D_MOTIONS = ("Default", "Play", "Raised", "TouchHead", "Sleep")
 
 
 @dataclass(frozen=True, slots=True)
@@ -116,7 +118,7 @@ def validate_character_pack_dir(
     shop_items = _read_json_list(root / "shop_items.json", errors, label="shop_items.json")
 
     if isinstance(character, dict):
-        _validate_character_payload(character, errors)
+        _validate_character_payload(root, character, errors)
     if isinstance(dialogue, dict):
         _validate_dialogue_payload(dialogue, errors)
     if isinstance(motion_manifest, dict):
@@ -177,7 +179,7 @@ def _read_json_list(path: Path, errors: list[str], *, label: str) -> list[object
     return payload
 
 
-def _validate_character_payload(payload: dict[str, object], errors: list[str]) -> None:
+def _validate_character_payload(root: Path, payload: dict[str, object], errors: list[str]) -> None:
     for key in (
         "character_id",
         "name",
@@ -196,10 +198,10 @@ def _validate_character_payload(payload: dict[str, object], errors: list[str]) -
         errors.append("character.json.mode_descriptions must be an object")
     if not isinstance(payload.get("motion_labels"), dict):
         errors.append("character.json.motion_labels must be an object")
-    _validate_renderer_payload(payload.get("renderer"), errors)
+    _validate_renderer_payload(root, payload.get("renderer"), errors)
 
 
-def _validate_renderer_payload(value: object, errors: list[str]) -> None:
+def _validate_renderer_payload(root: Path, value: object, errors: list[str]) -> None:
     if value is None:
         return
     if not isinstance(value, dict):
@@ -208,8 +210,26 @@ def _validate_renderer_payload(value: object, errors: list[str]) -> None:
     backend = value.get("backend", "sprite")
     if backend not in ALLOWED_RENDERER_BACKENDS:
         errors.append("character.json.renderer.backend invalid")
-    if backend == "live2d_web" and not _safe_live2d_model_path(value.get("model")):
-        errors.append("character.json.renderer.model must be a safe relative model3 path")
+    if backend == "live2d_web":
+        model = value.get("model")
+        if not _safe_live2d_model_path(model):
+            errors.append("character.json.renderer.model must be a safe relative model3 path")
+        else:
+            model_path = root / str(model)
+            if not model_path.is_file():
+                errors.append(f"character.json.renderer.model file not found: {model}")
+        _validate_required_renderer_map(
+            value.get("expression_map", {}),
+            "expression_map",
+            REQUIRED_LIVE2D_EXPRESSIONS,
+            errors,
+        )
+        _validate_required_renderer_map(
+            value.get("motion_map", {}),
+            "motion_map",
+            REQUIRED_LIVE2D_MOTIONS,
+            errors,
+        )
     for field in RENDERER_MAP_FIELDS:
         mapping = value.get(field, {})
         if not isinstance(mapping, dict):
@@ -221,6 +241,19 @@ def _validate_renderer_payload(value: object, errors: list[str]) -> None:
                 continue
             if not _safe_renderer_id(item):
                 errors.append(f"character.json.renderer.{field}.{key} must be a safe renderer id")
+
+
+def _validate_required_renderer_map(
+    mapping: object,
+    field: str,
+    required_actions: tuple[str, ...],
+    errors: list[str],
+) -> None:
+    if not isinstance(mapping, dict):
+        return
+    for action in required_actions:
+        if action not in mapping:
+            errors.append(f"character.json.renderer.{field} missing required Live2D action: {action}")
 
 
 def _safe_renderer_id(value: object) -> bool:

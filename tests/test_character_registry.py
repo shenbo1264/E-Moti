@@ -5,6 +5,23 @@ from PIL import Image
 from guanghe_companion.character_registry import CharacterRegistry, validate_character_pack_dir
 
 
+REQUIRED_LIVE2D_EXPRESSION_MAP = {
+    "calm": "F01",
+    "excited": "F02",
+    "surprised": "F03",
+    "sleepy": "F05",
+    "sadness": "F04",
+    "focused": "F06",
+}
+REQUIRED_LIVE2D_MOTION_MAP = {
+    "Default": "Idle",
+    "Play": "TapBody",
+    "Raised": "TapBody",
+    "TouchHead": "TapHead",
+    "Sleep": "Sleep",
+}
+
+
 def _write_json(path, payload):
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
@@ -137,6 +154,66 @@ def test_validate_character_pack_rejects_live2d_model_paths_outside_pack(tmp_pat
 
     assert not report.ok
     assert any("character.json.renderer.model must be a safe relative model3 path" in error for error in report.errors)
+
+
+def test_validate_character_pack_rejects_missing_live2d_model_file(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "live2d_web",
+        "model": "live2d/Xingxi.model3.json",
+        "expression_map": REQUIRED_LIVE2D_EXPRESSION_MAP,
+        "motion_map": REQUIRED_LIVE2D_MOTION_MAP,
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("character.json.renderer.model file not found: live2d/Xingxi.model3.json" in error for error in report.errors)
+
+
+def test_validate_character_pack_requires_live2d_expression_and_motion_coverage(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    live2d_dir = pack_dir / "live2d"
+    live2d_dir.mkdir()
+    (live2d_dir / "Xingxi.model3.json").write_text("{}", encoding="utf-8")
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "live2d_web",
+        "model": "live2d/Xingxi.model3.json",
+        "expression_map": {"calm": "F01"},
+        "motion_map": {"Default": "Idle"},
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("character.json.renderer.expression_map missing required Live2D action: excited" in error for error in report.errors)
+    assert any("character.json.renderer.motion_map missing required Live2D action: Play" in error for error in report.errors)
+
+
+def test_validate_character_pack_accepts_complete_live2d_renderer_assets(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    live2d_dir = pack_dir / "live2d"
+    live2d_dir.mkdir()
+    (live2d_dir / "Xingxi.model3.json").write_text("{}", encoding="utf-8")
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "live2d_web",
+        "model": "live2d/Xingxi.model3.json",
+        "expression_map": REQUIRED_LIVE2D_EXPRESSION_MAP,
+        "motion_map": REQUIRED_LIVE2D_MOTION_MAP,
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert report.ok
 
 
 def test_character_registry_can_merge_builtin_and_user_packs(tmp_path):
