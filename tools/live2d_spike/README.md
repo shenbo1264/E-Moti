@@ -18,6 +18,7 @@ The smoke test expects:
 ```powershell
 python tools\live2d_spike\smoke_live2d_web.py
 python tools\live2d_spike\smoke_app_surface.py
+python tools\live2d_spike\smoke_character_pack_window.py
 ```
 
 Expected result:
@@ -28,6 +29,7 @@ Expected result:
 - E-Moti-shaped `visual_actions` are mapped and applied,
 - a nonblank screenshot is written to `artifacts\simulation\live2d_spike.png`.
 - the production `Live2DWebSurface` writes `artifacts\simulation\live2d_app_surface.png`.
+- a temporary E-Moti character pack drives a real desktop `CompanionWindow` and writes `artifacts\simulation\live2d_character_pack_window.png`.
 
 This spike is not yet the production desktop-pet renderer. Production integration should keep the same boundary:
 

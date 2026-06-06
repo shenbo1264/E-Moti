@@ -58,3 +58,20 @@ def test_resolve_live2d_static_path_blocks_repo_wide_file_serving(tmp_path):
     assert blocked.name == "__missing_live2d_asset__"
     assert allowed.name == "index.html"
     assert traversal.name == "__missing_live2d_asset__"
+
+
+def test_live2d_server_suppresses_client_disconnect_tracebacks(tmp_path, capsys):
+    from guanghe_companion import live2d_web
+
+    handle = live2d_web.start_live2d_server(tmp_path)
+    try:
+        try:
+            raise ConnectionAbortedError("client closed")
+        except ConnectionAbortedError:
+            handle.server.handle_error(object(), ("127.0.0.1", 1))
+
+        captured = capsys.readouterr()
+        assert "ConnectionAbortedError" not in captured.err
+        assert "Exception occurred" not in captured.err
+    finally:
+        handle.shutdown()

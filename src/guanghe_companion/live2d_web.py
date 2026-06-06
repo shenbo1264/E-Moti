@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import socket
+import sys
 import threading
 from dataclasses import dataclass
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
@@ -18,6 +19,7 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 LIVE2D_PAGE_PATH = "tools/live2d_spike/index.html"
 CHARACTER_ASSET_ROUTE = "/character-assets/"
 MISSING_ASSET = REPO_ROOT / "__missing_live2d_asset__"
+CLIENT_DISCONNECT_ERRORS = (BrokenPipeError, ConnectionAbortedError, ConnectionResetError)
 
 
 @dataclass(slots=True)
@@ -29,6 +31,14 @@ class Live2DServerHandle:
     def shutdown(self) -> None:
         self.server.shutdown()
         self.server.server_close()
+
+
+class QuietLive2DHTTPServer(ThreadingHTTPServer):
+    def handle_error(self, request: object, client_address: object) -> None:
+        _, exc, _ = sys.exc_info()
+        if isinstance(exc, CLIENT_DISCONNECT_ERRORS):
+            return
+        super().handle_error(request, client_address)
 
 
 def build_live2d_page_url(base_url: str, frame: PresentationFrame, asset_dir: Path | str) -> str:
@@ -71,7 +81,7 @@ def start_live2d_server(asset_dir: Path | str) -> Live2DServerHandle:
             request_path = unquote(urlparse(path).path)
             return str(resolve_live2d_static_path(request_path, resolved_asset_dir))
 
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    server = QuietLive2DHTTPServer(("127.0.0.1", port), Handler)
     thread = threading.Thread(target=server.serve_forever, daemon=True)
     thread.start()
     return Live2DServerHandle(server=server, base_url=f"http://127.0.0.1:{port}", asset_dir=resolved_asset_dir)
