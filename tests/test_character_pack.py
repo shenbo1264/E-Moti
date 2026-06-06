@@ -1,4 +1,8 @@
-from guanghe_companion.character_pack import load_default_character_pack, resolve_motion_caption
+import json
+
+from PIL import Image
+
+from guanghe_companion.character_pack import load_character_pack_from_dir, load_default_character_pack, resolve_motion_caption
 from guanghe_companion.engine import BUYABLE_ITEMS
 
 
@@ -20,6 +24,54 @@ def test_load_default_character_pack_reads_spritesheet_filename():
     assert pack.renderer.motion_map["Play"] == "Play"
     assert pack.renderer.expression_map["joy"] == "joy"
     assert pack.renderer.intent_map["offer_rest"] == "offer_rest"
+
+
+def test_load_character_pack_reads_live2d_renderer_model_path(tmp_path):
+    pack_dir = tmp_path / "live2d_character"
+    (pack_dir / "live2d").mkdir(parents=True)
+    Image.new("RGBA", (16, 16), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
+    (pack_dir / "motion_manifest.json").write_text(
+        json.dumps(
+            {
+                "sheet_columns": 1,
+                "sheet_rows": 1,
+                "frame_width": 16,
+                "frame_height": 16,
+                "motions": {"Default": {"row": 0, "frame_count": 1, "fps": 4}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": "live2d_character",
+                "name": "Live2D",
+                "title": "Live2D companion",
+                "description": "Live2D test pack",
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "Calm"},
+                "motion_labels": {"Default": "Idle"},
+                "renderer": {
+                    "backend": "live2d_web",
+                    "model": "live2d/Xingxi.model3.json",
+                    "motion_map": {"Play": "TapBody"},
+                    "expression_map": {"excited": "F02"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    pack = load_character_pack_from_dir(pack_dir)
+
+    assert pack.renderer.backend == "live2d_web"
+    assert pack.renderer.model == "live2d/Xingxi.model3.json"
+    assert pack.renderer.motion_map["Play"] == "TapBody"
+    assert pack.renderer.expression_map["excited"] == "F02"
 
 
 def test_load_default_character_pack_reads_relationship_badges_from_existing_item_icons():

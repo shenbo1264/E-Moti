@@ -481,6 +481,65 @@ def test_window_applies_visual_action_motion_without_mutating_controller_state(m
     app.processEvents()
 
 
+def test_desktop_mode_prefers_live2d_surface_for_live2d_renderer(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(
+        assets_root,
+        "live2d_character",
+        name="Live2D",
+        title="Live2D companion",
+    )
+    (pack_dir / "live2d").mkdir()
+    (pack_dir / "live2d" / "Xingxi.model3.json").write_text("{}", encoding="utf-8")
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "live2d_web",
+        "model": "live2d/Xingxi.model3.json",
+        "motion_map": {"Play": "TapBody"},
+        "expression_map": {"excited": "F02"},
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication, QLabel
+    import guanghe_companion.app as app_module
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class FakeLive2DWebSurface(QLabel):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            self.loaded_frames = []
+
+        def load_frame(self, frame, asset_dir):
+            self.loaded_frames.append((frame, asset_dir))
+
+    monkeypatch.setattr(app_module, "Live2DWebSurface", FakeLive2DWebSurface)
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="live2d_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert window.presentation_renderer.backend == "live2d_web"
+    assert window.live2d_surface.isVisibleTo(window)
+    assert not window.sprite_label.isVisibleTo(window)
+    frame, asset_dir = window.live2d_surface.loaded_frames[-1]
+    assert frame.backend == "live2d_web"
+    assert frame.model_path == "live2d/Xingxi.model3.json"
+    assert asset_dir == pack_dir
+
+    window.close()
+    app.processEvents()
+
+
 def test_character_switch_updates_open_desktop_pet_window(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"

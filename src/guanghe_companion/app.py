@@ -50,7 +50,7 @@ from .expression_settings import (
 )
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_motion_catalog_from_dir
-from .presentation_renderer import SpritePresentationAdapter
+from .presentation_renderer import Live2DWebPresentationAdapter, PresentationFrame, SpritePresentationAdapter
 from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
 from .storage import DEMO_SAVE_PATH
@@ -265,6 +265,33 @@ class SpriteInteractionLabel(QLabel):
         event.accept()
 
 
+class Live2DWebSurface(QLabel):
+    def __init__(self) -> None:
+        super().__init__()
+        self.loaded_frames: list[tuple[PresentationFrame, object]] = []
+        self.setObjectName("Live2DWebSurface")
+        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.setStyleSheet(DESKTOP_SPRITE_STYLE)
+        self.setText("Live2D renderer")
+
+    def load_frame(self, frame: PresentationFrame, asset_dir: object) -> None:
+        self.loaded_frames.append((frame, asset_dir))
+        action_text = ", ".join(
+            f"{action['type']}:{action['id']}->{action['mapped']}" for action in frame.live2d_actions
+        )
+        self.setText(action_text or f"Live2D: {frame.model_path}")
+
+
+def _presentation_renderer_from_profile(renderer_profile):
+    if renderer_profile.backend == "live2d_web" and renderer_profile.model:
+        return Live2DWebPresentationAdapter(
+            model_path=renderer_profile.model,
+            motion_map=renderer_profile.motion_map,
+            expression_map=renderer_profile.expression_map,
+        )
+    return SpritePresentationAdapter(motion_map=renderer_profile.motion_map)
+
+
 class CompanionWindow(QMainWindow):
     def __init__(
         self,
@@ -300,9 +327,7 @@ class CompanionWindow(QMainWindow):
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
         self.snapshot_renderer = SnapshotRenderer()
-        self.presentation_renderer = SpritePresentationAdapter(
-            motion_map=self.controller.character_pack.renderer.motion_map
-        )
+        self.presentation_renderer = _presentation_renderer_from_profile(self.controller.character_pack.renderer)
         user_pack_root = (
             self.controller.user_data_root / "character_packs"
             if self.controller.user_data_root is not None
@@ -797,9 +822,7 @@ class CompanionWindow(QMainWindow):
         self.motion_catalog = load_motion_catalog_from_dir(self.controller.resources.asset_dir)
         self.motion_animator = MotionAnimator(self.motion_catalog)
         self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
-        self.presentation_renderer = SpritePresentationAdapter(
-            motion_map=self.controller.character_pack.renderer.motion_map
-        )
+        self.presentation_renderer = _presentation_renderer_from_profile(self.controller.character_pack.renderer)
 
     def _build_launcher_card(self) -> QFrame:
         frame = QFrame()
@@ -847,6 +870,14 @@ class CompanionWindow(QMainWindow):
         self.sprite_label.setStyleSheet(CONTROL_PANEL_SPRITE_STYLE)
         self.sprite_label.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         layout.addWidget(self.sprite_label)
+        self.live2d_surface = Live2DWebSurface()
+        self.live2d_surface.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.live2d_surface.customContextMenuRequested.connect(
+            lambda pos: self._show_desktop_context_menu(self.live2d_surface.mapToGlobal(pos))
+        )
+        self.live2d_surface.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
+        self.live2d_surface.hide()
+        layout.addWidget(self.live2d_surface)
         self.desktop_feedback_label = QLabel()
         self.desktop_feedback_label.setWordWrap(True)
         self.desktop_feedback_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -1109,7 +1140,7 @@ class CompanionWindow(QMainWindow):
             | Qt.WindowType.NoDropShadowWindowHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        for widget in (self.root_widget, self.hero_card, self.sprite_label):
+        for widget in (self.root_widget, self.hero_card, self.sprite_label, self.live2d_surface):
             widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
             widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
             widget.setAutoFillBackground(False)
@@ -1140,6 +1171,7 @@ class CompanionWindow(QMainWindow):
         self.hero_layout.setContentsMargins(0, 0, 0, 0)
         self.hero_layout.setSpacing(6)
         self.hero_layout.setAlignment(self.sprite_label, Qt.AlignmentFlag.AlignHCenter)
+        self.hero_layout.setAlignment(self.live2d_surface, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.desktop_feedback_label, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.dialogue_bar, Qt.AlignmentFlag.AlignHCenter)
         self.character_label.hide()
@@ -1148,6 +1180,8 @@ class CompanionWindow(QMainWindow):
         self.item_feedback_label.hide()
         self.sprite_label.setStyleSheet(DESKTOP_SPRITE_STYLE)
         self.sprite_label.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
+        self.live2d_surface.setStyleSheet(DESKTOP_SPRITE_STYLE)
+        self.live2d_surface.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
         self.desktop_feedback_label.setFixedWidth(DESKTOP_WINDOW_WIDTH)
         self.dialogue_bar.setFixedWidth(DESKTOP_WINDOW_WIDTH)
         self.setFixedSize(DESKTOP_WINDOW_WIDTH, DESKTOP_WINDOW_HEIGHT)
@@ -1265,7 +1299,7 @@ class CompanionWindow(QMainWindow):
         flags &= ~Qt.WindowType.NoDropShadowWindowHint
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
-        for widget in (self.root_widget, self.hero_card, self.sprite_label):
+        for widget in (self.root_widget, self.hero_card, self.sprite_label, self.live2d_surface):
             widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
             widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, False)
             widget.setAutoFillBackground(False)
@@ -1305,6 +1339,9 @@ class CompanionWindow(QMainWindow):
         self.sprite_label.setMinimumSize(0, CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         self.sprite_label.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         self.sprite_label.setStyleSheet(CONTROL_PANEL_SPRITE_STYLE)
+        self.live2d_surface.setMaximumSize(MAX_QT_WIDGET_SIZE, MAX_QT_WIDGET_SIZE)
+        self.live2d_surface.setMinimumSize(0, CONTROL_PANEL_SPRITE_MIN_HEIGHT)
+        self.live2d_surface.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         self.clearMask()
         self.desktop_feedback_label.hide()
         self.dialogue_bar.hide()
@@ -1620,9 +1657,12 @@ class CompanionWindow(QMainWindow):
 
     def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
         frame = self.presentation_renderer.frame_from_snapshot(snapshot)
-        self.motion_animator.set_motion(frame.motion)
-        self.frame_timer.setInterval(self.motion_animator.interval_ms())
-        self._render_current_frame()
+        if frame.backend == "live2d_web":
+            self._render_live2d_frame(frame)
+        else:
+            self.motion_animator.set_motion(frame.motion)
+            self.frame_timer.setInterval(self.motion_animator.interval_ms())
+            self._render_current_frame()
         self.character_label.setText(
             f"{snapshot['character_name']}\n{snapshot['character_title']}\n\n"
             f"模式：{snapshot['mode']}\n"
@@ -1677,6 +1717,8 @@ class CompanionWindow(QMainWindow):
         self.voice_status_label.setText(result.message)
 
     def _render_current_frame(self) -> None:
+        self.live2d_surface.hide()
+        self.sprite_label.show()
         if self.spritesheet.isNull():
             self.sprite_label.setText("spritesheet 未找到")
             return
@@ -1689,6 +1731,13 @@ class CompanionWindow(QMainWindow):
             Qt.TransformationMode.SmoothTransformation,
         )
         self.sprite_label.setPixmap(scaled)
+        if self.desktop_mode:
+            self.clearMask()
+
+    def _render_live2d_frame(self, frame: PresentationFrame) -> None:
+        self.sprite_label.hide()
+        self.live2d_surface.show()
+        self.live2d_surface.load_frame(frame, self.controller.resources.asset_dir)
         if self.desktop_mode:
             self.clearMask()
 

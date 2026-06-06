@@ -208,6 +208,8 @@ def _validate_renderer_payload(value: object, errors: list[str]) -> None:
     backend = value.get("backend", "sprite")
     if backend not in ALLOWED_RENDERER_BACKENDS:
         errors.append("character.json.renderer.backend invalid")
+    if backend == "live2d_web" and not _safe_live2d_model_path(value.get("model")):
+        errors.append("character.json.renderer.model must be a safe relative model3 path")
     for field in RENDERER_MAP_FIELDS:
         mapping = value.get(field, {})
         if not isinstance(mapping, dict):
@@ -228,6 +230,17 @@ def _safe_renderer_id(value: object) -> bool:
         return False
     path = Path(value)
     return not path.is_absolute() and ".." not in path.parts
+
+
+def _safe_live2d_model_path(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip() or len(value) > 180:
+        return False
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        return False
+    path = Path(value)
+    if path.is_absolute() or ".." in path.parts:
+        return False
+    return path.suffix == ".json" and path.name.endswith(".model3.json")
 
 
 def _validate_dialogue_payload(payload: dict[str, object], errors: list[str]) -> None:

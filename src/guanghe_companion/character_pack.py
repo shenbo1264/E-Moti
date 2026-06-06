@@ -14,6 +14,7 @@ DEFAULT_CHARACTER_ID = "original_oc"
 @dataclass(frozen=True, slots=True)
 class CharacterRendererProfile:
     backend: str = "sprite"
+    model: str = ""
     motion_map: dict[str, str] = field(default_factory=dict)
     expression_map: dict[str, str] = field(default_factory=dict)
     intent_map: dict[str, str] = field(default_factory=dict)
@@ -76,8 +77,10 @@ def _renderer_profile_from_payload(value: object) -> CharacterRendererProfile:
     if not isinstance(value, dict):
         return CharacterRendererProfile()
     backend = value.get("backend")
+    model = value.get("model")
     return CharacterRendererProfile(
         backend=backend if isinstance(backend, str) and backend else "sprite",
+        model=model if isinstance(model, str) else "",
         motion_map=_string_map(value.get("motion_map")),
         expression_map=_string_map(value.get("expression_map")),
         intent_map=_string_map(value.get("intent_map")),

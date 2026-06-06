@@ -123,6 +123,22 @@ def test_validate_character_pack_rejects_invalid_renderer_mapping(tmp_path):
     assert any("character.json.renderer.motion_map.Play must be a safe renderer id" in error for error in report.errors)
 
 
+def test_validate_character_pack_rejects_live2d_model_paths_outside_pack(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "live2d_web",
+        "model": "../outside.model3.json",
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("character.json.renderer.model must be a safe relative model3 path" in error for error in report.errors)
+
+
 def test_character_registry_can_merge_builtin_and_user_packs(tmp_path):
     builtin_root = tmp_path / "builtin"
     user_root = tmp_path / "user"

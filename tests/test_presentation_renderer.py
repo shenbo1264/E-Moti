@@ -1,3 +1,4 @@
+from guanghe_companion import presentation_renderer
 from guanghe_companion.presentation_renderer import SpritePresentationAdapter
 
 
@@ -59,3 +60,40 @@ def test_sprite_presentation_adapter_uses_character_motion_map():
     frame = SpritePresentationAdapter(motion_map={"Play": "TouchHead"}).frame_from_snapshot(snapshot)
 
     assert frame.motion == "TouchHead"
+
+
+def test_live2d_web_presentation_adapter_maps_visual_actions_without_mutating_snapshot():
+    snapshot = {
+        "motion": "Default",
+        "visual_actions": [
+            {
+                "type": "expression",
+                "id": "excited",
+                "ttl_ms": 3000,
+                "priority": 70,
+                "source": "llm",
+            },
+            {
+                "type": "motion",
+                "id": "Play",
+                "ttl_ms": 1800,
+                "priority": 60,
+                "source": "llm",
+            },
+        ],
+    }
+
+    frame = presentation_renderer.Live2DWebPresentationAdapter(
+        model_path="live2d/Xingxi.model3.json",
+        expression_map={"excited": "F02"},
+        motion_map={"Play": "TapBody"},
+    ).frame_from_snapshot(snapshot)
+
+    assert frame.backend == "live2d_web"
+    assert frame.model_path == "live2d/Xingxi.model3.json"
+    assert frame.motion == "TapBody"
+    assert frame.live2d_actions == (
+        {"type": "expression", "id": "excited", "mapped": "F02", "source": "llm"},
+        {"type": "motion", "id": "Play", "mapped": "TapBody", "source": "llm"},
+    )
+    assert snapshot["motion"] == "Default"
