@@ -108,10 +108,12 @@ def _add_portrait_renderer(
     if expressions is not None:
         expression_map = expressions
     for expression, relative_path in expression_map.items():
-        path = pack_dir / relative_path
-        if relative_path.startswith("portraits/"):
-            path.parent.mkdir(exist_ok=True)
-            Image.new(image_mode, image_size, (0, 0, 0, 0) if image_mode == "RGBA" else (0, 0, 0)).save(path)
+        paths = relative_path.values() if isinstance(relative_path, dict) else (relative_path,)
+        for item_path in paths:
+            path = pack_dir / item_path
+            if item_path.startswith("portraits/"):
+                path.parent.mkdir(exist_ok=True)
+                Image.new(image_mode, image_size, (0, 0, 0, 0) if image_mode == "RGBA" else (0, 0, 0)).save(path)
     _write_json(
         pack_dir / manifest_path,
         {
@@ -358,6 +360,43 @@ def test_validate_character_pack_rejects_oversized_portrait_image(tmp_path):
 
     assert not report.ok
     assert any("portrait image too large" in error for error in report.errors)
+
+
+def test_validate_character_pack_accepts_structured_portrait_blink_frames(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    expressions = {
+        expression: f"portraits/{expression}.png"
+        for expression in REQUIRED_PORTRAIT_EXPRESSIONS
+    }
+    expressions["neutral"] = {
+        "open": "portraits/neutral_open.png",
+        "blink_half": "portraits/neutral_half.png",
+        "blink_closed": "portraits/neutral_closed.png",
+    }
+    _add_portrait_renderer(pack_dir, expressions=expressions)
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert report.ok
+
+
+def test_validate_character_pack_rejects_unsafe_structured_portrait_blink_path(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    expressions = {
+        expression: f"portraits/{expression}.png"
+        for expression in REQUIRED_PORTRAIT_EXPRESSIONS
+    }
+    expressions["neutral"] = {
+        "open": "portraits/neutral_open.png",
+        "blink_half": "../neutral_half.png",
+        "blink_closed": "portraits/neutral_closed.png",
+    }
+    _add_portrait_renderer(pack_dir, expressions=expressions)
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait_manifest.expressions.neutral.blink_half path must stay inside portraits" in error for error in report.errors)
 
 
 def test_character_registry_can_merge_builtin_and_user_packs(tmp_path):

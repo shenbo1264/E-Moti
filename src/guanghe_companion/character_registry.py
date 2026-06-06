@@ -312,10 +312,12 @@ def _validate_portrait_manifest(root: Path, payload: dict[str, object], errors: 
         if not isinstance(expression, str) or not expression:
             errors.append("portrait_manifest.expressions keys must be non-empty strings")
             continue
-        if not _safe_portrait_image_path(image_path):
-            errors.append(f"portrait_manifest.expressions.{expression} path must stay inside portraits")
-            continue
-        _validate_portrait_image(root, expression, str(image_path), errors)
+        for frame_name, frame_path in _portrait_frame_paths(image_path):
+            label = expression if not frame_name else f"{expression}.{frame_name}"
+            if not _safe_portrait_image_path(frame_path):
+                errors.append(f"portrait_manifest.expressions.{label} path must stay inside portraits")
+                continue
+            _validate_portrait_image(root, label, str(frame_path), errors)
 
     anchor = payload.get("anchor", "bottom_center")
     if anchor not in {"bottom_center", "center"}:
@@ -342,6 +344,26 @@ def _safe_portrait_image_path(value: object) -> bool:
         and path.parts[0] == "portraits"
         and path.suffix.lower() == ".png"
     )
+
+
+def _portrait_frame_paths(value: object) -> tuple[tuple[str, object], ...]:
+    if isinstance(value, str):
+        return (("", value),)
+    if not isinstance(value, dict):
+        return (("", value),)
+    frames: list[tuple[str, object]] = []
+    open_path = value.get("open")
+    if not isinstance(open_path, str) or not open_path:
+        frames.append(("open", ""))
+    else:
+        frames.append(("open", open_path))
+    for key in ("blink_half", "blink_closed"):
+        if key in value:
+            frames.append((key, value.get(key)))
+    for key in value:
+        if key not in {"open", "blink_half", "blink_closed"}:
+            frames.append((str(key), value.get(key)))
+    return tuple(frames)
 
 
 def _validate_portrait_image(root: Path, expression: str, image_path: str, errors: list[str]) -> None:

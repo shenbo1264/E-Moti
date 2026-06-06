@@ -4,7 +4,7 @@ Date: 2026-06-06
 
 ## Scope
 
-These files are the first Spirit/GalGame portrait expression set for the original E-Moti character Xingxi:
+These files are a temporary portrait renderer smoke baseline for the original E-Moti character Xingxi:
 
 - `portraits/neutral.png`
 - `portraits/smile.png`
@@ -47,5 +47,6 @@ Negative constraints included no fan art, no existing franchise style copying, n
 - All final portrait files are PNG RGBA.
 - All final portrait files have transparent corners.
 - Images are 512x512 and within the pack validator size limit.
-- The six expressions are suitable for a first runnable Spirit/GalGame demo route.
-- This is still a first-pass generated asset set. Human art review should check edge quality, pose alignment, and long-term character consistency before treating it as final release art.
+- The six expressions are suitable only for testing the portrait renderer contract.
+- These images are not acceptable as the final Spirit/GalGame art direction because they are square Q-style assets, not tall visual-novel standing portraits.
+- Do not treat this set as final release art. Replace it with an approved high-body VN portrait set before public visual promotion.
