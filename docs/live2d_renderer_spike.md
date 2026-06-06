@@ -168,11 +168,11 @@ This keeps `VisualAction.action_id` stable while each character decides how that
    - no state fields mutate,
    - no remote URL loads by default.
 
-## Recommendation
+## Historical Recommendation
 
-Proceed with Live2D as a spike, not a mainline dependency yet.
+At the start of the spike, the recommendation was to proceed with Live2D as a spike, not a mainline dependency yet.
 
-The correct next package is not to install Live2D immediately. It is to add a renderer backend contract and a local WebEngine prototype gate. The current `SpritePresentationAdapter` is the first step of that contract, and Live2D should be added as a second adapter once licensing and packaging are explicit.
+That recommendation has been partially executed: the renderer backend contract exists, a local WebEngine prototype exists, and the main application can route a Live2D character pack through `Live2DWebSurface`. The remaining gap is not the renderer path; it is a properly rigged Xingxi Live2D asset and a reviewed distribution path for Live2D runtime files.
 
 ## 2026-06-06 Spike Result
 
@@ -191,7 +191,7 @@ Verified result:
 - `visual_actions` using E-Moti's existing payload shape were mapped to Live2D expression and motion IDs.
 - Screenshot validation wrote `artifacts/simulation/live2d_spike.png` and passed a nonblank image check.
 
-This is not yet the production desktop-pet renderer and does not include a rigged Xingxi model. It proves the Live2D runtime route and the LLM-to-renderer presentation boundary.
+This first spike was not the production desktop-pet renderer and did not include a rigged Xingxi model. It proved the Live2D runtime route and the LLM-to-renderer presentation boundary.
 
 ## 2026-06-06 Production Surface Step
 
@@ -213,3 +213,25 @@ Verified result:
 - Screenshot validation wrote `artifacts/simulation/live2d_app_surface.png` and passed a nonblank image check.
 
 Sprite rendering is now fallback behavior when a character pack does not provide a safe existing Live2D `.model3.json`.
+
+## 2026-06-06 Character Pack Window Step
+
+The desktop window can now be driven by a temporary E-Moti character pack that declares `renderer.backend = "live2d_web"`.
+
+Verified command:
+
+```powershell
+python tools\live2d_spike\smoke_character_pack_window.py
+```
+
+Verified result:
+
+- The app selected `live2d_web` from character pack metadata.
+- A real `CompanionWindow` loaded a sample `.model3.json` through the scoped local server.
+- Mapped LLM visual actions were applied:
+  - `excited -> F02`
+  - `Play -> TapBody`
+- Screenshot validation wrote `artifacts/simulation/live2d_character_pack_window.png` and passed a nonblank image check.
+- Client disconnects during shutdown no longer print server tracebacks.
+
+This still uses an ignored local Haru sample model. It is runtime verification, not the formal Xingxi Live2D asset.

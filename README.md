@@ -9,11 +9,12 @@ This project is not a productivity coach, course supervisor, mascot skin, or cha
 ## Features
 
 - Control panel mode with status, actions, shop, inventory, relationship, memory, dialogue, and settings views.
-- Desktop pet mode with transparent always-on-top presentation and direct sprite interaction.
+- Desktop pet mode with transparent always-on-top presentation and direct companion interaction.
 - System tray support for hiding, restoring, entering pet mode, and exiting.
 - Local state machine for focus, charge, stability, mood, trust, coins, level, inventory, memories, and relationship unlocks.
-- Sprite atlas driven motion layer using the bundled original character assets.
-- Optional LLM expression adapter that can turn validated local events into character speech.
+- Sprite atlas renderer using the bundled original character assets.
+- Live2D Web renderer path for character packs that provide a safe `.model3.json`; sprite remains the fallback.
+- Optional LLM expression adapter that can turn validated local events into character speech, expression cues, motion cues, and read-only interaction intents.
 - Optional screen observation, web search, TTS, and ASR integrations behind explicit settings.
 - Windows packaging scripts for a frozen app and Inno Setup installer.
 
@@ -94,6 +95,37 @@ Focused UI smoke tests:
 python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py
 ```
 
+Character pack validation:
+
+```powershell
+python tools\validate_character_pack.py assets\companion\original_oc
+```
+
+LLM expression smoke with DeepSeek or another OpenAI-compatible provider:
+
+```powershell
+$env:DEEPSEEK_API_KEY="sk-..."
+python tools\llm_dialogue_smoke.py --provider deepseek --timeout-seconds 45
+Remove-Item Env:\DEEPSEEK_API_KEY
+```
+
+The LLM smoke uses a temporary save directory. It fails if the provider cannot be called, if fallback is used, if growth state mutates, or if expression/motion coverage is too weak.
+
+Live2D smoke tests require local-only verification dependencies that are not committed:
+
+```text
+tmp\live2d_research\CubismWebSamples\Samples\Resources\Haru\Haru.model3.json
+tmp\live2d_research\live2dcubismcore.min.js
+```
+
+Run them only after those files are present:
+
+```powershell
+python tools\live2d_spike\smoke_live2d_web.py --timeout-seconds 45
+python tools\live2d_spike\smoke_app_surface.py
+python tools\live2d_spike\smoke_character_pack_window.py
+```
+
 ## Build
 
 Build the frozen Windows app:
@@ -145,6 +177,24 @@ LLM expression provider presets:
 | `lmstudio` | `http://127.0.0.1:1234/v1` | Optional | Start the LM Studio local server, load a model, then use the model list button or type the model ID. |
 | `custom` | `https://api.openai.com/v1` | Optional | For other OpenAI-compatible services. Fill an API key when that service requires one. |
 
+## Live2D Status
+
+The repository contains the Live2D Web renderer integration and smoke harness. It does not contain a rigged Xingxi Live2D model.
+
+Current verified boundary:
+
+```text
+LLM -> typed speech/visual_actions events -> renderer adapter -> Live2D surface
+```
+
+Formal Xingxi Live2D production still requires a layered PSD, Cubism Editor rigging, expression/motion export, and a character pack that passes:
+
+```powershell
+python tools\validate_character_pack.py character_packs\xingxi_live2d
+```
+
+See `docs/live2d_asset_pipeline.md` for the PSD layer checklist, Cubism export checklist, and renderer mapping contract.
+
 ## Repository Notes
 
 - `src/guanghe_companion/` contains the application code.
@@ -152,6 +202,15 @@ LLM expression provider presets:
 - `tests/` contains the regression and smoke tests.
 - `packaging/` and `tools/` contain Windows build entry points and scripts.
 - `data/` contains local runtime saves and is intentionally ignored by git.
+- `tmp/live2d_research/`, `artifacts/simulation/`, `node_modules/`, API keys, and third-party Live2D sample assets must stay out of commits.
+
+## Open Source Boundaries
+
+- E-Moti's code is MIT licensed.
+- The bundled Xingxi sprite/reference assets in this repository are original project assets.
+- Live2D Cubism Core, Live2D official sample models, and third-party character models are not bundled.
+- Do not commit copied models, proprietary runtime files, API keys, generated dialogue history, or runtime saves.
+- Fanwork or third-party character packs should only be distributed when the author has the right to publish the assets and character setting.
 
 ## License
 
