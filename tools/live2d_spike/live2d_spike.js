@@ -5,6 +5,7 @@
   const expressionId = params.get("expression") || "";
   const motionGroup = params.get("motionGroup") || "";
   const visualActions = parseJsonParam(params.get("actions"), []);
+  const mappedActions = parseJsonParam(params.get("mappedActions"), []);
   const expressionMap = parseMapParam(
     params.get("expressionMap"),
     {
@@ -34,6 +35,7 @@
     expressionId,
     motionGroup,
     visualActions,
+    mappedActions,
     appliedVisualActions: [],
     expressionApplied: false,
     motionApplied: false,
@@ -106,6 +108,7 @@
       state.motionApplied = true;
     }
     await applyVisualActions(model, visualActions);
+    await applyMappedActions(model, mappedActions);
   }
 
   async function applyVisualActions(model, actions) {
@@ -144,6 +147,33 @@
             mapped: mappedMotion,
           });
         }
+      }
+    }
+  }
+
+  async function applyMappedActions(model, actions) {
+    if (!Array.isArray(actions)) {
+      return;
+    }
+    for (const action of actions) {
+      if (!action || typeof action !== "object") {
+        continue;
+      }
+      const actionType = action.type;
+      const actionId = action.id;
+      const mapped = action.mapped;
+      if (typeof actionType !== "string" || typeof actionId !== "string" || typeof mapped !== "string") {
+        continue;
+      }
+      if (actionType === "expression" && typeof model.expression === "function") {
+        await model.expression(mapped);
+        state.expressionApplied = true;
+        state.appliedVisualActions.push({ type: "expression", id: actionId, mapped });
+      }
+      if (actionType === "motion" && typeof model.motion === "function") {
+        await model.motion(mapped);
+        state.motionApplied = true;
+        state.appliedVisualActions.push({ type: "motion", id: actionId, mapped });
       }
     }
   }

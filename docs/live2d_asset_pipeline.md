@@ -123,6 +123,7 @@ Verified command:
 
 ```powershell
 python tools\live2d_spike\smoke_live2d_web.py --timeout-seconds 45
+python tools\live2d_spike\smoke_app_surface.py
 ```
 
 Verified result on 2026-06-06:
@@ -137,6 +138,7 @@ Verified result on 2026-06-06:
   - `artifacts/simulation/live2d_spike.png`
   - `unique_colors` above 15,000.
 - `npm audit --json` for `tools/live2d_spike` reports `0` vulnerabilities after overriding `gh-pages` to a fixed version.
+- The production `Live2DWebSurface` smoke loaded the same model through a scoped localhost server and wrote `artifacts/simulation/live2d_app_surface.png`.
 
 ## Licensing Boundary
 

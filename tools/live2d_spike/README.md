@@ -17,6 +17,7 @@ The smoke test expects:
 
 ```powershell
 python tools\live2d_spike\smoke_live2d_web.py
+python tools\live2d_spike\smoke_app_surface.py
 ```
 
 Expected result:
@@ -26,6 +27,7 @@ Expected result:
 - the configured motion group is requested,
 - E-Moti-shaped `visual_actions` are mapped and applied,
 - a nonblank screenshot is written to `artifacts\simulation\live2d_spike.png`.
+- the production `Live2DWebSurface` writes `artifacts\simulation\live2d_app_surface.png`.
 
 This spike is not yet the production desktop-pet renderer. Production integration should keep the same boundary:
 

@@ -50,6 +50,7 @@ from .expression_settings import (
 )
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_motion_catalog_from_dir
+from .live2d_web import Live2DWebSurface, has_safe_live2d_model
 from .presentation_renderer import Live2DWebPresentationAdapter, PresentationFrame, SpritePresentationAdapter
 from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
@@ -265,25 +266,12 @@ class SpriteInteractionLabel(QLabel):
         event.accept()
 
 
-class Live2DWebSurface(QLabel):
-    def __init__(self) -> None:
-        super().__init__()
-        self.loaded_frames: list[tuple[PresentationFrame, object]] = []
-        self.setObjectName("Live2DWebSurface")
-        self.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.setStyleSheet(DESKTOP_SPRITE_STYLE)
-        self.setText("Live2D renderer")
-
-    def load_frame(self, frame: PresentationFrame, asset_dir: object) -> None:
-        self.loaded_frames.append((frame, asset_dir))
-        action_text = ", ".join(
-            f"{action['type']}:{action['id']}->{action['mapped']}" for action in frame.live2d_actions
-        )
-        self.setText(action_text or f"Live2D: {frame.model_path}")
-
-
-def _presentation_renderer_from_profile(renderer_profile):
-    if renderer_profile.backend == "live2d_web" and renderer_profile.model:
+def _presentation_renderer_from_profile(renderer_profile, asset_dir):
+    if (
+        renderer_profile.backend == "live2d_web"
+        and renderer_profile.model
+        and has_safe_live2d_model(asset_dir, renderer_profile.model)
+    ):
         return Live2DWebPresentationAdapter(
             model_path=renderer_profile.model,
             motion_map=renderer_profile.motion_map,
@@ -327,7 +315,10 @@ class CompanionWindow(QMainWindow):
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
         self.snapshot_renderer = SnapshotRenderer()
-        self.presentation_renderer = _presentation_renderer_from_profile(self.controller.character_pack.renderer)
+        self.presentation_renderer = _presentation_renderer_from_profile(
+            self.controller.character_pack.renderer,
+            self.controller.resources.asset_dir,
+        )
         user_pack_root = (
             self.controller.user_data_root / "character_packs"
             if self.controller.user_data_root is not None
@@ -822,7 +813,10 @@ class CompanionWindow(QMainWindow):
         self.motion_catalog = load_motion_catalog_from_dir(self.controller.resources.asset_dir)
         self.motion_animator = MotionAnimator(self.motion_catalog)
         self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
-        self.presentation_renderer = _presentation_renderer_from_profile(self.controller.character_pack.renderer)
+        self.presentation_renderer = _presentation_renderer_from_profile(
+            self.controller.character_pack.renderer,
+            self.controller.resources.asset_dir,
+        )
 
     def _build_launcher_card(self) -> QFrame:
         frame = QFrame()
@@ -1380,6 +1374,8 @@ class CompanionWindow(QMainWindow):
 
     @Slot()
     def _advance_frame(self) -> None:
+        if self.presentation_renderer.backend == "live2d_web":
+            return
         self.motion_animator.advance()
         self._render_current_frame()
 

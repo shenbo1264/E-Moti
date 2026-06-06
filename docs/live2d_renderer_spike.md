@@ -192,3 +192,24 @@ Verified result:
 - Screenshot validation wrote `artifacts/simulation/live2d_spike.png` and passed a nonblank image check.
 
 This is not yet the production desktop-pet renderer and does not include a rigged Xingxi model. It proves the Live2D runtime route and the LLM-to-renderer presentation boundary.
+
+## 2026-06-06 Production Surface Step
+
+The main application now has a production `Live2DWebSurface` entry point under `src/guanghe_companion/live2d_web.py`.
+
+Verified command:
+
+```powershell
+python tools\live2d_spike\smoke_app_surface.py
+```
+
+Verified result:
+
+- The production surface created a `QWebEngineView`.
+- It started a localhost static server scoped to renderer files, Cubism Core, and the active character asset directory.
+- It loaded a sample `.model3.json` through `/character-assets/...`.
+- It sent already-mapped E-Moti `live2d_actions` to the Web page.
+- The Web page applied `excited -> F02` and `Play -> TapBody`.
+- Screenshot validation wrote `artifacts/simulation/live2d_app_surface.png` and passed a nonblank image check.
+
+Sprite rendering is now fallback behavior when a character pack does not provide a safe existing Live2D `.model3.json`.
