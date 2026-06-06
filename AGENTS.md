@@ -22,7 +22,7 @@ Reference direction from Shinsekai is allowed only at the product and architectu
 
 - Do not break the current PySide6 control panel, desktop pet mode, tray behavior, character switching, LLM smoke path, or packaging scripts.
 - Keep `data/companion_save.json` uncommitted.
-- Keep `AI不用看.md` untouched.
+- Keep private ignored local note files untouched.
 - Before changing runtime behavior, run relevant focused tests first and then full `python -m pytest`.
 
 ### P1: Portrait/Spirit Character Pack Contract
@@ -181,7 +181,7 @@ For docs-only changes, still run relevant lightweight checks such as `git diff -
 ### Git Hygiene
 
 - Never stage or commit `data/companion_save.json`.
-- Never touch `AI不用看.md`.
+- Never touch private ignored local note files.
 - Do not revert user changes unless explicitly instructed.
 - Keep commits focused by subsystem.
 - Do not push, open PRs, change remotes, or merge branches unless the user explicitly asks.

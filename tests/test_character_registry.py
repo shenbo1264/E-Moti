@@ -20,6 +20,7 @@ REQUIRED_LIVE2D_MOTION_MAP = {
     "TouchHead": "TapHead",
     "Sleep": "Sleep",
 }
+REQUIRED_PORTRAIT_EXPRESSIONS = ("neutral", "smile", "thinking", "surprised", "sad", "sleepy")
 
 
 def _write_json(path, payload):
@@ -88,6 +89,55 @@ def _write_minimal_pack(
         ],
     )
     return pack_dir
+
+
+def _add_portrait_renderer(
+    pack_dir,
+    *,
+    manifest_path="portrait_manifest.json",
+    expressions=None,
+    fallback_expression="neutral",
+    image_mode="RGBA",
+    image_size=(512, 768),
+):
+    (pack_dir / "portraits").mkdir(exist_ok=True)
+    expression_map = {
+        expression: f"portraits/{expression}.png"
+        for expression in REQUIRED_PORTRAIT_EXPRESSIONS
+    }
+    if expressions is not None:
+        expression_map = expressions
+    for expression, relative_path in expression_map.items():
+        path = pack_dir / relative_path
+        if relative_path.startswith("portraits/"):
+            path.parent.mkdir(exist_ok=True)
+            Image.new(image_mode, image_size, (0, 0, 0, 0) if image_mode == "RGBA" else (0, 0, 0)).save(path)
+    _write_json(
+        pack_dir / manifest_path,
+        {
+            "version": 1,
+            "fallback_expression": fallback_expression,
+            "anchor": "bottom_center",
+            "default_scale": 1.0,
+            "expressions": expression_map,
+        },
+    )
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "portrait",
+        "portrait_manifest": manifest_path,
+        "expression_map": {
+            "calm": "neutral",
+            "joy": "smile",
+            "excited": "smile",
+            "focused": "thinking",
+            "surprised": "surprised",
+            "sadness": "sad",
+            "sleepy": "sleepy",
+        },
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
 
 def test_character_registry_lists_valid_packs_and_excludes_invalid_ones(tmp_path):
@@ -228,6 +278,86 @@ def test_validate_character_pack_accepts_complete_live2d_renderer_assets(tmp_pat
     report = validate_character_pack_dir(pack_dir)
 
     assert report.ok
+
+
+def test_validate_character_pack_accepts_complete_portrait_renderer_assets(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    _add_portrait_renderer(pack_dir)
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert report.ok
+
+
+def test_validate_character_pack_rejects_missing_portrait_manifest(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    _add_portrait_renderer(pack_dir)
+    (pack_dir / "portrait_manifest.json").unlink()
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait manifest not found: portrait_manifest.json" in error for error in report.errors)
+
+
+def test_validate_character_pack_rejects_portrait_path_outside_portraits(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    expressions = {
+        expression: f"portraits/{expression}.png"
+        for expression in REQUIRED_PORTRAIT_EXPRESSIONS
+    }
+    expressions["neutral"] = "../outside.png"
+    _add_portrait_renderer(pack_dir, expressions=expressions)
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait_manifest.expressions.neutral path must stay inside portraits" in error for error in report.errors)
+
+
+def test_validate_character_pack_requires_portrait_expression_coverage(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    expressions = {
+        expression: f"portraits/{expression}.png"
+        for expression in REQUIRED_PORTRAIT_EXPRESSIONS
+        if expression != "sleepy"
+    }
+    _add_portrait_renderer(pack_dir, expressions=expressions)
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait_manifest.expressions missing required portrait expression: sleepy" in error for error in report.errors)
+
+
+def test_validate_character_pack_rejects_portrait_fallback_not_in_manifest(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    _add_portrait_renderer(pack_dir, fallback_expression="missing")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait_manifest.fallback_expression must reference an expression" in error for error in report.errors)
+
+
+def test_validate_character_pack_rejects_non_rgba_portrait_image(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    _add_portrait_renderer(pack_dir, image_mode="RGB")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait image mode must be RGBA" in error for error in report.errors)
+
+
+def test_validate_character_pack_rejects_oversized_portrait_image(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    _add_portrait_renderer(pack_dir, image_size=(4097, 32))
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait image too large" in error for error in report.errors)
 
 
 def test_character_registry_can_merge_builtin_and_user_packs(tmp_path):

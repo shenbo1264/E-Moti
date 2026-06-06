@@ -90,6 +90,40 @@ def write_ui_character_pack(root, character_id, *, name, title):
     return pack_dir
 
 
+def add_ui_portrait_renderer(pack_dir):
+    (pack_dir / "portraits").mkdir()
+    expressions = {
+        "neutral": "portraits/neutral.png",
+        "smile": "portraits/smile.png",
+        "thinking": "portraits/thinking.png",
+        "surprised": "portraits/surprised.png",
+        "sad": "portraits/sad.png",
+        "sleepy": "portraits/sleepy.png",
+    }
+    for relative_path in expressions.values():
+        Image.new("RGBA", (256, 384), (40, 80, 120, 255)).save(pack_dir / relative_path)
+    (pack_dir / "portrait_manifest.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "fallback_expression": "neutral",
+                "anchor": "bottom_center",
+                "default_scale": 1.0,
+                "expressions": expressions,
+            }
+        ),
+        encoding="utf-8",
+    )
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "portrait",
+        "portrait_manifest": "portrait_manifest.json",
+        "expression_map": {"focused": "thinking", "excited": "smile"},
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+
 def patch_ui_character_assets(monkeypatch, root):
     import guanghe_companion.character_pack as character_pack_module
     import guanghe_companion.motion as motion_module
@@ -294,7 +328,9 @@ def test_control_panel_launches_separate_desktop_pet_window(monkeypatch, tmp_pat
     assert window.status_card.isVisibleTo(window)
     assert pet_window is not window
     assert pet_window.desktop_mode is True
-    assert pet_window.sprite_label.isVisibleTo(pet_window)
+    assert pet_window.presentation_renderer.backend == "portrait"
+    assert pet_window.spirit_surface.isVisibleTo(pet_window)
+    assert not pet_window.sprite_label.isVisibleTo(pet_window)
     assert not pet_window.tick_timer.isActive()
 
     pet_window.close()
@@ -493,9 +529,29 @@ def test_window_started_with_custom_character_loads_matching_motion_assets(monke
 
 
 def test_window_applies_visual_action_motion_without_mutating_controller_state(monkeypatch, tmp_path):
-    app, window = make_window(monkeypatch, tmp_path)
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    motion_manifest_path = pack_dir / "motion_manifest.json"
+    motion_manifest = json.loads(motion_manifest_path.read_text(encoding="utf-8"))
+    motion_manifest["motions"]["Raised"] = {"row": 7, "frame_count": 1, "fps": 4}
+    motion_manifest_path.write_text(json.dumps(motion_manifest), encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(
+        controller=CompanionController(save_path=tmp_path / "save.json", auto_load=False),
+    )
+    window.show()
+    app.processEvents()
     snapshot = window.controller.get_snapshot()
     assert snapshot["motion"] == "Default"
+    assert window.presentation_renderer.backend == "sprite"
 
     snapshot["visual_actions"] = [
         {
@@ -626,6 +682,105 @@ def test_live2d_renderer_frame_timer_does_not_restore_sprite_surface(monkeypatch
     app.processEvents()
 
     assert window.live2d_surface.isVisibleTo(window)
+    assert not window.sprite_label.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_mode_prefers_spirit_surface_for_portrait_renderer(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(
+        assets_root,
+        "portrait_character",
+        name="Portrait",
+        title="Portrait companion",
+    )
+    add_ui_portrait_renderer(pack_dir)
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication, QLabel
+    import guanghe_companion.app as app_module
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class FakeSpiritStageSurface(QLabel):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            self.loaded_frames = []
+
+        def load_frame(self, frame, asset_dir):
+            self.loaded_frames.append((frame, asset_dir))
+
+    monkeypatch.setattr(app_module, "SpiritStageSurface", FakeSpiritStageSurface, raising=False)
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="portrait_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert window.presentation_renderer.backend == "portrait"
+    assert window.spirit_surface.isVisibleTo(window)
+    assert not window.sprite_label.isVisibleTo(window)
+    assert not window.live2d_surface.isVisibleTo(window)
+    frame, asset_dir = window.spirit_surface.loaded_frames[-1]
+    assert frame.backend == "portrait"
+    assert frame.portrait_manifest == "portrait_manifest.json"
+    assert frame.portrait_id == "neutral"
+    assert asset_dir == pack_dir
+
+    window.close()
+    app.processEvents()
+
+
+def test_portrait_renderer_frame_timer_does_not_restore_sprite_surface(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(
+        assets_root,
+        "portrait_character",
+        name="Portrait",
+        title="Portrait companion",
+    )
+    add_ui_portrait_renderer(pack_dir)
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication, QLabel
+    import guanghe_companion.app as app_module
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class FakeSpiritStageSurface(QLabel):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            self.loaded_frames = []
+
+        def load_frame(self, frame, asset_dir):
+            self.loaded_frames.append((frame, asset_dir))
+
+    monkeypatch.setattr(app_module, "SpiritStageSurface", FakeSpiritStageSurface, raising=False)
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="portrait_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    window._advance_frame()
+    app.processEvents()
+
+    assert window.presentation_renderer.backend == "portrait"
+    assert window.spirit_surface.isVisibleTo(window)
     assert not window.sprite_label.isVisibleTo(window)
 
     window.close()
@@ -805,7 +960,7 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     app.processEvents()
 
 
-def test_desktop_mode_shows_sprite_with_dialogue_controls_after_layout(monkeypatch, tmp_path):
+def test_desktop_mode_shows_primary_surface_with_dialogue_controls_after_layout(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
     from PySide6.QtCore import Qt
@@ -824,11 +979,14 @@ def test_desktop_mode_shows_sprite_with_dialogue_controls_after_layout(monkeypat
     assert window.root_widget.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert window.hero_card.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert window.sprite_label.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    assert window.spirit_surface.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert "border: none" in window.hero_card.styleSheet()
     assert "background: transparent" in window.sprite_label.styleSheet()
-    assert window.sprite_label.isVisibleTo(window)
-    assert window.sprite_label.pixmap() is not None
-    assert not window.sprite_label.pixmap().isNull()
+    assert window.presentation_renderer.backend == "portrait"
+    assert window.spirit_surface.isVisibleTo(window)
+    assert window.spirit_surface.pixmap() is not None
+    assert not window.spirit_surface.pixmap().isNull()
+    assert not window.sprite_label.isVisibleTo(window)
     assert window.mask().isEmpty()
     assert not window.character_label.isVisibleTo(window)
     assert not window.desktop_feedback_label.isVisibleTo(window)

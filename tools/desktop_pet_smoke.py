@@ -49,9 +49,22 @@ def validate_desktop_pet_window(app: QApplication, window: CompanionWindow) -> l
     if window.spritesheet.isNull():
         errors.append("spritesheet did not load")
 
-    pixmap = window.sprite_label.pixmap()
-    if pixmap is None or pixmap.isNull():
-        errors.append("current sprite frame did not render")
+    backend = window.presentation_renderer.backend
+    if backend == "portrait":
+        pixmap = window.spirit_surface.pixmap()
+        if not window.spirit_surface.isVisibleTo(window):
+            errors.append("portrait surface is not visible")
+        if pixmap is None or pixmap.isNull():
+            errors.append("current portrait frame did not render")
+    elif backend == "live2d_web":
+        if not window.live2d_surface.isVisibleTo(window):
+            errors.append("Live2D surface is not visible")
+    else:
+        pixmap = window.sprite_label.pixmap()
+        if not window.sprite_label.isVisibleTo(window):
+            errors.append("sprite surface is not visible")
+        if pixmap is None or pixmap.isNull():
+            errors.append("current sprite frame did not render")
 
     if window.hero_card.title():
         errors.append("desktop pet should not show a framed hero title")

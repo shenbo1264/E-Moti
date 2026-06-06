@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "fallback_expression": "neutral",
+  "anchor": "bottom_center",
+  "default_scale": 1.0,
+  "expressions": {
+    "neutral": "portraits/neutral.png",
+    "smile": "portraits/smile.png",
+    "thinking": "portraits/thinking.png",
+    "surprised": "portraits/surprised.png",
+    "sad": "portraits/sad.png",
+    "sleepy": "portraits/sleepy.png"
+  }
+}

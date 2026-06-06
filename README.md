@@ -2,7 +2,7 @@
 
 E-Moti is a Windows-first desktop companion pet demo built with Python and PySide6.
 
-The current companion is the original character 星汐. She is a small desktop companion that responds through local state, sprite motions, dialogue bubbles, inventory items, relationship progress, and short-lived contextual expression. Learning, resting, comforting, and playing are action states, not the product identity.
+The current companion is the original character 星汐. She is moving toward a Spirit/GalGame-like desktop companion presentation with large portrait expressions, dialogue staging, local pet state, inventory items, relationship progress, and short-lived contextual expression. Learning, resting, comforting, and playing are action states, not the product identity.
 
 This project is not a productivity coach, course supervisor, mascot skin, or chatbot-only shell.
 
@@ -12,7 +12,8 @@ This project is not a productivity coach, course supervisor, mascot skin, or cha
 - Desktop pet mode with transparent always-on-top presentation and direct companion interaction.
 - System tray support for hiding, restoring, entering pet mode, and exiting.
 - Local state machine for focus, charge, stability, mood, trust, coins, level, inventory, memories, and relationship unlocks.
-- Sprite atlas renderer using the bundled original character assets.
+- Spirit/GalGame portrait renderer using bundled original Xingxi expression assets.
+- Sprite atlas renderer kept as the fallback, tray-friendly baseline, and regression-safe renderer.
 - Live2D Web renderer path for character packs that provide a safe `.model3.json`; sprite remains the fallback.
 - Optional LLM expression adapter that can turn validated local events into character speech, expression cues, motion cues, and read-only interaction intents.
 - Optional screen observation, web search, TTS, and ASR integrations behind explicit settings.
@@ -198,7 +199,7 @@ See `docs/live2d_asset_pipeline.md` for the PSD layer checklist, Cubism export c
 ## Repository Notes
 
 - `src/guanghe_companion/` contains the application code.
-- `assets/companion/original_oc/` contains the bundled original character runtime assets.
+- `assets/companion/original_oc/` contains the bundled original character runtime assets, including portrait expressions and sprite fallback assets.
 - `tests/` contains the regression and smoke tests.
 - `packaging/` and `tools/` contain Windows build entry points and scripts.
 - `data/` contains local runtime saves and is intentionally ignored by git.

@@ -28,7 +28,8 @@
     "SwitchDown": "低状态反馈"
   },
   "renderer": {
-    "backend": "sprite",
+    "backend": "portrait",
+    "portrait_manifest": "portrait_manifest.json",
     "motion_map": {
       "Default": "Default",
       "TouchHead": "TouchHead",
@@ -39,13 +40,13 @@
       "Study": "Study"
     },
     "expression_map": {
-      "joy": "joy",
-      "sadness": "sadness",
+      "joy": "smile",
+      "sadness": "sad",
       "sleepy": "sleepy",
-      "excited": "excited",
-      "focused": "focused",
+      "excited": "smile",
+      "focused": "thinking",
       "surprised": "surprised",
-      "calm": "calm"
+      "calm": "neutral"
     },
     "intent_map": {
       "ask_comfort": "ask_comfort",

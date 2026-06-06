@@ -20,9 +20,10 @@ def test_load_default_character_pack_reads_spritesheet_filename():
     pack = load_default_character_pack()
 
     assert pack.spritesheet == "spritesheet.png"
-    assert pack.renderer.backend == "sprite"
+    assert pack.renderer.backend == "portrait"
+    assert pack.renderer.portrait_manifest == "portrait_manifest.json"
     assert pack.renderer.motion_map["Play"] == "Play"
-    assert pack.renderer.expression_map["joy"] == "joy"
+    assert pack.renderer.expression_map["joy"] == "smile"
     assert pack.renderer.intent_map["offer_rest"] == "offer_rest"
 
 
@@ -72,6 +73,52 @@ def test_load_character_pack_reads_live2d_renderer_model_path(tmp_path):
     assert pack.renderer.model == "live2d/Xingxi.model3.json"
     assert pack.renderer.motion_map["Play"] == "TapBody"
     assert pack.renderer.expression_map["excited"] == "F02"
+
+
+def test_load_character_pack_reads_portrait_renderer_manifest_path(tmp_path):
+    pack_dir = tmp_path / "portrait_character"
+    pack_dir.mkdir()
+    Image.new("RGBA", (192, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
+    (pack_dir / "motion_manifest.json").write_text(
+        json.dumps(
+            {
+                "sheet_columns": 1,
+                "sheet_rows": 9,
+                "frame_width": 192,
+                "frame_height": 208,
+                "motions": {"Default": {"row": 0, "frame_count": 1, "fps": 4}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": "portrait_character",
+                "name": "Portrait",
+                "title": "Portrait companion",
+                "description": "Portrait test pack",
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "Calm"},
+                "motion_labels": {"Default": "Idle"},
+                "renderer": {
+                    "backend": "portrait",
+                    "portrait_manifest": "portrait_manifest.json",
+                    "expression_map": {"focused": "thinking"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    pack = load_character_pack_from_dir(pack_dir)
+
+    assert pack.renderer.backend == "portrait"
+    assert pack.renderer.portrait_manifest == "portrait_manifest.json"
+    assert pack.renderer.expression_map["focused"] == "thinking"
 
 
 def test_load_default_character_pack_reads_relationship_badges_from_existing_item_icons():

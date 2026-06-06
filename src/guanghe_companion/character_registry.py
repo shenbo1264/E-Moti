@@ -23,10 +23,13 @@ REQUIRED_FILES = (
 )
 ALLOWED_ITEM_CATEGORIES = frozenset({"food", "gift", "tool"})
 ALLOWED_ITEM_EFFECTS = frozenset({"charge", "mood", "stability", "trust", "study_bonus_exp"})
-ALLOWED_RENDERER_BACKENDS = frozenset({"sprite", "live2d_web", "inochi2d"})
+ALLOWED_RENDERER_BACKENDS = frozenset({"sprite", "live2d_web", "inochi2d", "portrait"})
 RENDERER_MAP_FIELDS = ("motion_map", "expression_map", "intent_map")
 REQUIRED_LIVE2D_EXPRESSIONS = ("calm", "excited", "surprised", "sleepy", "sadness", "focused")
 REQUIRED_LIVE2D_MOTIONS = ("Default", "Play", "Raised", "TouchHead", "Sleep")
+REQUIRED_PORTRAIT_EXPRESSIONS = ("neutral", "smile", "thinking", "surprised", "sad", "sleepy")
+MAX_PORTRAIT_WIDTH = 4096
+MAX_PORTRAIT_HEIGHT = 4096
 
 
 @dataclass(frozen=True, slots=True)
@@ -227,6 +230,18 @@ def _validate_renderer_payload(root: Path, value: object, errors: list[str]) -> 
             REQUIRED_LIVE2D_MOTIONS,
             errors,
         )
+    if backend == "portrait":
+        manifest = value.get("portrait_manifest")
+        if not _safe_portrait_manifest_path(manifest):
+            errors.append("character.json.renderer.portrait_manifest must be a safe relative json filename")
+        else:
+            manifest_path = root / str(manifest)
+            if not manifest_path.is_file():
+                errors.append(f"portrait manifest not found: {manifest}")
+            else:
+                payload = _read_json_object(manifest_path, errors, label="portrait_manifest.json")
+                if isinstance(payload, dict):
+                    _validate_portrait_manifest(root, payload, errors)
     for field in RENDERER_MAP_FIELDS:
         mapping = value.get(field, {})
         if not isinstance(mapping, dict):
@@ -271,6 +286,86 @@ def _safe_live2d_model_path(value: object) -> bool:
     if path.is_absolute() or ".." in path.parts:
         return False
     return path.suffix == ".json" and path.name.endswith(".model3.json")
+
+
+def _safe_portrait_manifest_path(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip() or len(value) > 120:
+        return False
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        return False
+    path = Path(value)
+    return not path.is_absolute() and ".." not in path.parts and len(path.parts) == 1 and path.suffix == ".json"
+
+
+def _validate_portrait_manifest(root: Path, payload: dict[str, object], errors: list[str]) -> None:
+    expressions = payload.get("expressions")
+    if not isinstance(expressions, dict):
+        errors.append("portrait_manifest.expressions must be an object")
+        return
+    for expression in REQUIRED_PORTRAIT_EXPRESSIONS:
+        if expression not in expressions:
+            errors.append(f"portrait_manifest.expressions missing required portrait expression: {expression}")
+    fallback = payload.get("fallback_expression")
+    if not isinstance(fallback, str) or fallback not in expressions:
+        errors.append("portrait_manifest.fallback_expression must reference an expression")
+    for expression, image_path in expressions.items():
+        if not isinstance(expression, str) or not expression:
+            errors.append("portrait_manifest.expressions keys must be non-empty strings")
+            continue
+        if not _safe_portrait_image_path(image_path):
+            errors.append(f"portrait_manifest.expressions.{expression} path must stay inside portraits")
+            continue
+        _validate_portrait_image(root, expression, str(image_path), errors)
+
+    anchor = payload.get("anchor", "bottom_center")
+    if anchor not in {"bottom_center", "center"}:
+        errors.append("portrait_manifest.anchor invalid")
+    default_scale = payload.get("default_scale", 1.0)
+    if (
+        isinstance(default_scale, bool)
+        or not isinstance(default_scale, (int, float))
+        or not 0.1 <= float(default_scale) <= 3.0
+    ):
+        errors.append("portrait_manifest.default_scale must be between 0.1 and 3.0")
+
+
+def _safe_portrait_image_path(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip() or len(value) > 180:
+        return False
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        return False
+    path = Path(value)
+    return (
+        not path.is_absolute()
+        and ".." not in path.parts
+        and len(path.parts) == 2
+        and path.parts[0] == "portraits"
+        and path.suffix.lower() == ".png"
+    )
+
+
+def _validate_portrait_image(root: Path, expression: str, image_path: str, errors: list[str]) -> None:
+    resolved = (root / image_path).resolve()
+    try:
+        resolved.relative_to(root.resolve())
+    except ValueError:
+        errors.append(f"portrait_manifest.expressions.{expression} path must stay inside portraits")
+        return
+    if not resolved.is_file():
+        errors.append(f"portrait image not found: {image_path}")
+        return
+    try:
+        with Image.open(resolved) as image:
+            size = image.size
+            mode = image.mode
+            image.verify()
+    except (OSError, UnidentifiedImageError) as exc:
+        errors.append(f"portrait image invalid: {image_path}: {exc}")
+        return
+    if mode != "RGBA":
+        errors.append(f"portrait image mode must be RGBA: {image_path}")
+    if size[0] > MAX_PORTRAIT_WIDTH or size[1] > MAX_PORTRAIT_HEIGHT:
+        errors.append(f"portrait image too large: {image_path}")
 
 
 def _validate_dialogue_payload(payload: dict[str, object], errors: list[str]) -> None:

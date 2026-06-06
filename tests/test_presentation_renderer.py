@@ -1,5 +1,5 @@
 from guanghe_companion import presentation_renderer
-from guanghe_companion.presentation_renderer import SpritePresentationAdapter
+from guanghe_companion.presentation_renderer import PortraitPresentationAdapter, SpritePresentationAdapter
 
 
 def test_sprite_presentation_adapter_uses_llm_visual_motion_without_mutating_snapshot():
@@ -97,3 +97,51 @@ def test_live2d_web_presentation_adapter_maps_visual_actions_without_mutating_sn
         {"type": "motion", "id": "Play", "mapped": "TapBody", "source": "llm"},
     )
     assert snapshot["motion"] == "Default"
+
+
+def test_portrait_presentation_adapter_maps_visual_expression_without_mutating_snapshot():
+    snapshot = {
+        "motion": "Default",
+        "visual_actions": [
+            {
+                "type": "expression",
+                "id": "focused",
+                "ttl_ms": 3000,
+                "priority": 70,
+                "source": "llm",
+            }
+        ],
+    }
+
+    frame = PortraitPresentationAdapter(
+        portrait_manifest="portrait_manifest.json",
+        expression_map={"focused": "thinking"},
+    ).frame_from_snapshot(snapshot)
+
+    assert frame.backend == "portrait"
+    assert frame.portrait_manifest == "portrait_manifest.json"
+    assert frame.portrait_id == "thinking"
+    assert frame.motion == "Default"
+    assert snapshot["motion"] == "Default"
+
+
+def test_portrait_presentation_adapter_falls_back_to_neutral_when_expression_is_unknown():
+    snapshot = {
+        "motion": "Default",
+        "visual_actions": [
+            {
+                "type": "expression",
+                "id": "unknown",
+                "ttl_ms": 3000,
+                "priority": 70,
+                "source": "llm",
+            }
+        ],
+    }
+
+    frame = PortraitPresentationAdapter(
+        portrait_manifest="portrait_manifest.json",
+        expression_map={"focused": "thinking"},
+    ).frame_from_snapshot(snapshot)
+
+    assert frame.portrait_id == "neutral"

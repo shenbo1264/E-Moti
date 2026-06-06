@@ -15,6 +15,7 @@ DEFAULT_CHARACTER_ID = "original_oc"
 class CharacterRendererProfile:
     backend: str = "sprite"
     model: str = ""
+    portrait_manifest: str = ""
     motion_map: dict[str, str] = field(default_factory=dict)
     expression_map: dict[str, str] = field(default_factory=dict)
     intent_map: dict[str, str] = field(default_factory=dict)
@@ -78,9 +79,11 @@ def _renderer_profile_from_payload(value: object) -> CharacterRendererProfile:
         return CharacterRendererProfile()
     backend = value.get("backend")
     model = value.get("model")
+    portrait_manifest = value.get("portrait_manifest")
     return CharacterRendererProfile(
         backend=backend if isinstance(backend, str) and backend else "sprite",
         model=model if isinstance(model, str) else "",
+        portrait_manifest=portrait_manifest if isinstance(portrait_manifest, str) else "",
         motion_map=_string_map(value.get("motion_map")),
         expression_map=_string_map(value.get("expression_map")),
         intent_map=_string_map(value.get("intent_map")),

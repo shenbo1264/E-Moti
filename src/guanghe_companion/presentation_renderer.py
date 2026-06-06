@@ -6,7 +6,7 @@ from typing import Literal, Protocol
 
 from .visual_actions import VisualAction, sprite_motion_override, visual_actions_from_dicts
 
-RendererBackend = Literal["sprite", "live2d_web"]
+RendererBackend = Literal["sprite", "live2d_web", "portrait"]
 
 
 @dataclass(frozen=True, slots=True)
@@ -16,6 +16,8 @@ class PresentationFrame:
     visual_actions: tuple[VisualAction, ...] = ()
     model_path: str = ""
     live2d_actions: tuple[dict[str, str], ...] = ()
+    portrait_manifest: str = ""
+    portrait_id: str = ""
 
 
 class PresentationRendererAdapter(Protocol):
@@ -77,6 +79,35 @@ class Live2DWebPresentationAdapter:
         )
 
 
+class PortraitPresentationAdapter:
+    backend: RendererBackend = "portrait"
+
+    def __init__(
+        self,
+        *,
+        portrait_manifest: str,
+        expression_map: Mapping[str, str] | None = None,
+        fallback_expression: str = "neutral",
+    ) -> None:
+        self.portrait_manifest = portrait_manifest
+        self.expression_map = _clean_string_map(expression_map)
+        self.fallback_expression = fallback_expression if fallback_expression else "neutral"
+
+    def frame_from_snapshot(self, snapshot: Mapping[str, object]) -> PresentationFrame:
+        visual_actions = _visual_actions(snapshot.get("visual_actions"))
+        return PresentationFrame(
+            backend=self.backend,
+            motion=_snapshot_motion(snapshot),
+            visual_actions=visual_actions,
+            portrait_manifest=self.portrait_manifest,
+            portrait_id=_portrait_expression(
+                visual_actions,
+                expression_map=self.expression_map,
+                fallback_expression=self.fallback_expression,
+            ),
+        )
+
+
 def _visual_actions(value: object) -> tuple[VisualAction, ...]:
     if isinstance(value, tuple) and all(isinstance(action, VisualAction) for action in value):
         return value
@@ -110,6 +141,21 @@ def _live2d_actions(
             }
         )
     return tuple(mapped)
+
+
+def _portrait_expression(
+    actions: tuple[VisualAction, ...],
+    *,
+    expression_map: Mapping[str, str],
+    fallback_expression: str,
+) -> str:
+    for action in actions:
+        if action.action_type != "expression":
+            continue
+        target = expression_map.get(action.action_id)
+        if target:
+            return target
+    return fallback_expression
 
 
 def _clean_string_map(value: Mapping[str, str] | None) -> dict[str, str]:
