@@ -106,6 +106,7 @@ python tools\validate_character_pack.py assets\companion\original_oc
 Generated character draft validation:
 
 ```powershell
+python tools\create_character_draft.py --brief path\to\brief.json --output-root generated
 python tools\validate_character_draft.py path\to\generated\<character_id>
 ```
 
