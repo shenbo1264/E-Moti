@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `c056e1b test: ignore local character packs`
+- Current checked head: `3a5496e test: guard runtime artifact ignores`
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
 - Latest focused character library/registry tests run on 2026-06-07:
@@ -64,6 +64,11 @@ Latest non-confirmation packages completed after the original plan:
   - Adds `character_packs/` to `.gitignore` and repository hygiene coverage.
   - Prevents local user packs, private fanwork packs, and generated character-pack experiments from being swept into open-source commits.
   - This preserves the character-switching/user-pack route without changing runtime loading, import confirmation, manifests, or assets.
+- `3a5496e test: guard runtime artifact ignores`
+  - Expands repository hygiene coverage for runtime saves, local dialogue history, simulation artifacts, and Live2D research scratch space.
+  - Required ignore patterns now include `data/companion_save.json`, `data/companion_demo_save.json`, `data/dialogue_history.json`, `artifacts/simulation/`, and `tmp/live2d_research/`.
+  - `data/companion_save.json` is still a tracked working-tree file in this checkout; removing it from the git index is a separate confirmation boundary.
+  - This does not change runtime save behavior, app logic, packaging, or release artifacts.
 
 Latest confirmation-gated packages completed after user approval:
 
