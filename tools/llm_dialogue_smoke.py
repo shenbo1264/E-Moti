@@ -14,6 +14,8 @@ if str(SRC_ROOT) not in sys.path:
 from guanghe_companion.expression_settings import (
     provider_default_base_url,
     provider_default_model,
+    provider_api_key_required,
+    provider_api_style,
 )
 from guanghe_companion.llm_smoke import DEFAULT_LLM_SMOKE_PROMPTS, run_llm_dialogue_smoke
 
@@ -28,6 +30,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--min-expression-actions", type=int, default=4)
     parser.add_argument("--min-motion-actions", type=int, default=3)
     parser.add_argument("--prompt", action="append", default=[])
+    parser.add_argument("--dry-run", action="store_true", help="Print sanitized provider settings without API calls.")
     return parser.parse_args(argv)
 
 
@@ -50,6 +53,22 @@ def main(argv: list[str] | None = None) -> int:
         "api_key": _api_key_from_env(provider, args.api_key_env, os.environ),
         "timeout_seconds": args.timeout_seconds,
     }
+    if args.dry_run:
+        missing_key = provider_api_key_required(provider) and not settings["api_key"]
+        payload = {
+            "ok": not missing_key,
+            "reason": "missing_api_key" if missing_key else "",
+            "dry_run": True,
+            "would_call_api": False,
+            "provider": provider,
+            "model": settings["model"],
+            "base_url": settings["base_url"],
+            "api_style": provider_api_style(provider),
+            "api_key_set": bool(settings["api_key"]),
+            "timeout_seconds": settings["timeout_seconds"],
+        }
+        print(json.dumps(payload, ensure_ascii=False, indent=2))
+        return 1 if missing_key else 0
     prompts = tuple(args.prompt) if args.prompt else DEFAULT_LLM_SMOKE_PROMPTS
     report = run_llm_dialogue_smoke(
         settings,

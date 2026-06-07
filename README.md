@@ -126,12 +126,13 @@ python tools\art\validate_portrait_candidates.py path\to\portrait_candidate.json
 LLM expression smoke with DeepSeek or another OpenAI-compatible provider:
 
 ```powershell
+python tools\llm_dialogue_smoke.py --provider deepseek --dry-run
 $env:DEEPSEEK_API_KEY="sk-..."
 python tools\llm_dialogue_smoke.py --provider deepseek --timeout-seconds 45
 Remove-Item Env:\DEEPSEEK_API_KEY
 ```
 
-The LLM smoke uses a temporary save directory. It fails if the provider cannot be called, if fallback is used, if growth state mutates, or if expression/motion coverage is too weak.
+The dry run prints sanitized provider settings without API calls. The live LLM smoke uses a temporary save directory. It fails if the provider cannot be called, if fallback is used, if growth state mutates, or if expression/motion coverage is too weak.
 
 Live2D smoke tests require local-only verification dependencies that are not committed:
 

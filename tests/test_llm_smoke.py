@@ -1,3 +1,4 @@
+import json
 import importlib.util
 from pathlib import Path
 
@@ -185,3 +186,56 @@ def test_llm_dialogue_smoke_entrypoint_reads_deepseek_env_without_printing_key(m
     assert captured["kwargs"]["min_expression_actions"] == 4
     assert captured["kwargs"]["min_motion_actions"] == 3
     assert "sk-secret" not in capsys.readouterr().out
+
+
+def test_llm_dialogue_smoke_dry_run_reports_sanitized_deepseek_settings_without_calling_provider(
+    monkeypatch,
+    capsys,
+):
+    module = _load_tool(REPO_ROOT / "tools" / "llm_dialogue_smoke.py")
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("dry run must not call the provider smoke")
+
+    monkeypatch.setattr(module, "run_llm_dialogue_smoke", fail_if_called)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-secret")
+
+    assert module.main(["--provider", "deepseek", "--dry-run"]) == 0
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload == {
+        "ok": True,
+        "reason": "",
+        "dry_run": True,
+        "would_call_api": False,
+        "provider": "deepseek",
+        "model": "deepseek-v4-flash",
+        "base_url": "https://api.deepseek.com",
+        "api_style": "chat_completions",
+        "api_key_set": True,
+        "timeout_seconds": 30.0,
+    }
+    assert "sk-secret" not in str(payload)
+
+
+def test_llm_dialogue_smoke_dry_run_reports_missing_required_key_without_calling_provider(
+    monkeypatch,
+    capsys,
+):
+    module = _load_tool(REPO_ROOT / "tools" / "llm_dialogue_smoke.py")
+
+    def fail_if_called(*args, **kwargs):
+        raise AssertionError("dry run must not call the provider smoke")
+
+    monkeypatch.setattr(module, "run_llm_dialogue_smoke", fail_if_called)
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("E_MOTI_LLM_API_KEY", raising=False)
+
+    assert module.main(["--provider", "deepseek", "--dry-run"]) == 1
+
+    payload = json.loads(capsys.readouterr().out)
+    assert payload["ok"] is False
+    assert payload["reason"] == "missing_api_key"
+    assert payload["dry_run"] is True
+    assert payload["would_call_api"] is False
+    assert payload["api_key_set"] is False
