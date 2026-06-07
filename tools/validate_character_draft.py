@@ -91,6 +91,11 @@ def validate_character_draft_dir(draft_dir: Path | str) -> CharacterDraftValidat
     portrait_status, portrait_missing = _validate_portrait_candidate(root, portrait_candidate, errors)
     if portrait_status and portrait_status != "approved":
         warnings.append("portrait candidate still requires human approval")
+    if portrait_status == "approved":
+        if portrait_candidate.get("approval_required") is not False:
+            warnings.append("portrait candidate approval_required must be false before import")
+        if portrait_candidate.get("runtime_manifest_safe") is not True:
+            warnings.append("portrait candidate runtime_manifest_safe must be true before import")
     for image_path in portrait_missing:
         warnings.append(f"portrait candidate image missing: {image_path}")
 
