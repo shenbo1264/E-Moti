@@ -49,6 +49,19 @@ def test_dialogue_policy_builds_persona_style_and_readonly_context_lines():
     assert "save" not in prompt
 
 
+def test_dialogue_policy_includes_performance_quality_guidance():
+    policy = CompanionDialoguePolicy()
+
+    prompt = "\n".join(policy.prompt_lines(_request()))
+
+    assert "Performance target:" in prompt
+    assert "visual-novel desktop companion" in prompt
+    assert "18-60 Chinese characters" in prompt
+    assert "tiny emotional or sensory detail" in prompt
+    assert "Do not narrate hidden systems" in prompt
+    assert "Do not copy the player's prompt" in prompt
+
+
 def test_dialogue_policy_selects_warmer_style_as_trust_rises():
     policy = CompanionDialoguePolicy()
 

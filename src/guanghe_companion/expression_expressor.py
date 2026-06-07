@@ -5,7 +5,7 @@ import sys
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
-from .companion_dialogue_policy import CompanionDialoguePolicy
+from .companion_dialogue_policy import CompanionDialoguePolicy, PERFORMANCE_QUALITY_GUIDANCE
 from .engine import create_initial_state
 from .events import build_fallback_events, validate_events
 from .expression_clients import (
@@ -58,6 +58,7 @@ def build_expression_prompt_preview(character_name: str = "星汐") -> str:
             f"允许 speech 前缀表情标签：{_PROMPT_VISUAL_TAGS}；标签会在播报前移除，只作为当前表情/动作提示。",
             f"允许 motion_hint：{_PROMPT_MOTION_HINTS}；提示只影响当前呈现，不改变本地 motion 或状态机。",
             f"允许 intent_hint：{_PROMPT_INTENT_HINTS}；intent 只是本地仲裁前的只读互动意图。",
+            *PERFORMANCE_QUALITY_GUIDANCE,
             "本地状态机拥有最终权威：数值、背包、商店、关系、回忆、目标和存档只由本地代码更新。",
             '示例：{"type":"speech","speech":"[joy] 我在这里。","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}',
         ]

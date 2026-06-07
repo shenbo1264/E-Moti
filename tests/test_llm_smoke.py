@@ -6,6 +6,7 @@ from guanghe_companion.controller import CompanionController
 from guanghe_companion.expression_settings import normalize_expression_settings
 from guanghe_companion.interaction_intents import InteractionIntent
 from guanghe_companion.llm_smoke import run_configured_llm_dialogue_smoke
+from guanghe_companion.llm_smoke import DEFAULT_LLM_SMOKE_PROMPTS
 from guanghe_companion.visual_actions import VisualAction
 
 
@@ -19,6 +20,16 @@ def _load_tool(path: Path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
+
+
+def test_default_llm_smoke_prompts_use_player_like_scenarios():
+    assert len(DEFAULT_LLM_SMOKE_PROMPTS) == 10
+    assert all(any("\u4e00" <= char <= "\u9fff" for char in prompt) for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
+    assert not any(prompt.startswith("Player scenario") for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
+    assert not any("Please reply" in prompt for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
+    assert not any("motion_hint" in prompt for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
+    assert not any("[" in prompt or "]" in prompt for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
+    assert not any(prompt.startswith("Smoke turn") for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
 
 
 def test_configured_llm_dialogue_smoke_uses_llm_path_without_growth_mutation(tmp_path):

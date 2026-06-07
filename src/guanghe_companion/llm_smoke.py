@@ -11,16 +11,16 @@ from .dialogue import DialogueRequest
 from .expression_settings import ExpressionSettings, normalize_expression_settings
 
 DEFAULT_LLM_SMOKE_PROMPTS = (
-    "Smoke turn 1: reply as Xingxi with [calm] and motion_hint Default.",
-    "Smoke turn 2: reply as Xingxi with [excited] and motion_hint Play.",
-    "Smoke turn 3: reply as Xingxi with [surprised] and motion_hint Raised.",
-    "Smoke turn 4: reply as Xingxi with [sleepy] and motion_hint Sleep.",
-    "Smoke turn 5: reply as Xingxi with [focused] and motion_hint Study.",
-    "Smoke turn 6: reply as Xingxi with [sadness] and motion_hint SwitchDown.",
-    "Smoke turn 7: reply as Xingxi with [joy] and motion_hint TouchHead.",
-    "Smoke turn 8: give a gentle companion line with [calm] and motion_hint Default.",
-    "Smoke turn 9: celebrate a tiny win with [excited] and motion_hint Play.",
-    "Smoke turn 10: say goodbye softly with [sleepy] and motion_hint Sleep.",
+    "我刚打开桌面，脑子有点空，星汐，安静陪我一下好吗？",
+    "下班了，我想和你玩一小会儿，别太正经，可以开心一点。",
+    "我突然回来了，你是不是也吓了一跳？抬头看看我。",
+    "已经很晚了，我有点困，想听你软软地说句晚安。",
+    "我想专注一会儿，但不要被监督，你在旁边轻轻陪我就好。",
+    "刚才有点难受，心里沉沉的，你能靠近一点吗？",
+    "我轻轻摸了摸星汐的头，看看她会有什么反应。",
+    "你还在这里吗？我想确认一下。",
+    "我今天完成了一件小事，想让你知道。",
+    "我要睡了，星汐，今晚也一起安静收尾吧。",
 )
 STATE_GUARD_FIELDS = (
     "character_id",

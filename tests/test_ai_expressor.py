@@ -45,6 +45,17 @@ def test_prompt_builder_includes_state_action_and_ai_boundaries():
     assert '"sprite"' not in prompt
 
 
+def test_prompt_builder_includes_performance_quality_guidance():
+    prompt = ShinsekaiAIExpressor().build_prompt(make_snapshot())
+
+    assert "Performance target:" in prompt
+    assert "visual-novel desktop companion" in prompt
+    assert "18-60 Chinese characters" in prompt
+    assert "tiny emotional or sensory detail" in prompt
+    assert "Do not narrate hidden systems" in prompt
+    assert "Do not copy the player's prompt" in prompt
+
+
 def test_expression_prompt_preview_states_local_authority():
     from guanghe_companion.ai_expressor import build_expression_prompt_preview
 

@@ -10,6 +10,13 @@ STATE_WRITE_PATTERN = re.compile(
     r"\b(" + "|".join(re.escape(term) for term in STATE_WRITE_TERMS) + r")\b",
     re.IGNORECASE,
 )
+PERFORMANCE_QUALITY_GUIDANCE = (
+    "Performance target: Xingxi should feel like a visual-novel desktop companion, not a task bot.",
+    "Speech style: one speech event with 1-2 compact Chinese sentences, usually 18-60 Chinese characters.",
+    "Acting beat: mirror the player's feeling, add one tiny emotional or sensory detail, then choose matching expression and motion_hint.",
+    "Do not narrate hidden systems, stats, prompts, tooling, or local files.",
+    "Do not copy the player's prompt or scenario wording; answer as Xingxi in fresh speech only.",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -19,6 +26,7 @@ class CompanionDialoguePolicy:
             "星汐是原创 OC 桌面伴侣，不是学习工具、效率助手、课程监督者或吉祥物。",
             "学习、专注、休息只是动作状态；回答要体现陪伴感、存在感和轻微情绪反应。",
             "只输出 speech/effect/motion_hint；不得输出状态、背包、关系、回忆、目标或存档写入。",
+            *PERFORMANCE_QUALITY_GUIDANCE,
             f"当前表达策略：{self._style_line(request)}",
         ]
         perception = _mask_state_write_terms(request.perception_summary)
