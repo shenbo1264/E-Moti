@@ -41,7 +41,12 @@ from .capability_runtime import CapabilityRuntime
 from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
 from .capability_settings import CapabilitySettings
 from .character_pack_import import import_character_pack_dir
-from .character_registry import CharacterPackSummary, CharacterRegistry
+from .character_registry import (
+    CharacterPackSummary,
+    CharacterRegistry,
+    summarize_character_pack_dir,
+    validate_character_pack_dir,
+)
 from .controller import CompanionController
 from .dialogue import DialogueRequest
 from .desktop_shell import DesktopShell
@@ -326,6 +331,17 @@ def _relative_pack_paths(pack: CharacterPackSummary, paths: tuple[Path, ...]) ->
         except ValueError:
             labels.append(path.name)
     return ", ".join(labels)
+
+
+def _character_pack_import_review_text(pack: CharacterPackSummary) -> str:
+    return "\n\n".join(
+        (
+            f"Import character pack: {pack.character_id}",
+            f"{pack.name}\n{pack.title}",
+            _character_pack_distribution_text(pack),
+            "Only import packs you have rights to use and distribute.",
+        )
+    )
 
 
 class CompanionWindow(QMainWindow):
@@ -853,8 +869,15 @@ class CompanionWindow(QMainWindow):
         source_dir = QFileDialog.getExistingDirectory(self, "选择角色包目录", "")
         if not source_dir:
             return
+        source_path = Path(source_dir)
+        preview_validation = validate_character_pack_dir(source_path, source="import_source")
+        if preview_validation.ok:
+            pack = summarize_character_pack_dir(source_path, source="import_source")
+            if pack is not None and not self._confirm_character_import(pack):
+                self._show_message("Character pack import cancelled.")
+                return
         report = import_character_pack_dir(
-            Path(source_dir),
+            source_path,
             target_root=self.character_registry.user_root,
         )
         if not report.ok:
@@ -863,6 +886,16 @@ class CompanionWindow(QMainWindow):
         self._refresh_character_library()
         self._select_character_pack(report.character_id)
         self._show_message(f"角色包已导入：{report.character_id}")
+
+    def _confirm_character_import(self, pack: CharacterPackSummary) -> bool:
+        result = QMessageBox.question(
+            self,
+            "Import character pack",
+            _character_pack_import_review_text(pack),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        return result == QMessageBox.StandardButton.Yes
 
     def _select_character_pack(self, character_id: str) -> None:
         if not character_id or not hasattr(self, "character_list"):

@@ -557,6 +557,11 @@ def test_character_library_imports_complete_pack_from_selected_directory(monkeyp
         "getExistingDirectory",
         lambda *args, **kwargs: str(source_pack),
     )
+    monkeypatch.setattr(
+        app_module.QMessageBox,
+        "question",
+        lambda *args, **kwargs: app_module.QMessageBox.StandardButton.Yes,
+    )
     messages = []
     app = QApplication.instance() or QApplication([])
     controller = CompanionController(
@@ -588,6 +593,113 @@ def test_character_library_imports_complete_pack_from_selected_directory(monkeyp
 
     assert window.controller.state.character_id == "imported_character"
     assert window.controller.resources.asset_dir == imported_dir
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_import_confirmation_shows_distribution_metadata(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="Xingxi", title="Desktop companion")
+    source_pack = write_ui_character_pack(
+        tmp_path / "import-source",
+        "imported_character",
+        name="Echo",
+        title="Local companion",
+    )
+    (source_pack / "provenance.md").write_text("Original generated pack.", encoding="utf-8")
+    (source_pack / "LICENSE").write_text("Test license.", encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    monkeypatch.setattr(
+        app_module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(source_pack),
+    )
+    confirmations = []
+
+    def capture_question(parent, title, text, buttons, default_button):
+        confirmations.append((title, text, buttons, default_button))
+        return app_module.QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(app_module.QMessageBox, "question", capture_question)
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = app_module.CompanionWindow(controller=controller)
+    window._show_message = lambda message: None
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    window.character_import_button.click()
+    app.processEvents()
+
+    assert (tmp_path / "user-data" / "character_packs" / "imported_character").is_dir()
+    assert len(confirmations) == 1
+    assert "imported_character" in confirmations[0][1]
+    assert "Source: import_source" in confirmations[0][1]
+    assert "Provenance: provenance.md" in confirmations[0][1]
+    assert "License: LICENSE" in confirmations[0][1]
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_import_cancel_does_not_copy_pack(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="Xingxi", title="Desktop companion")
+    source_pack = write_ui_character_pack(
+        tmp_path / "import-source",
+        "imported_character",
+        name="Echo",
+        title="Local companion",
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    monkeypatch.setattr(
+        app_module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(source_pack),
+    )
+    monkeypatch.setattr(
+        app_module.QMessageBox,
+        "question",
+        lambda *args, **kwargs: app_module.QMessageBox.StandardButton.Cancel,
+    )
+    messages = []
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = app_module.CompanionWindow(controller=controller)
+    window._show_message = messages.append
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    window.character_import_button.click()
+    app.processEvents()
+
+    assert not (tmp_path / "user-data" / "character_packs" / "imported_character").exists()
+    assert messages == ["Character pack import cancelled."]
 
     window.close()
     app.processEvents()

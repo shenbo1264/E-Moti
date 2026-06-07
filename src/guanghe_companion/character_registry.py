@@ -139,6 +139,14 @@ def validate_character_pack_dir(
     )
 
 
+def summarize_character_pack_dir(
+    pack_dir: Path | str,
+    *,
+    source: str = "builtin",
+) -> CharacterPackSummary | None:
+    return _summary_from_pack_dir(Path(pack_dir), source)
+
+
 def _validate_root(root: Path, source: str) -> Iterable[CharacterPackValidationReport]:
     if not root.exists():
         return ()
