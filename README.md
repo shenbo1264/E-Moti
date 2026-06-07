@@ -102,6 +102,12 @@ Character pack validation:
 python tools\validate_character_pack.py assets\companion\original_oc
 ```
 
+Portrait candidate validation before manifest promotion:
+
+```powershell
+python tools\art\validate_portrait_candidates.py path\to\portrait_candidate.json --runtime-manifest assets\companion\original_oc\portrait_manifest.json --contact-sheet artifacts\portrait-candidate-contact-sheet.png
+```
+
 LLM expression smoke with DeepSeek or another OpenAI-compatible provider:
 
 ```powershell

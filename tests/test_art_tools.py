@@ -188,6 +188,106 @@ def test_build_smooth_sprite_atlas_inserts_blended_frames_and_updates_manifest(t
     assert validate_atlas(output_atlas, output_manifest).ok
 
 
+def test_validate_portrait_candidate_writes_contact_sheet(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    Image.new("RGBA", (256, 512), (20, 40, 80, 255)).save(candidate / "neutral_open.png")
+    Image.new("RGBA", (256, 512), (80, 40, 20, 255)).save(candidate / "smile_open.png")
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "candidate",
+                "expressions": {
+                    "neutral": "neutral_open.png",
+                    "smile": {"open": "smile_open.png"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    contact_sheet = tmp_path / "candidate-contact-sheet.png"
+
+    report = validate_portrait_candidate(manifest, contact_sheet_path=contact_sheet)
+
+    assert report.ok is True
+    assert report.status == "candidate"
+    assert report.image_count == 2
+    assert report.errors == []
+    assert contact_sheet.exists()
+    with Image.open(contact_sheet) as image:
+        assert image.mode == "RGBA"
+        assert image.width >= 512
+        assert image.height >= 512
+
+
+def test_validate_portrait_candidate_rejects_invalid_status_and_unsafe_path(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "final",
+                "expressions": {
+                    "neutral": "../neutral.png",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(manifest)
+
+    assert report.ok is False
+    assert "status must be one of: approved, candidate, rejected" in report.errors
+    assert "expressions.neutral path must stay inside candidate directory" in report.errors
+
+
+def test_validate_portrait_candidate_rejects_unapproved_runtime_manifest_reference(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    Image.new("RGBA", (256, 512), (20, 40, 80, 255)).save(candidate / "neutral_open.png")
+    candidate_manifest = candidate / "portrait_candidate.json"
+    candidate_manifest.write_text(
+        json.dumps({"status": "candidate", "expressions": {"neutral": "neutral_open.png"}}),
+        encoding="utf-8",
+    )
+    runtime_manifest = tmp_path / "portrait_manifest.json"
+    runtime_manifest.write_text(
+        json.dumps(
+            {
+                "fallback_expression": "neutral",
+                "expressions": {
+                    "neutral": "candidate/neutral_open.png",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(candidate_manifest, runtime_manifest_path=runtime_manifest)
+
+    assert report.ok is False
+    assert "runtime manifest references unapproved candidate image: neutral_open.png" in report.errors
+
+    candidate_manifest.write_text(
+        json.dumps({"status": "approved", "expressions": {"neutral": "neutral_open.png"}}),
+        encoding="utf-8",
+    )
+
+    approved_report = validate_portrait_candidate(candidate_manifest, runtime_manifest_path=runtime_manifest)
+
+    assert approved_report.ok is True
+    assert approved_report.status == "approved"
+
+
 def test_build_previews_rejects_invalid_manifest_without_output(tmp_path: Path):
     atlas = tmp_path / "spritesheet.png"
     manifest = tmp_path / "motion_manifest.json"
