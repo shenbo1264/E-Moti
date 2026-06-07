@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `cbe4a71 test: guard local artifact ignores`
+- Current checked head: `57e4bcf docs: sync roadmap with artifact ignore guard`
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
 - Latest focused character library/registry tests run on 2026-06-07:
@@ -51,6 +51,25 @@ Latest non-confirmation packages completed after the original plan:
   - Adds repository hygiene coverage for local secrets, generated character drafts, LLM smoke artifacts, and portrait candidate artifacts.
   - `.gitignore` now covers `.env`, `.env.*`, `*.key`, `generated/`, `artifacts/llm_smoke/`, and `artifacts/portrait-candidate*.png`.
   - `git check-ignore` was verified for representative local secret, draft, LLM smoke, and portrait candidate paths.
+
+Latest confirmation-gated packages completed after user approval:
+
+- `P1-live` DeepSeek smoke, artifact only:
+  - User confirmed real DeepSeek/OpenAI-compatible live smoke and allowed writing ignored artifact output.
+  - Dry-run artifact: `artifacts/llm_smoke/deepseek-dry-run-20260607.json`.
+  - Live artifact: `artifacts/llm_smoke/deepseek-live-20260607.json`.
+  - Both artifacts are ignored by git.
+  - Result: `ok=true`, `reason=""`, provider `deepseek`, model `deepseek-v4-flash`.
+  - Coverage: 10 turns, 7 expression ids, 7 motion ids, no fallback reason.
+  - State guard: `ok=true`, `changed_fields=[]`.
+  - No API key or raw provider transcript was committed.
+- `P3-art-candidate` base VN portrait candidate, artifact only:
+  - User confirmed formal Spirit/VN candidate generation with no manifest change.
+  - Candidate artifact: `artifacts/portrait-candidate-xingxi-vn-20260607.png`.
+  - Artifact is ignored by git.
+  - Image check: `RGB`, `1024x1536`.
+  - Visual self-audit: high-body/full-body visual-novel direction, not the previous square chibi smoke baseline.
+  - Limitation: not transparent, not an expression set, not runtime-ready, and not referenced by `portrait_manifest.json`.
 
 ## Product Rule
 
@@ -320,11 +339,11 @@ Rationale:
 
 ## Next Recommended Package
 
-The remaining high-value packages now cross explicit confirmation boundaries:
+The next high-value packages still cross explicit confirmation boundaries:
 
 ```text
-P1-live: run a real DeepSeek/OpenAI-compatible LLM smoke
-P3-art-candidate: produce a formal Spirit/VN portrait candidate artifact
+P1-quality-tuning: tune prompt/personality/expression quality after reviewing live smoke output
+P3-visual-QA: approve, reject, or iterate the generated VN portrait candidate
 ```
 
 Do not change without confirmation:
@@ -335,23 +354,23 @@ Do not change without confirmation:
 - TTS/ASR behavior;
 - packaging.
 
-Expected deliverables for `P1-live`:
+Completed deliverables for `P1-live`:
 
 - real provider result is printed as sanitized terminal output or written only to an ignored local artifact;
 - no API key or provider transcript is committed;
 - state mutation checks remain explicit;
 - failure modes are classified as provider/settings/parse/coverage/state-guard.
 
-Expected deliverables for `P3-art-candidate`:
+Completed deliverables for `P3-art-candidate`:
 
-- candidate art and contact sheet are generated as artifacts only;
+- candidate art is generated as an artifact only;
 - default `portrait_manifest.json` is not changed until human visual QA approves;
-- provenance records model/tool/date and rejection notes;
+- provenance is currently limited to this plan note and ignored artifact path until human QA decides whether the candidate survives;
 - no third-party IP or reference project assets are copied.
 
 Confirmation needed before execution:
 
-- Use of a real paid API key for live smoke.
-- Whether to store any live smoke transcript as an ignored local artifact, or print only sanitized terminal output.
-- Creating or committing any formal visual asset candidate.
+- Changing prompt policy, character personality, or expression parser behavior based on the live smoke result.
+- Regenerating, editing, approving, or rejecting the VN portrait candidate.
+- Creating expression variants, blink frames, transparent cutouts, or contact sheets from the candidate.
 - Updating default runtime portrait manifests.
