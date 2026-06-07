@@ -5,15 +5,17 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current head when this plan was written: `c0fd88a test: add portrait asset qa guardrails`
+- Current checked head: `1023635 feat: gate draft character pack import`
+- Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
-- Focused route tests run on 2026-06-07:
+- Latest focused import/character/UI route tests run on 2026-06-07:
 
 ```powershell
-python -m pytest tests\test_spirit_stage.py tests\test_character_registry.py tests\test_character_pack.py tests\test_llm_smoke.py tests\test_expression_event_pipeline.py -q
+python -m pytest tests\test_character_pack_import_tool.py tests\test_character_draft_validator_tool.py tests\test_character_pack_validator_tool.py tests\test_character_registry.py tests\test_app.py -q
+python -m pytest tests\test_desktop_pet_smoke.py -q
 ```
 
-Result: `42 passed`.
+Result: `115 passed`; `6 passed`.
 
 Full suite run on 2026-06-07:
 
@@ -21,7 +23,21 @@ Full suite run on 2026-06-07:
 python -m pytest
 ```
 
-Result: `552 passed`.
+Result: `580 passed`.
+
+Latest non-confirmation packages completed after the original plan:
+
+- `cdf2caf feat: add character draft creation tool`
+  - Added a local CLI for `CharacterGenerationWorkflow`.
+  - Does not generate images, import packs, call networks, or write app state.
+- `d2c020a test: guard llm smoke state mutations`
+  - Expanded LLM smoke state guard beyond numeric growth fields to identity, inventory, relationship, memory, and motion surfaces.
+  - No live provider call was made.
+- `fdc65b7 test: gate draft portrait approval flags`
+  - Requires `approval_required=false` and `runtime_manifest_safe=true` before a draft can report `import_ready=true`.
+- `1023635 feat: gate draft character pack import`
+  - Prevents a complete-looking generated draft with unsafe `portrait_candidate.json` metadata from being imported as a user pack.
+  - Ordinary complete pack import remains supported.
 
 ## Product Rule
 
@@ -288,13 +304,14 @@ Rationale:
 
 ## Next Recommended Package
 
-Start with P1, but split it into a narrow package:
+The remaining high-value packages now cross explicit confirmation boundaries:
 
 ```text
-P1-A: LLM expression debug report and DeepSeek-compatible smoke hardening
+P1-live: run a real DeepSeek/OpenAI-compatible LLM smoke
+P3-art-candidate: produce a formal Spirit/VN portrait candidate artifact
 ```
 
-Do not change:
+Do not change without confirmation:
 
 - renderer behavior;
 - character save state;
@@ -302,14 +319,23 @@ Do not change:
 - TTS/ASR behavior;
 - packaging.
 
-Expected deliverables:
+Expected deliverables for `P1-live`:
 
-- diagnostic report includes parsed visual actions and fallback reasons;
-- `tools/llm_dialogue_smoke.py` remains key-safe;
-- DeepSeek provider settings use current OpenAI-compatible chat client path;
-- state mutation checks remain explicit.
+- real provider result is printed as sanitized terminal output or written only to an ignored local artifact;
+- no API key or provider transcript is committed;
+- state mutation checks remain explicit;
+- failure modes are classified as provider/settings/parse/coverage/state-guard.
+
+Expected deliverables for `P3-art-candidate`:
+
+- candidate art and contact sheet are generated as artifacts only;
+- default `portrait_manifest.json` is not changed until human visual QA approves;
+- provenance records model/tool/date and rejection notes;
+- no third-party IP or reference project assets are copied.
 
 Confirmation needed before execution:
 
 - Use of a real paid API key for live smoke.
 - Whether to store any live smoke transcript as an ignored local artifact, or print only sanitized terminal output.
+- Creating or committing any formal visual asset candidate.
+- Updating default runtime portrait manifests.
