@@ -5,7 +5,8 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `3a5496e test: guard runtime artifact ignores`
+- Latest verified non-doc checkpoint: `3a5496e test: guard runtime artifact ignores`
+- Docs-only sync commits may be newer than this checkpoint; use `git log --oneline --decorate -8` for the absolute current HEAD.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
 - Latest focused character library/registry tests run on 2026-06-07:
