@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `265aafa feat: require character pack import review`
+- Current checked head: `cbe4a71 test: guard local artifact ignores`
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
 - Latest focused character library/registry tests run on 2026-06-07:
@@ -23,7 +23,7 @@ Full suite run on 2026-06-07:
 python -m pytest
 ```
 
-Result: `584 passed`.
+Result: `585 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -47,6 +47,10 @@ Latest non-confirmation packages completed after the original plan:
   - The confirmation text shows character id, name/title, source, provenance, and license status.
   - Canceling the review leaves the source pack untouched and copies nothing.
   - Invalid packs still use the existing validation failure path and do not show the confirmation dialog.
+- `cbe4a71 test: guard local artifact ignores`
+  - Adds repository hygiene coverage for local secrets, generated character drafts, LLM smoke artifacts, and portrait candidate artifacts.
+  - `.gitignore` now covers `.env`, `.env.*`, `*.key`, `generated/`, `artifacts/llm_smoke/`, and `artifacts/portrait-candidate*.png`.
+  - `git check-ignore` was verified for representative local secret, draft, LLM smoke, and portrait candidate paths.
 
 ## Product Rule
 
@@ -76,6 +80,7 @@ Scope:
 
 - Preserve sprite fallback, portrait renderer fallback, tray behavior, character switching, LLM smoke route, and packaging scripts.
 - Keep `data/companion_save.json` uncommitted.
+- Keep local provider credentials, live smoke outputs, generated drafts, and portrait candidate artifacts ignored unless intentionally curated for release.
 - Keep the current placeholder portrait assets marked as smoke baseline only.
 - Keep the route guardrail that default packs cannot enable blink unless structured blink frames exist.
 
