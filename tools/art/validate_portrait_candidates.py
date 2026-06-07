@@ -167,16 +167,28 @@ def _validate_candidate_image(path: Path, label: str, errors: list[str]) -> None
     if not path.is_file():
         errors.append(f"portrait image not found: {label}")
         return
+    alpha_extrema: tuple[int, int] | None = None
     try:
         with Image.open(path) as image:
             size = image.size
             mode = image.mode
             image.verify()
+        if mode == "RGBA":
+            with Image.open(path) as image:
+                alpha_extrema = image.getchannel("A").getextrema()
     except (OSError, UnidentifiedImageError) as exc:
         errors.append(f"portrait image invalid: {label}: {exc}")
         return
     if mode != "RGBA":
         errors.append(f"portrait image mode must be RGBA: {label}")
+    elif alpha_extrema is not None:
+        min_alpha, max_alpha = alpha_extrema
+        if max_alpha == 0:
+            errors.append(f"portrait image must include visible opaque pixels: {label}")
+        if min_alpha == 255:
+            errors.append(f"portrait image must include transparent alpha pixels: {label}")
+    if size[1] <= size[0]:
+        errors.append(f"portrait image must be taller than wide for Spirit/VN staging: {label}")
     if size[0] > MAX_PORTRAIT_WIDTH or size[1] > MAX_PORTRAIT_HEIGHT:
         errors.append(f"portrait image too large: {label}")
 

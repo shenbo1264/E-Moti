@@ -43,6 +43,19 @@ def write_preview_atlas(path: Path) -> None:
     image.save(path)
 
 
+def write_portrait_candidate_image(path: Path, *, size: tuple[int, int] = (256, 512)) -> None:
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    margin_x = max(8, size[0] // 8)
+    margin_y = max(8, size[1] // 16)
+    draw.rounded_rectangle(
+        (margin_x, margin_y, size[0] - margin_x, size[1] - margin_y),
+        radius=12,
+        fill=(20, 40, 80, 255),
+    )
+    image.save(path)
+
+
 def test_validate_atlas_accepts_valid_8x9_rgba_sheet(tmp_path: Path):
     atlas = tmp_path / "spritesheet.webp"
     manifest = tmp_path / "motion_manifest.json"
@@ -193,8 +206,8 @@ def test_validate_portrait_candidate_writes_contact_sheet(tmp_path: Path):
 
     candidate = tmp_path / "candidate"
     candidate.mkdir()
-    Image.new("RGBA", (256, 512), (20, 40, 80, 255)).save(candidate / "neutral_open.png")
-    Image.new("RGBA", (256, 512), (80, 40, 20, 255)).save(candidate / "smile_open.png")
+    write_portrait_candidate_image(candidate / "neutral_open.png")
+    write_portrait_candidate_image(candidate / "smile_open.png")
     manifest = candidate / "portrait_candidate.json"
     manifest.write_text(
         json.dumps(
@@ -248,12 +261,48 @@ def test_validate_portrait_candidate_rejects_invalid_status_and_unsafe_path(tmp_
     assert "expressions.neutral path must stay inside candidate directory" in report.errors
 
 
-def test_validate_portrait_candidate_rejects_unapproved_runtime_manifest_reference(tmp_path: Path):
+def test_validate_portrait_candidate_rejects_fully_opaque_rgba_background(tmp_path: Path):
     from tools.art.validate_portrait_candidates import validate_portrait_candidate
 
     candidate = tmp_path / "candidate"
     candidate.mkdir()
     Image.new("RGBA", (256, 512), (20, 40, 80, 255)).save(candidate / "neutral_open.png")
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps({"status": "candidate", "expressions": {"neutral": "neutral_open.png"}}),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(manifest)
+
+    assert report.ok is False
+    assert "portrait image must include transparent alpha pixels: neutral" in report.errors
+
+
+def test_validate_portrait_candidate_rejects_non_portrait_aspect_ratio(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png", size=(512, 512))
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps({"status": "candidate", "expressions": {"neutral": "neutral_open.png"}}),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(manifest)
+
+    assert report.ok is False
+    assert "portrait image must be taller than wide for Spirit/VN staging: neutral" in report.errors
+
+
+def test_validate_portrait_candidate_rejects_unapproved_runtime_manifest_reference(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png")
     candidate_manifest = candidate / "portrait_candidate.json"
     candidate_manifest.write_text(
         json.dumps({"status": "candidate", "expressions": {"neutral": "neutral_open.png"}}),
