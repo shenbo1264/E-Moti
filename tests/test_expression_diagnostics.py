@@ -3,7 +3,9 @@ from guanghe_companion.ai_expressor import ExpressionRequest, ShinsekaiAIExpress
 from guanghe_companion.engine import create_initial_state
 from guanghe_companion.events import build_typed_fallback_events
 from guanghe_companion.expression_settings import normalize_expression_settings
+from guanghe_companion.interaction_intents import InteractionIntent
 from guanghe_companion.snapshot import SnapshotBuilder, SnapshotContextFactory
+from guanghe_companion.visual_actions import VisualAction
 
 
 def _snapshot(state, events=None):
@@ -75,6 +77,94 @@ def test_expression_diagnostics_service_success_does_not_mutate_growth_state():
     assert state.inventory == before_inventory
     assert state.memory_log == []
     assert state.unlocks == []
+
+
+def test_expression_diagnostics_service_reports_visual_actions_and_intents():
+    service_cls = getattr(diagnostics_module, "ExpressionDiagnosticsService", None)
+    assert service_cls is not None
+
+    class PerformanceExpressor:
+        enabled = True
+        last_fallback_reason = ""
+        last_visual_actions = (
+            VisualAction(action_type="expression", action_id="joy", ttl_ms=3000, priority=70, source="llm"),
+            VisualAction(action_type="motion", action_id="TouchHead", ttl_ms=1800, priority=60, source="llm"),
+        )
+        last_interaction_intents = (
+            InteractionIntent(intent_id="offer_rest", ttl_ms=5000, priority=50, source="llm"),
+        )
+
+        def express(self, request, effect=None):
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "I can show a warmer expression.",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    state = create_initial_state(now=0)
+    service = service_cls(
+        settings=normalize_expression_settings({"enabled": True, "api_key": "test-key"}),
+        expressor=PerformanceExpressor(),
+        state_provider=lambda: state,
+        snapshot_provider=lambda: _snapshot(state),
+        context_provider=lambda: {},
+        choices_provider=lambda: ("Touch", "Rest"),
+    )
+
+    result = service.test_provider().to_public_dict()
+
+    assert result["ok"] is True
+    assert result["visual_actions"] == [
+        {"type": "expression", "id": "joy", "ttl_ms": 3000, "priority": 70, "source": "llm"},
+        {"type": "motion", "id": "TouchHead", "ttl_ms": 1800, "priority": 60, "source": "llm"},
+    ]
+    assert result["interaction_intents"] == [
+        {"id": "offer_rest", "ttl_ms": 5000, "priority": 50, "source": "llm"},
+    ]
+    assert result["state_mutation_check"] == {"ok": True, "changed_fields": []}
+
+
+def test_expression_diagnostics_service_reports_state_mutation_check_failure():
+    service_cls = getattr(diagnostics_module, "ExpressionDiagnosticsService", None)
+    assert service_cls is not None
+
+    state = create_initial_state(now=0)
+
+    class MutatingExpressor:
+        enabled = True
+        last_fallback_reason = ""
+        last_visual_actions = ()
+        last_interaction_intents = ()
+
+        def express(self, request, effect=None):
+            state.coins += 99
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "I changed something.",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    service = service_cls(
+        settings=normalize_expression_settings({"enabled": True, "api_key": "test-key"}),
+        expressor=MutatingExpressor(),
+        state_provider=lambda: state,
+        snapshot_provider=lambda: _snapshot(state),
+        context_provider=lambda: {},
+        choices_provider=lambda: ("Touch", "Rest"),
+    )
+
+    result = service.test_provider().to_public_dict()
+
+    assert result["ok"] is False
+    assert result["stage"] == "state_guard"
+    assert result["reason"] == "state_mutated"
+    assert result["state_mutation_check"] == {"ok": False, "changed_fields": ["coins"]}
 
 
 def test_expression_diagnostics_service_reports_missing_key_before_provider_call():

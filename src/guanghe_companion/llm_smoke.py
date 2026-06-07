@@ -55,6 +55,7 @@ class LLMDialogueSmokeReport:
     diagnostic: dict[str, object]
     turns: tuple[LLMDialogueSmokeTurn, ...]
     visual_action_coverage: dict[str, object]
+    state_mutation_check: dict[str, object]
     growth_before: dict[str, object]
     growth_after: dict[str, object]
     history_len: int
@@ -66,6 +67,7 @@ class LLMDialogueSmokeReport:
             "diagnostic": _redact_mapping(self.diagnostic),
             "turns": [turn.to_public_dict() for turn in self.turns],
             "visual_action_coverage": dict(self.visual_action_coverage),
+            "state_mutation_check": dict(self.state_mutation_check),
             "growth_before": dict(self.growth_before),
             "growth_after": dict(self.growth_after),
             "history_len": self.history_len,
@@ -144,8 +146,9 @@ def run_configured_llm_dialogue_smoke(
         )
 
     growth_after = _growth_snapshot(controller.get_snapshot())
+    state_mutation_check = _growth_mutation_check(growth_before, growth_after)
     visual_action_coverage = _visual_action_coverage(turns)
-    if growth_after != growth_before and not reason:
+    if state_mutation_check["ok"] is False and not reason:
         reason = "growth_mutated"
     if not reason:
         expression_count = int(visual_action_coverage["expression_count"])
@@ -162,6 +165,7 @@ def run_configured_llm_dialogue_smoke(
         diagnostic=diagnostic,
         turns=tuple(turns),
         visual_action_coverage=visual_action_coverage,
+        state_mutation_check=state_mutation_check,
         growth_before=growth_before,
         growth_after=growth_after,
         history_len=len(controller.get_snapshot().get("dialogue_history", [])),
@@ -183,6 +187,7 @@ def _report(
         diagnostic=diagnostic,
         turns=turns,
         visual_action_coverage=_visual_action_coverage(turns),
+        state_mutation_check=_growth_mutation_check(growth_before, _growth_snapshot(controller.get_snapshot())),
         growth_before=growth_before,
         growth_after=_growth_snapshot(controller.get_snapshot()),
         history_len=len(controller.get_snapshot().get("dialogue_history", [])),
@@ -191,6 +196,18 @@ def _report(
 
 def _growth_snapshot(snapshot: Mapping[str, object]) -> dict[str, object]:
     return {field: snapshot.get(field) for field in GROWTH_FIELDS}
+
+
+def _growth_mutation_check(before: Mapping[str, object], after: Mapping[str, object]) -> dict[str, object]:
+    changed_fields = sorted(
+        field
+        for field, value in before.items()
+        if after.get(field) != value
+    )
+    return {
+        "ok": not changed_fields,
+        "changed_fields": changed_fields,
+    }
 
 
 def _visual_action_coverage(turns: Iterable[LLMDialogueSmokeTurn]) -> dict[str, object]:

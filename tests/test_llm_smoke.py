@@ -62,6 +62,8 @@ def test_configured_llm_dialogue_smoke_uses_llm_path_without_growth_mutation(tmp
     assert public["ok"] is True
     assert public["reason"] == ""
     assert public["diagnostic"]["ok"] is True
+    assert public["diagnostic"]["state_mutation_check"] == {"ok": True, "changed_fields": []}
+    assert public["state_mutation_check"] == {"ok": True, "changed_fields": []}
     assert public["growth_before"] == public["growth_after"]
     assert public["history_len"] == 4
     assert [turn["fallback_reason"] for turn in public["turns"]] == ["", ""]
