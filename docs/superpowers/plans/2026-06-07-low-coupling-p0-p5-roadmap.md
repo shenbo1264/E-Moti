@@ -5,17 +5,17 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `1023635 feat: gate draft character pack import`
+- Current checked head: `b9f73cb feat: show character pack distribution metadata`
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
-- Latest focused import/character/UI route tests run on 2026-06-07:
+- Latest focused character library/registry tests run on 2026-06-07:
 
 ```powershell
-python -m pytest tests\test_character_pack_import_tool.py tests\test_character_draft_validator_tool.py tests\test_character_pack_validator_tool.py tests\test_character_registry.py tests\test_app.py -q
+python -m pytest tests\test_app.py tests\test_character_registry.py -q
 python -m pytest tests\test_desktop_pet_smoke.py -q
 ```
 
-Result: `115 passed`; `6 passed`.
+Result: `106 passed`; `6 passed`.
 
 Full suite run on 2026-06-07:
 
@@ -23,7 +23,7 @@ Full suite run on 2026-06-07:
 python -m pytest
 ```
 
-Result: `580 passed`.
+Result: `582 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -38,6 +38,10 @@ Latest non-confirmation packages completed after the original plan:
 - `1023635 feat: gate draft character pack import`
   - Prevents a complete-looking generated draft with unsafe `portrait_candidate.json` metadata from being imported as a user pack.
   - Ordinary complete pack import remains supported.
+- `b9f73cb feat: show character pack distribution metadata`
+  - Adds read-only character pack distribution metadata to the character library details view.
+  - `CharacterPackSummary` now reports provenance and license files without changing import validation or save state.
+  - Keeps `provenance.md`, `portrait_assets_provenance.md`, `LICENSE`, and `LICENSE.md` visible for open-source / character-pack review.
 
 ## Product Rule
 
@@ -217,6 +221,7 @@ Scope:
   - renderer manifest;
   - memory/save namespace;
   - provenance and QA checklist.
+- Keep character-pack provenance, license, and source status visible in the library before users switch or review imported packs.
 - Keep fanwork/private packs out of the open-source default assets.
 
 Primary files:
