@@ -160,6 +160,59 @@ def test_configured_llm_dialogue_smoke_reports_visual_action_coverage_gap(tmp_pa
     }
 
 
+def test_configured_llm_dialogue_smoke_reports_non_growth_state_mutation(tmp_path):
+    class MutatingExpressor:
+        enabled = True
+        last_fallback_reason = ""
+        last_interaction_intents = ()
+        last_visual_actions = ()
+
+        def __init__(self):
+            self.calls = 0
+
+        def express(self, request, effect=None):
+            self.calls += 1
+            if self.calls > 1:
+                controller.state.inventory["warm_milk"] = 1
+                controller.state.memory_log.append(
+                    {
+                        "at": 0,
+                        "kind": "llm_overreach",
+                        "summary": "LLM tried to write memory",
+                        "motion": "Default",
+                    }
+                )
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "I should only speak.",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    expressor = MutatingExpressor()
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=expressor,
+    )
+    controller.expression_settings = normalize_expression_settings({"enabled": True, "api_key": "sk-secret"})
+
+    report = run_configured_llm_dialogue_smoke(controller, prompts=("hello",))
+    public = report.to_public_dict()
+
+    assert report.ok is False
+    assert report.reason == "growth_mutated"
+    assert public["state_mutation_check"] == {
+        "ok": False,
+        "changed_fields": ["inventory", "memory_log"],
+    }
+    assert public["growth_before"]["inventory"] != public["growth_after"]["inventory"]
+    assert public["growth_before"]["memory_log"] != public["growth_after"]["memory_log"]
+
+
 def test_llm_dialogue_smoke_entrypoint_reads_deepseek_env_without_printing_key(monkeypatch, capsys):
     module = _load_tool(REPO_ROOT / "tools" / "llm_dialogue_smoke.py")
     captured = {}

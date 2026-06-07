@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable, Mapping
+from copy import deepcopy
 from dataclasses import dataclass
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -21,7 +22,29 @@ DEFAULT_LLM_SMOKE_PROMPTS = (
     "Smoke turn 9: celebrate a tiny win with [excited] and motion_hint Play.",
     "Smoke turn 10: say goodbye softly with [sleepy] and motion_hint Sleep.",
 )
-GROWTH_FIELDS = ("focus", "charge", "stability", "mood", "trust", "coins", "exp", "level", "motion")
+STATE_GUARD_FIELDS = (
+    "character_id",
+    "character_name",
+    "focus",
+    "charge",
+    "stability",
+    "mood",
+    "trust",
+    "coins",
+    "exp",
+    "level",
+    "mode",
+    "resting",
+    "inventory",
+    "unlocks",
+    "goal",
+    "player_alias",
+    "relationship_stage",
+    "next_relationship_unlock",
+    "memory_log",
+    "long_term_memory",
+    "motion",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -195,7 +218,7 @@ def _report(
 
 
 def _growth_snapshot(snapshot: Mapping[str, object]) -> dict[str, object]:
-    return {field: snapshot.get(field) for field in GROWTH_FIELDS}
+    return {field: deepcopy(snapshot.get(field)) for field in STATE_GUARD_FIELDS}
 
 
 def _growth_mutation_check(before: Mapping[str, object], after: Mapping[str, object]) -> dict[str, object]:
