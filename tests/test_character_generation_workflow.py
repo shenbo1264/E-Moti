@@ -32,6 +32,8 @@ def test_generation_workflow_writes_draft_pack_without_touching_assets(tmp_path)
     assert (draft.pack_dir / "shop_items.json").is_file()
     assert (draft.pack_dir / "motion_manifest.json").is_file()
     assert (draft.pack_dir / "art_prompts.json").is_file()
+    assert (draft.pack_dir / "portrait_candidate.json").is_file()
+    assert (draft.pack_dir / "portraits").is_dir()
     assert (draft.pack_dir / "provenance.md").is_file()
     assert not (draft.pack_dir / "spritesheet.png").exists()
     assert "No copyrighted characters" in (draft.pack_dir / "art_prompts.json").read_text(encoding="utf-8")
@@ -40,6 +42,30 @@ def test_generation_workflow_writes_draft_pack_without_touching_assets(tmp_path)
     assert character["name"] == "澄音"
     assert character["character_id"] == "teal_echo_companion"
     assert character["spritesheet"] == "spritesheet.png"
+
+    prompts = json.loads((draft.pack_dir / "art_prompts.json").read_text(encoding="utf-8"))
+    assert "portrait_base" in prompts
+    assert "visual novel standing portrait" in prompts["portrait_base"]
+    assert "portrait_expressions" in prompts
+    assert set(prompts["portrait_expressions"]) == {"neutral", "smile", "thinking", "surprised", "sad", "sleepy"}
+    assert "portrait_blink" in prompts
+    assert "neutral_open.png" in prompts["portrait_blink"]
+
+    portrait_candidate = json.loads((draft.pack_dir / "portrait_candidate.json").read_text(encoding="utf-8"))
+    assert portrait_candidate["status"] == "candidate"
+    assert portrait_candidate["approval_required"] is True
+    assert portrait_candidate["runtime_manifest_safe"] is False
+    assert portrait_candidate["expressions"]["neutral"] == {
+        "open": "portraits/neutral_open.png",
+        "blink_half": "portraits/neutral_half.png",
+        "blink_closed": "portraits/neutral_closed.png",
+    }
+    assert portrait_candidate["expressions"]["smile"] == "portraits/smile_open.png"
+
+    qa_text = (draft.pack_dir / "qa_checklist.md").read_text(encoding="utf-8")
+    assert "portrait_candidate.json" in qa_text
+    assert "tools\\art\\validate_portrait_candidates.py" in qa_text
+    assert "Do not reference candidate portraits from a runtime portrait_manifest.json before approval" in qa_text
 
 
 def test_generation_workflow_writes_local_fanwork_role_card_with_distribution_boundary(tmp_path):
@@ -78,6 +104,7 @@ def test_generation_workflow_writes_local_fanwork_role_card_with_distribution_bo
     assert "Private local fanwork only" in card_text
     assert "private local fanwork" in prompts_text
     assert "Do not bundle or distribute" in prompts_text
+    assert "portrait_base" in prompts_text
     assert "Local fanwork" in provenance_text
     assert "Do not commit local fanwork packs" in qa_text
 
