@@ -102,6 +102,12 @@ Character pack validation:
 python tools\validate_character_pack.py assets\companion\original_oc
 ```
 
+Generated character draft validation:
+
+```powershell
+python tools\validate_character_draft.py path\to\generated\<character_id>
+```
+
 Portrait candidate validation before manifest promotion:
 
 ```powershell
