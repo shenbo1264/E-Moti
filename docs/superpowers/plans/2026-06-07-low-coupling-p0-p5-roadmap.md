@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `6b56c6d test: gate draft portraits with asset validator`
+- Current checked head: `c056e1b test: ignore local character packs`
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
 - Latest focused character library/registry tests run on 2026-06-07:
@@ -60,6 +60,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/validate_character_draft.py` reuse the portrait candidate asset gate before a draft can become `import_ready`.
   - A draft marked `approved` and `runtime_manifest_safe` now still fails if its portrait PNGs violate the RGBA, transparent-alpha, visible-pixel, or tall portrait requirements.
   - This keeps P4 character-pack personalization aligned with the P2 portrait gate without changing runtime character switching, saves, manifests, or renderer behavior.
+- `c056e1b test: ignore local character packs`
+  - Adds `character_packs/` to `.gitignore` and repository hygiene coverage.
+  - Prevents local user packs, private fanwork packs, and generated character-pack experiments from being swept into open-source commits.
+  - This preserves the character-switching/user-pack route without changing runtime loading, import confirmation, manifests, or assets.
 
 Latest confirmation-gated packages completed after user approval:
 
