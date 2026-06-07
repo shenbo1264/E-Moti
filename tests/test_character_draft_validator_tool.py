@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 
 from PIL import Image
+from PIL import ImageDraw
 
 from guanghe_companion.character_generation_workflow import CharacterGenerationWorkflow
 
@@ -41,6 +42,20 @@ def _write_png(path: Path, size: tuple[int, int] = (64, 64)) -> None:
     Image.new("RGBA", size, (40, 90, 120, 255)).save(path)
 
 
+def _write_portrait_png(path: Path, size: tuple[int, int] = (256, 512)) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    margin_x = max(8, size[0] // 8)
+    margin_y = max(8, size[1] // 16)
+    draw.rounded_rectangle(
+        (margin_x, margin_y, size[0] - margin_x, size[1] - margin_y),
+        radius=12,
+        fill=(40, 90, 120, 255),
+    )
+    image.save(path)
+
+
 def _complete_draft_artifacts(draft_dir: Path) -> None:
     _write_png(draft_dir / "spritesheet.png", (1536, 1872))
     shop_items = json.loads((draft_dir / "shop_items.json").read_text(encoding="utf-8"))
@@ -52,7 +67,7 @@ def _complete_draft_artifacts(draft_dir: Path) -> None:
     for value in candidate["expressions"].values():
         paths = value.values() if isinstance(value, dict) else (value,)
         for path in paths:
-            _write_png(draft_dir / str(path), (256, 512))
+            _write_portrait_png(draft_dir / str(path), (256, 512))
     candidate["status"] = "approved"
     candidate_path.write_text(json.dumps(candidate, ensure_ascii=False), encoding="utf-8")
 
@@ -102,6 +117,27 @@ def test_validate_character_draft_tool_requires_runtime_safe_candidate_before_im
     assert approved_payload["import_ready"] is True
     assert approved_payload["manual_qa_required"] is False
     assert approved_payload["warnings"] == []
+
+
+def test_validate_character_draft_tool_rejects_runtime_safe_candidate_that_fails_portrait_gate(tmp_path):
+    draft = CharacterGenerationWorkflow(output_root=tmp_path / "generated").create_draft(_brief())
+    _complete_draft_artifacts(draft.pack_dir)
+    candidate_path = draft.pack_dir / "portrait_candidate.json"
+    candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+    candidate["approval_required"] = False
+    candidate["runtime_manifest_safe"] = True
+    candidate_path.write_text(json.dumps(candidate, ensure_ascii=False), encoding="utf-8")
+    Image.new("RGBA", (256, 512), (40, 90, 120, 255)).save(
+        draft.pack_dir / "portraits" / "neutral_open.png"
+    )
+
+    result = _run_tool(draft.pack_dir)
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["import_ready"] is False
+    assert "portrait image must include transparent alpha pixels: neutral.open" in payload["errors"]
 
 
 def test_validate_character_draft_tool_rejects_missing_portrait_candidate(tmp_path):

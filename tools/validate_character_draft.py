@@ -9,10 +9,13 @@ from pathlib import Path
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = REPO_ROOT / "src"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from guanghe_companion.character_session import is_safe_character_id
+from tools.art.validate_portrait_candidates import validate_portrait_candidate
 
 REQUIRED_DRAFT_FILES = (
     "character.json",
@@ -88,7 +91,10 @@ def validate_character_draft_dir(draft_dir: Path | str) -> CharacterDraftValidat
         label="portrait_candidate.json",
         missing_ok=True,
     )
+    portrait_error_count = len(errors)
     portrait_status, portrait_missing = _validate_portrait_candidate(root, portrait_candidate, errors)
+    if not portrait_missing and len(errors) == portrait_error_count:
+        _validate_portrait_image_contract(root, errors)
     if portrait_status and portrait_status != "approved":
         warnings.append("portrait candidate still requires human approval")
     if portrait_status == "approved":
@@ -210,6 +216,15 @@ def _validate_portrait_candidate(
             if not (root / safe_path).is_file():
                 missing.append(safe_path.as_posix())
     return status, missing
+
+
+def _validate_portrait_image_contract(root: Path, errors: list[str]) -> None:
+    report = validate_portrait_candidate(root / "portrait_candidate.json")
+    if report.ok:
+        return
+    for error in report.errors:
+        if error not in errors:
+            errors.append(error)
 
 
 def _portrait_frame_paths(value: object) -> tuple[tuple[str, object], ...]:
