@@ -48,6 +48,11 @@ from .expression_settings import (
     provider_default_base_url,
     provider_default_model,
 )
+from .expression_diagnostic_view import (
+    expression_test_status_text,
+    format_expression_test_failure,
+    model_fetch_reason,
+)
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
 from .motion import MotionAnimator, load_motion_catalog_from_dir
 from .live2d_web import Live2DWebSurface, has_safe_live2d_model
@@ -1519,16 +1524,7 @@ class CompanionWindow(QMainWindow):
     def _handle_expression_settings_test(self) -> None:
         self._save_expression_settings_from_form()
         result = self.controller.test_expression_provider()
-        if result["ok"]:
-            self.expression_settings_status_label.setText(
-                f"LLM 测试通过：{result['speech']}（{self._format_expression_diagnostic_target(result)}）"
-            )
-            return
-        stage = self._format_expression_test_stage(str(result.get("stage", "")))
-        reason = self._format_expression_test_failure(str(result.get("reason", result.get("fallback_reason", ""))))
-        self.expression_settings_status_label.setText(
-            f"LLM 测试失败：{stage} / {reason}（{self._format_expression_diagnostic_target(result)}）"
-        )
+        self.expression_settings_status_label.setText(expression_test_status_text(result))
 
     def _handle_expression_provider_change(self, provider: str) -> None:
         normalized_provider = str(provider).strip()
@@ -1545,7 +1541,7 @@ class CompanionWindow(QMainWindow):
         try:
             models = self.controller.fetch_expression_models(self._expression_settings_payload_from_form())
         except Exception as exc:
-            reason = self._format_expression_test_failure(_model_fetch_reason(exc))
+            reason = format_expression_test_failure(model_fetch_reason(exc))
             self.expression_model_list_combo.clear()
             self.expression_model_list_combo.setEnabled(False)
             self.expression_model_list_combo.hide()
@@ -1613,45 +1609,6 @@ class CompanionWindow(QMainWindow):
             combo.addItem(value)
             index = combo.findText(value)
         combo.setCurrentIndex(max(0, index))
-
-    def _format_expression_test_failure(self, reason: str) -> str:
-        labels = {
-            "disabled": "未启用或缺少 API Key",
-            "missing_api_key": "缺少 API Key",
-            "local_fallback": "已回退到本地表达",
-            "timeout": "请求超时",
-            "provider_error": "Provider 调用失败",
-            "invalid_json": "返回不是合法 JSON",
-            "invalid_response_text": "返回文本为空或过长",
-            "invalid_response_json": "返回不是合法 JSON",
-            "invalid_response_shape": "返回结构不符合模型列表格式",
-            "invalid_payload": "返回内容为空或格式不符合规则",
-            "empty_model_list": "模型列表为空",
-            "unsafe_event": "返回包含不允许的字段",
-            "invalid_event": "返回事件未通过本地校验",
-            "too_many_events": "返回事件过多",
-            "closed": "表达器已关闭",
-        }
-        return labels.get(reason, reason or "未知错误")
-
-    def _format_expression_test_stage(self, stage: str) -> str:
-        labels = {
-            "settings": "设置检查",
-            "model_list": "模型列表",
-            "prompt": "构造提示",
-            "provider_call": "调用服务",
-            "provider_parse": "解析响应",
-            "event_validation": "事件校验",
-        }
-        return labels.get(stage, stage or "未知阶段")
-
-    def _format_expression_diagnostic_target(self, result: dict[str, object]) -> str:
-        provider = str(result.get("provider", "") or "unknown")
-        model = str(result.get("model", "") or "unknown")
-        timeout = result.get("timeout_seconds", "")
-        if timeout == "":
-            return f"{provider}/{model}"
-        return f"{provider}/{model}，超时 {timeout}s"
 
     def _handle_expression_rule_copy(self) -> None:
         text = self.expression_rule_preview_text.toPlainText()
@@ -1846,23 +1803,6 @@ class CompanionWindow(QMainWindow):
 
     def _show_message(self, message: str) -> None:
         QMessageBox.information(self, "提示", message)
-
-
-def _model_fetch_reason(exc: Exception) -> str:
-    message = str(exc)
-    for reason in (
-        "missing_api_key",
-        "timeout",
-        "invalid_response_json",
-        "invalid_response_shape",
-        "empty_model_list",
-        "invalid_response_encoding",
-        "invalid_response_bytes",
-        "invalid_response_size",
-    ):
-        if reason in message:
-            return reason
-    return "provider_error"
 
 
 def should_use_desktop_mode(argv: list[str]) -> bool:
