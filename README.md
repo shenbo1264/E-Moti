@@ -11,6 +11,7 @@ This project is not a productivity coach, course supervisor, mascot skin, or cha
 - Control panel mode with status, actions, shop, inventory, relationship, memory, dialogue, and settings views.
 - Desktop pet mode with transparent always-on-top presentation and direct companion interaction.
 - System tray support for hiding, restoring, entering pet mode, and exiting.
+- Character library support for switching bundled or user-imported complete character packs.
 - Local state machine for focus, charge, stability, mood, trust, coins, level, inventory, memories, and relationship unlocks.
 - Spirit/GalGame portrait renderer using bundled original Xingxi expression assets.
 - Sprite atlas renderer kept as the fallback, tray-friendly baseline, and regression-safe renderer.

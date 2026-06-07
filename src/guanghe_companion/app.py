@@ -4,6 +4,7 @@ import json
 import sys
 
 from collections.abc import Callable
+from pathlib import Path
 
 from PySide6.QtCore import QEvent, QPoint, QSize, QTimer, Qt, Slot
 from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
@@ -12,6 +13,7 @@ from PySide6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QGroupBox,
@@ -38,6 +40,7 @@ from .ai_expressor import build_expression_prompt_preview
 from .capability_runtime import CapabilityRuntime
 from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
 from .capability_settings import CapabilitySettings
+from .character_pack_import import import_character_pack_dir
 from .character_registry import CharacterPackSummary, CharacterRegistry
 from .controller import CompanionController
 from .dialogue import DialogueRequest
@@ -723,7 +726,7 @@ class CompanionWindow(QMainWindow):
         self.character_switch_button = QPushButton("切换到此角色")
         self.character_switch_button.clicked.connect(self._handle_character_switch)
         self.character_import_button = QPushButton("导入角色包")
-        self.character_import_button.setEnabled(False)
+        self.character_import_button.clicked.connect(self._handle_character_import)
         self.character_import_button.setToolTip("P4：本地导入角色包，先校验再启用。")
         self.character_generate_button = QPushButton("生成新角色")
         self.character_generate_button.setEnabled(False)
@@ -821,6 +824,30 @@ class CompanionWindow(QMainWindow):
             self._refresh_character_library()
         except (KeyError, ValueError, OSError) as exc:
             self._show_message(str(exc))
+
+    def _handle_character_import(self) -> None:
+        source_dir = QFileDialog.getExistingDirectory(self, "选择角色包目录", "")
+        if not source_dir:
+            return
+        report = import_character_pack_dir(
+            Path(source_dir),
+            target_root=self.character_registry.user_root,
+        )
+        if not report.ok:
+            self._show_message("角色包导入失败：\n" + "\n".join(report.errors))
+            return
+        self._refresh_character_library()
+        self._select_character_pack(report.character_id)
+        self._show_message(f"角色包已导入：{report.character_id}")
+
+    def _select_character_pack(self, character_id: str) -> None:
+        if not character_id or not hasattr(self, "character_list"):
+            return
+        for index in range(self.character_list.count()):
+            item = self.character_list.item(index)
+            if item.data(Qt.ItemDataRole.UserRole) == character_id:
+                self.character_list.setCurrentItem(item)
+                return
 
     def _sync_linked_character_windows(self, snapshot: dict[str, object]) -> None:
         linked = []

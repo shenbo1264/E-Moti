@@ -501,6 +501,116 @@ def test_character_library_switches_user_character_pack(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_character_library_imports_complete_pack_from_selected_directory(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    source_pack = write_ui_character_pack(
+        tmp_path / "import-source",
+        "imported_character",
+        name="澄光",
+        title="本地导入同伴",
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    monkeypatch.setattr(
+        app_module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(source_pack),
+    )
+    messages = []
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = app_module.CompanionWindow(controller=controller)
+    window._show_message = messages.append
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    assert window.character_import_button.isEnabled()
+    window.character_import_button.click()
+    app.processEvents()
+
+    imported_dir = tmp_path / "user-data" / "character_packs" / "imported_character"
+    assert imported_dir.is_dir()
+    assert any("imported_character" in message for message in messages)
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "imported_character":
+            window.character_list.setCurrentItem(item)
+            break
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert window.controller.state.character_id == "imported_character"
+    assert window.controller.resources.asset_dir == imported_dir
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_rejects_draft_import_without_copying(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    import guanghe_companion.app as app_module
+    from guanghe_companion.character_generation_workflow import CharacterGenerationWorkflow
+    from guanghe_companion.controller import CompanionController
+
+    draft = CharacterGenerationWorkflow(output_root=tmp_path / "generated").create_draft(
+        {
+            "character_id": "draft_echo",
+            "name": "Draft Echo",
+            "title": "Draft companion",
+            "description": "Original draft companion for import validation.",
+            "visual_keywords": ["teal"],
+            "personality_keywords": ["gentle"],
+            "boundaries": ["No third-party IP"],
+        }
+    )
+    monkeypatch.setattr(
+        app_module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(draft.pack_dir),
+    )
+    messages = []
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = app_module.CompanionWindow(controller=controller)
+    window._show_message = messages.append
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    window.character_import_button.click()
+    app.processEvents()
+
+    assert not (tmp_path / "user-data" / "character_packs" / "draft_echo").exists()
+    assert any("spritesheet not found: spritesheet.png" in message for message in messages)
+    assert window.controller.state.character_id == "original_oc"
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_started_with_custom_character_loads_matching_motion_assets(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"
