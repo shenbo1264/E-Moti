@@ -305,6 +305,29 @@ def _presentation_renderer_from_profile(renderer_profile, asset_dir):
     return SpritePresentationAdapter(motion_map=renderer_profile.motion_map)
 
 
+def _character_pack_distribution_text(pack: CharacterPackSummary) -> str:
+    return "\n".join(
+        (
+            "Distribution",
+            f"Source: {pack.source}",
+            f"Provenance: {_relative_pack_paths(pack, pack.provenance_paths)}",
+            f"License: {_relative_pack_paths(pack, pack.license_paths)}",
+        )
+    )
+
+
+def _relative_pack_paths(pack: CharacterPackSummary, paths: tuple[Path, ...]) -> str:
+    if not paths:
+        return "missing"
+    labels: list[str] = []
+    for path in paths:
+        try:
+            labels.append(path.relative_to(pack.path).as_posix())
+        except ValueError:
+            labels.append(path.name)
+    return ", ".join(labels)
+
+
 class CompanionWindow(QMainWindow):
     def __init__(
         self,
@@ -788,7 +811,8 @@ class CompanionWindow(QMainWindow):
         current = character_id == self.controller.state.character_id
         self.character_detail_label.setText(
             f"{pack.name}\n{pack.title}\n\n{pack.description}\n\n"
-            "切换角色会切换外观、语气、商店主题和独立记忆，不改写其他角色会话。"
+            "切换角色会切换外观、语气、商店主题和独立记忆，不改写其他角色会话。\n\n"
+            f"{_character_pack_distribution_text(pack)}"
         )
         if pack.preview_path.is_file():
             preview = QPixmap(str(pack.preview_path))

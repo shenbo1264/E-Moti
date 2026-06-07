@@ -160,6 +160,18 @@ def test_character_registry_lists_valid_packs_and_excludes_invalid_ones(tmp_path
     assert any("missing required file" in error for error in reports["broken_pack"].errors)
 
 
+def test_character_registry_summary_reports_distribution_metadata_files(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path, "custom_character")
+    (pack_dir / "portrait_assets_provenance.md").write_text("generated asset note", encoding="utf-8")
+    (pack_dir / "LICENSE.md").write_text("pack license", encoding="utf-8")
+
+    registry = CharacterRegistry(builtin_root=tmp_path)
+
+    summary = registry.get_available_pack("custom_character")
+    assert [path.name for path in summary.provenance_paths] == ["portrait_assets_provenance.md"]
+    assert [path.name for path in summary.license_paths] == ["LICENSE.md"]
+
+
 def test_validate_character_pack_rejects_icon_paths_outside_pack(tmp_path):
     pack_dir = _write_minimal_pack(tmp_path, icon_path="../outside.png")
 

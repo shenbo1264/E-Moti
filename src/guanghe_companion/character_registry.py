@@ -30,6 +30,8 @@ REQUIRED_LIVE2D_MOTIONS = ("Default", "Play", "Raised", "TouchHead", "Sleep")
 REQUIRED_PORTRAIT_EXPRESSIONS = ("neutral", "smile", "thinking", "surprised", "sad", "sleepy")
 MAX_PORTRAIT_WIDTH = 4096
 MAX_PORTRAIT_HEIGHT = 4096
+PROVENANCE_FILENAMES = ("provenance.md", "portrait_assets_provenance.md")
+LICENSE_FILENAMES = ("LICENSE", "LICENSE.md", "license.md")
 
 
 @dataclass(frozen=True, slots=True)
@@ -50,6 +52,8 @@ class CharacterPackSummary:
     path: Path
     source: str
     preview_path: Path
+    provenance_paths: tuple[Path, ...]
+    license_paths: tuple[Path, ...]
 
 
 class CharacterRegistry:
@@ -542,7 +546,27 @@ def _summary_from_pack_dir(root: Path, source: str) -> CharacterPackSummary | No
         path=root,
         source=source,
         preview_path=preview,
+        provenance_paths=_existing_pack_files(root, PROVENANCE_FILENAMES),
+        license_paths=_existing_pack_files(root, LICENSE_FILENAMES),
     )
+
+
+def _existing_pack_files(root: Path, filenames: Iterable[str]) -> tuple[Path, ...]:
+    paths: list[Path] = []
+    seen: set[str] = set()
+    for filename in filenames:
+        path = root / filename
+        if not path.is_file():
+            continue
+        try:
+            key = str(path.resolve()).casefold()
+        except OSError:
+            key = str(path.absolute()).casefold()
+        if key in seen:
+            continue
+        seen.add(key)
+        paths.append(path)
+    return tuple(paths)
 
 
 def _safe_relative_path(value: str) -> bool:
