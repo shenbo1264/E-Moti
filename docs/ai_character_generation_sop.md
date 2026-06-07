@@ -43,7 +43,7 @@ preview/qa_diagnostics_2026-05-13/*
 - `tools/art/validate_companion_atlas.py`：校验图集尺寸、RGBA 模式、manifest 行列与动作帧范围。
 - `tools/art/build_companion_preview.py`：生成 contact sheet 和各动作 GIF。
 
-当前运行时代码已经支持按 `character_id` 读取角色包，但默认入口仍固定为 `original_oc`。多角色选择、用户导入、角色包注册表和 UI 选择器属于后续实现，不是本文档已完成能力。
+当前运行时代码已经支持按 `character_id` 读取角色包、列出内置和用户角色包、通过角色库 UI 切换角色，并通过导入工具把已校验的完整角色包复制到用户 `character_packs` 目录。生成 draft 仍然不能直接进入运行时；必须补齐正式素材、通过人工 QA 和导入门禁后再导入。
 
 ## 3. 角色包硬规格
 
@@ -445,9 +445,9 @@ assets/companion/<character_id>/provenance.md
   - 输出 JSON 草稿、art prompts、provenance 和 QA checklist。
   - 不生成正式 `spritesheet.png`，不写入 `assets/companion/`，必须人工 QA 后再导入。
 
-仍未完成：
+仍未完成 / 仍需确认：
 
-- 角色包从 draft 自动导入到用户角色包目录。
+- UI 中直接完成“draft 生成 -> 美术 QA -> 导入”的完整向导。
 - UI 中直接调用“灵感导入器”和“AI 资产生成工作流”。
 - 图像生成模型、ComfyUI 或其他美术生成后端接入。
 - 角色包 license/provenance 的完整 UI 展示与导入确认流程。
@@ -496,8 +496,10 @@ assets/companion/<character_id>/provenance.md
 -> 图集校验
 -> 预览生成
 -> 人工视觉 QA
+-> 将 `portrait_candidate.json` 明确标为 `status=approved`、`approval_required=false`、`runtime_manifest_safe=true`
+-> `python tools\validate_character_draft.py <draft_dir>`
 -> 定向测试
--> 角色包导入或注册
+-> `python tools\import_character_pack.py <complete_pack> --target-root <user_character_packs>`
 ```
 
 验收口径：
