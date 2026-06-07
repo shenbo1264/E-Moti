@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `cbcd7d3 test: tighten portrait candidate gates`
+- Current checked head: `6b56c6d test: gate draft portraits with asset validator`
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
 - Latest focused character library/registry tests run on 2026-06-07:
@@ -23,7 +23,7 @@ Full suite run on 2026-06-07:
 python -m pytest
 ```
 
-Result: `587 passed`.
+Result: `588 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -56,6 +56,10 @@ Latest non-confirmation packages completed after the original plan:
   - Candidate images must be RGBA, include visible opaque pixels, include transparent alpha pixels, and be taller than wide.
   - The ignored VN candidate artifact is now rejected by the gate because it is RGB and not runtime-ready.
   - This does not change default runtime manifests, committed art assets, state, TTS/ASR, or renderer behavior.
+- `6b56c6d test: gate draft portraits with asset validator`
+  - Makes `tools/validate_character_draft.py` reuse the portrait candidate asset gate before a draft can become `import_ready`.
+  - A draft marked `approved` and `runtime_manifest_safe` now still fails if its portrait PNGs violate the RGBA, transparent-alpha, visible-pixel, or tall portrait requirements.
+  - This keeps P4 character-pack personalization aligned with the P2 portrait gate without changing runtime character switching, saves, manifests, or renderer behavior.
 
 Latest confirmation-gated packages completed after user approval:
 
