@@ -30,6 +30,14 @@ TEXT_SUFFIXES = {
     ".yml",
 }
 TEXT_NAMES = {".gitignore"}
+REQUIRED_GITIGNORE_PATTERNS = (
+    ".env",
+    ".env.*",
+    "generated/",
+    "artifacts/llm_smoke/",
+    "artifacts/portrait-candidate*.png",
+    "*.key",
+)
 
 
 def _tracked_files() -> list[Path]:
@@ -53,3 +61,11 @@ def test_tracked_text_files_do_not_expose_local_paths_or_private_note_names() ->
                 leaks.append(f"{relative}: {token}")
 
     assert leaks == []
+
+
+def test_gitignore_covers_local_secrets_and_generation_artifacts() -> None:
+    patterns = set((REPO_ROOT / ".gitignore").read_text(encoding="utf-8-sig").splitlines())
+
+    missing = [pattern for pattern in REQUIRED_GITIGNORE_PATTERNS if pattern not in patterns]
+
+    assert missing == []
