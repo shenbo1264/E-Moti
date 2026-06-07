@@ -108,6 +108,14 @@ Generated character draft validation:
 python tools\validate_character_draft.py path\to\generated\<character_id>
 ```
 
+Import a complete validated character pack into a user pack root:
+
+```powershell
+python tools\import_character_pack.py path\to\complete_pack --target-root "%LOCALAPPDATA%\E-Moti\character_packs"
+```
+
+Generated drafts are not import-ready until final art, icons, spritesheet, provenance, and manual QA are complete. Use `--force` only when intentionally replacing an existing local pack with the same `character_id`.
+
 Portrait candidate validation before manifest promotion:
 
 ```powershell
