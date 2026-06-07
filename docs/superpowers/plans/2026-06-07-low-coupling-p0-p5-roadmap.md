@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `b9f73cb feat: show character pack distribution metadata`
+- Current checked head: `265aafa feat: require character pack import review`
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
 - Latest focused character library/registry tests run on 2026-06-07:
@@ -15,7 +15,7 @@ python -m pytest tests\test_app.py tests\test_character_registry.py -q
 python -m pytest tests\test_desktop_pet_smoke.py -q
 ```
 
-Result: `106 passed`; `6 passed`.
+Result: `108 passed`; `6 passed`.
 
 Full suite run on 2026-06-07:
 
@@ -23,7 +23,7 @@ Full suite run on 2026-06-07:
 python -m pytest
 ```
 
-Result: `582 passed`.
+Result: `584 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -42,6 +42,11 @@ Latest non-confirmation packages completed after the original plan:
   - Adds read-only character pack distribution metadata to the character library details view.
   - `CharacterPackSummary` now reports provenance and license files without changing import validation or save state.
   - Keeps `provenance.md`, `portrait_assets_provenance.md`, `LICENSE`, and `LICENSE.md` visible for open-source / character-pack review.
+- `265aafa feat: require character pack import review`
+  - Adds a local confirmation step before copying an importable character pack into the user pack root.
+  - The confirmation text shows character id, name/title, source, provenance, and license status.
+  - Canceling the review leaves the source pack untouched and copies nothing.
+  - Invalid packs still use the existing validation failure path and do not show the confirmation dialog.
 
 ## Product Rule
 
@@ -222,6 +227,7 @@ Scope:
   - memory/save namespace;
   - provenance and QA checklist.
 - Keep character-pack provenance, license, and source status visible in the library before users switch or review imported packs.
+- Require a local import confirmation before copying valid user packs, so provenance and license status are reviewed before a pack enters the user library.
 - Keep fanwork/private packs out of the open-source default assets.
 
 Primary files:
