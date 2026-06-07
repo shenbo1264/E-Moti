@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import shutil
 from dataclasses import dataclass
 from pathlib import Path
@@ -42,6 +43,16 @@ def import_character_pack_dir(
             source_path=source,
             target_path=target,
             errors=tuple(validation.errors),
+        )
+
+    draft_gate_errors = _draft_import_gate_errors(source)
+    if draft_gate_errors:
+        return CharacterPackImportReport(
+            ok=False,
+            character_id=validation.character_id,
+            source_path=source,
+            target_path=target,
+            errors=draft_gate_errors,
         )
 
     safety_error = _target_safety_error(source, target_base, target)
@@ -117,3 +128,25 @@ def _remove_existing_target(target: Path) -> None:
         shutil.rmtree(target)
     else:
         target.unlink()
+
+
+def _draft_import_gate_errors(source: Path) -> tuple[str, ...]:
+    candidate_path = source / "portrait_candidate.json"
+    if not candidate_path.exists():
+        return ()
+    try:
+        payload = json.loads(candidate_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return (f"portrait_candidate.json json invalid: {exc}",)
+    if not isinstance(payload, dict):
+        return ("portrait_candidate.json must be an object",)
+
+    errors: list[str] = []
+    status = payload.get("status")
+    if not isinstance(status, str) or status.strip().lower() != "approved":
+        errors.append("draft portrait candidate must be approved before import")
+    if payload.get("approval_required") is not False:
+        errors.append("draft portrait candidate approval_required must be false before import")
+    if payload.get("runtime_manifest_safe") is not True:
+        errors.append("draft portrait candidate runtime_manifest_safe must be true before import")
+    return tuple(errors)

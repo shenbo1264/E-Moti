@@ -73,6 +73,24 @@ def _write_complete_pack(root: Path, character_id: str = "teal_echo") -> Path:
     return pack_dir
 
 
+def _complete_generated_draft_runtime_assets(draft_dir: Path) -> None:
+    Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(draft_dir / "spritesheet.png")
+    shop_items = json.loads((draft_dir / "shop_items.json").read_text(encoding="utf-8"))
+    for item in shop_items:
+        icon = draft_dir / str(item["icon"])
+        icon.parent.mkdir(parents=True, exist_ok=True)
+        Image.new("RGBA", (32, 32), (40, 90, 120, 255)).save(icon)
+
+
+def _set_draft_candidate_import_ready(draft_dir: Path) -> None:
+    candidate_path = draft_dir / "portrait_candidate.json"
+    candidate = json.loads(candidate_path.read_text(encoding="utf-8"))
+    candidate["status"] = "approved"
+    candidate["approval_required"] = False
+    candidate["runtime_manifest_safe"] = True
+    candidate_path.write_text(json.dumps(candidate, ensure_ascii=False), encoding="utf-8")
+
+
 def _draft_brief() -> dict[str, object]:
     return {
         "character_id": "draft_echo",
@@ -124,6 +142,33 @@ def test_import_character_pack_tool_rejects_generated_draft(tmp_path):
     assert payload["ok"] is False
     assert "spritesheet not found: spritesheet.png" in payload["errors"]
     assert not target_root.exists()
+
+
+def test_import_character_pack_tool_rejects_complete_draft_until_portrait_candidate_is_import_ready(tmp_path):
+    draft = CharacterGenerationWorkflow(output_root=tmp_path / "generated").create_draft(_draft_brief())
+    _complete_generated_draft_runtime_assets(draft.pack_dir)
+    target_root = tmp_path / "user-data" / "character_packs"
+
+    result = _run_tool(draft.pack_dir, target_root)
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["errors"] == [
+        "draft portrait candidate must be approved before import",
+        "draft portrait candidate approval_required must be false before import",
+        "draft portrait candidate runtime_manifest_safe must be true before import",
+    ]
+    assert not target_root.exists()
+
+    _set_draft_candidate_import_ready(draft.pack_dir)
+    approved_result = _run_tool(draft.pack_dir, target_root)
+    approved_payload = json.loads(approved_result.stdout)
+
+    assert approved_result.returncode == 0
+    assert approved_payload["ok"] is True
+    assert approved_payload["character_id"] == "draft_echo"
+    assert (target_root / "draft_echo" / "character.json").is_file()
 
 
 def test_import_character_pack_tool_rejects_existing_target_without_force(tmp_path):
