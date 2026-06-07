@@ -34,6 +34,7 @@ REQUIRED_GITIGNORE_PATTERNS = (
     ".env",
     ".env.*",
     "generated/",
+    "character_packs/",
     "artifacts/llm_smoke/",
     "artifacts/portrait-candidate*.png",
     "*.key",
