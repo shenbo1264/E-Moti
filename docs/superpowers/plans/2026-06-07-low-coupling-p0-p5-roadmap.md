@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Current checked head: `57e4bcf docs: sync roadmap with artifact ignore guard`
+- Current checked head: `cbcd7d3 test: tighten portrait candidate gates`
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
 - Latest focused character library/registry tests run on 2026-06-07:
@@ -23,7 +23,7 @@ Full suite run on 2026-06-07:
 python -m pytest
 ```
 
-Result: `585 passed`.
+Result: `587 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -51,6 +51,11 @@ Latest non-confirmation packages completed after the original plan:
   - Adds repository hygiene coverage for local secrets, generated character drafts, LLM smoke artifacts, and portrait candidate artifacts.
   - `.gitignore` now covers `.env`, `.env.*`, `*.key`, `generated/`, `artifacts/llm_smoke/`, and `artifacts/portrait-candidate*.png`.
   - `git check-ignore` was verified for representative local secret, draft, LLM smoke, and portrait candidate paths.
+- `cbcd7d3 test: tighten portrait candidate gates`
+  - Tightens `tools/art/validate_portrait_candidates.py` for Spirit/VN portrait candidates.
+  - Candidate images must be RGBA, include visible opaque pixels, include transparent alpha pixels, and be taller than wide.
+  - The ignored VN candidate artifact is now rejected by the gate because it is RGB and not runtime-ready.
+  - This does not change default runtime manifests, committed art assets, state, TTS/ASR, or renderer behavior.
 
 Latest confirmation-gated packages completed after user approval:
 
