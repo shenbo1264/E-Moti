@@ -1,5 +1,9 @@
 # AI Companion P0-P4 Implementation Plan
 
+> Status: historical plan. Do not use this file as the active execution plan.
+> The active low-coupling route is `docs/superpowers/plans/2026-06-07-low-coupling-p0-p5-roadmap.md`.
+> This file's evidence baseline and unchecked task list predate the current Spirit/GalGame route, character-pack import gates, LLM smoke guardrails, and `580 passed` test baseline. Keep it as implementation history only.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Make Xingxi feel like a real LLM-centered AI desktop companion while keeping local growth state, inventory, unlocks, saves, and relationship settlement authoritative.
