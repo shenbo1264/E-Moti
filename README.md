@@ -133,6 +133,8 @@ python tools\art\validate_portrait_candidates.py path\to\portrait_candidate.json
 
 `extract_portrait_motion_frames.py` accepts exported PNG frames with `--frames-dir`. It can also accept `--video` when `ffmpeg` is installed locally; otherwise export frames from the video tool first and keep the downloaded source under ignored `artifacts\portrait-video-source\`. Pass `--source-tool` and `--generation-prompt` so the candidate pack writes `portrait_video_provenance.md` for later human QA.
 
+Runtime portrait manifests may include optional top-level `motion_frames` paths under `motion_frames/` plus `animation.idle.enabled=true` and `animation.idle.fps`. The Spirit surface only plays those idle frames for the fallback portrait expression, so neutral AI-video breathing frames do not overwrite other expressions.
+
 Portrait character-pack smoke and strict promotion gate:
 
 ```powershell

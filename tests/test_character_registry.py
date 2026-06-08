@@ -172,6 +172,16 @@ def test_character_registry_summary_reports_distribution_metadata_files(tmp_path
     assert [path.name for path in summary.license_paths] == ["LICENSE.md"]
 
 
+def test_character_registry_summary_reports_video_provenance_file(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path, "custom_character")
+    (pack_dir / "portrait_video_provenance.md").write_text("video frame source note", encoding="utf-8")
+
+    registry = CharacterRegistry(builtin_root=tmp_path)
+
+    summary = registry.get_available_pack("custom_character")
+    assert [path.name for path in summary.provenance_paths] == ["portrait_video_provenance.md"]
+
+
 def test_validate_character_pack_rejects_icon_paths_outside_pack(tmp_path):
     pack_dir = _write_minimal_pack(tmp_path, icon_path="../outside.png")
 
@@ -390,6 +400,49 @@ def test_validate_character_pack_accepts_structured_portrait_blink_frames(tmp_pa
     report = validate_character_pack_dir(pack_dir)
 
     assert report.ok
+
+
+def test_validate_character_pack_accepts_portrait_motion_frames(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    _add_portrait_renderer(pack_dir)
+    (pack_dir / "motion_frames").mkdir()
+    Image.new("RGBA", (512, 768), (0, 0, 0, 0)).save(pack_dir / "motion_frames" / "idle_0001.png")
+    manifest_path = pack_dir / "portrait_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    payload["motion_frames"] = ["motion_frames/idle_0001.png"]
+    manifest_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert report.ok
+
+
+def test_validate_character_pack_rejects_unsafe_portrait_motion_frame_path(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    _add_portrait_renderer(pack_dir)
+    manifest_path = pack_dir / "portrait_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    payload["motion_frames"] = ["../idle_0001.png"]
+    manifest_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait_manifest.motion_frames.0 path must stay inside motion_frames" in error for error in report.errors)
+
+
+def test_validate_character_pack_rejects_missing_portrait_motion_frame(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path)
+    _add_portrait_renderer(pack_dir)
+    manifest_path = pack_dir / "portrait_manifest.json"
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    payload["motion_frames"] = ["motion_frames/missing.png"]
+    manifest_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("portrait motion frame not found: motion_frames.0" in error for error in report.errors)
 
 
 def test_validate_character_pack_accepts_nested_portrait_asset_subdirectory(tmp_path):

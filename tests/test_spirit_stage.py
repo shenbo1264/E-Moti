@@ -2,7 +2,7 @@ import json
 
 from PIL import Image
 
-def _write_portrait_pack(tmp_path, *, structured=False, animation=None):
+def _write_portrait_pack(tmp_path, *, structured=False, animation=None, motion_frames=None):
     expressions = {
         "neutral": "portraits/neutral.png",
         "smile": "portraits/smile.png",
@@ -22,6 +22,10 @@ def _write_portrait_pack(tmp_path, *, structured=False, animation=None):
         paths = value.values() if isinstance(value, dict) else (value,)
         for path in paths:
             Image.new("RGBA", (128, 192), (40, 80, 120, 255)).save(tmp_path / path)
+    if motion_frames:
+        (tmp_path / "motion_frames").mkdir()
+        for index, path in enumerate(motion_frames, start=1):
+            Image.new("RGBA", (128, 192), (40 + index, 80, 120, 255)).save(tmp_path / path)
     (tmp_path / "portrait_manifest.json").write_text(
         json.dumps(
             {
@@ -30,6 +34,7 @@ def _write_portrait_pack(tmp_path, *, structured=False, animation=None):
                 "anchor": "bottom_center",
                 "default_scale": 1.0,
                 "expressions": expressions,
+                "motion_frames": list(motion_frames or ()),
                 "animation": animation or {},
             }
         ),
@@ -92,6 +97,38 @@ def test_portrait_manifest_reads_structured_blink_frames_and_animation(tmp_path)
     assert manifest.animation.blink_half_ms == 45
 
 
+def test_portrait_manifest_reads_idle_motion_frames_and_animation(tmp_path):
+    from guanghe_companion.spirit_stage import load_portrait_manifest
+
+    _write_portrait_pack(
+        tmp_path,
+        motion_frames=("motion_frames/idle_0001.png", "motion_frames/idle_0002.png"),
+        animation={"idle": {"enabled": True, "fps": 6}},
+    )
+
+    manifest = load_portrait_manifest(tmp_path, "portrait_manifest.json")
+
+    assert manifest.motion_frames == ("motion_frames/idle_0001.png", "motion_frames/idle_0002.png")
+    assert manifest.animation.idle_enabled is True
+    assert manifest.animation.idle_fps == 6
+
+
+def test_portrait_manifest_rejects_unsafe_idle_motion_frame_path(tmp_path):
+    from guanghe_companion.spirit_stage import PortraitManifestError, load_portrait_manifest
+
+    _write_portrait_pack(tmp_path)
+    payload = json.loads((tmp_path / "portrait_manifest.json").read_text(encoding="utf-8"))
+    payload["motion_frames"] = ["../idle_0001.png"]
+    (tmp_path / "portrait_manifest.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    try:
+        load_portrait_manifest(tmp_path, "portrait_manifest.json")
+    except PortraitManifestError as exc:
+        assert "portrait motion frame path invalid" in str(exc)
+    else:
+        raise AssertionError("unsafe motion frame path should be rejected")
+
+
 def test_spirit_stage_trigger_blink_uses_half_closed_then_open_frames(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
@@ -131,6 +168,43 @@ def test_spirit_stage_trigger_blink_uses_half_closed_then_open_frames(monkeypatc
 
     surface.advance_blink_for_test()
     assert surface.last_portrait_path.endswith("neutral_open.png")
+    surface.close()
+    app.processEvents()
+
+
+def test_spirit_stage_advance_idle_motion_uses_motion_frame_sequence(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.presentation_renderer import PresentationFrame
+    from guanghe_companion.spirit_stage import SpiritStageSurface
+
+    _write_portrait_pack(
+        tmp_path,
+        motion_frames=("motion_frames/idle_0001.png", "motion_frames/idle_0002.png"),
+        animation={"idle": {"enabled": True, "fps": 6}},
+    )
+    app = QApplication.instance() or QApplication([])
+    surface = SpiritStageSurface()
+    surface.resize(288, 312)
+    surface.load_frame(
+        PresentationFrame(
+            backend="portrait",
+            motion="Default",
+            portrait_manifest="portrait_manifest.json",
+            portrait_id="neutral",
+        ),
+        tmp_path,
+    )
+
+    assert surface.last_portrait_path.endswith("neutral.png")
+
+    assert surface.advance_idle_motion_for_test() is True
+    assert surface.last_portrait_path.endswith("idle_0001.png")
+
+    assert surface.advance_idle_motion_for_test() is True
+    assert surface.last_portrait_path.endswith("idle_0002.png")
     surface.close()
     app.processEvents()
 

@@ -30,7 +30,7 @@ REQUIRED_LIVE2D_MOTIONS = ("Default", "Play", "Raised", "TouchHead", "Sleep")
 REQUIRED_PORTRAIT_EXPRESSIONS = ("neutral", "smile", "thinking", "surprised", "sad", "sleepy")
 MAX_PORTRAIT_WIDTH = 4096
 MAX_PORTRAIT_HEIGHT = 4096
-PROVENANCE_FILENAMES = ("provenance.md", "portrait_assets_provenance.md")
+PROVENANCE_FILENAMES = ("provenance.md", "portrait_assets_provenance.md", "portrait_video_provenance.md")
 LICENSE_FILENAMES = ("LICENSE", "LICENSE.md", "license.md")
 
 
@@ -330,6 +330,7 @@ def _validate_portrait_manifest(root: Path, payload: dict[str, object], errors: 
                 errors.append(f"portrait_manifest.expressions.{label} path must stay inside portraits")
                 continue
             _validate_portrait_image(root, label, str(frame_path), errors)
+    _validate_portrait_motion_frames(root, payload.get("motion_frames"), errors)
 
     anchor = payload.get("anchor", "bottom_center")
     if anchor not in {"bottom_center", "center"}:
@@ -356,6 +357,54 @@ def _safe_portrait_image_path(value: object) -> bool:
         and path.parts[0] == "portraits"
         and path.suffix.lower() == ".png"
     )
+
+
+def _validate_portrait_motion_frames(root: Path, value: object, errors: list[str]) -> None:
+    if value is None:
+        return
+    if not isinstance(value, list):
+        errors.append("portrait_manifest.motion_frames must be an array")
+        return
+    for index, item in enumerate(value):
+        label = f"motion_frames.{index}"
+        if not _safe_portrait_motion_frame_path(item):
+            errors.append(f"portrait_manifest.{label} path must stay inside motion_frames")
+            continue
+        _validate_portrait_motion_frame(root, label, str(item), errors)
+
+
+def _safe_portrait_motion_frame_path(value: object) -> bool:
+    if not isinstance(value, str) or not value.strip() or len(value) > 180:
+        return False
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        return False
+    path = Path(value)
+    return (
+        not path.is_absolute()
+        and ".." not in path.parts
+        and len(path.parts) >= 2
+        and path.parts[0] == "motion_frames"
+        and path.suffix.lower() == ".png"
+    )
+
+
+def _validate_portrait_motion_frame(root: Path, label: str, relative_path: str, errors: list[str]) -> None:
+    path = root / relative_path
+    if not path.is_file():
+        errors.append(f"portrait motion frame not found: {label}")
+        return
+    try:
+        with Image.open(path) as image:
+            width, height = image.size
+            mode = image.mode
+            image.verify()
+    except (OSError, UnidentifiedImageError) as exc:
+        errors.append(f"portrait motion frame invalid: {label}: {exc}")
+        return
+    if mode != "RGBA":
+        errors.append(f"portrait motion frame mode must be RGBA: {label}")
+    if width > MAX_PORTRAIT_WIDTH or height > MAX_PORTRAIT_HEIGHT:
+        errors.append(f"portrait motion frame too large: {label}")
 
 
 def _portrait_frame_paths(value: object) -> tuple[tuple[str, object], ...]:

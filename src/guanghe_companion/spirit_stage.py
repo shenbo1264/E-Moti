@@ -37,6 +37,8 @@ class PortraitAnimationConfig:
     breath_amplitude_px: int = 0
     breath_scale_delta: float = 0.0
     breath_cycle_ms: int = 4200
+    idle_enabled: bool = False
+    idle_fps: int = 6
     blink_enabled: bool = False
     blink_min_interval_ms: int = 3000
     blink_max_interval_ms: int = 7000
@@ -51,6 +53,7 @@ class PortraitManifest:
     anchor: str
     default_scale: float
     expressions: dict[str, PortraitExpressionFrames]
+    motion_frames: tuple[str, ...] = ()
     animation: PortraitAnimationConfig = PortraitAnimationConfig()
 
 
@@ -69,6 +72,7 @@ class SpiritStageSurface(QLabel):
         self._current_asset_dir: Path | None = None
         self._current_manifest_path = ""
         self._current_frames: PortraitExpressionFrames | None = None
+        self._current_motion_frames: tuple[str, ...] = ()
         self._current_animation = PortraitAnimationConfig()
         self._opacity = QGraphicsOpacityEffect(self)
         self._fade = QPropertyAnimation(self._opacity, b"opacity", self)
@@ -83,6 +87,9 @@ class SpiritStageSurface(QLabel):
         self._blink_step_timer.setSingleShot(True)
         self._blink_step_timer.timeout.connect(self._advance_blink_frame)
         self._blink_sequence: list[str] = []
+        self._idle_frame_timer = QTimer(self)
+        self._idle_frame_timer.timeout.connect(self._advance_idle_motion)
+        self._idle_frame_index = 0
         self._frame_transition_timer = QTimer(self)
         self._frame_transition_timer.timeout.connect(self._advance_frame_transition)
         self._frame_transition_progress = 1.0
@@ -129,6 +136,7 @@ class SpiritStageSurface(QLabel):
             self._source_pixmap = QPixmap()
             self._previous_source_pixmap = QPixmap()
             self._current_frames = None
+            self._current_motion_frames = ()
             self._stop_animation_timers()
             self.clear()
             self.setText(str(exc))
@@ -139,6 +147,7 @@ class SpiritStageSurface(QLabel):
             self._source_pixmap = QPixmap()
             self._previous_source_pixmap = QPixmap()
             self._current_frames = None
+            self._current_motion_frames = ()
             self._stop_animation_timers()
             self.clear()
             self.setText(f"portrait image failed to load: {portrait_path.name}")
@@ -148,15 +157,18 @@ class SpiritStageSurface(QLabel):
         self._current_asset_dir = Path(asset_dir)
         self._current_manifest_path = frame.portrait_manifest
         self._current_frames = frames
+        self._current_motion_frames = manifest.motion_frames if expression == manifest.fallback_expression else ()
         self._current_animation = manifest.animation
         self.setText("")
         self._set_scaled_pixmap()
         if not self._current_expression:
             self._current_expression = next_expression
+            self._idle_frame_index = 0
             self._fade.stop()
             self._opacity.setOpacity(1.0)
         elif next_expression != self._current_expression:
             self._current_expression = next_expression
+            self._idle_frame_index = 0
             self._fade_in()
         self._configure_animation_timers()
 
@@ -174,6 +186,10 @@ class SpiritStageSurface(QLabel):
     def advance_blink_for_test(self) -> bool:
         self._blink_step_timer.stop()
         return self._advance_blink_frame()
+
+    def advance_idle_motion_for_test(self) -> bool:
+        self._idle_frame_timer.stop()
+        return self._advance_idle_motion()
 
     def resizeEvent(self, event) -> None:
         self._set_scaled_pixmap()
@@ -254,11 +270,16 @@ class SpiritStageSurface(QLabel):
         else:
             self._blink_schedule_timer.stop()
             self._blink_step_timer.stop()
+        if self._current_animation.idle_enabled and self._current_motion_frames:
+            self._idle_frame_timer.start(max(1, int(1000 / max(1, self._current_animation.idle_fps))))
+        else:
+            self._idle_frame_timer.stop()
 
     def _stop_animation_timers(self) -> None:
         self._breath_timer.stop()
         self._blink_schedule_timer.stop()
         self._blink_step_timer.stop()
+        self._idle_frame_timer.stop()
         self._frame_transition_timer.stop()
         self._blink_sequence = []
 
@@ -295,6 +316,26 @@ class SpiritStageSurface(QLabel):
             self._blink_step_timer.start(max(1, delay))
         else:
             self._schedule_next_blink()
+        return True
+
+    def _advance_idle_motion(self) -> bool:
+        if not self._current_animation.idle_enabled or not self._current_motion_frames:
+            return False
+        if self._blink_sequence or self._blink_step_timer.isActive():
+            return False
+        if not self._current_asset_dir:
+            return False
+        relative_path = self._current_motion_frames[self._idle_frame_index % len(self._current_motion_frames)]
+        self._idle_frame_index += 1
+        root = self._current_asset_dir.resolve()
+        path = (root / relative_path).resolve()
+        try:
+            path.relative_to(root)
+        except ValueError:
+            return False
+        if not self._load_portrait_pixmap(path):
+            return False
+        self._set_scaled_pixmap()
         return True
 
     def _advance_frame_transition(self) -> None:
@@ -385,6 +426,7 @@ def load_portrait_manifest(asset_dir: Path | str, manifest_path: str) -> Portrai
         anchor=anchor,
         default_scale=float(default_scale),
         expressions=clean_expressions,
+        motion_frames=_motion_frame_paths_from_payload(root, payload.get("motion_frames")),
         animation=_animation_config_from_payload(payload.get("animation")),
     )
 
@@ -418,6 +460,19 @@ def _all_frame_paths(frames: PortraitExpressionFrames) -> tuple[Path, ...]:
     )
 
 
+def _motion_frame_paths_from_payload(root: Path, value: object) -> tuple[str, ...]:
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        raise PortraitManifestError("portrait motion_frames must be an array")
+    paths: list[str] = []
+    for item in value:
+        image_rel = _safe_motion_frame_path(item)
+        _verify_portrait_image(root / image_rel)
+        paths.append(image_rel.as_posix())
+    return tuple(paths)
+
+
 def _frame_path_for_kind(frames: PortraitExpressionFrames, frame_kind: str) -> str:
     if frame_kind == "blink_half" and frames.blink_half_path:
         return frames.blink_half_path
@@ -430,9 +485,12 @@ def _animation_config_from_payload(value: object) -> PortraitAnimationConfig:
     if not isinstance(value, dict):
         return PortraitAnimationConfig()
     breathing = value.get("breathing", {})
+    idle = value.get("idle", {})
     blink = value.get("blink", {})
     if not isinstance(breathing, dict):
         breathing = {}
+    if not isinstance(idle, dict):
+        idle = {}
     if not isinstance(blink, dict):
         blink = {}
     return PortraitAnimationConfig(
@@ -440,6 +498,8 @@ def _animation_config_from_payload(value: object) -> PortraitAnimationConfig:
         breath_amplitude_px=_int_range(breathing.get("amplitude_px", 0), 0, 8, 0),
         breath_scale_delta=_float_range(breathing.get("scale_delta", 0.0), 0.0, 0.03, 0.0),
         breath_cycle_ms=_int_range(breathing.get("cycle_ms", 4200), 2500, 7000, 4200),
+        idle_enabled=bool(idle.get("enabled", False)),
+        idle_fps=_int_range(idle.get("fps", 6), 1, 12, 6),
         blink_enabled=bool(blink.get("enabled", False)),
         blink_min_interval_ms=_int_range(blink.get("min_interval_ms", 3000), 1000, 20000, 3000),
         blink_max_interval_ms=_int_range(blink.get("max_interval_ms", 7000), 1000, 30000, 7000),
@@ -483,6 +543,23 @@ def _safe_portrait_image_path(value: object) -> Path:
         or path.suffix.lower() != ".png"
     ):
         raise PortraitManifestError("portrait image path invalid")
+    return path
+
+
+def _safe_motion_frame_path(value: object) -> Path:
+    if not isinstance(value, str) or not value.strip() or len(value) > 180:
+        raise PortraitManifestError("portrait motion frame path invalid")
+    if any(ord(char) < 32 or ord(char) == 127 for char in value):
+        raise PortraitManifestError("portrait motion frame path invalid")
+    path = Path(value)
+    if (
+        path.is_absolute()
+        or ".." in path.parts
+        or len(path.parts) < 2
+        or path.parts[0] != "motion_frames"
+        or path.suffix.lower() != ".png"
+    ):
+        raise PortraitManifestError("portrait motion frame path invalid")
     return path
 
 
