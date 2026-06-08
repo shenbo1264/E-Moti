@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this speech-quality package: `0f523d6 feat: include frame preflight in workflow status`
+- Latest committed checkpoint before this smoke-review package: `b191bae feat: gate llm smoke speech quality`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -25,13 +25,13 @@ python -m pytest tests\test_portrait_video_workflow_status.py tests\test_portrai
 
 Result: `18 passed`.
 
-Latest focused LLM/expression tests run on 2026-06-09:
+Latest focused LLM/review tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_llm_smoke.py tests\test_expression_clients.py tests\test_expression_diagnostics.py tests\test_expression_event_pipeline.py tests\test_ai_expressor.py tests\test_visual_actions.py -q
+python -m pytest tests\test_llm_smoke_review.py tests\test_llm_smoke.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `158 passed`.
+Result: `17 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -39,7 +39,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `659 passed`.
+Result: `663 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -222,6 +222,7 @@ Scope:
   - state mutation check result.
 - Surface this in the existing expression diagnostics path or a compact UI/debug panel.
 - Add a live smoke path for OpenAI-compatible providers, especially DeepSeek.
+- Add an offline review tool that turns existing smoke JSON into a compact issue summary without calling a provider.
 
 Primary files:
 
@@ -229,6 +230,7 @@ Primary files:
 - `src/guanghe_companion/expression_clients.py`
 - `src/guanghe_companion/llm_smoke.py`
 - `tools/llm_dialogue_smoke.py`
+- `tools/review_llm_smoke_report.py`
 - `tests/test_llm_smoke.py`
 - `tests/test_expression_diagnostics.py`
 - `tests/test_expression_event_pipeline.py`
