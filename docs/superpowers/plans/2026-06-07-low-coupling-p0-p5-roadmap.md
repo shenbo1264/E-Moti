@@ -296,8 +296,11 @@ Latest confirmation-gated packages completed after user approval:
   - `tools/art/inspect_portrait_video_workflow.py` writes ignored JSON/Markdown workflow reports with frame preflight source status, handoff status, frame count, motion-candidate status, and next action.
   - Current workflow report: `artifacts/portrait-video-workflow-report.md`, `ok=false`, `source_status=ready_with_warnings`, `frame_count=60`, `handoff_status=present`, `motion_candidate_status=failed`, `next_action=regenerate_ai_video`.
   - Current frame preflight also reports the original `496x744` frames as `normalizable_size_mismatch_count=60` with `next_action=normalize_frames`; the normalized sibling still reports `body_drift_warning_count=60` and remains blocked.
-  - Current decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, missing neutral blink frames, and warning `neutral.open: light_edge_halo_risk`.
-  - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, exported AI-video frames, blink frames, final provenance approval, edge cleanup, and manifest integration.
+  - `tools/art/clean_portrait_candidate_edges.py` clones ignored candidate directories and removes bright semi-transparent edge-halo pixels from the clone only.
+  - Edge-cleaned artifact: `artifacts/portrait-candidate-xingxi-vn-20260607-edge-cleaned/`.
+  - Edge cleanup result: `changed_pixel_count=17703`, visual QA `light_edge_alpha_pixel_count=0`, `light_edge_alpha_ratio=0.0`, warnings cleared.
+  - Current edge-cleaned decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, and missing neutral blink frames.
+  - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, approved AI-video blink/motion frames, final provenance approval, and manifest integration.
 
 ## Product Rule
 
@@ -614,11 +617,12 @@ Completed deliverables for `P3-art-candidate`:
 - ignored provider-neutral handoff zips can be regenerated with `tools\art\bundle_portrait_video_source_packs.py`;
 - ignored JSON/Markdown next-action reports can be regenerated with `tools\art\inspect_portrait_video_workflow.py`;
 - ignored visual QA preview/report can be regenerated with `tools\art\portrait_candidate_visual_qa.py`, including alpha edge metrics and light-edge halo warnings;
+- ignored edge-cleaned candidate clones can be regenerated with `tools\art\clean_portrait_candidate_edges.py`;
 - ignored JSON/Markdown decision brief can be regenerated with `tools\art\portrait_candidate_decision_brief.py`;
 - candidate directory remains ignored and is not bundled into runtime assets.
 - ignored runtime candidate pack smoke remains a separate renderer-loadability check;
 - strict promotion gate remains reserved for a complete approved portrait pack. It now reports visual QA warnings such as `light_edge_halo_risk` without auto-failing the pack, because final edge quality still needs human art approval.
-- the prepared neutral-only candidate is not promotion-ready because it lacks expression variants, exported AI-video frames, blink frames, final provenance approval, edge cleanup, and manifest integration.
+- the prepared neutral-only candidate is not promotion-ready because it lacks expression variants, approved AI-video blink/motion frames, final provenance approval, and manifest integration.
 
 Confirmation needed before execution:
 

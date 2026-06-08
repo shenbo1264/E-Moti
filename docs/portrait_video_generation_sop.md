@@ -215,4 +215,12 @@ python tools\art\portrait_candidate_visual_qa.py artifacts\portrait-candidate-xi
 python tools\art\portrait_candidate_decision_brief.py artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion\portrait_candidate.json --report artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion\portrait-decision-brief.json --markdown artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion\portrait-decision-brief.md
 ```
 
+If the visual QA report flags `light_edge_halo_risk`, create a sibling cleanup clone and review that clone instead of overwriting the original candidate:
+
+```powershell
+python tools\art\clean_portrait_candidate_edges.py artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion\portrait_candidate.json --output artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion-edge-cleaned --report artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion-edge-cleaned\edge-cleanup-report.json
+python tools\art\portrait_candidate_visual_qa.py artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion-edge-cleaned\portrait_candidate.json --preview artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion-edge-cleaned\preview\portrait-visual-qa.png --report artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion-edge-cleaned\portrait-visual-qa-report.json
+python tools\art\portrait_candidate_decision_brief.py artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion-edge-cleaned\portrait_candidate.json --report artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion-edge-cleaned\portrait-decision-brief.json --markdown artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion-edge-cleaned\portrait-decision-brief.md
+```
+
 Do not update runtime `portrait_manifest.json` until the candidate passes strict promotion review and human visual QA.
