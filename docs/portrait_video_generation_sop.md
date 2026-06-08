@@ -58,17 +58,15 @@ frame_0003.png
 
 ## Extract Blink And Idle Candidates
 
-After frames are present, run the command from `source_pack.json`, or adapt this pattern:
+After frames are present, run:
 
 ```powershell
-python tools\art\extract_portrait_motion_frames.py `
-  --reference-image artifacts\portrait-video-source\xingxi-vn-neutral-20260608\reference\neutral_open.png `
-  --frames-dir artifacts\portrait-video-source\xingxi-vn-neutral-20260608\frames `
-  --output-dir artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion `
-  --report artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion\candidate-motion-frame-report.json `
-  --source-tool "Gemini video" `
-  --generation-prompt "see artifacts\portrait-video-source\xingxi-vn-neutral-20260608\gemini_prompt.md"
+python tools\art\process_portrait_video_source_pack.py `
+  artifacts\portrait-video-source\xingxi-vn-neutral-20260608 `
+  --output-dir artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion
 ```
+
+The processor reads `source_pack.json`, uses `gemini_prompt.md` as provenance text, and calls the lower-level frame extractor.
 
 Then run visual QA and the decision brief before any manifest promotion:
 
