@@ -71,6 +71,47 @@ def _write_llm_report(path: Path, *, ok: bool = True) -> Path:
     return path
 
 
+def _write_portrait_workflow_report(path: Path, *, ok: bool = False) -> Path:
+    payload = {
+        "ok": ok,
+        "source_root": "artifacts/portrait-video-source",
+        "handoff_dir": "artifacts/portrait-video-handoff",
+        "candidate_root": "artifacts",
+        "pack_count": 1,
+        "missing_handoff_count": 0,
+        "ready_count": 0,
+        "waiting_count": 0,
+        "insufficient_count": 0,
+        "motion_candidate_count": 0,
+        "items": [
+            {
+                "set_id": "xingxi-vn-neutral-20260608",
+                "source_status": "ready_with_warnings",
+                "frame_count": 60,
+                "readable_frame_count": 60,
+                "invalid_frame_count": 0,
+                "size_mismatch_count": 60,
+                "normalizable_size_mismatch_count": 60,
+                "body_drift_warning_count": 0,
+                "handoff_status": "present",
+                "motion_candidate_status": "failed",
+                "next_action": "regenerate_ai_video",
+                "source_next_action": "normalize_frames",
+                "motion_next_action": "regenerate_ai_video",
+                "attention_reasons": [
+                    "normalizable_size_mismatch",
+                    "failed_motion_extraction",
+                ],
+                "warnings": [],
+                "errors": ["motion extraction failed: not enough stable frames after body drift filtering"],
+            }
+        ],
+        "errors": ["motion extraction failed: not enough stable frames after body drift filtering"],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _run_tool(
     character_pack: Path,
     app_dir: Path,
@@ -78,6 +119,7 @@ def _run_tool(
     tmp_path: Path,
     *,
     llm_reports: list[Path] | None = None,
+    portrait_workflow_reports: list[Path] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     args = [
         sys.executable,
@@ -91,6 +133,8 @@ def _run_tool(
     ]
     for report in llm_reports or []:
         args.extend(["--llm-report", str(report)])
+    for report in portrait_workflow_reports or []:
+        args.extend(["--portrait-workflow-report", str(report)])
     args.extend(
         [
             "--json",
@@ -202,3 +246,34 @@ def test_release_readiness_report_surfaces_llm_review_issue(tmp_path: Path):
     assert llm_check["status"] == "needs_attention"
     assert "cue_case_failed" in llm_check["errors"][1]
     assert "review LLM smoke report before release" in payload["next_actions"]
+
+
+def test_release_readiness_report_surfaces_portrait_workflow_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    workflow_report = _write_portrait_workflow_report(tmp_path / "portrait-workflow.json", ok=False)
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_workflow_reports=[workflow_report],
+    )
+
+    payload = json.loads(result.stdout)
+    workflow_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["status"] == "needs_attention"
+    assert workflow_check["id"] == "portrait_video_workflow"
+    assert workflow_check["ok"] is False
+    assert workflow_check["status"] == "needs_attention"
+    assert workflow_check["attention_reasons"] == [
+        "normalizable_size_mismatch",
+        "failed_motion_extraction",
+    ]
+    assert workflow_check["next_actions"] == [
+        "resolve portrait AI-video workflow blockers before promoting motion assets"
+    ]
+    assert "resolve portrait AI-video workflow blockers before promoting motion assets" in payload["next_actions"]

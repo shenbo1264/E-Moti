@@ -41,13 +41,21 @@ python -m pytest tests\test_character_generation_workflow.py tests\test_characte
 
 Result: `146 passed`.
 
+Latest focused release-readiness/report tests run on 2026-06-09:
+
+```powershell
+python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_workflow_status.py tests\test_repository_hygiene.py -q
+```
+
+Result: `16 passed`.
+
 Full suite run on 2026-06-09:
 
 ```powershell
 python -m pytest
 ```
 
-Result: `692 passed`.
+Result: `693 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -185,6 +193,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds split `source_next_action` and `motion_next_action` fields to the portrait AI-video workflow report while preserving the compatibility `next_action`.
   - This prevents a stale failed motion extraction from hiding the current source-frame cleanup step, or vice versa, in JSON/Markdown review.
   - This is report shaping only. It does not change preflight decisions, extraction behavior, runtime manifests, renderer behavior, or asset approval.
+- `P3/P5-release-readiness-portrait-workflow` package:
+  - Extends `tools/release_readiness_report.py` with repeatable `--portrait-workflow-report` inputs.
+  - Release readiness can now include existing portrait AI-video workflow blockers such as `normalizable_size_mismatch`, `body_drift_warnings`, and `failed_motion_extraction`.
+  - This is offline report aggregation only. It does not process frames, call providers, change runtime manifests, change renderer behavior, or approve generated assets.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

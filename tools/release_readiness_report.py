@@ -28,11 +28,13 @@ def build_release_readiness_report(
     app_dir: Path | str = DEFAULT_APP_DIR,
     installer_path: Path | str | None = DEFAULT_INSTALLER,
     llm_reports: Iterable[Path | str] = (),
+    portrait_workflow_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
     checks = [source_check, build_check]
     checks.extend(_llm_report_check(Path(report_path)) for report_path in llm_reports)
+    checks.extend(_portrait_workflow_report_check(Path(report_path)) for report_path in portrait_workflow_reports)
     ok = all(check["ok"] is True for check in checks)
     return {
         "ok": ok,
@@ -139,6 +141,47 @@ def _llm_report_check(report_path: Path) -> dict[str, object]:
     }
 
 
+def _portrait_workflow_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_video_workflow",
+            "label": "Portrait AI Video Workflow",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "pack_count": 0,
+            "ready_count": 0,
+            "attention_reasons": [],
+            "errors": ["portrait workflow report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video workflow report before release"],
+        }
+    items = _list_of_mappings(payload.get("items"))
+    errors = _string_list(payload.get("errors"))
+    for item in items:
+        errors.extend(_string_list(item.get("errors")))
+    attention_reasons = _dedupe(
+        reason
+        for item in items
+        for reason in _string_list(item.get("attention_reasons"))
+    )
+    ok = payload.get("ok") is True
+    return {
+        "id": "portrait_video_workflow",
+        "label": "Portrait AI Video Workflow",
+        "ok": ok,
+        "status": "ready" if ok else "needs_attention",
+        "path": str(report_path),
+        "pack_count": _nonnegative_int(payload.get("pack_count")),
+        "ready_count": _nonnegative_int(payload.get("ready_count")),
+        "attention_reasons": attention_reasons,
+        "errors": _dedupe(errors),
+        "warnings": [],
+        "next_actions": [] if ok else ["resolve portrait AI-video workflow blockers before promoting motion assets"],
+    }
+
+
 def _load_json_object(path: Path) -> dict[str, object] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -176,6 +219,10 @@ def _string_list(value: object) -> list[str]:
     return [item for item in value if isinstance(item, str) and item]
 
 
+def _nonnegative_int(value: object) -> int:
+    return value if isinstance(value, int) and value >= 0 else 0
+
+
 def _write_text(path: str, text: str) -> None:
     if not path:
         return
@@ -196,6 +243,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=[],
         help="Optional LLM dialogue smoke or expression cue probe JSON report to include.",
     )
+    parser.add_argument(
+        "--portrait-workflow-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video workflow JSON report to include.",
+    )
     parser.add_argument("--json", default="", help="Optional JSON output path.")
     parser.add_argument("--markdown", default="", help="Optional Markdown output path.")
     return parser.parse_args(argv)
@@ -208,6 +261,7 @@ def main(argv: list[str] | None = None) -> int:
         app_dir=Path(args.app_dir),
         installer_path=None if args.skip_installer else Path(args.installer),
         llm_reports=[Path(item) for item in args.llm_report],
+        portrait_workflow_reports=[Path(item) for item in args.portrait_workflow_report],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")
