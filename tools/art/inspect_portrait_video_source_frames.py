@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageChops, ImageStat, UnidentifiedImageError
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -16,6 +16,7 @@ if str(REPO_ROOT) not in sys.path:
 
 DEFAULT_SOURCE_ROOT = Path("artifacts") / "portrait-video-source"
 MIN_READY_FRAME_COUNT = 3
+DEFAULT_MAX_BODY_DRIFT = 16.0
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,6 +29,7 @@ class PortraitVideoFramePreflightItem:
     readable_frame_count: int
     invalid_frame_count: int
     size_mismatch_count: int
+    body_drift_warning_count: int
     status: str
     next_action: str
     warnings: tuple[str, ...] = ()
@@ -43,6 +45,7 @@ class PortraitVideoFramePreflightItem:
             "readable_frame_count": self.readable_frame_count,
             "invalid_frame_count": self.invalid_frame_count,
             "size_mismatch_count": self.size_mismatch_count,
+            "body_drift_warning_count": self.body_drift_warning_count,
             "status": self.status,
             "next_action": self.next_action,
             "warnings": list(self.warnings),
@@ -120,19 +123,22 @@ def _inspect_source_pack(path: Path) -> PortraitVideoFramePreflightItem:
     errors = list(metadata_errors) + list(path_errors)
     warnings: list[str] = []
 
-    reference_size = _image_size(reference)
-    if reference_size is None:
+    reference_image = _load_rgba_image(reference)
+    reference_size = reference_image.size if reference_image is not None else None
+    if reference_image is None:
         errors.append("reference image invalid or missing")
 
     readable_count = 0
     invalid_count = 0
     mismatch_count = 0
+    body_drift_count = 0
     for frame_path in frame_paths:
-        frame_size = _image_size(frame_path)
-        if frame_size is None:
+        frame_image = _load_rgba_image(frame_path)
+        if frame_image is None:
             invalid_count += 1
             errors.append(f"{frame_path.name} is not a readable png frame")
             continue
+        frame_size = frame_image.size
         readable_count += 1
         if reference_size is not None and frame_size != reference_size:
             mismatch_count += 1
@@ -140,6 +146,15 @@ def _inspect_source_pack(path: Path) -> PortraitVideoFramePreflightItem:
                 f"{frame_path.name} size {frame_size[0]}x{frame_size[1]} "
                 f"differs from reference {reference_size[0]}x{reference_size[1]}"
             )
+            continue
+        if reference_image is not None:
+            body_drift = _body_drift(reference_image, frame_image)
+            if body_drift > DEFAULT_MAX_BODY_DRIFT:
+                body_drift_count += 1
+                warnings.append(
+                    f"{frame_path.name} body drift {body_drift:.1f} exceeds {DEFAULT_MAX_BODY_DRIFT:.1f}; "
+                    "regenerate video or inspect before extraction"
+                )
 
     status = _status(
         errors=tuple(errors),
@@ -156,6 +171,7 @@ def _inspect_source_pack(path: Path) -> PortraitVideoFramePreflightItem:
         readable_frame_count=readable_count,
         invalid_frame_count=invalid_count,
         size_mismatch_count=mismatch_count,
+        body_drift_warning_count=body_drift_count,
         status=status,
         next_action=_next_action(status),
         warnings=tuple(warnings),
@@ -202,13 +218,23 @@ def _frame_paths(path: Path) -> tuple[Path, ...]:
     return tuple(sorted(item for item in path.iterdir() if item.is_file() and item.suffix.lower() == ".png"))
 
 
-def _image_size(path: Path) -> tuple[int, int] | None:
+def _load_rgba_image(path: Path) -> Image.Image | None:
     try:
         with Image.open(path) as image:
-            image.load()
-            return image.size
+            loaded = image.convert("RGBA")
+            loaded.load()
+            return loaded
     except (OSError, UnidentifiedImageError):
         return None
+
+
+def _body_drift(reference: Image.Image, frame: Image.Image) -> float:
+    alpha = reference.getchannel("A")
+    if alpha.getbbox() is None:
+        return 0.0
+    diff = ImageChops.difference(reference.convert("RGB"), frame.convert("RGB"))
+    stat = ImageStat.Stat(diff, alpha)
+    return sum(stat.mean) / 3.0
 
 
 def _status(

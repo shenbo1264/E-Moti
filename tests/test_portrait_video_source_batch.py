@@ -114,7 +114,7 @@ def _write_frames(root: Path, *, count: int = 4) -> None:
         ("frame_0001.png", "open", 0),
         ("frame_0002.png", "half", 0),
         ("frame_0003.png", "closed", 0),
-        ("frame_0004.png", "open", 22),
+        ("frame_0004.png", "open", 0),
     )
     for filename, eye, drift in frames[:count]:
         _write_frame(root / filename, eye=eye, drift=drift)

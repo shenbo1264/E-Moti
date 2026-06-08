@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `684 passed`.
+Result: `685 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -157,6 +157,9 @@ Latest non-confirmation packages completed after the original plan:
 - `P3-handoff-frame-qa-readme` package:
   - Adds frame preflight and `ready_with_warnings` regeneration guidance directly to `AI_VIDEO_HANDOFF_README.md` inside provider-neutral handoff zips.
   - This keeps manual provider work aligned with the local QA tools before any extraction attempt. It does not change runtime manifests, renderer behavior, prompt policy, or art approval gates.
+- `P3-body-drift-preflight` package:
+  - Makes `tools/art/inspect_portrait_video_source_frames.py` flag same-size PNG frames with high body drift as `ready_with_warnings`.
+  - This catches likely pose/body recomposition before `--process-ready` can process the frames. It does not loosen extraction thresholds, call providers, change runtime manifests, or approve current bad video frames.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

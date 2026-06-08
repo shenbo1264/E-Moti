@@ -17,21 +17,31 @@ def _write_reference(path: Path) -> None:
     image.save(path)
 
 
-def _write_frame(path: Path, *, size: tuple[int, int] = (240, 480)) -> None:
+def _write_frame(path: Path, *, size: tuple[int, int] = (240, 480), drift: int = 0) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     image = Image.new("RGB", size, (245, 247, 250))
     draw = ImageDraw.Draw(image)
     scale_x = size[0] / 240
     scale_y = size[1] / 480
+    offset = drift
     draw.rounded_rectangle(
         (
-            int(72 * scale_x),
+            int((72 + offset) * scale_x),
             int(28 * scale_y),
-            int(168 * scale_x),
+            int((168 + offset) * scale_x),
             int(456 * scale_y),
         ),
         radius=max(4, int(24 * min(scale_x, scale_y))),
         fill=(64, 92, 148),
+    )
+    draw.ellipse(
+        (
+            int((84 + offset) * scale_x),
+            int(42 * scale_y),
+            int((156 + offset) * scale_x),
+            int(126 * scale_y),
+        ),
+        fill=(238, 210, 194),
     )
     image.save(path)
 
@@ -113,6 +123,26 @@ def test_inspect_portrait_video_source_frames_warns_on_size_mismatch(tmp_path: P
     assert item.size_mismatch_count == 1
     assert item.next_action == "review_frame_warnings"
     assert any("frame_0002.png size 320x480 differs from reference 240x480" in warning for warning in item.warnings)
+
+
+def test_inspect_portrait_video_source_frames_warns_on_body_drift(tmp_path: Path):
+    from tools.art.inspect_portrait_video_source_frames import inspect_portrait_video_source_frames
+
+    source_root = tmp_path / "portrait-video-source"
+    pack = _write_source_pack(tmp_path, "xingxi-drift-20260609")
+    _write_frame(pack / "frames" / "frame_0001.png")
+    _write_frame(pack / "frames" / "frame_0002.png", drift=44)
+    _write_frame(pack / "frames" / "frame_0003.png")
+
+    report = inspect_portrait_video_source_frames(source_root=source_root)
+
+    assert report.ok is True
+    assert report.warning_count == 1
+    item = report.items[0]
+    assert item.status == "ready_with_warnings"
+    assert item.body_drift_warning_count == 1
+    assert item.next_action == "review_frame_warnings"
+    assert any("frame_0002.png body drift" in warning for warning in item.warnings)
 
 
 def test_inspect_portrait_video_source_frames_cli_writes_report(tmp_path: Path):

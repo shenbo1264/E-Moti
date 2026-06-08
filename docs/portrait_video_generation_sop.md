@@ -135,7 +135,7 @@ python tools\art\inspect_portrait_video_source_frames.py `
   --report artifacts\portrait-video-frame-preflight.json
 ```
 
-The preflight report opens every PNG frame, rejects unreadable frames as `invalid_frames`, reports `insufficient_frames` below 3 readable PNGs, and flags size mismatches as `ready_with_warnings` for manual review before extraction.
+The preflight report opens every PNG frame, rejects unreadable frames as `invalid_frames`, reports `insufficient_frames` below 3 readable PNGs, and flags size mismatches or high body drift as `ready_with_warnings` for manual review before extraction.
 
 ## Extract Blink And Idle Candidates
 
