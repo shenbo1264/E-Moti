@@ -93,3 +93,69 @@ def test_prepare_portrait_candidate_cli_runs_from_repo_root(tmp_path: Path):
     payload = json.loads(result.stdout)
     assert payload["ok"] is True
     assert (output / "portrait_candidate.json").is_file()
+
+
+def test_build_portrait_candidate_visual_qa_writes_preview_and_metrics(tmp_path: Path):
+    from tools.art.portrait_candidate_visual_qa import build_portrait_candidate_visual_qa
+    from tools.art.prepare_portrait_candidate import prepare_portrait_candidate
+
+    source = tmp_path / "source.png"
+    candidate = tmp_path / "portrait-candidate"
+    report_path = tmp_path / "portrait-qa-report.json"
+    preview_path = tmp_path / "portrait-qa-preview.png"
+    _write_rgb_source(source)
+    prepare_portrait_candidate(source, candidate)
+
+    report = build_portrait_candidate_visual_qa(
+        candidate / "portrait_candidate.json",
+        preview_path=preview_path,
+        report_path=report_path,
+    )
+
+    assert report.ok is True
+    assert report.image_count == 1
+    assert report.preview_path == str(preview_path)
+    assert report_path.is_file()
+    assert preview_path.is_file()
+    assert report.images[0]["label"] == "neutral.open"
+    assert report.images[0]["path"] == "portraits/neutral_open.png"
+    assert report.images[0]["alpha_extrema"] == [0, 255]
+    assert report.images[0]["transparent_corner_count"] == 4
+    assert report.images[0]["edge_alpha_pixel_count"] > 0
+    with Image.open(preview_path) as image:
+        assert image.mode == "RGBA"
+        assert image.width == 3 * 320
+        assert image.height >= 640
+
+
+def test_portrait_candidate_visual_qa_cli_runs_from_repo_root(tmp_path: Path):
+    from tools.art.prepare_portrait_candidate import prepare_portrait_candidate
+
+    source = tmp_path / "source.png"
+    candidate = tmp_path / "portrait-candidate"
+    report_path = tmp_path / "portrait-qa-report.json"
+    preview_path = tmp_path / "portrait-qa-preview.png"
+    _write_rgb_source(source)
+    prepare_portrait_candidate(source, candidate)
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "tools/art/portrait_candidate_visual_qa.py",
+            str(candidate / "portrait_candidate.json"),
+            "--preview",
+            str(preview_path),
+            "--report",
+            str(report_path),
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(result.stdout)
+    assert payload["ok"] is True
+    assert payload["preview_path"] == str(preview_path)

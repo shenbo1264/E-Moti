@@ -122,10 +122,11 @@ Portrait candidate validation before manifest promotion:
 
 ```powershell
 python tools\art\prepare_portrait_candidate.py artifacts\portrait-candidate-xingxi-vn-20260607.png --output artifacts\portrait-candidate-xingxi-vn-20260607 --report artifacts\portrait-candidate-xingxi-vn-20260607\candidate-preparation-report.json
+python tools\art\portrait_candidate_visual_qa.py artifacts\portrait-candidate-xingxi-vn-20260607\portrait_candidate.json --preview artifacts\portrait-candidate-xingxi-vn-20260607\preview\portrait-visual-qa.png --report artifacts\portrait-candidate-xingxi-vn-20260607\portrait-visual-qa-report.json
 python tools\art\validate_portrait_candidates.py path\to\portrait_candidate.json --runtime-manifest assets\companion\original_oc\portrait_manifest.json --contact-sheet artifacts\portrait-candidate-contact-sheet.png
 ```
 
-`prepare_portrait_candidate.py` is for ignored local VN candidate packs only. It creates an RGBA cutout, `portrait_candidate.json`, contact sheet, and report, but it does not update `portrait_manifest.json`.
+`prepare_portrait_candidate.py` and `portrait_candidate_visual_qa.py` are for ignored local VN candidate packs only. They create an RGBA cutout, `portrait_candidate.json`, contact sheet, multi-background visual QA preview, and report, but they do not update `portrait_manifest.json`.
 
 Portrait character-pack smoke and strict promotion gate:
 

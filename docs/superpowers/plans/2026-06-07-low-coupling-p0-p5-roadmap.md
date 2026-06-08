@@ -117,7 +117,9 @@ Latest confirmation-gated packages completed after user approval:
   - Limitation: not transparent, not an expression set, not runtime-ready, and not referenced by `portrait_manifest.json`.
   - After user approval, `tools/art/prepare_portrait_candidate.py` produced an ignored alpha candidate pack under `artifacts/portrait-candidate-xingxi-vn-20260607/`.
   - Prepared candidate validation result: `ok=true`, one `neutral.open` RGBA portrait, transparent corners, and generated contact sheet/report.
-  - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, blink frames, final provenance approval, and manifest integration.
+  - `tools/art/portrait_candidate_visual_qa.py` produced an ignored multi-background QA preview/report for checker, light, and dark backgrounds.
+  - Visual QA finding: the cutout is transparent and usable for review, but dark-background preview exposes light halo around white hair and coat edges.
+  - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, blink frames, final provenance approval, edge cleanup, and manifest integration.
 
 ## Product Rule
 
@@ -419,9 +421,10 @@ Completed deliverables for `P3-art-candidate`:
 - provenance is currently limited to this plan note and ignored artifact path until human QA decides whether the candidate survives;
 - no third-party IP or reference project assets are copied.
 - ignored alpha candidate pack can be regenerated from the approved base artifact with `tools\art\prepare_portrait_candidate.py`;
+- ignored visual QA preview/report can be regenerated with `tools\art\portrait_candidate_visual_qa.py`;
 - candidate directory remains ignored and is not bundled into runtime assets.
 - ignored runtime candidate pack smoke remains a separate renderer-loadability check;
-- strict promotion gate remains reserved for a complete approved portrait pack. The prepared neutral-only candidate is not promotion-ready because it lacks expression variants, blink frames, final provenance approval, and manifest integration.
+- strict promotion gate remains reserved for a complete approved portrait pack. The prepared neutral-only candidate is not promotion-ready because it lacks expression variants, blink frames, final provenance approval, edge cleanup, and manifest integration.
 
 Confirmation needed before execution:
 
