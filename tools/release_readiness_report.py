@@ -73,6 +73,9 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         warnings = _string_list(check.get("warnings"))
         if warnings:
             lines.append("- Warnings: `" + "; ".join(warnings) + "`")
+        commands = _string_list(check.get("suggested_commands"))
+        if commands:
+            lines.append("- Suggested commands: `" + "`; `".join(commands) + "`")
         lines.append("")
     return "\n".join(lines)
 
@@ -166,6 +169,11 @@ def _portrait_workflow_report_check(report_path: Path) -> dict[str, object]:
         for item in items
         for reason in _string_list(item.get("attention_reasons"))
     )
+    suggested_commands = _dedupe(
+        command
+        for item in items
+        for command in _string_list(item.get("suggested_commands"))
+    )
     ok = payload.get("ok") is True
     return {
         "id": "portrait_video_workflow",
@@ -176,6 +184,7 @@ def _portrait_workflow_report_check(report_path: Path) -> dict[str, object]:
         "pack_count": _nonnegative_int(payload.get("pack_count")),
         "ready_count": _nonnegative_int(payload.get("ready_count")),
         "attention_reasons": attention_reasons,
+        "suggested_commands": suggested_commands,
         "errors": _dedupe(errors),
         "warnings": [],
         "next_actions": [] if ok else ["resolve portrait AI-video workflow blockers before promoting motion assets"],

@@ -98,6 +98,10 @@ def _write_portrait_workflow_report(path: Path, *, ok: bool = False) -> Path:
                 "next_action": "regenerate_ai_video",
                 "source_next_action": "normalize_frames",
                 "motion_next_action": "regenerate_ai_video",
+                "suggested_commands": [
+                    "python tools\\art\\normalize_portrait_video_source_frames.py artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608 --output-pack-dir artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized --report artifacts\\portrait-video-frame-normalization.json",
+                    "python tools\\art\\inspect_portrait_video_source_frames.py artifacts\\portrait-video-source --report artifacts\\portrait-video-frame-preflight.json",
+                ],
                 "attention_reasons": [
                     "normalizable_size_mismatch",
                     "failed_motion_extraction",
@@ -275,5 +279,9 @@ def test_release_readiness_report_surfaces_portrait_workflow_issue(tmp_path: Pat
     ]
     assert workflow_check["next_actions"] == [
         "resolve portrait AI-video workflow blockers before promoting motion assets"
+    ]
+    assert workflow_check["suggested_commands"] == [
+        "python tools\\art\\normalize_portrait_video_source_frames.py artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608 --output-pack-dir artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized --report artifacts\\portrait-video-frame-normalization.json",
+        "python tools\\art\\inspect_portrait_video_source_frames.py artifacts\\portrait-video-source --report artifacts\\portrait-video-frame-preflight.json",
     ]
     assert "resolve portrait AI-video workflow blockers before promoting motion assets" in payload["next_actions"]

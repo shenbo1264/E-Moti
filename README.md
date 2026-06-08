@@ -229,7 +229,7 @@ python tools\release_readiness_report.py --portrait-workflow-report artifacts\po
 ```
 
 The build validator also checks that the frozen bundled `original_oc` character pack includes its manifest, portraits, preview, item icons, provenance note, and pack-level `LICENSE.md`.
-`release_readiness_report.py` is a read-only aggregate report that combines the source character-pack status review with frozen Windows build validation. Pass one or more `--llm-report` paths to include existing dialogue smoke or expression cue probe JSON reports without calling a provider. Pass `--portrait-workflow-report` to include an existing AI-video workflow JSON report so unresolved motion-frame blockers stay visible in release notes.
+`release_readiness_report.py` is a read-only aggregate report that combines the source character-pack status review with frozen Windows build validation. Pass one or more `--llm-report` paths to include existing dialogue smoke or expression cue probe JSON reports without calling a provider. Pass `--portrait-workflow-report` to include an existing AI-video workflow JSON report so unresolved motion-frame blockers and suggested local follow-up commands stay visible in release notes.
 
 ## Optional AI Capabilities
 
