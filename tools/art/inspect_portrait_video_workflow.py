@@ -439,6 +439,12 @@ def _suggested_commands(
             f"--markdown artifacts\\portrait-video-regeneration-brief-{set_id}.md"
         )
         commands.append(
+            "python tools\\art\\bundle_portrait_video_retry_handoff.py "
+            f"artifacts\\portrait-video-regeneration-brief-{set_id}.json "
+            "--output-dir artifacts\\portrait-video-retry-handoff "
+            "--report artifacts\\portrait-video-retry-handoff-report.json"
+        )
+        commands.append(
             "python tools\\art\\inspect_portrait_video_source_frames.py "
             f"{_command_path(source_root)} --report artifacts\\portrait-video-frame-preflight.json"
         )
