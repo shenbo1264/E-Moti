@@ -256,8 +256,11 @@ def test_inspect_portrait_video_workflow_recommends_normalization_for_same_aspec
     assert item.source_status == "ready_with_warnings"
     assert item.size_mismatch_count == 3
     assert item.normalizable_size_mismatch_count == 3
+    assert item.attention_reasons == ("normalizable_size_mismatch",)
     assert item.next_action == "normalize_frames"
-    assert "| xingxi-lowres-20260609 | ready_with_warnings | 3 | present | missing | normalize_frames |" in render_portrait_video_workflow_markdown(report)
+    markdown = render_portrait_video_workflow_markdown(report)
+    assert "| xingxi-lowres-20260609 | ready_with_warnings | 3 | present | missing | normalize_frames |" in markdown
+    assert "- `xingxi-lowres-20260609`: `normalizable_size_mismatch`" in markdown
 
 
 def test_inspect_portrait_video_workflow_surfaces_failed_motion_extraction(tmp_path: Path):
@@ -292,6 +295,7 @@ def test_inspect_portrait_video_workflow_surfaces_failed_motion_extraction(tmp_p
     assert report.ok is False
     item = report.items[0]
     assert item.motion_candidate_status == "failed"
+    assert item.attention_reasons == ("failed_motion_extraction",)
     assert item.next_action == "regenerate_ai_video"
     assert "motion extraction failed: not enough stable frames after body drift filtering" in item.errors
     assert "| xingxi-failed-motion-20260609 | ready | 4 | present | failed | regenerate_ai_video |" in render_portrait_video_workflow_markdown(report)

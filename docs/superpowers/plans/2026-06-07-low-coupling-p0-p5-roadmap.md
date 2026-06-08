@@ -177,6 +177,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes frame preflight distinguish same-aspect lower-resolution frames from non-normalizable size mismatch.
   - Adds `normalizable_size_mismatch_count` and `next_action=normalize_frames` to preflight/workflow reports when normalization is the next safe local step.
   - Keeps `ready_with_warnings` as the source status, so batch and single-pack processing still block extraction until the normalized clone passes a fresh preflight.
+- `P3-workflow-attention-summary` package:
+  - Adds compact `attention_reasons` to portrait AI-video workflow JSON/Markdown reports.
+  - The report can now summarize `normalizable_size_mismatch`, `body_drift_warnings`, `failed_motion_extraction`, missing handoff, waiting frames, and insufficient frames without reading long warning lists.
+  - This is read-only reporting only. It does not change frame preflight gates, batch processing, extraction thresholds, runtime manifests, renderer behavior, or asset approval.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

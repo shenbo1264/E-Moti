@@ -30,11 +30,13 @@ class PortraitVideoWorkflowItem:
     invalid_frame_count: int
     size_mismatch_count: int
     normalizable_size_mismatch_count: int
+    body_drift_warning_count: int
     handoff_zip_path: str
     handoff_status: str
     motion_candidate_dir: str
     motion_candidate_status: str
     next_action: str
+    attention_reasons: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
 
@@ -48,11 +50,13 @@ class PortraitVideoWorkflowItem:
             "invalid_frame_count": self.invalid_frame_count,
             "size_mismatch_count": self.size_mismatch_count,
             "normalizable_size_mismatch_count": self.normalizable_size_mismatch_count,
+            "body_drift_warning_count": self.body_drift_warning_count,
             "handoff_zip_path": self.handoff_zip_path,
             "handoff_status": self.handoff_status,
             "motion_candidate_dir": self.motion_candidate_dir,
             "motion_candidate_status": self.motion_candidate_status,
             "next_action": self.next_action,
+            "attention_reasons": list(self.attention_reasons),
             "warnings": list(self.warnings),
             "errors": list(self.errors),
         }
@@ -160,6 +164,12 @@ def render_portrait_video_workflow_markdown(report: PortraitVideoWorkflowReport)
     if report.errors:
         lines.extend(["", "## Errors", ""])
         lines.extend(f"- `{_markdown_cell(error)}`" for error in report.errors)
+    attention = tuple(item for item in report.items if item.attention_reasons)
+    if attention:
+        lines.extend(["", "## Attention", ""])
+        for item in attention:
+            reasons = ", ".join(f"`{_markdown_cell(reason)}`" for reason in item.attention_reasons)
+            lines.append(f"- `{_markdown_cell(item.set_id)}`: {reasons}")
     lines.append("")
     return "\n".join(lines)
 
@@ -183,6 +193,7 @@ def _workflow_item(
     normalizable_size_mismatch_count = (
         preflight.normalizable_size_mismatch_count if preflight is not None else 0
     )
+    body_drift_warning_count = preflight.body_drift_warning_count if preflight is not None else 0
     warnings = preflight.warnings if preflight is not None else ()
     errors = preflight.errors if preflight is not None else pack.errors
     handoff_zip = handoff_dir / f"{pack.set_id}.zip"
@@ -210,11 +221,21 @@ def _workflow_item(
         invalid_frame_count=invalid_frame_count,
         size_mismatch_count=size_mismatch_count,
         normalizable_size_mismatch_count=normalizable_size_mismatch_count,
+        body_drift_warning_count=body_drift_warning_count,
         handoff_zip_path=str(handoff_zip),
         handoff_status=handoff_status,
         motion_candidate_dir=str(motion_candidate_dir),
         motion_candidate_status=motion_candidate_status,
         next_action=next_action,
+        attention_reasons=_attention_reasons(
+            source_status=source_status,
+            handoff_status=handoff_status,
+            motion_candidate_status=motion_candidate_status,
+            invalid_frame_count=invalid_frame_count,
+            size_mismatch_count=size_mismatch_count,
+            normalizable_size_mismatch_count=normalizable_size_mismatch_count,
+            body_drift_warning_count=body_drift_warning_count,
+        ),
         warnings=warnings,
         errors=item_errors,
     )
@@ -274,6 +295,40 @@ def _next_action(
     if source_status == "ready":
         return "review_motion_candidate" if motion_candidate_status == "present" else "process_frames"
     return "inspect_manually"
+
+
+def _attention_reasons(
+    *,
+    source_status: str,
+    handoff_status: str,
+    motion_candidate_status: str,
+    invalid_frame_count: int,
+    size_mismatch_count: int,
+    normalizable_size_mismatch_count: int,
+    body_drift_warning_count: int,
+) -> tuple[str, ...]:
+    reasons: list[str] = []
+    if handoff_status == "missing":
+        reasons.append("missing_handoff")
+    if source_status == "waiting_for_frames":
+        reasons.append("waiting_for_frames")
+    if source_status == "insufficient_frames":
+        reasons.append("insufficient_frames")
+    if source_status == "invalid_frames" or invalid_frame_count > 0:
+        reasons.append("invalid_frames")
+    if normalizable_size_mismatch_count > 0:
+        reasons.append("normalizable_size_mismatch")
+    if size_mismatch_count > normalizable_size_mismatch_count:
+        reasons.append("size_mismatch")
+    if body_drift_warning_count > 0:
+        reasons.append("body_drift_warnings")
+    if motion_candidate_status == "failed":
+        reasons.append("failed_motion_extraction")
+    if motion_candidate_status == "invalid_report":
+        reasons.append("invalid_motion_candidate_report")
+    if motion_candidate_status == "incomplete":
+        reasons.append("incomplete_motion_candidate")
+    return tuple(reasons)
 
 
 def _report(
