@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this expression-cue package: `52465f8 feat: batch review llm smoke reports`
+- Latest committed checkpoint before this expression-cue-probe package: `b07a7e8 feat: strengthen llm expression cue guidance`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -31,7 +31,7 @@ Latest focused LLM/review tests run on 2026-06-09:
 python -m pytest tests\test_ai_expressor.py tests\test_companion_dialogue_policy.py tests\test_expression_clients.py tests\test_expression_diagnostics.py tests\test_expression_event_pipeline.py tests\test_visual_actions.py tests\test_llm_smoke.py tests\test_llm_smoke_review.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `169 passed`.
+Result: `173 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -39,7 +39,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `665 passed`.
+Result: `669 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -133,6 +133,11 @@ Latest non-confirmation packages completed after the original plan:
   - Rerun artifact after prompt guidance: `artifacts/llm_smoke/deepseek-speech-quality-live-20260609-rerun.json`, `ok=true`, 10 turns, 4 expressions, 4 motions, 0 fallback, 0 speech quality violations, state guard clean.
   - Targeted sadness cue probe: `artifacts/llm_smoke/deepseek-sadness-cue-live-20260609.json`, `ok=true`, expression `sadness`, motions `SwitchDown` and `TouchHead`, state guard clean.
   - All live artifacts stay ignored under `artifacts/llm_smoke/`; no API key or raw provider transcript is committed.
+- `P1-expression-cue-probe-suite` package:
+  - Adds `tools/llm_expression_cue_probe.py` and a reusable report path in `src/guanghe_companion/llm_smoke.py`.
+  - The probe sends five explicit player-like cue cases for `joy`, `sadness`, `sleepy`, `focused`, and `surprised`, then checks typed `visual_actions.expression` ids, fallback use, speech length gates, and state mutation.
+  - First DeepSeek live run hit one transient `provider_error` fallback on the sadness case; rerun artifact `artifacts/llm_smoke/deepseek-expression-cue-probe-20260609-rerun.json` passed with 5/5 cases, no speech quality violations, and clean state guard.
+  - This is a QA/probe tool only. It does not change runtime renderer behavior, state ownership, provider clients, assets, or manifests.
 
 Latest confirmation-gated packages completed after user approval:
 
@@ -248,6 +253,7 @@ Primary files:
 - `src/guanghe_companion/expression_clients.py`
 - `src/guanghe_companion/llm_smoke.py`
 - `tools/llm_dialogue_smoke.py`
+- `tools/llm_expression_cue_probe.py`
 - `tools/review_llm_smoke_report.py`
 - `tests/test_llm_smoke.py`
 - `tests/test_expression_diagnostics.py`

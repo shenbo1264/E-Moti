@@ -5,8 +5,13 @@ from pathlib import Path
 from guanghe_companion.controller import CompanionController
 from guanghe_companion.expression_settings import normalize_expression_settings
 from guanghe_companion.interaction_intents import InteractionIntent
-from guanghe_companion.llm_smoke import run_configured_llm_dialogue_smoke
-from guanghe_companion.llm_smoke import DEFAULT_LLM_SMOKE_PROMPTS
+from guanghe_companion.llm_smoke import (
+    DEFAULT_EXPRESSION_CUE_PROBES,
+    DEFAULT_LLM_SMOKE_PROMPTS,
+    LLMExpressionCueProbeCase,
+    run_configured_llm_dialogue_smoke,
+    run_configured_llm_expression_cue_probes,
+)
 from guanghe_companion.visual_actions import VisualAction
 
 
@@ -40,6 +45,26 @@ def test_default_llm_smoke_prompts_cover_quality_gate_emotional_cues():
     assert "\u60ca\u8bb6" in joined
     assert "\u96be\u8fc7" in joined
     assert "\u56f0\u5026" in joined
+
+
+def test_default_expression_cue_probes_cover_core_emotion_tags():
+    assert [case.case_id for case in DEFAULT_EXPRESSION_CUE_PROBES] == [
+        "joy",
+        "sadness",
+        "sleepy",
+        "focused",
+        "surprised",
+    ]
+    assert [case.expected_expression_id for case in DEFAULT_EXPRESSION_CUE_PROBES] == [
+        "joy",
+        "sadness",
+        "sleepy",
+        "focused",
+        "surprised",
+    ]
+    assert all(any("\u4e00" <= char <= "\u9fff" for char in case.prompt) for case in DEFAULT_EXPRESSION_CUE_PROBES)
+    assert not any("[" in case.prompt or "]" in case.prompt for case in DEFAULT_EXPRESSION_CUE_PROBES)
+    assert not any("motion_hint" in case.prompt for case in DEFAULT_EXPRESSION_CUE_PROBES)
 
 
 def test_configured_llm_dialogue_smoke_uses_llm_path_without_growth_mutation(tmp_path):
@@ -296,6 +321,96 @@ def test_configured_llm_dialogue_smoke_reports_non_growth_state_mutation(tmp_pat
     assert public["growth_before"]["memory_log"] != public["growth_after"]["memory_log"]
 
 
+def test_configured_llm_expression_cue_probes_report_expected_expression_hits(tmp_path):
+    expressions = iter(("calm", *(case.expected_expression_id for case in DEFAULT_EXPRESSION_CUE_PROBES)))
+
+    class CueExpressor:
+        enabled = True
+        last_fallback_reason = ""
+        last_interaction_intents = ()
+
+        def express(self, request, effect=None):
+            expression_id = next(expressions)
+            self.last_visual_actions = (
+                VisualAction(action_type="expression", action_id=expression_id, ttl_ms=3000, priority=70),
+                VisualAction(action_type="motion", action_id="Default", ttl_ms=1800, priority=60),
+            )
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "I can show " + expression_id,
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=CueExpressor(),
+    )
+    controller.expression_settings = normalize_expression_settings({"enabled": True, "api_key": "sk-secret"})
+
+    report = run_configured_llm_expression_cue_probes(controller, min_speech_chars=4, max_speech_chars=80)
+    public = report.to_public_dict()
+
+    assert report.ok is True
+    assert public["reason"] == ""
+    assert public["probe_count"] == 5
+    assert public["passed_count"] == 5
+    assert public["failed_count"] == 0
+    assert public["state_mutation_check"] == {"ok": True, "changed_fields": []}
+    assert public["growth_before"] == public["growth_after"]
+    assert all(case["ok"] is True for case in public["cases"])
+    assert all(case["expected_expression_id"] in case["expression_ids"] for case in public["cases"])
+    assert "api_key" not in str(public)
+    assert "sk-secret" not in str(public)
+
+
+def test_configured_llm_expression_cue_probes_reports_expected_expression_miss(tmp_path):
+    class CalmOnlyExpressor:
+        enabled = True
+        last_fallback_reason = ""
+        last_interaction_intents = ()
+
+        def express(self, request, effect=None):
+            self.last_visual_actions = (
+                VisualAction(action_type="expression", action_id="calm", ttl_ms=3000, priority=70),
+                VisualAction(action_type="motion", action_id="Default", ttl_ms=1800, priority=60),
+            )
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "I stayed calm.",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=CalmOnlyExpressor(),
+    )
+    controller.expression_settings = normalize_expression_settings({"enabled": True, "api_key": "sk-secret"})
+
+    report = run_configured_llm_expression_cue_probes(
+        controller,
+        cases=(LLMExpressionCueProbeCase("sadness", "我有点难过，请露出难过的神态。", "sadness"),),
+    )
+    public = report.to_public_dict()
+
+    assert report.ok is False
+    assert report.reason == "cue:sadness:expected_expression:sadness"
+    assert public["failed_count"] == 1
+    assert public["cases"][0]["ok"] is False
+    assert public["cases"][0]["reason"] == "expected_expression:sadness"
+    assert public["cases"][0]["expression_ids"] == ["calm"]
+    assert public["state_mutation_check"] == {"ok": True, "changed_fields": []}
+
+
 def test_llm_dialogue_smoke_entrypoint_reads_deepseek_env_without_printing_key(monkeypatch, capsys):
     module = _load_tool(REPO_ROOT / "tools" / "llm_dialogue_smoke.py")
     captured = {}
@@ -400,3 +515,32 @@ def test_llm_dialogue_smoke_dry_run_reports_missing_required_key_without_calling
     assert payload["dry_run"] is True
     assert payload["would_call_api"] is False
     assert payload["api_key_set"] is False
+
+
+def test_llm_expression_cue_probe_entrypoint_writes_report_without_printing_key(monkeypatch, capsys, tmp_path):
+    module = _load_tool(REPO_ROOT / "tools" / "llm_expression_cue_probe.py")
+    report_path = tmp_path / "cue-probe.json"
+    captured = {}
+
+    class FakeReport:
+        ok = True
+
+        def to_public_dict(self):
+            return {"ok": True, "reason": "", "probe_count": 5}
+
+    def fake_run(settings, **kwargs):
+        captured["settings"] = dict(settings)
+        captured["kwargs"] = kwargs
+        return FakeReport()
+
+    monkeypatch.setattr(module, "run_llm_expression_cue_probes", fake_run)
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-secret")
+
+    assert module.main(["--provider", "deepseek", "--report", str(report_path)]) == 0
+
+    assert captured["settings"]["api_key"] == "sk-secret"
+    assert captured["kwargs"]["min_speech_chars"] == 8
+    assert captured["kwargs"]["max_speech_chars"] == 80
+    stdout_payload = json.loads(capsys.readouterr().out)
+    assert stdout_payload == json.loads(report_path.read_text(encoding="utf-8"))
+    assert "sk-secret" not in report_path.read_text(encoding="utf-8")
