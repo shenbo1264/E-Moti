@@ -84,6 +84,8 @@ Develop original Xingxi portrait assets using generated or commissioned art. Req
 - no copied third-party/IP character assets;
 - no unlicensed Shinsekai, VPet, Bandori, Vocaloid, Miku, Codex pet, or fanwork source assets;
 - preview sheet for human QA.
+- `python tools\portrait_pack_smoke.py ...` can prove a candidate pack loads at runtime, but it does not approve art for default use.
+- `python tools\portrait_promotion_gate.py ...` must pass before new portrait art is referenced by an official runtime `portrait_manifest.json`.
 
 If automated generation is used, preserve prompts and provenance in a dedicated asset note. Do not commit API keys, temporary model outputs, or rejected experiments unless they are intended public assets.
 

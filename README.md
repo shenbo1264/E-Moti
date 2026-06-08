@@ -124,6 +124,15 @@ Portrait candidate validation before manifest promotion:
 python tools\art\validate_portrait_candidates.py path\to\portrait_candidate.json --runtime-manifest assets\companion\original_oc\portrait_manifest.json --contact-sheet artifacts\portrait-candidate-contact-sheet.png
 ```
 
+Portrait character-pack smoke and strict promotion gate:
+
+```powershell
+python tools\portrait_pack_smoke.py path\to\complete_pack --report artifacts\portrait-pack-smoke-report.json --screenshot artifacts\portrait-pack-smoke-window.png
+python tools\portrait_promotion_gate.py path\to\complete_pack --report artifacts\portrait-promotion-report.json
+```
+
+`portrait_pack_smoke.py` proves that a portrait pack can load through the runtime renderer. `portrait_promotion_gate.py` is stricter: it is for final manifest promotion and requires approved candidate metadata, provenance, transparent tall VN portraits, distinct expressions, and distinct neutral blink frames.
+
 LLM expression smoke with DeepSeek or another OpenAI-compatible provider:
 
 ```powershell

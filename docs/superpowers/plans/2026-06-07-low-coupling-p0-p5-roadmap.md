@@ -5,26 +5,25 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest verified non-doc checkpoint: `3a5496e test: guard runtime artifact ignores`
+- Latest verified non-doc checkpoint: `d5e65ef test: add portrait promotion gate`
 - Docs-only sync commits may be newer than this checkpoint; use `git log --oneline --decorate -8` for the absolute current HEAD.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
-- Dirty workspace expected item: `data/companion_save.json` only; do not stage it.
-- Latest focused character library/registry tests run on 2026-06-07:
+- Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
+- Latest focused portrait/art/character gate tests run on 2026-06-08:
 
 ```powershell
-python -m pytest tests\test_app.py tests\test_character_registry.py -q
-python -m pytest tests\test_desktop_pet_smoke.py -q
+python -m pytest tests\test_portrait_promotion_gate.py tests\test_portrait_pack_smoke.py tests\test_art_tools.py tests\test_character_registry.py -q
 ```
 
-Result: `108 passed`; `6 passed`.
+Result: `50 passed`.
 
-Full suite run on 2026-06-07:
+Full suite run on 2026-06-08:
 
 ```powershell
 python -m pytest
 ```
 
-Result: `588 passed`.
+Result: `599 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -70,6 +69,24 @@ Latest non-confirmation packages completed after the original plan:
   - Required ignore patterns now include `data/companion_save.json`, `data/companion_demo_save.json`, `data/dialogue_history.json`, `artifacts/simulation/`, and `tmp/live2d_research/`.
   - `data/companion_save.json` is still a tracked working-tree file in this checkout; removing it from the git index is a separate confirmation boundary.
   - This does not change runtime save behavior, app logic, packaging, or release artifacts.
+- `03a4fb5 chore: stop tracking runtime save`
+  - Removes `data/companion_save.json` from the git index while preserving the local file.
+  - Keeps runtime save data ignored and out of release commits.
+- `d1bc197 feat: tune llm companion performance prompts`
+  - Adds compact performance guidance so LLM output reads more like a visual-novel desktop companion and less like a task bot.
+  - DeepSeek live smoke was written only to ignored `artifacts/llm_smoke/`.
+  - State mutation guard stayed clean.
+- `c2d9e73 test: add portrait pack smoke check`
+  - Adds `tools/portrait_pack_smoke.py` to verify that a complete portrait character pack loads through the existing runtime renderer.
+  - Reports backend, spirit surface visibility, sprite fallback state, blink sequence, and optional screenshot path.
+  - This is a runtime-loadability check, not art approval.
+- `bfbfea1 fix: load cjk fonts for desktop smoke`
+  - Explicitly loads Windows CJK font files for PySide6 offscreen smoke so Chinese UI text renders in screenshots.
+  - Does not change renderer behavior, assets, LLM, or state.
+- `d5e65ef test: add portrait promotion gate`
+  - Adds `tools/portrait_promotion_gate.py` as a stricter final-art gate before official manifest promotion.
+  - Requires approved candidate metadata, provenance, transparent tall VN portraits, distinct expression open frames, and distinct neutral blink frames.
+  - The current ignored runtime candidate pack fails this gate, so it remains smoke-only and is not promotion-ready.
 
 Latest confirmation-gated packages completed after user approval:
 
@@ -211,6 +228,7 @@ Acceptance:
 
 ```powershell
 python -m pytest tests\test_art_tools.py tests\test_character_registry.py tests\test_spirit_stage.py -q
+python tools\portrait_promotion_gate.py path\to\complete_pack --report artifacts\portrait-promotion-report.json
 python tools\validate_character_pack.py assets\companion\original_oc
 python -m pytest
 ```
@@ -243,6 +261,7 @@ Primary files after approval only:
 Acceptance after manifest integration:
 
 ```powershell
+python tools\portrait_promotion_gate.py path\to\approved_pack --report artifacts\portrait-promotion-report.json
 python -m json.tool assets\companion\original_oc\portrait_manifest.json
 python tools\validate_character_pack.py assets\companion\original_oc
 python -m pytest tests\test_spirit_stage.py tests\test_character_registry.py tests\test_app.py tests\test_desktop_pet_smoke.py -q
@@ -386,6 +405,8 @@ Completed deliverables for `P3-art-candidate`:
 - default `portrait_manifest.json` is not changed until human visual QA approves;
 - provenance is currently limited to this plan note and ignored artifact path until human QA decides whether the candidate survives;
 - no third-party IP or reference project assets are copied.
+- ignored runtime candidate pack smoke now passes through `tools\portrait_pack_smoke.py`;
+- strict promotion gate now rejects the same ignored runtime candidate because it lacks `portrait_candidate.json`, lacks provenance, and still uses duplicate placeholder expression images.
 
 Confirmation needed before execution:
 
