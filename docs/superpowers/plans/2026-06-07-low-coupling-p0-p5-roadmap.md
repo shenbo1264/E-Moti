@@ -299,6 +299,8 @@ Latest confirmation-gated packages completed after user approval:
   - `tools/art/clean_portrait_candidate_edges.py` clones ignored candidate directories and removes bright semi-transparent edge-halo pixels from the clone only.
   - Edge-cleaned artifact: `artifacts/portrait-candidate-xingxi-vn-20260607-edge-cleaned/`.
   - Edge cleanup result: `changed_pixel_count=17703`, visual QA `light_edge_alpha_pixel_count=0`, `light_edge_alpha_ratio=0.0`, warnings cleared.
+  - `tools/art/inspect_liveportrait_preflight.py` checks a local external LivePortrait checkout, weights folder, driving clip/template, FFmpeg, and source-pack reference image before manual inference.
+  - Current LivePortrait preflight is an ignored local report only. It does not clone LivePortrait, install dependencies, run inference, export frames, create a candidate, or update runtime manifests.
   - Current edge-cleaned decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, and missing neutral blink frames.
   - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, approved AI-video blink/motion frames, final provenance approval, and manifest integration.
 
@@ -616,6 +618,7 @@ Completed deliverables for `P3-art-candidate`:
 - ignored AI-video source packs can be regenerated from a candidate manifest with `tools\art\create_portrait_video_source_packs_from_candidate.py`;
 - ignored provider-neutral handoff zips can be regenerated with `tools\art\bundle_portrait_video_source_packs.py`;
 - ignored JSON/Markdown next-action reports can be regenerated with `tools\art\inspect_portrait_video_workflow.py`;
+- ignored LivePortrait local setup preflight reports can be regenerated with `tools\art\inspect_liveportrait_preflight.py`;
 - ignored visual QA preview/report can be regenerated with `tools\art\portrait_candidate_visual_qa.py`, including alpha edge metrics and light-edge halo warnings;
 - ignored edge-cleaned candidate clones can be regenerated with `tools\art\clean_portrait_candidate_edges.py`;
 - ignored JSON/Markdown decision brief can be regenerated with `tools\art\portrait_candidate_decision_brief.py`;

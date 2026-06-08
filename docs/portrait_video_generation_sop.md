@@ -80,6 +80,31 @@ Recommended fallback order for this project:
 | Hailuo, Kling, PixVerse, Vidu | Need extra variations after the first routes fail. | Use the same `provider_prompts.md`; verify current account credits and watermark/export rules in the logged-in UI before spending time on batch runs. |
 | Wan2.1 or LTX-Video | Need an open-source image-to-video experiment later. | These routes are heavier than LivePortrait and should stay research-only until a separate local/GPU/cloud workflow is approved: <https://github.com/Wan-Video/Wan2.1>, <https://github.com/Lightricks/ltx-video>. |
 
+## Local LivePortrait Preflight
+
+LivePortrait is an external open-source portrait-animation route, not a project dependency. Keep its checkout, weights, driving clips, videos, and generated frames under ignored local folders until a candidate survives QA.
+
+Recommended local layout:
+
+```text
+tmp/liveportrait_research/LivePortrait/
+tmp/liveportrait_research/drivers/blink_driver.mp4
+artifacts/portrait-video-source/<set_id>/
+```
+
+Before running LivePortrait manually, check the source pack and local external setup:
+
+```powershell
+python tools\art\inspect_liveportrait_preflight.py `
+  artifacts\portrait-video-source\xingxi-vn-neutral-20260608 `
+  --liveportrait-root tmp\liveportrait_research\LivePortrait `
+  --driving tmp\liveportrait_research\drivers\blink_driver.mp4 `
+  --report artifacts\liveportrait-preflight-xingxi-vn-neutral.json `
+  --markdown artifacts\liveportrait-preflight-xingxi-vn-neutral.md
+```
+
+The preflight only reads files. It does not clone LivePortrait, install packages, download weights, run inference, export frames, create a portrait candidate, or update runtime manifests.
+
 For blink and breathing, prefer conservative outputs over cinematic motion:
 
 1. Generate 3-4 seconds only.
