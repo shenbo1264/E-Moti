@@ -86,6 +86,28 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if license_files:
             lines.append("- License files:")
             lines.extend(f"  - `{filename}`" for filename in license_files)
+        report_type = _optional_string(check.get("report_type"))
+        if report_type:
+            lines.append(f"- Report type: `{report_type}`")
+        provider = _optional_string(check.get("provider"))
+        if provider:
+            lines.append(f"- Provider: `{provider}`")
+        model = _optional_string(check.get("model"))
+        if model:
+            lines.append(f"- Model: `{model}`")
+        for key, label in (
+            ("turn_count", "Turns"),
+            ("case_count", "Cue cases"),
+            ("cue_failed_count", "Cue failures"),
+            ("fallback_count", "Fallback turns"),
+            ("issue_count", "Issues"),
+            ("speech_quality_violation_count", "Speech quality violations"),
+        ):
+            value = _optional_int(check.get(key))
+            if value is not None:
+                lines.append(f"- {label}: `{value}`")
+        if isinstance(check.get("state_mutation_ok"), bool):
+            lines.append(f"- State guard: `{'passed' if check.get('state_mutation_ok') else 'failed'}`")
         attention_reasons = _string_list(check.get("attention_reasons"))
         if attention_reasons:
             lines.append("- Attention reasons:")
@@ -160,6 +182,13 @@ def _llm_report_check(report_path: Path) -> dict[str, object]:
         "provider": review.provider,
         "model": review.model,
         "report_type": review.report_type,
+        "turn_count": review.turn_count,
+        "case_count": review.case_count,
+        "cue_failed_count": review.cue_failed_count,
+        "fallback_count": review.fallback_count,
+        "issue_count": review.issue_count,
+        "speech_quality_violation_count": _nonnegative_int(review.speech_quality.get("violation_count")),
+        "state_mutation_ok": review.state_mutation_check.get("ok") is not False,
         "errors": [f"{issue.kind}: {issue.message}" for issue in review.issues],
         "warnings": [],
         "next_actions": [] if review.ok else ["review LLM smoke report before release"],
@@ -252,6 +281,10 @@ def _string_list(value: object) -> list[str]:
 
 def _optional_string(value: object) -> str:
     return value if isinstance(value, str) and value else ""
+
+
+def _optional_int(value: object) -> int | None:
+    return value if isinstance(value, int) and value >= 0 else None
 
 
 def _nonnegative_int(value: object) -> int:

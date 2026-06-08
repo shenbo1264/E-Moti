@@ -209,6 +209,16 @@ def test_release_readiness_report_accepts_ready_llm_report(tmp_path: Path):
     assert llm_check["status"] == "passed"
     assert llm_check["provider"] == "deepseek"
     assert llm_check["report_type"] == "expression_cue_probe"
+    assert llm_check["case_count"] == 1
+    assert llm_check["speech_quality_violation_count"] == 0
+    assert llm_check["state_mutation_ok"] is True
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "- Report type: `expression_cue_probe`" in markdown
+    assert "- Provider: `deepseek`" in markdown
+    assert "- Model: `deepseek-v4-flash`" in markdown
+    assert "- Cue cases: `1`" in markdown
+    assert "- Speech quality violations: `0`" in markdown
+    assert "- State guard: `passed`" in markdown
 
 
 def test_release_readiness_report_surfaces_source_pack_distribution_issue(tmp_path: Path):

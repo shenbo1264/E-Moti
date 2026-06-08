@@ -217,6 +217,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes release readiness JSON and Markdown carry source character-pack review metadata from `tools/review_character_pack_status.py`.
   - Source pack checks now expose manual QA status, distribution boundary, provenance files, and license files alongside pass/fail state.
   - This is report explainability only. It does not copy packs, change runtime manifests, alter character switching, or approve any art.
+- `P1/P5-release-readiness-llm-metadata` package:
+  - Makes release readiness JSON and Markdown carry LLM smoke review metadata from `tools/review_llm_smoke_report.py`.
+  - LLM checks now expose provider, model, report type, turn/cue counts, fallback count, issue count, speech-quality violations, and state-guard status.
+  - This is offline report explainability only. It does not call providers, persist prompts, change prompt policy, or alter runtime state.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.
