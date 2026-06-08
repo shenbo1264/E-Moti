@@ -424,7 +424,18 @@ def _suggested_commands(
             "python tools\\art\\inspect_portrait_video_source_frames.py "
             f"{_command_path(source_root)} --report artifacts\\portrait-video-frame-preflight.json"
         )
-    elif source_next_action in {"review_frame_warnings", "replace_invalid_frames"}:
+    elif source_next_action == "review_frame_warnings":
+        commands.append(
+            "python tools\\art\\portrait_video_frame_visual_qa.py "
+            f"{_command_path(source_pack_dir)} "
+            f"--preview artifacts\\portrait-video-frame-qa-{set_id}.png "
+            f"--report artifacts\\portrait-video-frame-qa-{set_id}.json"
+        )
+        commands.append(
+            "python tools\\art\\inspect_portrait_video_source_frames.py "
+            f"{_command_path(source_root)} --report artifacts\\portrait-video-frame-preflight.json"
+        )
+    elif source_next_action == "replace_invalid_frames":
         commands.append(
             "python tools\\art\\inspect_portrait_video_source_frames.py "
             f"{_command_path(source_root)} --report artifacts\\portrait-video-frame-preflight.json"
