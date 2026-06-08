@@ -191,6 +191,41 @@ def _write_portrait_frame_qa_report(path: Path, *, status: str = "ready_with_war
     return path
 
 
+def _write_portrait_frame_preflight_report(path: Path, *, status: str = "ready_with_warnings") -> Path:
+    is_ready = status == "ready"
+    payload = {
+        "ok": True,
+        "source_root": "artifacts\\portrait-video-source",
+        "pack_count": 1,
+        "ready_count": 1 if is_ready else 0,
+        "waiting_count": 0,
+        "insufficient_count": 0,
+        "invalid_count": 0,
+        "warning_count": 0 if is_ready else 1,
+        "items": [
+            {
+                "set_id": "xingxi-vn-neutral-20260608-normalized",
+                "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized",
+                "reference_image": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
+                "frames_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\frames",
+                "frame_count": 60,
+                "readable_frame_count": 60,
+                "invalid_frame_count": 0,
+                "size_mismatch_count": 0,
+                "normalizable_size_mismatch_count": 0,
+                "body_drift_warning_count": 0 if is_ready else 60,
+                "status": status,
+                "next_action": "process_frames" if is_ready else "review_frame_warnings",
+                "warnings": [] if is_ready else ["frame_00001.png body drift 26.6 exceeds 16.0"],
+                "errors": [],
+            }
+        ],
+        "errors": [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_portrait_regeneration_brief_report(path: Path) -> Path:
     payload = {
         "ok": True,
@@ -255,6 +290,7 @@ def _run_tool(
     portrait_workflow_reports: list[Path] | None = None,
     portrait_candidate_reports: list[Path] | None = None,
     liveportrait_preflight_reports: list[Path] | None = None,
+    portrait_frame_preflight_reports: list[Path] | None = None,
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
     portrait_retry_handoff_reports: list[Path] | None = None,
@@ -277,6 +313,8 @@ def _run_tool(
         args.extend(["--portrait-candidate-report", str(report)])
     for report in liveportrait_preflight_reports or []:
         args.extend(["--liveportrait-preflight-report", str(report)])
+    for report in portrait_frame_preflight_reports or []:
+        args.extend(["--portrait-frame-preflight-report", str(report)])
     for report in portrait_frame_qa_reports or []:
         args.extend(["--portrait-frame-qa-report", str(report)])
     for report in portrait_regeneration_brief_reports or []:
@@ -653,6 +691,76 @@ def test_release_readiness_report_surfaces_portrait_frame_visual_qa_issue(tmp_pa
     assert "- Frames: `60`" in markdown
     assert "- Sampled frames: `12`" in markdown
     assert "- Max body drift: `44.72`" in markdown
+
+
+def test_release_readiness_report_accepts_ready_portrait_frame_preflight(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    frame_preflight = _write_portrait_frame_preflight_report(tmp_path / "portrait-frame-preflight.json", status="ready")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_frame_preflight_reports=[frame_preflight],
+    )
+
+    payload = json.loads(result.stdout)
+    preflight_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert preflight_check["id"] == "portrait_frame_preflight"
+    assert preflight_check["ok"] is True
+    assert preflight_check["status"] == "ready"
+    assert preflight_check["source_root"] == "artifacts\\portrait-video-source"
+    assert preflight_check["pack_count"] == 1
+    assert preflight_check["ready_count"] == 1
+    assert preflight_check["warning_pack_count"] == 0
+    assert preflight_check["item_summaries"] == [
+        "xingxi-vn-neutral-20260608-normalized: ready, next_action=process_frames, frames=60"
+    ]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Frame Preflight" in markdown
+    assert "- Source root: `artifacts\\portrait-video-source`" in markdown
+    assert "- Ready packs: `1`" in markdown
+    assert "- Frame preflight items:" in markdown
+    assert "  - `xingxi-vn-neutral-20260608-normalized: ready, next_action=process_frames, frames=60`" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_frame_preflight_warnings(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    frame_preflight = _write_portrait_frame_preflight_report(tmp_path / "portrait-frame-preflight.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_frame_preflight_reports=[frame_preflight],
+    )
+
+    payload = json.loads(result.stdout)
+    preflight_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert preflight_check["id"] == "portrait_frame_preflight"
+    assert preflight_check["ok"] is False
+    assert preflight_check["status"] == "needs_attention"
+    assert preflight_check["pack_count"] == 1
+    assert preflight_check["ready_count"] == 0
+    assert preflight_check["warning_pack_count"] == 1
+    assert preflight_check["item_summaries"] == [
+        "xingxi-vn-neutral-20260608-normalized: ready_with_warnings, next_action=review_frame_warnings, frames=60"
+    ]
+    assert preflight_check["next_actions"] == [
+        "resolve portrait AI-video frame preflight warnings before motion extraction"
+    ]
+    assert "resolve portrait AI-video frame preflight warnings before motion extraction" in payload["next_actions"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "- Warning packs: `1`" in markdown
+    assert "ready_with_warnings, next_action=review_frame_warnings" in markdown
 
 
 def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp_path: Path):

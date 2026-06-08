@@ -207,6 +207,17 @@ python tools\art\inspect_portrait_video_source_frames.py `
 
 The preflight report opens every PNG frame, rejects unreadable frames as `invalid_frames`, reports `insufficient_frames` below 3 readable PNGs, and flags size mismatches or high body drift as `ready_with_warnings` before extraction. Same-aspect lower-resolution frames report `next_action=normalize_frames`; non-normalizable size mismatch, crop, reframe, or body drift reports `next_action=review_frame_warnings`.
 
+To keep the source-frame preflight state visible in release readiness:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-frame-preflight-report artifacts\portrait-video-frame-preflight.json `
+  --json artifacts\release-readiness-with-portrait-frame-preflight.json `
+  --markdown artifacts\release-readiness-with-portrait-frame-preflight.md
+```
+
+Release readiness treats `ready_with_warnings` as not ready for motion extraction, even when the preflight tool itself reports `ok=true`.
+
 When preflight reports warnings, build a visual QA sheet for the specific source pack before deciding whether to normalize, regenerate, or process:
 
 ```powershell

@@ -31,6 +31,7 @@ def build_release_readiness_report(
     portrait_workflow_reports: Iterable[Path | str] = (),
     portrait_candidate_reports: Iterable[Path | str] = (),
     liveportrait_preflight_reports: Iterable[Path | str] = (),
+    portrait_frame_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_qa_reports: Iterable[Path | str] = (),
     portrait_regeneration_brief_reports: Iterable[Path | str] = (),
     portrait_retry_handoff_reports: Iterable[Path | str] = (),
@@ -42,6 +43,7 @@ def build_release_readiness_report(
     checks.extend(_portrait_workflow_report_check(Path(report_path)) for report_path in portrait_workflow_reports)
     checks.extend(_portrait_candidate_report_check(Path(report_path)) for report_path in portrait_candidate_reports)
     checks.extend(_liveportrait_preflight_report_check(Path(report_path)) for report_path in liveportrait_preflight_reports)
+    checks.extend(_portrait_frame_preflight_report_check(Path(report_path)) for report_path in portrait_frame_preflight_reports)
     checks.extend(_portrait_frame_qa_report_check(Path(report_path)) for report_path in portrait_frame_qa_reports)
     checks.extend(
         _portrait_regeneration_brief_report_check(Path(report_path))
@@ -180,6 +182,24 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if attention_reasons:
             lines.append("- Attention reasons:")
             lines.extend(f"  - `{reason}`" for reason in attention_reasons)
+        source_root = _optional_string(check.get("source_root"))
+        if source_root:
+            lines.append(f"- Source root: `{source_root}`")
+        for key, label in (
+            ("pack_count", "Packs"),
+            ("ready_count", "Ready packs"),
+            ("waiting_count", "Waiting packs"),
+            ("insufficient_count", "Insufficient packs"),
+            ("invalid_frame_pack_count", "Invalid frame packs"),
+            ("warning_pack_count", "Warning packs"),
+        ):
+            value = _optional_int(check.get(key))
+            if value is not None:
+                lines.append(f"- {label}: `{value}`")
+        item_summaries = _string_list(check.get("item_summaries"))
+        if item_summaries:
+            lines.append("- Frame preflight items:")
+            lines.extend(f"  - `{item}`" for item in item_summaries)
         set_id = _optional_string(check.get("set_id"))
         if set_id:
             lines.append(f"- Set: `{set_id}`")
@@ -507,6 +527,67 @@ def _portrait_frame_qa_report_check(report_path: Path) -> dict[str, object]:
     }
 
 
+def _portrait_frame_preflight_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_frame_preflight",
+            "label": "Portrait Frame Preflight",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "source_root": "",
+            "pack_count": 0,
+            "ready_count": 0,
+            "waiting_count": 0,
+            "insufficient_count": 0,
+            "invalid_frame_pack_count": 0,
+            "warning_pack_count": 0,
+            "item_summaries": [],
+            "errors": ["portrait frame preflight report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video frame preflight report before release"],
+        }
+    items = _list_of_mappings(payload.get("items"))
+    errors = _string_list(payload.get("errors"))
+    for item in items:
+        errors.extend(_string_list(item.get("errors")))
+    pack_count = _nonnegative_int(payload.get("pack_count"))
+    ready_count = _nonnegative_int(payload.get("ready_count"))
+    waiting_count = _nonnegative_int(payload.get("waiting_count"))
+    insufficient_count = _nonnegative_int(payload.get("insufficient_count"))
+    invalid_count = _nonnegative_int(payload.get("invalid_count"))
+    warning_count = _nonnegative_int(payload.get("warning_count"))
+    ok = (
+        payload.get("ok") is True
+        and pack_count > 0
+        and ready_count == pack_count
+        and waiting_count == 0
+        and insufficient_count == 0
+        and invalid_count == 0
+        and warning_count == 0
+        and not errors
+    )
+    return {
+        "id": "portrait_frame_preflight",
+        "label": "Portrait Frame Preflight",
+        "ok": ok,
+        "status": "ready" if ok else "needs_attention",
+        "path": str(report_path),
+        "source_root": _optional_string(payload.get("source_root")),
+        "pack_count": pack_count,
+        "ready_count": ready_count,
+        "waiting_count": waiting_count,
+        "insufficient_count": insufficient_count,
+        "invalid_frame_pack_count": invalid_count,
+        "warning_pack_count": warning_count,
+        "item_summaries": _frame_preflight_item_summaries(items),
+        "errors": _dedupe(errors),
+        "warnings": [],
+        "next_actions": [] if ok else ["resolve portrait AI-video frame preflight warnings before motion extraction"],
+    }
+
+
 def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, object]:
     payload = _load_json_object(report_path)
     if not isinstance(payload, dict):
@@ -632,6 +713,17 @@ def _llm_directory_attention_reports(payload: dict[str, object]) -> list[str]:
     return summaries
 
 
+def _frame_preflight_item_summaries(items: list[dict[str, object]]) -> list[str]:
+    summaries: list[str] = []
+    for item in items:
+        set_id = _optional_string(item.get("set_id")) or "unknown"
+        status = _optional_string(item.get("status")) or "unknown"
+        next_action = _optional_string(item.get("next_action")) or "inspect_manually"
+        frame_count = _nonnegative_int(item.get("frame_count"))
+        summaries.append(f"{set_id}: {status}, next_action={next_action}, frames={frame_count}")
+    return summaries
+
+
 def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:
     actions: list[str] = []
     for check in checks:
@@ -728,6 +820,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional LivePortrait preflight JSON report to include.",
     )
     parser.add_argument(
+        "--portrait-frame-preflight-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video frame preflight JSON report to include.",
+    )
+    parser.add_argument(
         "--portrait-frame-qa-report",
         action="append",
         default=[],
@@ -760,6 +858,7 @@ def main(argv: list[str] | None = None) -> int:
         portrait_workflow_reports=[Path(item) for item in args.portrait_workflow_report],
         portrait_candidate_reports=[Path(item) for item in args.portrait_candidate_report],
         liveportrait_preflight_reports=[Path(item) for item in args.liveportrait_preflight_report],
+        portrait_frame_preflight_reports=[Path(item) for item in args.portrait_frame_preflight_report],
         portrait_frame_qa_reports=[Path(item) for item in args.portrait_frame_qa_report],
         portrait_regeneration_brief_reports=[Path(item) for item in args.portrait_regeneration_brief_report],
         portrait_retry_handoff_reports=[Path(item) for item in args.portrait_retry_handoff_report],
