@@ -171,8 +171,12 @@ def _render_gemini_prompt(*, character_name: str, reference_image: str, source_l
             "",
             (
                 "Static camera, same character, outfit, pose, and proportions as the reference image. "
+                "Keep the same canvas size and aspect ratio as the reference image. "
+                "Do not crop, zoom out, resize, reframe, or recompose the body. "
+                "Keep the hands, feet, shoulders, hips, and silhouette fixed. "
                 "Create a short 3-4 second transparent-background or clean plain-background portrait video. "
                 "The character should stay in place with subtle breathing, one natural blink, and a very slight hair sway. "
+                "Only eyelids, tiny chest breathing, and slight hair tips may move. "
                 "Keep the face, eyes, hairstyle, outfit details, colors, and silhouette consistent. "
                 "No camera movement, no zoom, no scene change, no hand gesture, no mouth talking, no extra objects, no text, no logo, no watermark."
             ),
@@ -181,6 +185,7 @@ def _render_gemini_prompt(*, character_name: str, reference_image: str, source_l
             "",
             (
                 "Do not redesign the character. Do not change age, body proportion, face shape, hairstyle, eye color, costume, or palette. "
+                "Do not crop, zoom out, resize, reframe, or recompose the body. "
                 "Do not add background characters, speech bubbles, UI, subtitles, glowing borders, red edge halos, blur, heavy motion, or dramatic lighting."
             ),
             "",
@@ -200,13 +205,16 @@ def _render_provider_prompts(*, character_name: str, reference_image: str, sourc
     clean_label = source_label.strip() or "portrait reference"
     shared_prompt = (
         "Use the same reference image as the identity anchor. Static camera, same character, outfit, pose, "
-        "and proportions. Create a short portrait video with subtle breathing, one natural blink, and very slight "
-        "hair sway. No camera movement, no zoom, no scene change, no hand gesture, no mouth talking, no extra objects, "
-        "no text, no logo, no watermark."
+        "and proportions. Keep the same canvas size and aspect ratio as the reference image. Do not crop, zoom out, "
+        "resize, reframe, or recompose the body. Keep the hands, feet, shoulders, hips, and silhouette fixed. "
+        "Create a short portrait video with subtle breathing, one natural blink, and very slight hair sway. "
+        "Only eyelids, tiny chest breathing, and slight hair tips may move. No camera movement, no zoom, no scene "
+        "change, no hand gesture, no mouth talking, no extra objects, no text, no logo, no watermark."
     )
     negative_prompt = (
         "Do not redesign the character. Do not change age, body proportion, face shape, hairstyle, eye color, costume, "
-        "palette, or silhouette. Avoid red edge halos, blur, dramatic lighting, and background characters."
+        "palette, or silhouette. Do not crop, zoom out, resize, reframe, or recompose the body. Avoid red edge halos, "
+        "blur, dramatic lighting, and background characters."
     )
     return "\n".join(
         [
@@ -270,11 +278,12 @@ def _render_provider_prompts(*, character_name: str, reference_image: str, sourc
             "",
             "Use the reference image as the source portrait. Use a short neutral driving clip or template with one "
             "blink, subtle breathing, and minimal hair motion. Keep retargeting strength conservative and disable "
-            "mouth talking if the tool exposes that control. Export a short video, then export PNG frames for this source pack.",
+            "mouth talking if the tool exposes that control. Keep the same canvas size and aspect ratio as the "
+            "reference image. Export a short video, then export PNG frames for this source pack.",
             "",
             "Avoid:",
             "",
-            "Do not use a driving clip with large head turns, speaking mouth shapes, dramatic expression changes, camera movement, or pose changes.",
+            "Do not use a driving clip with large head turns, speaking mouth shapes, dramatic expression changes, camera movement, pose changes, crop, zoom out, resize, reframe, or body recomposition.",
             "",
             "Export request:",
             "",

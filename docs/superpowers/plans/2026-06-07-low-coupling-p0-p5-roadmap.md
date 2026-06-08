@@ -150,6 +150,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/art/batch_process_portrait_video_source_packs.py` reuse frame preflight before reporting or processing source packs.
   - Source packs with size warnings now report `ready_with_warnings`, increase `warning_count`, and are skipped by `--process-ready`.
   - This prevents bad AI-video frames from being auto-processed into failed motion candidates. It does not change extraction thresholds, runtime manifests, renderer behavior, or art approval gates.
+- `P3-video-prompt-locks` package:
+  - Strengthens generated Gemini/provider handoff prompts with same-canvas, no-crop, no-resize, no-reframe, fixed-silhouette, and only-eyelids/breathing/hair-tip motion constraints.
+  - Regenerated the ignored `xingxi-vn-neutral-20260608` source pack prompts and handoff zip so the next external AI-video attempt uses the stricter prompt.
+  - This is source-pack prompt/SOP work only. It does not call providers, change runtime manifests, change art gates, or accept the current bad video frames.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

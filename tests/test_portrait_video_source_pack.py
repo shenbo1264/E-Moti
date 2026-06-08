@@ -39,6 +39,10 @@ def test_create_portrait_video_source_pack_writes_reference_prompt_and_dropzones
     prompt = (output / "gemini_prompt.md").read_text(encoding="utf-8")
     assert "Static camera" in prompt
     assert "same character, outfit, pose, and proportions" in prompt
+    assert "same canvas size and aspect ratio as the reference image" in prompt
+    assert "Do not crop, zoom out, resize, reframe, or recompose the body" in prompt
+    assert "Keep the hands, feet, shoulders, hips, and silhouette fixed" in prompt
+    assert "Only eyelids, tiny chest breathing, and slight hair tips may move" in prompt
     assert "one natural blink" in prompt
     assert "subtle breathing" in prompt
     assert "no text" in prompt
@@ -49,6 +53,9 @@ def test_create_portrait_video_source_pack_writes_reference_prompt_and_dropzones
     assert "Vidu" in provider_prompts
     assert "LivePortrait" in provider_prompts
     assert "Use the same reference image" in provider_prompts
+    assert "same canvas size and aspect ratio as the reference image" in provider_prompts
+    assert "Do not crop, zoom out, resize, reframe, or recompose the body" in provider_prompts
+    assert "Only eyelids, tiny chest breathing, and slight hair tips may move" in provider_prompts
 
     payload = json.loads((output / "source_pack.json").read_text(encoding="utf-8"))
     assert payload["set_id"] == "xingxi-vn-neutral-20260608"

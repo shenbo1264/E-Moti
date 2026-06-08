@@ -110,10 +110,13 @@ Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_
 Ask the selected provider for:
 
 - static camera;
+- same canvas size and aspect ratio as the reference image;
 - same character, outfit, pose, and proportions;
+- no crop, zoom-out, resize, reframe, or body recomposition;
 - subtle breathing;
 - one natural blink;
-- slight hair sway only;
+- hands, feet, shoulders, hips, and silhouette stay fixed;
+- only eyelids, tiny chest breathing, and slight hair tips may move;
 - no text, logo, watermark, scene change, zoom, hand gesture, or mouth talking.
 
 Download the raw video into `video/`. Export sequential PNG frames into `frames/`:
