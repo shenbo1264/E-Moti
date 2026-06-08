@@ -112,6 +112,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
                 lines.append(f"- {label}: `{value}`")
         if isinstance(check.get("state_mutation_ok"), bool):
             lines.append(f"- State guard: `{'passed' if check.get('state_mutation_ok') else 'failed'}`")
+        attention_reports = _string_list(check.get("attention_reports"))
+        if attention_reports:
+            lines.append("- Reports needing attention:")
+            lines.extend(f"  - `{report}`" for report in attention_reports)
         attention_reasons = _string_list(check.get("attention_reasons"))
         if attention_reasons:
             lines.append("- Attention reasons:")
@@ -215,6 +219,7 @@ def _llm_report_directory_check(report_path: Path) -> dict[str, object]:
         "passed_count": _nonnegative_int(review.get("passed_count")),
         "needs_attention_count": _nonnegative_int(review.get("needs_attention_count")),
         "invalid_count": _nonnegative_int(review.get("invalid_count")),
+        "attention_reports": _llm_directory_attention_reports(review),
         "errors": _string_list(review.get("errors")),
         "warnings": [],
         "next_actions": [] if ok else ["review LLM smoke artifact directory before release"],
@@ -274,6 +279,23 @@ def _load_json_object(path: Path) -> dict[str, object] | None:
     except (OSError, UnicodeDecodeError, json.JSONDecodeError):
         return None
     return payload if isinstance(payload, dict) else None
+
+
+def _llm_directory_attention_reports(payload: dict[str, object]) -> list[str]:
+    reports = _list_of_mappings(payload.get("reports"))
+    summaries: list[str] = []
+    for item in reports:
+        status = _optional_string(item.get("status")) or "unknown"
+        if status == "passed":
+            continue
+        path_name = Path(_optional_string(item.get("path"))).name or "unknown"
+        issue_count = _nonnegative_int(item.get("issue_count"))
+        reason = _optional_string(item.get("reason"))
+        summary = f"{path_name}: {status}, issues={issue_count}"
+        if reason:
+            summary += f", reason={reason}"
+        summaries.append(summary)
+    return summaries
 
 
 def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:

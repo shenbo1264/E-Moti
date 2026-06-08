@@ -249,6 +249,35 @@ def test_release_readiness_report_accepts_ready_llm_report_directory(tmp_path: P
     assert "- Invalid reports: `0`" in markdown
 
 
+def test_release_readiness_report_summarizes_llm_directory_attention_reports(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    llm_dir = tmp_path / "llm-smoke"
+    llm_dir.mkdir()
+    _write_llm_report(llm_dir / "llm-cue-ok.json", ok=True)
+    _write_llm_report(llm_dir / "llm-cue-failing.json", ok=False)
+
+    result = _run_tool(character_pack, app_dir, installer, tmp_path, llm_reports=[llm_dir])
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    llm_check = payload["checks"][2]
+    assert llm_check["id"] == "llm_report_directory"
+    assert llm_check["status"] == "needs_attention"
+    assert llm_check["report_count"] == 2
+    assert llm_check["passed_count"] == 1
+    assert llm_check["needs_attention_count"] == 1
+    assert llm_check["attention_reports"] == [
+        "llm-cue-failing.json: needs_attention, issues=2, reason=cue:sadness:expected_expression:sadness"
+    ]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "- Reports needing attention:" in markdown
+    assert (
+        "  - `llm-cue-failing.json: needs_attention, issues=2, "
+        "reason=cue:sadness:expected_expression:sadness`"
+    ) in markdown
+
+
 def test_release_readiness_report_surfaces_source_pack_distribution_issue(tmp_path: Path):
     character_pack = _copy_original_pack(tmp_path / "source")
     (character_pack / "LICENSE.md").unlink()
