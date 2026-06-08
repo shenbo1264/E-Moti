@@ -128,6 +128,22 @@ def test_build_portrait_candidate_visual_qa_writes_preview_and_metrics(tmp_path:
         assert image.height >= 640
 
 
+def test_inspect_portrait_candidate_visual_qa_does_not_write_preview(tmp_path: Path):
+    from tools.art.portrait_candidate_visual_qa import inspect_portrait_candidate_visual_qa
+    from tools.art.prepare_portrait_candidate import prepare_portrait_candidate
+
+    source = tmp_path / "source.png"
+    candidate = tmp_path / "portrait-candidate"
+    _write_rgb_source(source)
+    prepare_portrait_candidate(source, candidate)
+
+    report = inspect_portrait_candidate_visual_qa(candidate / "portrait_candidate.json")
+
+    assert report.ok is True
+    assert report.preview_path == ""
+    assert report.images[0]["label"] == "neutral.open"
+
+
 def test_portrait_candidate_visual_qa_cli_runs_from_repo_root(tmp_path: Path):
     from tools.art.prepare_portrait_candidate import prepare_portrait_candidate
 

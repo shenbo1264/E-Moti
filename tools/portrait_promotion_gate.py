@@ -12,11 +12,14 @@ from PIL import Image, UnidentifiedImageError
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SRC_ROOT = REPO_ROOT / "src"
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from guanghe_companion.character_registry import REQUIRED_PORTRAIT_EXPRESSIONS, validate_character_pack_dir
 from guanghe_companion.spirit_stage import PortraitManifestError, load_portrait_manifest
+from tools.art.portrait_candidate_visual_qa import inspect_portrait_candidate_visual_qa
 
 MAX_PROMOTION_IMAGE_WIDTH = 4096
 MAX_PROMOTION_IMAGE_HEIGHT = 4096
@@ -30,6 +33,7 @@ class PortraitPromotionReport:
     path: str
     image_count: int
     errors: tuple[str, ...]
+    warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -38,12 +42,14 @@ class PortraitPromotionReport:
             "path": self.path,
             "image_count": self.image_count,
             "errors": list(self.errors),
+            "warnings": list(self.warnings),
         }
 
 
 def validate_portrait_promotion_candidate(pack_dir: Path | str) -> PortraitPromotionReport:
     root = Path(pack_dir)
     errors: list[str] = []
+    warnings: list[str] = []
     pack_report = validate_character_pack_dir(root, source="promotion_candidate")
     errors.extend(f"character pack: {error}" for error in pack_report.errors)
 
@@ -63,6 +69,7 @@ def validate_portrait_promotion_candidate(pack_dir: Path | str) -> PortraitPromo
     _validate_promotion_images(image_entries, errors)
     _validate_expression_distinctness(image_entries, errors)
     _validate_neutral_blink_frames(image_entries, errors)
+    _collect_visual_qa_warnings(root / "portrait_candidate.json", warnings)
 
     return PortraitPromotionReport(
         ok=not errors,
@@ -70,6 +77,7 @@ def validate_portrait_promotion_candidate(pack_dir: Path | str) -> PortraitPromo
         path=str(root),
         image_count=len({path.resolve() for _, path in image_entries}),
         errors=tuple(errors),
+        warnings=tuple(warnings),
     )
 
 
@@ -187,6 +195,16 @@ def _validate_neutral_blink_frames(entries: list[tuple[str, Path]], errors: list
     digests.discard("")
     if len(digests) != len(blink_entries):
         errors.append("neutral blink frames must be visually distinct before promotion")
+
+
+def _collect_visual_qa_warnings(candidate_manifest_path: Path, warnings: list[str]) -> None:
+    report = inspect_portrait_candidate_visual_qa(candidate_manifest_path)
+    if not report.ok:
+        return
+    for image_report in report.images:
+        label = image_report.get("label", "")
+        for warning in image_report.get("warnings", []):
+            warnings.append(f"portrait visual qa warning: {label}: {warning}")
 
 
 def _image_digest(path: Path) -> str:

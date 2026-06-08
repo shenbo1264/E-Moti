@@ -147,6 +147,15 @@ def _write_promotion_pack(root: Path, *, approved: bool = True, duplicate_expres
     return pack_dir
 
 
+def _overwrite_light_halo_portrait(path: Path) -> None:
+    image = Image.new("RGBA", (256, 512), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((70, 26, 186, 492), radius=30, fill=(248, 248, 248, 128))
+    draw.rounded_rectangle((78, 34, 178, 484), radius=24, fill=(80, 120, 180, 255))
+    draw.line((100, 138, 156, 138), fill=(12, 18, 32, 255), width=4)
+    image.save(path)
+
+
 def test_portrait_promotion_gate_accepts_approved_distinct_vn_pack(tmp_path: Path):
     from tools.portrait_promotion_gate import validate_portrait_promotion_candidate
 
@@ -157,7 +166,21 @@ def test_portrait_promotion_gate_accepts_approved_distinct_vn_pack(tmp_path: Pat
     assert report.ok is True
     assert report.character_id == "xingxi_vn_promotion_candidate"
     assert report.errors == ()
+    assert report.warnings == ()
     assert report.image_count == 8
+
+
+def test_portrait_promotion_gate_reports_visual_qa_warnings_without_blocking(tmp_path: Path):
+    from tools.portrait_promotion_gate import validate_portrait_promotion_candidate
+
+    pack_dir = _write_promotion_pack(tmp_path)
+    _overwrite_light_halo_portrait(pack_dir / "portraits" / "neutral_open.png")
+
+    report = validate_portrait_promotion_candidate(pack_dir)
+
+    assert report.ok is True
+    assert report.errors == ()
+    assert "portrait visual qa warning: neutral.open: light_edge_halo_risk" in report.warnings
 
 
 def test_portrait_promotion_gate_requires_human_approval_flags(tmp_path: Path):
@@ -211,3 +234,4 @@ def test_portrait_promotion_gate_cli_writes_report_from_repo_root(tmp_path: Path
     payload = json.loads(report_path.read_text(encoding="utf-8"))
     assert payload["ok"] is True
     assert payload["image_count"] == 8
+    assert payload["warnings"] == []

@@ -53,6 +53,32 @@ def build_portrait_candidate_visual_qa(
     preview_path: Path | str,
     report_path: Path | str | None = None,
 ) -> PortraitCandidateVisualQaReport:
+    return _build_portrait_candidate_visual_qa(
+        candidate_manifest_path,
+        preview_path=preview_path,
+        report_path=report_path,
+        write_preview=True,
+    )
+
+
+def inspect_portrait_candidate_visual_qa(
+    candidate_manifest_path: Path | str,
+) -> PortraitCandidateVisualQaReport:
+    return _build_portrait_candidate_visual_qa(
+        candidate_manifest_path,
+        preview_path="",
+        report_path=None,
+        write_preview=False,
+    )
+
+
+def _build_portrait_candidate_visual_qa(
+    candidate_manifest_path: Path | str,
+    *,
+    preview_path: Path | str,
+    report_path: Path | str | None,
+    write_preview: bool,
+) -> PortraitCandidateVisualQaReport:
     manifest = Path(candidate_manifest_path)
     preview = Path(preview_path)
     errors: list[str] = []
@@ -64,13 +90,13 @@ def build_portrait_candidate_visual_qa(
     for image_report in image_reports:
         errors.extend(str(error) for error in image_report.get("errors", []))
 
-    if not errors:
+    if write_preview and not errors:
         _write_visual_preview(image_entries, preview)
 
     report = PortraitCandidateVisualQaReport(
         ok=not errors,
         manifest_path=str(manifest),
-        preview_path=str(preview) if not errors else "",
+        preview_path=str(preview) if write_preview and not errors else "",
         image_count=len(image_entries),
         images=image_reports,
         errors=tuple(errors),

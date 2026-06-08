@@ -425,7 +425,8 @@ Completed deliverables for `P3-art-candidate`:
 - ignored visual QA preview/report can be regenerated with `tools\art\portrait_candidate_visual_qa.py`, including alpha edge metrics and light-edge halo warnings;
 - candidate directory remains ignored and is not bundled into runtime assets.
 - ignored runtime candidate pack smoke remains a separate renderer-loadability check;
-- strict promotion gate remains reserved for a complete approved portrait pack. The prepared neutral-only candidate is not promotion-ready because it lacks expression variants, blink frames, final provenance approval, edge cleanup, and manifest integration.
+- strict promotion gate remains reserved for a complete approved portrait pack. It now reports visual QA warnings such as `light_edge_halo_risk` without auto-failing the pack, because final edge quality still needs human art approval.
+- the prepared neutral-only candidate is not promotion-ready because it lacks expression variants, blink frames, final provenance approval, edge cleanup, and manifest integration.
 
 Confirmation needed before execution:
 

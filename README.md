@@ -135,7 +135,7 @@ python tools\portrait_pack_smoke.py path\to\complete_pack --report artifacts\por
 python tools\portrait_promotion_gate.py path\to\complete_pack --report artifacts\portrait-promotion-report.json
 ```
 
-`portrait_pack_smoke.py` proves that a portrait pack can load through the runtime renderer. `portrait_promotion_gate.py` is stricter: it is for final manifest promotion and requires approved candidate metadata, provenance, transparent tall VN portraits, distinct expressions, and distinct neutral blink frames.
+`portrait_pack_smoke.py` proves that a portrait pack can load through the runtime renderer. `portrait_promotion_gate.py` is stricter: it is for final manifest promotion and requires approved candidate metadata, provenance, transparent tall VN portraits, distinct expressions, and distinct neutral blink frames. Its JSON report can also include non-blocking visual QA warnings such as light-edge halo risk; those warnings do not replace human art approval.
 
 LLM expression smoke with DeepSeek or another OpenAI-compatible provider:
 
