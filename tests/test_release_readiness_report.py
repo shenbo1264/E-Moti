@@ -170,6 +170,27 @@ def _write_liveportrait_preflight_report(path: Path, *, ok: bool = False) -> Pat
     return path
 
 
+def _write_portrait_frame_qa_report(path: Path, *, status: str = "ready_with_warnings") -> Path:
+    payload = {
+        "ok": True,
+        "source_pack_dir": "artifacts/portrait-video-source/xingxi-vn-neutral-20260608-normalized",
+        "set_id": "xingxi-vn-neutral-20260608-normalized",
+        "status": status,
+        "next_action": "review_frame_warnings" if status != "ready" else "process_frames",
+        "preview_path": "artifacts/portrait-video-frame-qa-xingxi-vn-neutral-normalized.png",
+        "reference_image": "artifacts/portrait-video-source/xingxi-vn-neutral-20260608-normalized/reference/neutral_open.png",
+        "reference_size": [1024, 1536],
+        "frame_count": 60,
+        "sampled_frame_count": 12,
+        "size_mismatch_count": 0,
+        "max_body_drift": 44.72 if status != "ready" else 8.2,
+        "frames": [],
+        "errors": [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _run_tool(
     character_pack: Path,
     app_dir: Path,
@@ -180,6 +201,7 @@ def _run_tool(
     portrait_workflow_reports: list[Path] | None = None,
     portrait_candidate_reports: list[Path] | None = None,
     liveportrait_preflight_reports: list[Path] | None = None,
+    portrait_frame_qa_reports: list[Path] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     args = [
         sys.executable,
@@ -199,6 +221,8 @@ def _run_tool(
         args.extend(["--portrait-candidate-report", str(report)])
     for report in liveportrait_preflight_reports or []:
         args.extend(["--liveportrait-preflight-report", str(report)])
+    for report in portrait_frame_qa_reports or []:
+        args.extend(["--portrait-frame-qa-report", str(report)])
     args.extend(
         [
             "--json",
@@ -530,3 +554,42 @@ def test_release_readiness_report_surfaces_liveportrait_preflight_issue(tmp_path
     assert "  - `pretrained_weights/liveportrait/base_models/appearance_feature_extractor.pth`" in markdown
     assert "- Suggested commands:" in markdown
     assert "  - `New-Item -ItemType Directory -Force tmp\\liveportrait_research\\drivers`" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_frame_visual_qa_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    frame_qa_report = _write_portrait_frame_qa_report(tmp_path / "portrait-frame-qa.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_frame_qa_reports=[frame_qa_report],
+    )
+
+    payload = json.loads(result.stdout)
+    frame_qa_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert frame_qa_check["id"] == "portrait_frame_visual_qa"
+    assert frame_qa_check["ok"] is False
+    assert frame_qa_check["status"] == "ready_with_warnings"
+    assert frame_qa_check["set_id"] == "xingxi-vn-neutral-20260608-normalized"
+    assert frame_qa_check["preview_path"] == "artifacts/portrait-video-frame-qa-xingxi-vn-neutral-normalized.png"
+    assert frame_qa_check["frame_count"] == 60
+    assert frame_qa_check["sampled_frame_count"] == 12
+    assert frame_qa_check["size_mismatch_count"] == 0
+    assert frame_qa_check["max_body_drift"] == 44.72
+    assert frame_qa_check["next_actions"] == [
+        "review portrait AI-video frame visual QA before motion extraction"
+    ]
+    assert "review portrait AI-video frame visual QA before motion extraction" in payload["next_actions"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Frame Visual QA" in markdown
+    assert "- Set: `xingxi-vn-neutral-20260608-normalized`" in markdown
+    assert "- Preview: `artifacts/portrait-video-frame-qa-xingxi-vn-neutral-normalized.png`" in markdown
+    assert "- Frames: `60`" in markdown
+    assert "- Sampled frames: `12`" in markdown
+    assert "- Max body drift: `44.72`" in markdown

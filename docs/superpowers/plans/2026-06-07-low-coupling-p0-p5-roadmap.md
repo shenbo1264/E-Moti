@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this workflow frame QA command package: `40d62b9 feat: add portrait video frame visual qa`
+- Latest committed checkpoint before this frame QA readiness package: `e6436cd feat: suggest frame visual qa in workflow`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -44,10 +44,10 @@ Result: `146 passed`.
 Latest focused release-readiness/report tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_portrait_video_workflow_status.py tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_visual_qa.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `20 passed`.
+Result: `17 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -55,7 +55,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `709 passed`.
+Result: `710 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -225,6 +225,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/art/inspect_portrait_video_workflow.py` emit `portrait_video_frame_visual_qa.py` commands when a source pack needs `review_frame_warnings`.
   - Current workflow Markdown can now route an operator from warning summary to the exact ignored frame QA PNG/JSON paths for that set.
   - This is report guidance only. It does not run visual QA automatically, edit frames, create motion candidates, call providers, update runtime manifests, or approve generated assets.
+- `P3/P5-release-readiness-frame-visual-qa` package:
+  - Extends `tools/release_readiness_report.py` with repeatable `--portrait-frame-qa-report` inputs.
+  - Release readiness can now include existing frame visual QA status, set id, preview path, frame count, sampled frame count, size mismatch count, and max body drift before motion extraction.
+  - This is offline report aggregation only. It does not run visual QA, edit frames, create motion candidates, call providers, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

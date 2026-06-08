@@ -212,11 +212,20 @@ When preflight reports warnings, build a visual QA sheet for the specific source
 ```powershell
 python tools\art\portrait_video_frame_visual_qa.py `
   artifacts\portrait-video-source\xingxi-vn-neutral-20260608-normalized `
-  --preview artifacts\portrait-video-frame-qa-xingxi-vn-neutral-normalized.png `
-  --report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-normalized.json
+  --preview artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.png `
+  --report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json
 ```
 
 The sheet samples the reference and exported frames, and the JSON report records frame sizes plus body-drift values when the frame size matches the reference. It is a human QA aid only; it does not edit frames, create motion candidates, or approve assets.
+
+To keep that frame QA result visible in release readiness:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-frame-qa-report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json `
+  --json artifacts\release-readiness-with-portrait-frame-qa.json `
+  --markdown artifacts\release-readiness-with-portrait-frame-qa.md
+```
 
 If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
 

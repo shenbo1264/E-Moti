@@ -31,6 +31,7 @@ def build_release_readiness_report(
     portrait_workflow_reports: Iterable[Path | str] = (),
     portrait_candidate_reports: Iterable[Path | str] = (),
     liveportrait_preflight_reports: Iterable[Path | str] = (),
+    portrait_frame_qa_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -39,6 +40,7 @@ def build_release_readiness_report(
     checks.extend(_portrait_workflow_report_check(Path(report_path)) for report_path in portrait_workflow_reports)
     checks.extend(_portrait_candidate_report_check(Path(report_path)) for report_path in portrait_candidate_reports)
     checks.extend(_liveportrait_preflight_report_check(Path(report_path)) for report_path in liveportrait_preflight_reports)
+    checks.extend(_portrait_frame_qa_report_check(Path(report_path)) for report_path in portrait_frame_qa_reports)
     ok = all(check["ok"] is True for check in checks)
     return {
         "ok": ok,
@@ -153,6 +155,23 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if attention_reasons:
             lines.append("- Attention reasons:")
             lines.extend(f"  - `{reason}`" for reason in attention_reasons)
+        set_id = _optional_string(check.get("set_id"))
+        if set_id:
+            lines.append(f"- Set: `{set_id}`")
+        preview_path = _optional_string(check.get("preview_path"))
+        if preview_path:
+            lines.append(f"- Preview: `{preview_path}`")
+        for key, label in (
+            ("frame_count", "Frames"),
+            ("sampled_frame_count", "Sampled frames"),
+            ("size_mismatch_count", "Size mismatches"),
+        ):
+            value = _optional_int(check.get(key))
+            if value is not None:
+                lines.append(f"- {label}: `{value}`")
+        max_body_drift = _optional_float(check.get("max_body_drift"))
+        if max_body_drift is not None:
+            lines.append(f"- Max body drift: `{max_body_drift}`")
         driving_status = _optional_string(check.get("driving_status"))
         if driving_status:
             lines.append(f"- Driving status: `{driving_status}`")
@@ -407,6 +426,47 @@ def _liveportrait_preflight_report_check(report_path: Path) -> dict[str, object]
     }
 
 
+def _portrait_frame_qa_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_frame_visual_qa",
+            "label": "Portrait Frame Visual QA",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "set_id": "",
+            "preview_path": "",
+            "frame_count": 0,
+            "sampled_frame_count": 0,
+            "size_mismatch_count": 0,
+            "max_body_drift": 0.0,
+            "errors": ["portrait frame visual QA report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video frame visual QA report before release"],
+        }
+    status = _optional_string(payload.get("status")) or "unknown"
+    ok = payload.get("ok") is True and status == "ready"
+    return {
+        "id": "portrait_frame_visual_qa",
+        "label": "Portrait Frame Visual QA",
+        "ok": ok,
+        "status": "ready" if ok else status,
+        "path": str(report_path),
+        "set_id": _optional_string(payload.get("set_id")),
+        "source_pack_dir": _optional_string(payload.get("source_pack_dir")),
+        "preview_path": _optional_string(payload.get("preview_path")),
+        "reference_size": _int_list(payload.get("reference_size")),
+        "frame_count": _nonnegative_int(payload.get("frame_count")),
+        "sampled_frame_count": _nonnegative_int(payload.get("sampled_frame_count")),
+        "size_mismatch_count": _nonnegative_int(payload.get("size_mismatch_count")),
+        "max_body_drift": _nonnegative_float(payload.get("max_body_drift")),
+        "errors": _string_list(payload.get("errors")),
+        "warnings": [],
+        "next_actions": [] if ok else ["review portrait AI-video frame visual QA before motion extraction"],
+    }
+
+
 def _load_json_object(path: Path) -> dict[str, object] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -469,6 +529,10 @@ def _optional_int(value: object) -> int | None:
     return value if isinstance(value, int) and value >= 0 else None
 
 
+def _optional_float(value: object) -> float | None:
+    return value if isinstance(value, float) and value >= 0 else None
+
+
 def _int_list(value: object) -> list[int]:
     if not isinstance(value, list):
         return []
@@ -477,6 +541,12 @@ def _int_list(value: object) -> list[int]:
 
 def _nonnegative_int(value: object) -> int:
     return value if isinstance(value, int) and value >= 0 else 0
+
+
+def _nonnegative_float(value: object) -> float:
+    if isinstance(value, int) and value >= 0:
+        return float(value)
+    return value if isinstance(value, float) and value >= 0 else 0.0
 
 
 def _write_text(path: str, text: str) -> None:
@@ -517,6 +587,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=[],
         help="Optional LivePortrait preflight JSON report to include.",
     )
+    parser.add_argument(
+        "--portrait-frame-qa-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video frame visual QA JSON report to include.",
+    )
     parser.add_argument("--json", default="", help="Optional JSON output path.")
     parser.add_argument("--markdown", default="", help="Optional Markdown output path.")
     return parser.parse_args(argv)
@@ -532,6 +608,7 @@ def main(argv: list[str] | None = None) -> int:
         portrait_workflow_reports=[Path(item) for item in args.portrait_workflow_report],
         portrait_candidate_reports=[Path(item) for item in args.portrait_candidate_report],
         liveportrait_preflight_reports=[Path(item) for item in args.liveportrait_preflight_report],
+        portrait_frame_qa_reports=[Path(item) for item in args.portrait_frame_qa_report],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")
