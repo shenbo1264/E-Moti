@@ -159,3 +159,35 @@ def test_portrait_candidate_visual_qa_cli_runs_from_repo_root(tmp_path: Path):
     payload = json.loads(result.stdout)
     assert payload["ok"] is True
     assert payload["preview_path"] == str(preview_path)
+
+
+def test_portrait_candidate_visual_qa_flags_light_edge_halo_risk(tmp_path: Path):
+    from tools.art.portrait_candidate_visual_qa import build_portrait_candidate_visual_qa
+
+    candidate = tmp_path / "portrait-candidate"
+    portraits = candidate / "portraits"
+    portraits.mkdir(parents=True)
+    image = Image.new("RGBA", (128, 256), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((36, 24, 92, 232), radius=18, fill=(248, 248, 248, 128))
+    draw.rounded_rectangle((42, 30, 86, 226), radius=14, fill=(40, 68, 120, 255))
+    image.save(portraits / "neutral_open.png")
+    (candidate / "portrait_candidate.json").write_text(
+        json.dumps(
+            {
+                "status": "candidate",
+                "expressions": {"neutral": {"open": "portraits/neutral_open.png"}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = build_portrait_candidate_visual_qa(
+        candidate / "portrait_candidate.json",
+        preview_path=tmp_path / "preview.png",
+    )
+
+    image_report = report.images[0]
+    assert image_report["light_edge_alpha_pixel_count"] > 0
+    assert image_report["light_edge_alpha_ratio"] > 0
+    assert "light_edge_halo_risk" in image_report["warnings"]

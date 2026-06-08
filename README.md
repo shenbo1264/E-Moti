@@ -126,7 +126,7 @@ python tools\art\portrait_candidate_visual_qa.py artifacts\portrait-candidate-xi
 python tools\art\validate_portrait_candidates.py path\to\portrait_candidate.json --runtime-manifest assets\companion\original_oc\portrait_manifest.json --contact-sheet artifacts\portrait-candidate-contact-sheet.png
 ```
 
-`prepare_portrait_candidate.py` and `portrait_candidate_visual_qa.py` are for ignored local VN candidate packs only. They create an RGBA cutout, `portrait_candidate.json`, contact sheet, multi-background visual QA preview, and report, but they do not update `portrait_manifest.json`.
+`prepare_portrait_candidate.py` and `portrait_candidate_visual_qa.py` are for ignored local VN candidate packs only. They create an RGBA cutout, `portrait_candidate.json`, contact sheet, multi-background visual QA preview, alpha/edge metrics, and report, but they do not update `portrait_manifest.json`.
 
 Portrait character-pack smoke and strict promotion gate:
 

@@ -23,6 +23,8 @@ BACKGROUND_SPECS = (
     ("light", (246, 247, 250, 255)),
     ("dark", (31, 37, 50, 255)),
 )
+LIGHT_EDGE_LUMA_THRESHOLD = 220
+LIGHT_EDGE_RATIO_WARNING_THRESHOLD = 0.35
 
 
 @dataclass(frozen=True, slots=True)
@@ -148,6 +150,8 @@ def _image_metrics(label: str, path: Path, *, root: Path) -> dict[str, object]:
     transparent_pixels = histogram[0]
     opaque_pixels = histogram[255]
     edge_alpha_pixels = rgba.width * rgba.height - transparent_pixels - opaque_pixels
+    light_edge_alpha_pixels = _count_light_edge_alpha_pixels(rgba)
+    light_edge_ratio = light_edge_alpha_pixels / edge_alpha_pixels if edge_alpha_pixels else 0.0
     corners = [
         alpha.getpixel((0, 0)),
         alpha.getpixel((rgba.width - 1, 0)),
@@ -155,6 +159,9 @@ def _image_metrics(label: str, path: Path, *, root: Path) -> dict[str, object]:
         alpha.getpixel((rgba.width - 1, rgba.height - 1)),
     ]
     bbox = alpha.getbbox()
+    warnings = []
+    if light_edge_ratio >= LIGHT_EDGE_RATIO_WARNING_THRESHOLD:
+        warnings.append("light_edge_halo_risk")
     return {
         "label": label,
         "path": _relative_report_path(path, root),
@@ -165,9 +172,28 @@ def _image_metrics(label: str, path: Path, *, root: Path) -> dict[str, object]:
         "transparent_pixel_count": transparent_pixels,
         "opaque_pixel_count": opaque_pixels,
         "edge_alpha_pixel_count": edge_alpha_pixels,
+        "light_edge_alpha_pixel_count": light_edge_alpha_pixels,
+        "light_edge_alpha_ratio": round(light_edge_ratio, 4),
         "subject_bbox": list(bbox) if bbox else [],
+        "warnings": warnings,
         "errors": errors,
     }
+
+
+def _count_light_edge_alpha_pixels(image: Image.Image) -> int:
+    payload = image.convert("RGBA").tobytes()
+    count = 0
+    for index in range(0, len(payload), 4):
+        alpha = payload[index + 3]
+        if alpha == 0 or alpha == 255:
+            continue
+        red = payload[index]
+        green = payload[index + 1]
+        blue = payload[index + 2]
+        luma = (red * 299 + green * 587 + blue * 114) // 1000
+        if luma >= LIGHT_EDGE_LUMA_THRESHOLD:
+            count += 1
+    return count
 
 
 def _relative_report_path(path: Path, root: Path) -> str:
