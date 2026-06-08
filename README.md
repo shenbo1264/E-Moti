@@ -121,8 +121,11 @@ Generated drafts are not import-ready until final art, icons, spritesheet, prove
 Portrait candidate validation before manifest promotion:
 
 ```powershell
+python tools\art\prepare_portrait_candidate.py artifacts\portrait-candidate-xingxi-vn-20260607.png --output artifacts\portrait-candidate-xingxi-vn-20260607 --report artifacts\portrait-candidate-xingxi-vn-20260607\candidate-preparation-report.json
 python tools\art\validate_portrait_candidates.py path\to\portrait_candidate.json --runtime-manifest assets\companion\original_oc\portrait_manifest.json --contact-sheet artifacts\portrait-candidate-contact-sheet.png
 ```
+
+`prepare_portrait_candidate.py` is for ignored local VN candidate packs only. It creates an RGBA cutout, `portrait_candidate.json`, contact sheet, and report, but it does not update `portrait_manifest.json`.
 
 Portrait character-pack smoke and strict promotion gate:
 

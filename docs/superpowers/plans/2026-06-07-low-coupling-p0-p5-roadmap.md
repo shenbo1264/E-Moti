@@ -49,7 +49,7 @@ Latest non-confirmation packages completed after the original plan:
   - Invalid packs still use the existing validation failure path and do not show the confirmation dialog.
 - `cbe4a71 test: guard local artifact ignores`
   - Adds repository hygiene coverage for local secrets, generated character drafts, LLM smoke artifacts, and portrait candidate artifacts.
-  - `.gitignore` now covers `.env`, `.env.*`, `*.key`, `generated/`, `artifacts/llm_smoke/`, and `artifacts/portrait-candidate*.png`.
+  - `.gitignore` now covers `.env`, `.env.*`, `*.key`, `generated/`, `artifacts/llm_smoke/`, `artifacts/portrait-candidate*.png`, and ignored portrait candidate directories.
   - `git check-ignore` was verified for representative local secret, draft, LLM smoke, and portrait candidate paths.
 - `cbcd7d3 test: tighten portrait candidate gates`
   - Tightens `tools/art/validate_portrait_candidates.py` for Spirit/VN portrait candidates.
@@ -115,6 +115,9 @@ Latest confirmation-gated packages completed after user approval:
   - Image check: `RGB`, `1024x1536`.
   - Visual self-audit: high-body/full-body visual-novel direction, not the previous square chibi smoke baseline.
   - Limitation: not transparent, not an expression set, not runtime-ready, and not referenced by `portrait_manifest.json`.
+  - After user approval, `tools/art/prepare_portrait_candidate.py` produced an ignored alpha candidate pack under `artifacts/portrait-candidate-xingxi-vn-20260607/`.
+  - Prepared candidate validation result: `ok=true`, one `neutral.open` RGBA portrait, transparent corners, and generated contact sheet/report.
+  - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, blink frames, final provenance approval, and manifest integration.
 
 ## Product Rule
 
@@ -415,12 +418,14 @@ Completed deliverables for `P3-art-candidate`:
 - default `portrait_manifest.json` is not changed until human visual QA approves;
 - provenance is currently limited to this plan note and ignored artifact path until human QA decides whether the candidate survives;
 - no third-party IP or reference project assets are copied.
-- ignored runtime candidate pack smoke now passes through `tools\portrait_pack_smoke.py`;
-- strict promotion gate now rejects the same ignored runtime candidate because it lacks `portrait_candidate.json`, lacks provenance, and still uses duplicate placeholder expression images.
+- ignored alpha candidate pack can be regenerated from the approved base artifact with `tools\art\prepare_portrait_candidate.py`;
+- candidate directory remains ignored and is not bundled into runtime assets.
+- ignored runtime candidate pack smoke remains a separate renderer-loadability check;
+- strict promotion gate remains reserved for a complete approved portrait pack. The prepared neutral-only candidate is not promotion-ready because it lacks expression variants, blink frames, final provenance approval, and manifest integration.
 
 Confirmation needed before execution:
 
 - Changing prompt policy, character personality, or expression parser behavior based on the live smoke result.
-- Regenerating, editing, approving, or rejecting the VN portrait candidate.
-- Creating expression variants, blink frames, transparent cutouts, or contact sheets from the candidate.
+- Regenerating, editing, approving, or rejecting the VN portrait candidate beyond the already approved base cutout.
+- Creating expression variants, blink frames, or final contact sheets from the candidate.
 - Updating default runtime portrait manifests.
