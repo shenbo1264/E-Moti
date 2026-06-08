@@ -17,17 +17,70 @@ def _write_reference(path: Path) -> None:
     image.save(path)
 
 
-def _write_frame(path: Path, *, eye: str) -> None:
-    image = Image.new("RGB", (240, 480), (245, 247, 250))
+def _write_frame(path: Path, *, eye: str, size: tuple[int, int] = (240, 480)) -> None:
+    image = Image.new("RGB", size, (245, 247, 250))
     draw = ImageDraw.Draw(image)
-    draw.rounded_rectangle((72, 28, 168, 456), radius=24, fill=(64, 92, 148))
-    draw.ellipse((84, 42, 156, 126), fill=(238, 210, 194))
+    scale_x = size[0] / 240
+    scale_y = size[1] / 480
+    draw.rounded_rectangle(
+        (
+            int(72 * scale_x),
+            int(28 * scale_y),
+            int(168 * scale_x),
+            int(456 * scale_y),
+        ),
+        radius=max(4, int(24 * min(scale_x, scale_y))),
+        fill=(64, 92, 148),
+    )
+    draw.ellipse(
+        (
+            int(84 * scale_x),
+            int(42 * scale_y),
+            int(156 * scale_x),
+            int(126 * scale_y),
+        ),
+        fill=(238, 210, 194),
+    )
     if eye == "open":
-        draw.ellipse((103, 78, 115, 94), fill=(94, 66, 38))
-        draw.ellipse((128, 78, 140, 94), fill=(94, 66, 38))
+        draw.ellipse(
+            (
+                int(103 * scale_x),
+                int(78 * scale_y),
+                int(115 * scale_x),
+                int(94 * scale_y),
+            ),
+            fill=(94, 66, 38),
+        )
+        draw.ellipse(
+            (
+                int(128 * scale_x),
+                int(78 * scale_y),
+                int(140 * scale_x),
+                int(94 * scale_y),
+            ),
+            fill=(94, 66, 38),
+        )
     elif eye == "closed":
-        draw.line((102, 88, 116, 88), fill=(68, 50, 48), width=4)
-        draw.line((127, 88, 141, 88), fill=(68, 50, 48), width=4)
+        draw.line(
+            (
+                int(102 * scale_x),
+                int(88 * scale_y),
+                int(116 * scale_x),
+                int(88 * scale_y),
+            ),
+            fill=(68, 50, 48),
+            width=4,
+        )
+        draw.line(
+            (
+                int(127 * scale_x),
+                int(88 * scale_y),
+                int(141 * scale_x),
+                int(88 * scale_y),
+            ),
+            fill=(68, 50, 48),
+            width=4,
+        )
     image.save(path)
 
 
@@ -91,10 +144,10 @@ def test_inspect_portrait_video_workflow_reports_next_actions(tmp_path: Path):
         "xingxi-waiting-20260608": "present",
     }
     markdown = render_portrait_video_workflow_markdown(report)
-    assert "| Set | Frames | Handoff | Motion Candidate | Next Action |" in markdown
-    assert "| xingxi-ready-20260608 | 4 | present | missing | process_frames |" in markdown
-    assert "| xingxi-short-20260608 | 2 | present | missing | export_more_frames |" in markdown
-    assert "| xingxi-waiting-20260608 | 0 | present | missing | generate_ai_video |" in markdown
+    assert "| Set | Source Status | Frames | Handoff | Motion Candidate | Next Action |" in markdown
+    assert "| xingxi-ready-20260608 | ready | 4 | present | missing | process_frames |" in markdown
+    assert "| xingxi-short-20260608 | insufficient_frames | 2 | present | missing | export_more_frames |" in markdown
+    assert "| xingxi-waiting-20260608 | waiting_for_frames | 0 | present | missing | generate_ai_video |" in markdown
 
 
 def test_inspect_portrait_video_workflow_reports_missing_handoff_first(tmp_path: Path):
@@ -113,6 +166,67 @@ def test_inspect_portrait_video_workflow_reports_missing_handoff_first(tmp_path:
     assert report.missing_handoff_count == 1
     assert report.items[0].handoff_status == "missing"
     assert report.items[0].next_action == "bundle_handoff"
+
+
+def test_inspect_portrait_video_workflow_uses_frame_preflight_for_invalid_frames(tmp_path: Path):
+    from tools.art.bundle_portrait_video_source_packs import bundle_portrait_video_source_packs
+    from tools.art.inspect_portrait_video_workflow import inspect_portrait_video_workflow
+
+    source_root = tmp_path / "portrait-video-source"
+    pack = _write_source_pack(tmp_path, "xingxi-invalid-20260609", frame_count=0)
+    frames = pack / "frames"
+    _write_frame(frames / "frame_0001.png", eye="open")
+    _write_frame(frames / "frame_0002.png", eye="closed")
+    (frames / "frame_0003.png").write_text("not a png", encoding="utf-8")
+    handoff_dir = tmp_path / "handoff"
+    bundle_portrait_video_source_packs(source_root=source_root, output_dir=handoff_dir)
+
+    report = inspect_portrait_video_workflow(
+        source_root=source_root,
+        handoff_dir=handoff_dir,
+        candidate_root=tmp_path / "candidates",
+    )
+
+    assert report.ok is False
+    item = report.items[0]
+    assert item.source_status == "invalid_frames"
+    assert item.frame_count == 3
+    assert item.readable_frame_count == 2
+    assert item.invalid_frame_count == 1
+    assert item.next_action == "replace_invalid_frames"
+    assert any("frame_0003.png" in error for error in item.errors)
+
+
+def test_inspect_portrait_video_workflow_uses_frame_preflight_for_size_warnings(tmp_path: Path):
+    from tools.art.bundle_portrait_video_source_packs import bundle_portrait_video_source_packs
+    from tools.art.inspect_portrait_video_workflow import (
+        inspect_portrait_video_workflow,
+        render_portrait_video_workflow_markdown,
+    )
+
+    source_root = tmp_path / "portrait-video-source"
+    pack = _write_source_pack(tmp_path, "xingxi-warning-20260609", frame_count=0)
+    frames = pack / "frames"
+    _write_frame(frames / "frame_0001.png", eye="open")
+    _write_frame(frames / "frame_0002.png", eye="closed", size=(320, 480))
+    _write_frame(frames / "frame_0003.png", eye="open")
+    handoff_dir = tmp_path / "handoff"
+    bundle_portrait_video_source_packs(source_root=source_root, output_dir=handoff_dir)
+
+    report = inspect_portrait_video_workflow(
+        source_root=source_root,
+        handoff_dir=handoff_dir,
+        candidate_root=tmp_path / "candidates",
+    )
+
+    assert report.ok is True
+    item = report.items[0]
+    assert item.source_status == "ready_with_warnings"
+    assert item.readable_frame_count == 3
+    assert item.size_mismatch_count == 1
+    assert item.next_action == "review_frame_warnings"
+    assert any("frame_0002.png size 320x480 differs from reference 240x480" in warning for warning in item.warnings)
+    assert "| xingxi-warning-20260609 | ready_with_warnings | 3 | present | missing | review_frame_warnings |" in render_portrait_video_workflow_markdown(report)
 
 
 def test_inspect_portrait_video_workflow_cli_writes_report(tmp_path: Path):

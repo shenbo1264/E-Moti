@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest verified checkpoint: `d8c35a7 feat: use ai video provenance wording`
+- Latest committed checkpoint before this workflow-status package: `308ed3d feat: preflight portrait video frames`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -17,21 +17,21 @@ python -m pytest tests\test_repository_hygiene.py tests\test_windows_build_valid
 
 Result: `13 passed`.
 
-Latest focused AI-video workflow tests run on 2026-06-08:
+Latest focused AI-video workflow tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_portrait_video_source_pack_processing.py tests\test_portrait_video_source_pack.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_workflow_status.py tests\test_portrait_video_source_batch.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_portrait_video_workflow_status.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_source_pack_processing.py tests\test_repository_hygiene.py -q
 ```
 
 Result: `18 passed`.
 
-Full suite run on 2026-06-08:
+Full suite run on 2026-06-09:
 
 ```powershell
 python -m pytest
 ```
 
-Result: `652 passed`.
+Result: `658 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -134,9 +134,10 @@ Latest confirmation-gated packages completed after user approval:
   - `tools/art/create_portrait_video_source_pack.py` and `tools/art/create_portrait_video_source_packs_from_candidate.py` generate ignored source-pack folders under `artifacts/portrait-video-source/`.
   - Source packs now include `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, `reference/`, `video/`, and `frames/`, so Pika, Hailuo, Kling, PixVerse, Runway, or Gemini can be used without changing downstream tooling.
   - `tools/art/bundle_portrait_video_source_packs.py` generates ignored handoff zip files under `artifacts/portrait-video-handoff/`, including `AI_VIDEO_HANDOFF_README.md`, the reference image, prompts, and metadata only.
+  - `tools/art/inspect_portrait_video_source_frames.py` preflights exported PNG frames before extraction, rejecting unreadable frames and flagging size mismatches for manual review.
   - `tools/art/batch_process_portrait_video_source_packs.py` reports `waiting_for_frames`, `insufficient_frames`, `ready`, and processed states; it only processes packs with at least 3 exported PNG frames.
-  - `tools/art/inspect_portrait_video_workflow.py` writes ignored JSON/Markdown workflow reports with handoff status, frame count, motion-candidate status, and next action.
-  - Current workflow report: `artifacts/portrait-video-workflow-report.md`, `ok=true`, `frame_count=0`, `handoff_status=present`, `next_action=generate_ai_video`.
+  - `tools/art/inspect_portrait_video_workflow.py` writes ignored JSON/Markdown workflow reports with frame preflight source status, handoff status, frame count, motion-candidate status, and next action.
+  - Current workflow report: `artifacts/portrait-video-workflow-report.md`, `ok=true`, `source_status=waiting_for_frames`, `frame_count=0`, `handoff_status=present`, `next_action=generate_ai_video`.
   - Current decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, missing neutral blink frames, and warning `neutral.open: light_edge_halo_risk`.
   - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, exported AI-video frames, blink frames, final provenance approval, edge cleanup, and manifest integration.
 
@@ -415,7 +416,7 @@ The next high-value packages are:
 
 ```text
 P3-ai-video-generation: use the ignored handoff zip with Pika/Hailuo/Kling/PixVerse/Runway/Gemini, then place exported PNG frames into the matching frames folder
-P3-frame-intake-QA: after frames exist, run batch processing, visual QA, and decision brief without changing the runtime manifest
+P3-frame-intake-QA: after frames exist, run frame preflight, batch processing, visual QA, and decision brief without changing the runtime manifest
 P1-quality-tuning: tune prompt/personality/expression quality after reviewing live smoke output
 P3-visual-QA: approve, reject, or iterate the generated VN portrait candidate
 ```

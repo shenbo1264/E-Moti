@@ -17,6 +17,7 @@ from tools.art.batch_process_portrait_video_source_packs import (  # noqa: E402
     scan_portrait_video_source_packs,
 )
 from tools.art.bundle_portrait_video_source_packs import DEFAULT_OUTPUT_DIR as DEFAULT_HANDOFF_DIR  # noqa: E402
+from tools.art.inspect_portrait_video_source_frames import inspect_portrait_video_source_frames  # noqa: E402
 
 
 @dataclass(frozen=True, slots=True)
@@ -25,11 +26,15 @@ class PortraitVideoWorkflowItem:
     source_pack_dir: str
     source_status: str
     frame_count: int
+    readable_frame_count: int
+    invalid_frame_count: int
+    size_mismatch_count: int
     handoff_zip_path: str
     handoff_status: str
     motion_candidate_dir: str
     motion_candidate_status: str
     next_action: str
+    warnings: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
@@ -38,11 +43,15 @@ class PortraitVideoWorkflowItem:
             "source_pack_dir": self.source_pack_dir,
             "source_status": self.source_status,
             "frame_count": self.frame_count,
+            "readable_frame_count": self.readable_frame_count,
+            "invalid_frame_count": self.invalid_frame_count,
+            "size_mismatch_count": self.size_mismatch_count,
             "handoff_zip_path": self.handoff_zip_path,
             "handoff_status": self.handoff_status,
             "motion_candidate_dir": self.motion_candidate_dir,
             "motion_candidate_status": self.motion_candidate_status,
             "next_action": self.next_action,
+            "warnings": list(self.warnings),
             "errors": list(self.errors),
         }
 
@@ -89,11 +98,18 @@ def inspect_portrait_video_workflow(
     handoff = Path(handoff_dir)
     candidates = Path(candidate_root)
     batch = scan_portrait_video_source_packs(source_root=root)
+    preflight = inspect_portrait_video_source_frames(source_root=root)
+    preflight_items = {item.set_id: item for item in preflight.items}
     errors: list[str] = list(batch.errors)
 
     items: list[PortraitVideoWorkflowItem] = []
     for pack in batch.packs:
-        item = _workflow_item(pack=pack, handoff_dir=handoff, candidate_root=candidates)
+        item = _workflow_item(
+            pack=pack,
+            preflight=preflight_items.get(pack.set_id),
+            handoff_dir=handoff,
+            candidate_root=candidates,
+        )
         errors.extend(item.errors)
         items.append(item)
 
@@ -121,8 +137,8 @@ def render_portrait_video_workflow_markdown(report: PortraitVideoWorkflowReport)
         f"- Insufficient frames: `{report.insufficient_count}`",
         f"- Motion candidates: `{report.motion_candidate_count}`",
         "",
-        "| Set | Frames | Handoff | Motion Candidate | Next Action |",
-        "| --- | ---: | --- | --- | --- |",
+        "| Set | Source Status | Frames | Handoff | Motion Candidate | Next Action |",
+        "| --- | --- | ---: | --- | --- | --- |",
     ]
     for item in report.items:
         lines.append(
@@ -130,6 +146,7 @@ def render_portrait_video_workflow_markdown(report: PortraitVideoWorkflowReport)
             + " | ".join(
                 (
                     _markdown_cell(item.set_id),
+                    _markdown_cell(item.source_status),
                     str(item.frame_count),
                     _markdown_cell(item.handoff_status),
                     _markdown_cell(item.motion_candidate_status),
@@ -152,30 +169,42 @@ def _markdown_cell(value: str) -> str:
 def _workflow_item(
     *,
     pack,
+    preflight,
     handoff_dir: Path,
     candidate_root: Path,
 ) -> PortraitVideoWorkflowItem:
+    source_status = preflight.status if preflight is not None else pack.status
+    frame_count = preflight.frame_count if preflight is not None else pack.frame_count
+    readable_frame_count = preflight.readable_frame_count if preflight is not None else pack.frame_count
+    invalid_frame_count = preflight.invalid_frame_count if preflight is not None else 0
+    size_mismatch_count = preflight.size_mismatch_count if preflight is not None else 0
+    warnings = preflight.warnings if preflight is not None else ()
+    errors = preflight.errors if preflight is not None else pack.errors
     handoff_zip = handoff_dir / f"{pack.set_id}.zip"
     handoff_status = "present" if handoff_zip.is_file() else "missing"
     motion_candidate_dir = candidate_root / f"portrait-candidate-{pack.set_id}-motion"
     motion_candidate_manifest = motion_candidate_dir / "portrait_candidate.json"
     motion_candidate_status = "present" if motion_candidate_manifest.is_file() else "missing"
     next_action = _next_action(
-        source_status=pack.status,
+        source_status=source_status,
         handoff_status=handoff_status,
         motion_candidate_status=motion_candidate_status,
     )
     return PortraitVideoWorkflowItem(
         set_id=pack.set_id,
         source_pack_dir=pack.source_pack_dir,
-        source_status=pack.status,
-        frame_count=pack.frame_count,
+        source_status=source_status,
+        frame_count=frame_count,
+        readable_frame_count=readable_frame_count,
+        invalid_frame_count=invalid_frame_count,
+        size_mismatch_count=size_mismatch_count,
         handoff_zip_path=str(handoff_zip),
         handoff_status=handoff_status,
         motion_candidate_dir=str(motion_candidate_dir),
         motion_candidate_status=motion_candidate_status,
         next_action=next_action,
-        errors=pack.errors,
+        warnings=warnings,
+        errors=errors,
     )
 
 
@@ -184,10 +213,14 @@ def _next_action(*, source_status: str, handoff_status: str, motion_candidate_st
         return "fix_source_pack"
     if handoff_status == "missing":
         return "bundle_handoff"
+    if source_status == "invalid_frames":
+        return "replace_invalid_frames"
     if source_status == "waiting_for_frames":
         return "generate_ai_video"
     if source_status == "insufficient_frames":
         return "export_more_frames"
+    if source_status == "ready_with_warnings":
+        return "review_frame_warnings"
     if source_status == "ready":
         return "review_motion_candidate" if motion_candidate_status == "present" else "process_frames"
     return "inspect_manually"

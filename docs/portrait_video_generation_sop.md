@@ -69,7 +69,7 @@ Each zip contains `reference/`, `gemini_prompt.md`, `provider_prompts.md`, `sour
 
 ## Inspect Workflow Status
 
-To see every source pack, handoff zip, frame count, motion candidate, and next action:
+To see every source pack, frame preflight status, handoff zip, motion candidate, and next action:
 
 ```powershell
 python tools\art\inspect_portrait_video_workflow.py `
@@ -80,7 +80,7 @@ python tools\art\inspect_portrait_video_workflow.py `
   --markdown artifacts\portrait-video-workflow-report.md
 ```
 
-Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_more_frames`, `process_frames`, and `review_motion_candidate`.
+Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_more_frames`, `replace_invalid_frames`, `review_frame_warnings`, `process_frames`, and `review_motion_candidate`.
 
 ## AI Video Output Rules
 
