@@ -7,6 +7,8 @@ import zipfile
 from dataclasses import dataclass
 from pathlib import Path
 
+from PIL import Image, UnidentifiedImageError
+
 
 DEFAULT_SOURCE_ROOT = Path("artifacts") / "portrait-video-source"
 DEFAULT_OUTPUT_DIR = Path("artifacts") / "portrait-video-handoff"
@@ -136,7 +138,14 @@ def _bundle_one_source_pack(*, source_pack: Path, output_dir: Path) -> PortraitV
 
     output_dir.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("AI_VIDEO_HANDOFF_README.md", _handoff_readme(set_id=set_id, source_pack=source_pack))
+        archive.writestr(
+            "AI_VIDEO_HANDOFF_README.md",
+            _handoff_readme(
+                set_id=set_id,
+                source_pack=source_pack,
+                reference_size=_reference_size(metadata, reference_path),
+            ),
+        )
         archive.write(prompt_path, arcname=prompt_rel)
         archive.write(provider_prompts_path, arcname=provider_prompts_rel)
         archive.write(source_pack / "source_pack.json", arcname="source_pack.json")
@@ -183,9 +192,29 @@ def _metadata_path_errors(paths: dict[str, str]) -> tuple[str, ...]:
     return tuple(errors)
 
 
-def _handoff_readme(*, set_id: str, source_pack: Path) -> str:
+def _reference_size(metadata: dict[str, object], reference_path: Path) -> tuple[int, int] | None:
+    value = metadata.get("reference_size")
+    if (
+        isinstance(value, list)
+        and len(value) == 2
+        and isinstance(value[0], int)
+        and isinstance(value[1], int)
+        and value[0] > 0
+        and value[1] > 0
+    ):
+        return value[0], value[1]
+    try:
+        with Image.open(reference_path) as image:
+            image.load()
+            return image.size
+    except (OSError, UnidentifiedImageError):
+        return None
+
+
+def _handoff_readme(*, set_id: str, source_pack: Path, reference_size: tuple[int, int] | None) -> str:
     frames_dir = source_pack / "frames"
     video_dir = source_pack / "video"
+    required_size = f"`{reference_size[0]}x{reference_size[1]}`" if reference_size is not None else "`same as reference image`"
     return "\n".join(
         [
             "# AI Video Portrait Handoff",
@@ -204,6 +233,7 @@ def _handoff_readme(*, set_id: str, source_pack: Path) -> str:
             f"- Put exported PNG frames back into `{frames_dir}`.",
             "- Keep frame names sequential, for example `frame_0001.png`.",
             "- Export PNG frames at the same pixel size as the reference image.",
+            f"- Required frame size: {required_size}.",
             "",
             "Before processing frames:",
             "",

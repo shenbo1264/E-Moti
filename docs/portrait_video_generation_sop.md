@@ -88,7 +88,7 @@ python tools\art\bundle_portrait_video_source_packs.py `
   --report artifacts\portrait-video-handoff-report.json
 ```
 
-Each zip contains `reference/`, `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, and `AI_VIDEO_HANDOFF_README.md`. The README repeats the frame preflight command and tells the operator to regenerate video when frames report `ready_with_warnings`. It does not contain generated videos or exported frames.
+Each zip contains `reference/`, `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, and `AI_VIDEO_HANDOFF_README.md`. The README repeats the exact required frame size, the frame preflight command, and tells the operator to regenerate video when frames report `ready_with_warnings`. It does not contain generated videos or exported frames.
 
 ## Inspect Workflow Status
 

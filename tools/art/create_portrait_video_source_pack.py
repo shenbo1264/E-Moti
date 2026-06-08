@@ -65,6 +65,17 @@ def create_portrait_video_source_pack(
             metadata_path="",
             errors=tuple(errors),
         )
+    reference_size = _image_size(source)
+    if reference_size is None:
+        return PortraitVideoSourcePackReport(
+            ok=False,
+            set_id=set_id,
+            output_dir="",
+            reference_image="",
+            prompt_path="",
+            metadata_path="",
+            errors=("source_image size could not be read",),
+        )
 
     reference_dir = output / "reference"
     frames_dir = output / "frames"
@@ -107,6 +118,7 @@ def create_portrait_video_source_pack(
                 "source_label": source_label,
                 "character_name": character_name,
                 "reference_image": reference_target.relative_to(output).as_posix(),
+                "reference_size": [reference_size[0], reference_size[1]],
                 "prompt_path": "gemini_prompt.md",
                 "provider_prompts_path": "provider_prompts.md",
                 "frames_dir": "frames",
@@ -152,6 +164,15 @@ def _is_png_image(path: Path) -> bool:
     except (OSError, UnidentifiedImageError):
         return False
     return True
+
+
+def _image_size(path: Path) -> tuple[int, int] | None:
+    try:
+        with Image.open(path) as image:
+            image.load()
+            return image.size
+    except (OSError, UnidentifiedImageError):
+        return None
 
 
 def _render_gemini_prompt(*, character_name: str, reference_image: str, source_label: str) -> str:

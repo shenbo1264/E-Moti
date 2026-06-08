@@ -164,6 +164,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/art/process_portrait_video_source_pack.py` run frame preflight before extraction and block any source pack that is not `ready`.
   - Blocked reports include `preflight_status`, `preflight_warnings`, and the preflight next action so direct `next_command` use cannot silently process warned frames.
   - This is a source-pack tooling guard only. It does not change runtime manifests, renderer behavior, extraction thresholds, provider prompts, or art approval gates.
+- `P3-handoff-reference-size` package:
+  - Adds `reference_size` to generated `source_pack.json` metadata and shows the exact required frame size in `AI_VIDEO_HANDOFF_README.md`.
+  - The current ignored neutral source pack now tells operators to export frames at `1024x1536`, matching the reference portrait instead of the rejected `496x744` video output.
+  - This is source-pack metadata/handoff guidance only. It does not call providers, change runtime manifests, process frames, or approve generated assets.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

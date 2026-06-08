@@ -63,6 +63,7 @@ def test_create_portrait_video_source_pack_writes_reference_prompt_and_dropzones
     assert payload["set_id"] == "xingxi-vn-neutral-20260608"
     assert payload["source_label"] == "VN neutral candidate"
     assert payload["reference_image"] == "reference/neutral_open.png"
+    assert payload["reference_size"] == [256, 512]
     assert payload["provider_prompts_path"] == "provider_prompts.md"
     assert payload["frames_dir"] == "frames"
     assert payload["video_dir"] == "video"
