@@ -5,8 +5,8 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest verified non-doc checkpoint: `34328c0 test: add windows build artifact validator`
-- Docs-only sync commits may be newer than this checkpoint; use `git log --oneline --decorate -8` for the absolute current HEAD.
+- Latest verified checkpoint: `d8c35a7 feat: use ai video provenance wording`
+- Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
 - Latest focused Windows build/package tests run on 2026-06-08:
@@ -17,13 +17,21 @@ python -m pytest tests\test_repository_hygiene.py tests\test_windows_build_valid
 
 Result: `13 passed`.
 
+Latest focused AI-video workflow tests run on 2026-06-08:
+
+```powershell
+python -m pytest tests\test_portrait_video_source_pack_processing.py tests\test_portrait_video_source_pack.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_workflow_status.py tests\test_portrait_video_source_batch.py tests\test_repository_hygiene.py -q
+```
+
+Result: `18 passed`.
+
 Full suite run on 2026-06-08:
 
 ```powershell
 python -m pytest
 ```
 
-Result: `604 passed`.
+Result: `652 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -123,8 +131,14 @@ Latest confirmation-gated packages completed after user approval:
   - `tools/art/portrait_candidate_decision_brief.py` summarizes the ignored candidate into JSON/Markdown blockers, warnings, and next human decision text without approving or rejecting the art.
   - `tools/art/review_portrait_candidate.py` runs the candidate validation, contact sheet, visual QA, and decision brief steps together into one ignored review directory.
   - `tools/art/extract_portrait_motion_frames.py` supports the AI-video route by selecting blink and idle candidate frames from exported PNG frame sequences, or from `--video` when local `ffmpeg` is available.
+  - `tools/art/create_portrait_video_source_pack.py` and `tools/art/create_portrait_video_source_packs_from_candidate.py` generate ignored source-pack folders under `artifacts/portrait-video-source/`.
+  - Source packs now include `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, `reference/`, `video/`, and `frames/`, so Pika, Hailuo, Kling, PixVerse, Runway, or Gemini can be used without changing downstream tooling.
+  - `tools/art/bundle_portrait_video_source_packs.py` generates ignored handoff zip files under `artifacts/portrait-video-handoff/`, including `AI_VIDEO_HANDOFF_README.md`, the reference image, prompts, and metadata only.
+  - `tools/art/batch_process_portrait_video_source_packs.py` reports `waiting_for_frames`, `insufficient_frames`, `ready`, and processed states; it only processes packs with at least 3 exported PNG frames.
+  - `tools/art/inspect_portrait_video_workflow.py` writes ignored JSON/Markdown workflow reports with handoff status, frame count, motion-candidate status, and next action.
+  - Current workflow report: `artifacts/portrait-video-workflow-report.md`, `ok=true`, `frame_count=0`, `handoff_status=present`, `next_action=generate_ai_video`.
   - Current decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, missing neutral blink frames, and warning `neutral.open: light_edge_halo_risk`.
-  - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, blink frames, final provenance approval, edge cleanup, and manifest integration.
+  - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, exported AI-video frames, blink frames, final provenance approval, edge cleanup, and manifest integration.
 
 ## Product Rule
 
@@ -397,9 +411,11 @@ Rationale:
 
 ## Next Recommended Package
 
-The next high-value packages still cross explicit confirmation boundaries:
+The next high-value packages are:
 
 ```text
+P3-ai-video-generation: use the ignored handoff zip with Pika/Hailuo/Kling/PixVerse/Runway/Gemini, then place exported PNG frames into the matching frames folder
+P3-frame-intake-QA: after frames exist, run batch processing, visual QA, and decision brief without changing the runtime manifest
 P1-quality-tuning: tune prompt/personality/expression quality after reviewing live smoke output
 P3-visual-QA: approve, reject, or iterate the generated VN portrait candidate
 ```
@@ -423,17 +439,20 @@ Completed deliverables for `P3-art-candidate`:
 
 - candidate art is generated as an artifact only;
 - default `portrait_manifest.json` is not changed until human visual QA approves;
-- provenance is currently limited to this plan note and ignored artifact path until human QA decides whether the candidate survives;
+- provenance remains local and ignored until human QA decides whether the candidate survives;
 - no third-party IP or reference project assets are copied.
 - ignored alpha candidate pack can be regenerated from the approved base artifact with `tools\art\prepare_portrait_candidate.py`;
 - ignored all-in-one review directory can be regenerated with `tools\art\review_portrait_candidate.py`;
 - ignored AI-video blink/motion frame candidate packs can be regenerated from exported PNG frame sequences with `tools\art\extract_portrait_motion_frames.py`;
+- ignored AI-video source packs can be regenerated from a candidate manifest with `tools\art\create_portrait_video_source_packs_from_candidate.py`;
+- ignored provider-neutral handoff zips can be regenerated with `tools\art\bundle_portrait_video_source_packs.py`;
+- ignored JSON/Markdown next-action reports can be regenerated with `tools\art\inspect_portrait_video_workflow.py`;
 - ignored visual QA preview/report can be regenerated with `tools\art\portrait_candidate_visual_qa.py`, including alpha edge metrics and light-edge halo warnings;
 - ignored JSON/Markdown decision brief can be regenerated with `tools\art\portrait_candidate_decision_brief.py`;
 - candidate directory remains ignored and is not bundled into runtime assets.
 - ignored runtime candidate pack smoke remains a separate renderer-loadability check;
 - strict promotion gate remains reserved for a complete approved portrait pack. It now reports visual QA warnings such as `light_edge_halo_risk` without auto-failing the pack, because final edge quality still needs human art approval.
-- the prepared neutral-only candidate is not promotion-ready because it lacks expression variants, blink frames, final provenance approval, edge cleanup, and manifest integration.
+- the prepared neutral-only candidate is not promotion-ready because it lacks expression variants, exported AI-video frames, blink frames, final provenance approval, edge cleanup, and manifest integration.
 
 Confirmation needed before execution:
 
