@@ -41,6 +41,7 @@ data/dialogue_history.json
 # PySide smoke screenshots and local preview diagnostics
 artifacts/simulation/
 artifacts/llm_smoke/
+artifacts/portrait-video-source/
 artifacts/portrait-candidate*.png
 artifacts/portrait-candidate*/
 artifacts/windows-build-validation*.json
