@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this video-fallback package: `c0750ed feat: review llm smoke reports`
+- Latest committed checkpoint before this smoke-batch-review package: `d25ece1 feat: add ai video fallback prompts`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -31,7 +31,7 @@ Latest focused LLM/review tests run on 2026-06-09:
 python -m pytest tests\test_llm_smoke_review.py tests\test_llm_smoke.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `17 passed`.
+Result: `19 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -39,7 +39,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `663 passed`.
+Result: `665 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -120,6 +120,12 @@ Latest non-confirmation packages completed after the original plan:
   - Adds Vidu and LivePortrait to the local AI-video handoff prompts and handoff README.
   - Documents the Gemini-unavailable fallback route in `docs/portrait_video_generation_sop.md`.
   - Keeps this as a source-pack/SOP change only; it does not call providers, generate assets, update runtime manifests, or add dependencies.
+- `P1-smoke-batch-review` package:
+  - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
+  - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.
+  - Keeps this as an offline QA/reporting tool only; it does not call providers, persist prompts, or change runtime behavior.
+  - Local ignored batch review artifact: `artifacts/llm_smoke/llm-smoke-batch-review-20260609.json`.
+  - Current local artifact summary: 10 reviewed smoke JSON files, 0 passed, 10 need attention, 0 invalid. Most are old-format reports missing the newer `speech_quality` field, so they are not current proof of LLM quality.
 
 Latest confirmation-gated packages completed after user approval:
 
@@ -227,6 +233,7 @@ Scope:
 - Surface this in the existing expression diagnostics path or a compact UI/debug panel.
 - Add a live smoke path for OpenAI-compatible providers, especially DeepSeek.
 - Add an offline review tool that turns existing smoke JSON into a compact issue summary without calling a provider.
+- Support batch review of ignored local smoke artifact folders so multiple provider runs can be compared without new API calls.
 
 Primary files:
 

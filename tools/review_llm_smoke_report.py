@@ -140,6 +140,128 @@ def render_llm_smoke_review_markdown(review: LLMSmokeReview) -> str:
     return "\n".join(lines)
 
 
+def review_llm_smoke_reports_in_directory(report_dir: Path | str) -> dict[str, object]:
+    root = Path(report_dir)
+    if not root.is_dir():
+        return _batch_payload(
+            report_dir=root,
+            reports=[],
+            errors=("report directory not found",),
+        )
+
+    reports: list[dict[str, object]] = []
+    for path in _smoke_report_paths(root):
+        payload, errors = _load_report(path)
+        review = _invalid_review(errors) if errors else review_llm_smoke_report(payload)
+        item = review.to_dict()
+        item["path"] = str(path)
+        reports.append(item)
+    return _batch_payload(report_dir=root, reports=reports, errors=())
+
+
+def render_llm_smoke_batch_review_markdown(batch: Mapping[str, object]) -> str:
+    reports = _list_of_mappings(batch.get("reports"))
+    lines = [
+        "# LLM Smoke Batch Review",
+        "",
+        f"- Status: `{_string(batch.get('status'))}`",
+        f"- Reports: `{_int(batch.get('report_count'))}`",
+        f"- Passed: `{_int(batch.get('passed_count'))}`",
+        f"- Needs attention: `{_int(batch.get('needs_attention_count'))}`",
+        f"- Invalid: `{_int(batch.get('invalid_count'))}`",
+        "",
+        "| File | Status | Provider | Model | Reason | Issues | Turns | Fallback | Speech Violations | State Guard |",
+        "| --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
+    ]
+    for item in reports:
+        speech_quality = _mapping(item.get("speech_quality"))
+        state_guard = _mapping(item.get("state_mutation_check"))
+        path_name = Path(_string(item.get("path"))).name or "unknown"
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    _escape_markdown_table(path_name),
+                    f"`{_string(item.get('status')) or 'unknown'}`",
+                    _escape_markdown_table(_string(item.get("provider")) or "unknown"),
+                    _escape_markdown_table(_string(item.get("model")) or "unknown"),
+                    _escape_markdown_table(_string(item.get("reason"))),
+                    str(_int(item.get("issue_count"))),
+                    str(_int(item.get("turn_count"))),
+                    str(_int(item.get("fallback_count"))),
+                    str(_int(speech_quality.get("violation_count"))),
+                    "`passed`" if state_guard.get("ok") is not False else "`failed`",
+                )
+            )
+            + " |"
+        )
+    errors = _string_list(batch.get("errors"))
+    if errors:
+        lines.extend(["", "## Errors", ""])
+        for error in errors:
+            lines.append(f"- {error}")
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _batch_payload(
+    *,
+    report_dir: Path,
+    reports: list[dict[str, object]],
+    errors: tuple[str, ...],
+) -> dict[str, object]:
+    passed_count = sum(1 for item in reports if item.get("status") == "passed")
+    invalid_count = sum(1 for item in reports if item.get("status") == "invalid_report")
+    needs_attention_count = sum(1 for item in reports if item.get("status") == "needs_attention")
+    ok = not errors and bool(reports) and invalid_count == 0 and needs_attention_count == 0
+    return {
+        "ok": ok,
+        "status": "passed" if ok else "needs_attention",
+        "report_dir": str(report_dir),
+        "report_count": len(reports),
+        "passed_count": passed_count,
+        "needs_attention_count": needs_attention_count,
+        "invalid_count": invalid_count,
+        "reports": reports,
+        "errors": list(errors),
+    }
+
+
+def _smoke_report_paths(root: Path) -> tuple[Path, ...]:
+    return tuple(
+        path
+        for path in sorted(root.glob("*.json"), key=lambda item: item.name.lower())
+        if not _is_existing_review_output(path)
+    )
+
+
+def _is_existing_review_output(path: Path) -> bool:
+    stem = path.stem.lower()
+    return "review" in stem
+
+
+def _invalid_review(errors: tuple[str, ...]) -> LLMSmokeReview:
+    return LLMSmokeReview(
+        ok=False,
+        status="invalid_report",
+        provider="",
+        model="",
+        reason=errors[0] if errors else "invalid report",
+        turn_count=0,
+        fallback_count=0,
+        issue_count=len(errors) or 1,
+        speech_quality=_speech_quality_summary({}),
+        visual_action_coverage={},
+        state_mutation_check={"ok": True, "changed_fields": []},
+        issues=tuple(LLMSmokeReviewIssue("invalid_report", error) for error in errors)
+        or (LLMSmokeReviewIssue("invalid_report", "invalid report"),),
+    )
+
+
+def _escape_markdown_table(value: str) -> str:
+    return value.replace("|", "\\|")
+
+
 def _speech_quality_summary(value: object) -> dict[str, object]:
     source = _mapping(value)
     violations = _list_of_mappings(source.get("violations"))
@@ -235,22 +357,18 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(sys.argv[1:] if argv is None else argv)
-    payload, errors = _load_report(Path(args.report))
+    report_path = Path(args.report)
+    if report_path.is_dir():
+        batch = review_llm_smoke_reports_in_directory(report_path)
+        review_payload = json.dumps(batch, ensure_ascii=False, indent=2)
+        _write_text(args.json, review_payload + "\n")
+        _write_text(args.markdown, render_llm_smoke_batch_review_markdown(batch))
+        print(review_payload)
+        return 0 if batch.get("ok") is True else 1
+
+    payload, errors = _load_report(report_path)
     if errors:
-        review = LLMSmokeReview(
-            ok=False,
-            status="invalid_report",
-            provider="",
-            model="",
-            reason=errors[0],
-            turn_count=0,
-            fallback_count=0,
-            issue_count=len(errors),
-            speech_quality=_speech_quality_summary({}),
-            visual_action_coverage={},
-            state_mutation_check={"ok": True, "changed_fields": []},
-            issues=tuple(LLMSmokeReviewIssue("invalid_report", error) for error in errors),
-        )
+        review = _invalid_review(errors)
     else:
         review = review_llm_smoke_report(payload)
     review_payload = json.dumps(review.to_dict(), ensure_ascii=False, indent=2)

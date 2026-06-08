@@ -148,3 +148,72 @@ def test_review_llm_smoke_report_cli_writes_json_and_markdown(tmp_path: Path):
     assert stdout_payload == saved_payload
     assert saved_payload["ok"] is True
     assert markdown_path.read_text(encoding="utf-8").startswith("# LLM Smoke Review")
+
+
+def test_review_llm_smoke_reports_in_directory_skips_existing_review_outputs(tmp_path: Path):
+    from tools.review_llm_smoke_report import (
+        render_llm_smoke_batch_review_markdown,
+        review_llm_smoke_reports_in_directory,
+    )
+
+    reports_dir = tmp_path / "llm_smoke"
+    reports_dir.mkdir()
+    (reports_dir / "passing.json").write_text(json.dumps(_passing_report(), ensure_ascii=False), encoding="utf-8")
+    failing = _passing_report()
+    failing["ok"] = False
+    failing["reason"] = "speech_quality:empty=0,short=1,long=0"
+    failing["speech_quality"] = {
+        "min_speech_chars": 8,
+        "max_speech_chars": 80,
+        "empty_count": 0,
+        "short_count": 1,
+        "long_count": 0,
+        "violations": [{"turn": 1, "kind": "short", "speech_len": 2}],
+    }
+    (reports_dir / "failing.json").write_text(json.dumps(failing, ensure_ascii=False), encoding="utf-8")
+    (reports_dir / "passing-review.json").write_text('{"ok": true, "status": "passed"}', encoding="utf-8")
+
+    batch = review_llm_smoke_reports_in_directory(reports_dir)
+
+    assert batch["ok"] is False
+    assert batch["report_count"] == 2
+    assert batch["passed_count"] == 1
+    assert batch["needs_attention_count"] == 1
+    assert batch["invalid_count"] == 0
+    assert [Path(item["path"]).name for item in batch["reports"]] == ["failing.json", "passing.json"]
+    markdown = render_llm_smoke_batch_review_markdown(batch)
+    assert "# LLM Smoke Batch Review" in markdown
+    assert "failing.json" in markdown
+    assert "passing-review.json" not in markdown
+
+
+def test_review_llm_smoke_report_cli_accepts_directory(tmp_path: Path):
+    reports_dir = tmp_path / "llm_smoke"
+    reports_dir.mkdir()
+    (reports_dir / "passing.json").write_text(json.dumps(_passing_report(), ensure_ascii=False), encoding="utf-8")
+    json_path = tmp_path / "batch-review.json"
+    markdown_path = tmp_path / "batch-review.md"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "tools/review_llm_smoke_report.py",
+            str(reports_dir),
+            "--json",
+            str(json_path),
+            "--markdown",
+            str(markdown_path),
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    stdout_payload = json.loads(result.stdout)
+    assert stdout_payload["ok"] is True
+    assert stdout_payload["report_count"] == 1
+    assert json.loads(json_path.read_text(encoding="utf-8")) == stdout_payload
+    assert markdown_path.read_text(encoding="utf-8").startswith("# LLM Smoke Batch Review")

@@ -158,10 +158,11 @@ python tools\llm_dialogue_smoke.py --provider deepseek --dry-run
 $env:DEEPSEEK_API_KEY="sk-..."
 python tools\llm_dialogue_smoke.py --provider deepseek --timeout-seconds 45 --min-speech-chars 8 --max-speech-chars 80 --report artifacts\llm_smoke\deepseek-live-smoke.json
 python tools\review_llm_smoke_report.py artifacts\llm_smoke\deepseek-live-smoke.json --json artifacts\llm_smoke\deepseek-live-smoke-review.json --markdown artifacts\llm_smoke\deepseek-live-smoke-review.md
+python tools\review_llm_smoke_report.py artifacts\llm_smoke --json artifacts\llm_smoke\llm-smoke-batch-review.json --markdown artifacts\llm_smoke\llm-smoke-batch-review.md
 Remove-Item Env:\DEEPSEEK_API_KEY
 ```
 
-The dry run prints sanitized provider settings without API calls. The live LLM smoke uses a temporary save directory and can write a UTF-8 JSON report with `--report`. It fails if the provider cannot be called, if fallback is used, if growth state mutates, if expression/motion coverage is too weak, or if speech is empty, too short, or too long for the configured smoke thresholds. `review_llm_smoke_report.py` converts an existing smoke JSON into a compact JSON/Markdown review without calling any provider.
+The dry run prints sanitized provider settings without API calls. The live LLM smoke uses a temporary save directory and can write a UTF-8 JSON report with `--report`. It fails if the provider cannot be called, if fallback is used, if growth state mutates, if expression/motion coverage is too weak, or if speech is empty, too short, or too long for the configured smoke thresholds. `review_llm_smoke_report.py` converts an existing smoke JSON or an ignored smoke artifact directory into compact JSON/Markdown review output without calling any provider.
 
 Live2D smoke tests require local-only verification dependencies that are not committed:
 
