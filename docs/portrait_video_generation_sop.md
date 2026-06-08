@@ -25,7 +25,23 @@ xingxi-vn-neutral-20260608
 xingxi-vn-smile-20260608
 ```
 
-## Create A Source Pack
+## Create Source Packs
+
+Recommended batch command for one portrait candidate:
+
+```powershell
+python tools\art\create_portrait_video_source_packs_from_candidate.py `
+  artifacts\portrait-candidate-xingxi-vn-20260607\portrait_candidate.json `
+  --set-id-prefix xingxi-vn `
+  --set-id-suffix 20260608 `
+  --character-name "Xingxi" `
+  --source-label-prefix "VN expression candidate" `
+  --report artifacts\portrait-video-source-create-report.json
+```
+
+This creates one source folder per expression open/static portrait, for example `xingxi-vn-neutral-20260608` and `xingxi-vn-smile-20260608`. Blink-half and blink-closed frames are not treated as separate Gemini tasks.
+
+Single-image fallback command:
 
 ```powershell
 python tools\art\create_portrait_video_source_pack.py `
