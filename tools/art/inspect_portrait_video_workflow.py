@@ -106,6 +106,49 @@ def inspect_portrait_video_workflow(
     )
 
 
+def render_portrait_video_workflow_markdown(report: PortraitVideoWorkflowReport) -> str:
+    lines = [
+        "# Portrait Video Workflow Status",
+        "",
+        f"- OK: `{str(report.ok).lower()}`",
+        f"- Source root: `{report.source_root}`",
+        f"- Handoff dir: `{report.handoff_dir}`",
+        f"- Candidate root: `{report.candidate_root}`",
+        f"- Packs: `{report.pack_count}`",
+        f"- Missing handoff zips: `{report.missing_handoff_count}`",
+        f"- Ready source packs: `{report.ready_count}`",
+        f"- Waiting for frames: `{report.waiting_count}`",
+        f"- Insufficient frames: `{report.insufficient_count}`",
+        f"- Motion candidates: `{report.motion_candidate_count}`",
+        "",
+        "| Set | Frames | Handoff | Motion Candidate | Next Action |",
+        "| --- | ---: | --- | --- | --- |",
+    ]
+    for item in report.items:
+        lines.append(
+            "| "
+            + " | ".join(
+                (
+                    _markdown_cell(item.set_id),
+                    str(item.frame_count),
+                    _markdown_cell(item.handoff_status),
+                    _markdown_cell(item.motion_candidate_status),
+                    _markdown_cell(item.next_action),
+                )
+            )
+            + " |"
+        )
+    if report.errors:
+        lines.extend(["", "## Errors", ""])
+        lines.extend(f"- `{_markdown_cell(error)}`" for error in report.errors)
+    lines.append("")
+    return "\n".join(lines)
+
+
+def _markdown_cell(value: str) -> str:
+    return value.replace("|", "\\|").replace("\n", " ").strip()
+
+
 def _workflow_item(
     *,
     pack,
@@ -180,6 +223,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--handoff-dir", default=str(DEFAULT_HANDOFF_DIR))
     parser.add_argument("--candidate-root", default=str(DEFAULT_OUTPUT_ROOT))
     parser.add_argument("--report", default="")
+    parser.add_argument("--markdown", default="")
     return parser.parse_args(argv)
 
 
@@ -195,6 +239,10 @@ def main(argv: list[str] | None = None) -> int:
         target = Path(args.report)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(payload, encoding="utf-8")
+    if args.markdown:
+        target = Path(args.markdown)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(render_portrait_video_workflow_markdown(report), encoding="utf-8")
     print(payload)
     return 0 if report.ok else 1
 

@@ -47,6 +47,7 @@ artifacts/portrait-video-source-batch-report*.json
 artifacts/portrait-video-handoff/
 artifacts/portrait-video-handoff-report*.json
 artifacts/portrait-video-workflow-report*.json
+artifacts/portrait-video-workflow-report*.md
 artifacts/portrait-candidate*.png
 artifacts/portrait-candidate*/
 artifacts/windows-build-validation*.json

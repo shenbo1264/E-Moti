@@ -75,7 +75,8 @@ python tools\art\inspect_portrait_video_workflow.py `
   artifacts\portrait-video-source `
   --handoff-dir artifacts\portrait-video-handoff `
   --candidate-root artifacts `
-  --report artifacts\portrait-video-workflow-report.json
+  --report artifacts\portrait-video-workflow-report.json `
+  --markdown artifacts\portrait-video-workflow-report.md
 ```
 
 Typical `next_action` values are `bundle_handoff`, `generate_gemini_video`, `export_more_frames`, `process_frames`, and `review_motion_candidate`.

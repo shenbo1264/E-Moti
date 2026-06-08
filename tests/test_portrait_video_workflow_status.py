@@ -58,7 +58,10 @@ def _write_source_pack(root: Path, set_id: str, *, frame_count: int) -> Path:
 
 def test_inspect_portrait_video_workflow_reports_next_actions(tmp_path: Path):
     from tools.art.bundle_portrait_video_source_packs import bundle_portrait_video_source_packs
-    from tools.art.inspect_portrait_video_workflow import inspect_portrait_video_workflow
+    from tools.art.inspect_portrait_video_workflow import (
+        inspect_portrait_video_workflow,
+        render_portrait_video_workflow_markdown,
+    )
 
     source_root = tmp_path / "portrait-video-source"
     _write_source_pack(tmp_path, "xingxi-waiting-20260608", frame_count=0)
@@ -87,6 +90,11 @@ def test_inspect_portrait_video_workflow_reports_next_actions(tmp_path: Path):
         "xingxi-short-20260608": "present",
         "xingxi-waiting-20260608": "present",
     }
+    markdown = render_portrait_video_workflow_markdown(report)
+    assert "| Set | Frames | Handoff | Motion Candidate | Next Action |" in markdown
+    assert "| xingxi-ready-20260608 | 4 | present | missing | process_frames |" in markdown
+    assert "| xingxi-short-20260608 | 2 | present | missing | export_more_frames |" in markdown
+    assert "| xingxi-waiting-20260608 | 0 | present | missing | generate_gemini_video |" in markdown
 
 
 def test_inspect_portrait_video_workflow_reports_missing_handoff_first(tmp_path: Path):
@@ -111,6 +119,7 @@ def test_inspect_portrait_video_workflow_cli_writes_report(tmp_path: Path):
     source_root = tmp_path / "portrait-video-source"
     _write_source_pack(tmp_path, "xingxi-ready-20260608", frame_count=4)
     report_path = tmp_path / "workflow-status.json"
+    markdown_path = tmp_path / "workflow-status.md"
 
     result = subprocess.run(
         [
@@ -123,6 +132,8 @@ def test_inspect_portrait_video_workflow_cli_writes_report(tmp_path: Path):
             str(tmp_path / "candidates"),
             "--report",
             str(report_path),
+            "--markdown",
+            str(markdown_path),
         ],
         cwd=Path(__file__).resolve().parents[1],
         capture_output=True,
@@ -137,3 +148,5 @@ def test_inspect_portrait_video_workflow_cli_writes_report(tmp_path: Path):
     assert payload["pack_count"] == 1
     assert payload["items"][0]["next_action"] == "bundle_handoff"
     assert report_path.is_file()
+    assert markdown_path.is_file()
+    assert "bundle_handoff" in markdown_path.read_text(encoding="utf-8")
