@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this frame QA readiness package: `e6436cd feat: suggest frame visual qa in workflow`
+- Latest committed checkpoint before this regeneration brief package: `ccaaead feat: include frame visual qa in readiness`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -49,13 +49,21 @@ python -m pytest tests\test_release_readiness_report.py tests\test_portrait_vide
 
 Result: `17 passed`.
 
+Latest focused AI-video regeneration brief tests run on 2026-06-09:
+
+```powershell
+python -m pytest tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_frame_visual_qa.py tests\test_portrait_video_workflow_status.py tests\test_repository_hygiene.py -q
+```
+
+Result: `17 passed`.
+
 Full suite run on 2026-06-09:
 
 ```powershell
 python -m pytest
 ```
 
-Result: `710 passed`.
+Result: `713 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -229,6 +237,10 @@ Latest non-confirmation packages completed after the original plan:
   - Extends `tools/release_readiness_report.py` with repeatable `--portrait-frame-qa-report` inputs.
   - Release readiness can now include existing frame visual QA status, set id, preview path, frame count, sampled frame count, size mismatch count, and max body drift before motion extraction.
   - This is offline report aggregation only. It does not run visual QA, edit frames, create motion candidates, call providers, update runtime manifests, or approve generated assets.
+- `P3-video-regeneration-brief` package:
+  - Adds `tools/art/portrait_video_regeneration_brief.py`, a read-only brief builder for an AI-video workflow report plus optional frame visual QA report.
+  - Current normalized neutral frames resolve to `decision_state=regenerate_ai_video` because workflow attention and visual QA show high body drift.
+  - This is operator guidance only. It does not call providers, edit frames, create motion candidates, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

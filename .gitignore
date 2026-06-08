@@ -55,6 +55,8 @@ artifacts/portrait-video-frame-normalization*.json
 artifacts/portrait-video-frame-preflight*.json
 artifacts/portrait-video-frame-qa*.json
 artifacts/portrait-video-frame-qa*.png
+artifacts/portrait-video-regeneration-brief*.json
+artifacts/portrait-video-regeneration-brief*.md
 artifacts/portrait-video-workflow-report*.json
 artifacts/portrait-video-workflow-report*.md
 artifacts/liveportrait-preflight*.json

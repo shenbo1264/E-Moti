@@ -218,6 +218,18 @@ python tools\art\portrait_video_frame_visual_qa.py `
 
 The sheet samples the reference and exported frames, and the JSON report records frame sizes plus body-drift values when the frame size matches the reference. It is a human QA aid only; it does not edit frames, create motion candidates, or approve assets.
 
+When visual QA shows body drift, create a regeneration brief before trying another free/trial provider:
+
+```powershell
+python tools\art\portrait_video_regeneration_brief.py `
+  --workflow-report artifacts\portrait-video-workflow-report.json `
+  --frame-qa-report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json `
+  --report artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json `
+  --markdown artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.md
+```
+
+The regeneration brief is read-only. It packages the workflow blockers, frame QA drift values, suggested local follow-up commands, and the next provider prompt constraints. It does not call a provider, edit frames, create motion candidates, update runtime manifests, or approve assets. If it reports `decision_state=regenerate_ai_video`, rerun the external video attempt with stricter framing constraints instead of forcing extraction.
+
 To keep that frame QA result visible in release readiness:
 
 ```powershell

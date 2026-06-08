@@ -50,6 +50,8 @@ REQUIRED_GITIGNORE_PATTERNS = (
     "artifacts/portrait-video-frame-preflight*.json",
     "artifacts/portrait-video-frame-qa*.json",
     "artifacts/portrait-video-frame-qa*.png",
+    "artifacts/portrait-video-regeneration-brief*.json",
+    "artifacts/portrait-video-regeneration-brief*.md",
     "artifacts/liveportrait-preflight*.json",
     "artifacts/liveportrait-preflight*.md",
     "artifacts/portrait-candidate*.png",
