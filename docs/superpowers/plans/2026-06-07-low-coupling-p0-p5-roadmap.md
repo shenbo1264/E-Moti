@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this cue-probe-review package: `abbf46d feat: add llm expression cue probes`
+- Latest committed checkpoint before this LivePortrait readiness package: `2d8f9e7 test: validate liveportrait driving input`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -44,10 +44,10 @@ Result: `146 passed`.
 Latest focused release-readiness/report tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_workflow_status.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_release_readiness_report.py tests\test_liveportrait_preflight.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `16 passed`.
+Result: `17 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -55,7 +55,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `693 passed`.
+Result: `705 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -209,6 +209,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes release readiness Markdown list portrait AI-video `attention_reasons` and `suggested_commands` as readable per-check bullets.
   - Current ignored release readiness Markdown now clearly shows `normalizable_size_mismatch`, `failed_motion_extraction`, and `body_drift_warnings`.
   - This is report rendering only. It does not execute suggested commands, process frames, call providers, change runtime manifests, change renderer behavior, or approve generated assets.
+- `P3/P5-release-readiness-liveportrait-preflight` package:
+  - Extends `tools/release_readiness_report.py` with repeatable `--liveportrait-preflight-report` inputs.
+  - Release readiness can now include existing local LivePortrait setup blockers such as missing human-mode weights, invalid or missing driving input, and suggested manual commands.
+  - This is offline report aggregation only. It does not clone LivePortrait, install dependencies, download weights, run inference, export frames, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

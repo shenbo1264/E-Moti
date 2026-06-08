@@ -137,6 +137,33 @@ def _write_portrait_candidate_report(path: Path, *, decision_state: str = "needs
     return path
 
 
+def _write_liveportrait_preflight_report(path: Path, *, ok: bool = False) -> Path:
+    payload = {
+        "ok": ok,
+        "source_pack_dir": "artifacts/portrait-video-source/xingxi-vn-neutral-20260608",
+        "liveportrait_root": "tmp/liveportrait_research/LivePortrait",
+        "source_image_path": "artifacts/portrait-video-source/xingxi-vn-neutral-20260608/reference/neutral_open.png",
+        "reference_size": [1024, 1536],
+        "driving_path": "",
+        "driving_status": "missing" if not ok else "valid_video",
+        "ffmpeg_path": "ffmpeg",
+        "next_action": "download_liveportrait_weights" if not ok else "run_liveportrait",
+        "suggested_command": "" if not ok else "python inference.py -s source.png -d driver.mp4",
+        "errors": ["required pretrained weights are missing", "driving video or motion template not found"]
+        if not ok
+        else [],
+        "missing_weight_paths": [
+            "pretrained_weights/liveportrait/base_models/appearance_feature_extractor.pth",
+            "pretrained_weights/liveportrait/base_models/motion_extractor.pth",
+        ]
+        if not ok
+        else [],
+        "warnings": [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _run_tool(
     character_pack: Path,
     app_dir: Path,
@@ -146,6 +173,7 @@ def _run_tool(
     llm_reports: list[Path] | None = None,
     portrait_workflow_reports: list[Path] | None = None,
     portrait_candidate_reports: list[Path] | None = None,
+    liveportrait_preflight_reports: list[Path] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     args = [
         sys.executable,
@@ -163,6 +191,8 @@ def _run_tool(
         args.extend(["--portrait-workflow-report", str(report)])
     for report in portrait_candidate_reports or []:
         args.extend(["--portrait-candidate-report", str(report)])
+    for report in liveportrait_preflight_reports or []:
+        args.extend(["--liveportrait-preflight-report", str(report)])
     args.extend(
         [
             "--json",
@@ -449,3 +479,42 @@ def test_release_readiness_report_surfaces_portrait_candidate_decision_issue(tmp
         "  - `approve edge cleanup and expression/blink generation for this candidate, "
         "or reject it and regenerate`"
     ) in markdown
+
+
+def test_release_readiness_report_surfaces_liveportrait_preflight_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    liveportrait_report = _write_liveportrait_preflight_report(tmp_path / "liveportrait-preflight.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        liveportrait_preflight_reports=[liveportrait_report],
+    )
+
+    payload = json.loads(result.stdout)
+    preflight_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert preflight_check["id"] == "liveportrait_preflight"
+    assert preflight_check["ok"] is False
+    assert preflight_check["status"] == "download_liveportrait_weights"
+    assert preflight_check["driving_status"] == "missing"
+    assert preflight_check["missing_weight_count"] == 2
+    assert preflight_check["missing_weight_paths"] == [
+        "pretrained_weights/liveportrait/base_models/appearance_feature_extractor.pth",
+        "pretrained_weights/liveportrait/base_models/motion_extractor.pth",
+    ]
+    assert preflight_check["errors"] == [
+        "required pretrained weights are missing",
+        "driving video or motion template not found",
+    ]
+    assert "resolve LivePortrait preflight blockers before local inference" in payload["next_actions"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### LivePortrait Preflight" in markdown
+    assert "- Driving status: `missing`" in markdown
+    assert "- Missing weights: `2`" in markdown
+    assert "- Missing weight paths:" in markdown
+    assert "  - `pretrained_weights/liveportrait/base_models/appearance_feature_extractor.pth`" in markdown

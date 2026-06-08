@@ -105,6 +105,15 @@ python tools\art\inspect_liveportrait_preflight.py `
 
 The preflight only reads files. It does not clone LivePortrait, install packages, download weights, run inference, export frames, create a portrait candidate, or update runtime manifests.
 
+To include that ignored preflight result in a release/readiness review without rerunning inference:
+
+```powershell
+python tools\release_readiness_report.py `
+  --liveportrait-preflight-report artifacts\liveportrait-preflight-xingxi-vn-neutral.json `
+  --json artifacts\release-readiness-with-liveportrait-preflight.json `
+  --markdown artifacts\release-readiness-with-liveportrait-preflight.md
+```
+
 For the external LivePortrait checkout, the official repository currently documents this HuggingFace weight download command:
 
 ```powershell

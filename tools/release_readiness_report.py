@@ -30,6 +30,7 @@ def build_release_readiness_report(
     llm_reports: Iterable[Path | str] = (),
     portrait_workflow_reports: Iterable[Path | str] = (),
     portrait_candidate_reports: Iterable[Path | str] = (),
+    liveportrait_preflight_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -37,6 +38,7 @@ def build_release_readiness_report(
     checks.extend(_llm_report_check(Path(report_path)) for report_path in llm_reports)
     checks.extend(_portrait_workflow_report_check(Path(report_path)) for report_path in portrait_workflow_reports)
     checks.extend(_portrait_candidate_report_check(Path(report_path)) for report_path in portrait_candidate_reports)
+    checks.extend(_liveportrait_preflight_report_check(Path(report_path)) for report_path in liveportrait_preflight_reports)
     ok = all(check["ok"] is True for check in checks)
     return {
         "ok": ok,
@@ -151,6 +153,16 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if attention_reasons:
             lines.append("- Attention reasons:")
             lines.extend(f"  - `{reason}`" for reason in attention_reasons)
+        driving_status = _optional_string(check.get("driving_status"))
+        if driving_status:
+            lines.append(f"- Driving status: `{driving_status}`")
+        missing_weight_count = _optional_int(check.get("missing_weight_count"))
+        if missing_weight_count is not None:
+            lines.append(f"- Missing weights: `{missing_weight_count}`")
+        missing_weight_paths = _string_list(check.get("missing_weight_paths"))
+        if missing_weight_paths:
+            lines.append("- Missing weight paths:")
+            lines.extend(f"  - `{path}`" for path in missing_weight_paths)
         commands = _string_list(check.get("suggested_commands"))
         if commands:
             lines.append("- Suggested commands:")
@@ -351,6 +363,44 @@ def _portrait_candidate_report_check(report_path: Path) -> dict[str, object]:
     }
 
 
+def _liveportrait_preflight_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "liveportrait_preflight",
+            "label": "LivePortrait Preflight",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "driving_status": "",
+            "missing_weight_count": 0,
+            "missing_weight_paths": [],
+            "suggested_commands": [],
+            "errors": ["LivePortrait preflight report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review LivePortrait preflight report before release"],
+        }
+    ok = payload.get("ok") is True
+    suggested_command = _optional_string(payload.get("suggested_command"))
+    return {
+        "id": "liveportrait_preflight",
+        "label": "LivePortrait Preflight",
+        "ok": ok,
+        "status": "ready" if ok else (_optional_string(payload.get("next_action")) or "needs_attention"),
+        "path": str(report_path),
+        "source_pack_dir": _optional_string(payload.get("source_pack_dir")),
+        "liveportrait_root": _optional_string(payload.get("liveportrait_root")),
+        "reference_size": _int_list(payload.get("reference_size")),
+        "driving_status": _optional_string(payload.get("driving_status")),
+        "missing_weight_count": len(_string_list(payload.get("missing_weight_paths"))),
+        "missing_weight_paths": _string_list(payload.get("missing_weight_paths")),
+        "suggested_commands": [suggested_command] if suggested_command else [],
+        "errors": _string_list(payload.get("errors")),
+        "warnings": _string_list(payload.get("warnings")),
+        "next_actions": [] if ok else ["resolve LivePortrait preflight blockers before local inference"],
+    }
+
+
 def _load_json_object(path: Path) -> dict[str, object] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -413,6 +463,12 @@ def _optional_int(value: object) -> int | None:
     return value if isinstance(value, int) and value >= 0 else None
 
 
+def _int_list(value: object) -> list[int]:
+    if not isinstance(value, list):
+        return []
+    return [item for item in value if isinstance(item, int)]
+
+
 def _nonnegative_int(value: object) -> int:
     return value if isinstance(value, int) and value >= 0 else 0
 
@@ -449,6 +505,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=[],
         help="Optional portrait candidate decision brief JSON report to include.",
     )
+    parser.add_argument(
+        "--liveportrait-preflight-report",
+        action="append",
+        default=[],
+        help="Optional LivePortrait preflight JSON report to include.",
+    )
     parser.add_argument("--json", default="", help="Optional JSON output path.")
     parser.add_argument("--markdown", default="", help="Optional Markdown output path.")
     return parser.parse_args(argv)
@@ -463,6 +525,7 @@ def main(argv: list[str] | None = None) -> int:
         llm_reports=[Path(item) for item in args.llm_report],
         portrait_workflow_reports=[Path(item) for item in args.portrait_workflow_report],
         portrait_candidate_reports=[Path(item) for item in args.portrait_candidate_report],
+        liveportrait_preflight_reports=[Path(item) for item in args.liveportrait_preflight_report],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")
