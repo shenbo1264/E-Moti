@@ -121,6 +121,7 @@ Latest confirmation-gated packages completed after user approval:
   - Visual QA finding: the cutout is transparent and usable for review, but dark-background preview exposes light halo around white hair and coat edges.
   - Quantified halo finding: `light_edge_alpha_pixel_count=17703`, `light_edge_alpha_ratio=0.5087`, warning `light_edge_halo_risk`.
   - `tools/art/portrait_candidate_decision_brief.py` summarizes the ignored candidate into JSON/Markdown blockers, warnings, and next human decision text without approving or rejecting the art.
+  - `tools/art/review_portrait_candidate.py` runs the candidate validation, contact sheet, visual QA, and decision brief steps together into one ignored review directory.
   - Current decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, missing neutral blink frames, and warning `neutral.open: light_edge_halo_risk`.
   - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, blink frames, final provenance approval, edge cleanup, and manifest integration.
 
@@ -424,6 +425,7 @@ Completed deliverables for `P3-art-candidate`:
 - provenance is currently limited to this plan note and ignored artifact path until human QA decides whether the candidate survives;
 - no third-party IP or reference project assets are copied.
 - ignored alpha candidate pack can be regenerated from the approved base artifact with `tools\art\prepare_portrait_candidate.py`;
+- ignored all-in-one review directory can be regenerated with `tools\art\review_portrait_candidate.py`;
 - ignored visual QA preview/report can be regenerated with `tools\art\portrait_candidate_visual_qa.py`, including alpha edge metrics and light-edge halo warnings;
 - ignored JSON/Markdown decision brief can be regenerated with `tools\art\portrait_candidate_decision_brief.py`;
 - candidate directory remains ignored and is not bundled into runtime assets.
