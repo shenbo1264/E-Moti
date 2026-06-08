@@ -58,7 +58,25 @@ frame_0003.png
 
 ## Extract Blink And Idle Candidates
 
-After frames are present, run:
+To check all source folders:
+
+```powershell
+python tools\art\batch_process_portrait_video_source_packs.py `
+  artifacts\portrait-video-source `
+  --report artifacts\portrait-video-source-batch-report.json
+```
+
+The batch report shows `ready` for folders with exported PNG frames and `waiting_for_frames` for folders that still need Gemini output.
+
+To process every ready folder:
+
+```powershell
+python tools\art\batch_process_portrait_video_source_packs.py `
+  artifacts\portrait-video-source `
+  --process-ready
+```
+
+To process one folder after frames are present, run:
 
 ```powershell
 python tools\art\process_portrait_video_source_pack.py `
