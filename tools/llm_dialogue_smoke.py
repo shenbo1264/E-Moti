@@ -29,6 +29,8 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--timeout-seconds", type=float, default=30.0)
     parser.add_argument("--min-expression-actions", type=int, default=4)
     parser.add_argument("--min-motion-actions", type=int, default=3)
+    parser.add_argument("--min-speech-chars", type=int, default=8)
+    parser.add_argument("--max-speech-chars", type=int, default=80)
     parser.add_argument("--prompt", action="append", default=[])
     parser.add_argument("--report", default="", help="Optional UTF-8 JSON report path.")
     parser.add_argument("--dry-run", action="store_true", help="Print sanitized provider settings without API calls.")
@@ -85,6 +87,8 @@ def main(argv: list[str] | None = None) -> int:
         prompts=prompts,
         min_expression_actions=args.min_expression_actions,
         min_motion_actions=args.min_motion_actions,
+        min_speech_chars=args.min_speech_chars,
+        max_speech_chars=args.max_speech_chars,
     )
     _emit_payload(report.to_public_dict(), args.report)
     return 0 if report.ok else 1

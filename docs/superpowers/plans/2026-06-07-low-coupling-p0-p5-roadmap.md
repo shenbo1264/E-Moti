@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this workflow-status package: `308ed3d feat: preflight portrait video frames`
+- Latest committed checkpoint before this speech-quality package: `0f523d6 feat: include frame preflight in workflow status`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -25,13 +25,21 @@ python -m pytest tests\test_portrait_video_workflow_status.py tests\test_portrai
 
 Result: `18 passed`.
 
+Latest focused LLM/expression tests run on 2026-06-09:
+
+```powershell
+python -m pytest tests\test_llm_smoke.py tests\test_expression_clients.py tests\test_expression_diagnostics.py tests\test_expression_event_pipeline.py tests\test_ai_expressor.py tests\test_visual_actions.py -q
+```
+
+Result: `158 passed`.
+
 Full suite run on 2026-06-09:
 
 ```powershell
 python -m pytest
 ```
 
-Result: `658 passed`.
+Result: `659 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -104,6 +112,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds `tools/validate_windows_build.py` to verify the frozen app executable, installer executable, and bundled frozen character pack.
   - Validates that the frozen `original_oc` pack contains `portrait_manifest.json`, `portraits/`, `preview/`, `item_icons/`, and `portrait_assets_provenance.md`.
   - Adds ignored `artifacts/windows-build-validation*.json` QA reports.
+- `P1-speech-quality-gate` package:
+  - Adds speech length and emptiness quality metrics to the LLM dialogue smoke report.
+  - Keeps this as a smoke/QA gate only; it does not change prompt policy, character state, renderer behavior, or provider clients.
+  - Dry-run artifacts remain under ignored `artifacts/llm_smoke/`.
 
 Latest confirmation-gated packages completed after user approval:
 
@@ -204,6 +216,7 @@ Scope:
   - prompt preview;
   - raw provider outcome category;
   - parsed speech;
+  - speech quality thresholds and violations;
   - parsed visual actions;
   - fallback reason;
   - state mutation check result.

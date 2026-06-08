@@ -181,6 +181,68 @@ def test_configured_llm_dialogue_smoke_reports_visual_action_coverage_gap(tmp_pa
     }
 
 
+def test_configured_llm_dialogue_smoke_reports_speech_quality_gap(tmp_path):
+    class UnevenSpeechExpressor:
+        enabled = True
+        last_fallback_reason = ""
+        last_visual_actions = (
+            VisualAction(action_type="expression", action_id="calm", ttl_ms=3000, priority=70),
+            VisualAction(action_type="motion", action_id="Default", ttl_ms=1800, priority=60),
+        )
+        last_interaction_intents = ()
+
+        def __init__(self):
+            self.calls = 0
+
+        def express(self, request, effect=None):
+            self.calls += 1
+            if self.calls == 1:
+                speech = "诊断调用保持正常。"
+            elif self.calls == 2:
+                speech = "嗯"
+            else:
+                speech = "这句话故意写得很长很长，超过本次 smoke 允许的上限。"
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": speech,
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=UnevenSpeechExpressor(),
+    )
+    controller.expression_settings = normalize_expression_settings({"enabled": True, "api_key": "sk-secret"})
+
+    report = run_configured_llm_dialogue_smoke(
+        controller,
+        prompts=("short", "long"),
+        min_speech_chars=4,
+        max_speech_chars=12,
+    )
+    public = report.to_public_dict()
+
+    assert report.ok is False
+    assert report.reason == "speech_quality:empty=0,short=1,long=1"
+    assert public["speech_quality"] == {
+        "min_speech_chars": 4,
+        "max_speech_chars": 12,
+        "empty_count": 0,
+        "short_count": 1,
+        "long_count": 1,
+        "violations": [
+            {"turn": 1, "kind": "short", "speech_len": 1},
+            {"turn": 2, "kind": "long", "speech_len": 29},
+        ],
+    }
+    assert public["state_mutation_check"] == {"ok": True, "changed_fields": []}
+
+
 def test_configured_llm_dialogue_smoke_reports_non_growth_state_mutation(tmp_path):
     class MutatingExpressor:
         enabled = True
@@ -259,6 +321,8 @@ def test_llm_dialogue_smoke_entrypoint_reads_deepseek_env_without_printing_key(m
     assert captured["prompts"] == ("hello",)
     assert captured["kwargs"]["min_expression_actions"] == 4
     assert captured["kwargs"]["min_motion_actions"] == 3
+    assert captured["kwargs"]["min_speech_chars"] == 8
+    assert captured["kwargs"]["max_speech_chars"] == 80
     assert "sk-secret" not in capsys.readouterr().out
 
 

@@ -78,6 +78,7 @@ class LLMDialogueSmokeReport:
     diagnostic: dict[str, object]
     turns: tuple[LLMDialogueSmokeTurn, ...]
     visual_action_coverage: dict[str, object]
+    speech_quality: dict[str, object]
     state_mutation_check: dict[str, object]
     growth_before: dict[str, object]
     growth_after: dict[str, object]
@@ -90,6 +91,7 @@ class LLMDialogueSmokeReport:
             "diagnostic": _redact_mapping(self.diagnostic),
             "turns": [turn.to_public_dict() for turn in self.turns],
             "visual_action_coverage": dict(self.visual_action_coverage),
+            "speech_quality": dict(self.speech_quality),
             "state_mutation_check": dict(self.state_mutation_check),
             "growth_before": dict(self.growth_before),
             "growth_after": dict(self.growth_after),
@@ -103,6 +105,8 @@ def run_llm_dialogue_smoke(
     prompts: Iterable[str] = DEFAULT_LLM_SMOKE_PROMPTS,
     min_expression_actions: int = 0,
     min_motion_actions: int = 0,
+    min_speech_chars: int = 0,
+    max_speech_chars: int = 0,
 ) -> LLMDialogueSmokeReport:
     normalized = settings if isinstance(settings, ExpressionSettings) else normalize_expression_settings(settings)
     with TemporaryDirectory() as tmp:
@@ -119,6 +123,8 @@ def run_llm_dialogue_smoke(
             prompts=prompts,
             min_expression_actions=min_expression_actions,
             min_motion_actions=min_motion_actions,
+            min_speech_chars=min_speech_chars,
+            max_speech_chars=max_speech_chars,
         )
 
 
@@ -128,9 +134,13 @@ def run_configured_llm_dialogue_smoke(
     prompts: Iterable[str] = DEFAULT_LLM_SMOKE_PROMPTS,
     min_expression_actions: int = 0,
     min_motion_actions: int = 0,
+    min_speech_chars: int = 0,
+    max_speech_chars: int = 0,
 ) -> LLMDialogueSmokeReport:
     min_expression_actions = _non_negative_int(min_expression_actions)
     min_motion_actions = _non_negative_int(min_motion_actions)
+    min_speech_chars = _non_negative_int(min_speech_chars)
+    max_speech_chars = _non_negative_int(max_speech_chars)
     diagnostic = _redact_mapping(controller.test_expression_provider())
     if diagnostic.get("ok") is not True:
         return _report(
@@ -140,6 +150,8 @@ def run_configured_llm_dialogue_smoke(
             controller=controller,
             turns=(),
             growth_before=_growth_snapshot(controller.get_snapshot()),
+            min_speech_chars=min_speech_chars,
+            max_speech_chars=max_speech_chars,
         )
 
     before = controller.get_snapshot()
@@ -171,6 +183,7 @@ def run_configured_llm_dialogue_smoke(
     growth_after = _growth_snapshot(controller.get_snapshot())
     state_mutation_check = _growth_mutation_check(growth_before, growth_after)
     visual_action_coverage = _visual_action_coverage(turns)
+    speech_quality = _speech_quality(turns, min_speech_chars=min_speech_chars, max_speech_chars=max_speech_chars)
     if state_mutation_check["ok"] is False and not reason:
         reason = "growth_mutated"
     if not reason:
@@ -182,12 +195,20 @@ def run_configured_llm_dialogue_smoke(
                 f"expressions={expression_count}/{min_expression_actions},"
                 f"motions={motion_count}/{min_motion_actions}"
             )
+    if speech_quality["violations"] and not reason:
+        reason = (
+            "speech_quality:"
+            f"empty={speech_quality['empty_count']},"
+            f"short={speech_quality['short_count']},"
+            f"long={speech_quality['long_count']}"
+        )
     return LLMDialogueSmokeReport(
         ok=not reason,
         reason=reason,
         diagnostic=diagnostic,
         turns=tuple(turns),
         visual_action_coverage=visual_action_coverage,
+        speech_quality=speech_quality,
         state_mutation_check=state_mutation_check,
         growth_before=growth_before,
         growth_after=growth_after,
@@ -203,6 +224,8 @@ def _report(
     controller: CompanionController,
     turns: tuple[LLMDialogueSmokeTurn, ...],
     growth_before: dict[str, object],
+    min_speech_chars: int = 0,
+    max_speech_chars: int = 0,
 ) -> LLMDialogueSmokeReport:
     return LLMDialogueSmokeReport(
         ok=ok,
@@ -210,6 +233,11 @@ def _report(
         diagnostic=diagnostic,
         turns=turns,
         visual_action_coverage=_visual_action_coverage(turns),
+        speech_quality=_speech_quality(
+            turns,
+            min_speech_chars=_non_negative_int(min_speech_chars),
+            max_speech_chars=_non_negative_int(max_speech_chars),
+        ),
         state_mutation_check=_growth_mutation_check(growth_before, _growth_snapshot(controller.get_snapshot())),
         growth_before=growth_before,
         growth_after=_growth_snapshot(controller.get_snapshot()),
@@ -253,6 +281,40 @@ def _visual_action_coverage(turns: Iterable[LLMDialogueSmokeTurn]) -> dict[str, 
         "expression_ids": expressions,
         "motion_count": len(motions),
         "motion_ids": motions,
+    }
+
+
+def _speech_quality(
+    turns: Iterable[LLMDialogueSmokeTurn],
+    *,
+    min_speech_chars: int,
+    max_speech_chars: int,
+) -> dict[str, object]:
+    minimum = _non_negative_int(min_speech_chars)
+    maximum = _non_negative_int(max_speech_chars)
+    violations: list[dict[str, object]] = []
+    empty_count = 0
+    short_count = 0
+    long_count = 0
+    for turn in turns:
+        speech_len = int(turn.speech_len)
+        if speech_len <= 0:
+            empty_count += 1
+            violations.append({"turn": turn.turn, "kind": "empty", "speech_len": speech_len})
+            continue
+        if minimum and speech_len < minimum:
+            short_count += 1
+            violations.append({"turn": turn.turn, "kind": "short", "speech_len": speech_len})
+        if maximum and speech_len > maximum:
+            long_count += 1
+            violations.append({"turn": turn.turn, "kind": "long", "speech_len": speech_len})
+    return {
+        "min_speech_chars": minimum,
+        "max_speech_chars": maximum,
+        "empty_count": empty_count,
+        "short_count": short_count,
+        "long_count": long_count,
+        "violations": violations,
     }
 
 
