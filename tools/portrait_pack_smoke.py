@@ -33,6 +33,7 @@ class PortraitPackSmokeReport:
     spirit_surface_visible: bool
     sprite_fallback_visible: bool
     blink_sequence: tuple[str, ...]
+    idle_sequence: tuple[str, ...]
     runtime_manifest_referenced: bool
     validation_errors: tuple[str, ...]
     errors: tuple[str, ...]
@@ -48,6 +49,7 @@ class PortraitPackSmokeReport:
             "spirit_surface_visible": self.spirit_surface_visible,
             "sprite_fallback_visible": self.sprite_fallback_visible,
             "blink_sequence": list(self.blink_sequence),
+            "idle_sequence": list(self.idle_sequence),
             "runtime_manifest_referenced": self.runtime_manifest_referenced,
             "validation_errors": list(self.validation_errors),
             "errors": list(self.errors),
@@ -70,6 +72,7 @@ def run_portrait_pack_smoke(
     spirit_surface_visible = False
     sprite_fallback_visible = False
     blink_sequence: list[str] = []
+    idle_sequence: list[str] = []
     character_id = validation.character_id
 
     if validation.ok:
@@ -105,6 +108,10 @@ def run_portrait_pack_smoke(
                         blink_sequence.append(Path(window.spirit_surface.last_portrait_path).name)
                 else:
                     errors.append("portrait blink sequence did not start")
+                for _ in range(2):
+                    if not window.spirit_surface.advance_idle_motion_for_test():
+                        break
+                    idle_sequence.append(Path(window.spirit_surface.last_portrait_path).name)
                 if screenshot_path is not None:
                     target = Path(screenshot_path)
                     target.parent.mkdir(parents=True, exist_ok=True)
@@ -136,6 +143,7 @@ def run_portrait_pack_smoke(
         spirit_surface_visible=spirit_surface_visible,
         sprite_fallback_visible=sprite_fallback_visible,
         blink_sequence=tuple(blink_sequence),
+        idle_sequence=tuple(idle_sequence),
         runtime_manifest_referenced=runtime_referenced,
         validation_errors=tuple(validation.errors),
         errors=all_errors,
@@ -209,7 +217,8 @@ def main(argv: list[str] | None = None) -> int:
         "portrait pack smoke "
         f"{'ok' if report.ok else 'failed'}: "
         f"character_id={report.character_id}, backend={report.renderer_backend}, "
-        f"blink_sequence={list(report.blink_sequence)}, errors={list(report.errors)}"
+        f"blink_sequence={list(report.blink_sequence)}, idle_sequence={list(report.idle_sequence)}, "
+        f"errors={list(report.errors)}"
     )
     return 0 if report.ok else 1
 

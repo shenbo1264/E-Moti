@@ -9,9 +9,11 @@ from pathlib import Path
 from PIL import Image
 
 
-def write_blink_portrait_pack(pack_dir: Path) -> Path:
+def write_blink_portrait_pack(pack_dir: Path, *, include_idle_frames: bool = False) -> Path:
     (pack_dir / "portraits").mkdir(parents=True)
     (pack_dir / "item_icons").mkdir()
+    if include_idle_frames:
+        (pack_dir / "motion_frames").mkdir()
     Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
     Image.new("RGBA", (32, 32), (40, 80, 120, 255)).save(pack_dir / "item_icons" / "snack.png")
     portrait_colors = {
@@ -26,6 +28,9 @@ def write_blink_portrait_pack(pack_dir: Path) -> Path:
     }
     for filename, color in portrait_colors.items():
         Image.new("RGBA", (256, 512), color).save(pack_dir / "portraits" / filename)
+    if include_idle_frames:
+        Image.new("RGBA", (256, 512), (24, 82, 142, 255)).save(pack_dir / "motion_frames" / "idle_0001.png")
+        Image.new("RGBA", (256, 512), (28, 86, 146, 255)).save(pack_dir / "motion_frames" / "idle_0002.png")
     (pack_dir / "character.json").write_text(
         json.dumps(
             {
@@ -98,8 +103,14 @@ def write_blink_portrait_pack(pack_dir: Path) -> Path:
                     "sad": "portraits/sad.png",
                     "sleepy": "portraits/sleepy.png",
                 },
+                "motion_frames": (
+                    ["motion_frames/idle_0001.png", "motion_frames/idle_0002.png"]
+                    if include_idle_frames
+                    else []
+                ),
                 "animation": {
-                    "blink": {"enabled": True, "min_interval_ms": 3000, "max_interval_ms": 7000}
+                    "blink": {"enabled": True, "min_interval_ms": 3000, "max_interval_ms": 7000},
+                    "idle": {"enabled": include_idle_frames, "fps": 6},
                 },
             }
         ),
@@ -139,6 +150,23 @@ def test_portrait_pack_smoke_validates_blink_sequence_and_writes_report(monkeypa
         "neutral_half.png",
         "neutral_open.png",
     ]
+
+
+def test_portrait_pack_smoke_reports_idle_motion_sequence(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from tools.portrait_pack_smoke import run_portrait_pack_smoke
+
+    pack_dir = write_blink_portrait_pack(tmp_path / "xingxi_vn_idle_candidate", include_idle_frames=True)
+    report_path = tmp_path / "portrait-smoke-report.json"
+
+    report = run_portrait_pack_smoke(pack_dir, report_path=report_path)
+
+    assert report.ok is True
+    assert report.idle_sequence == ("idle_0001.png", "idle_0002.png")
+
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["idle_sequence"] == ["idle_0001.png", "idle_0002.png"]
 
 
 def test_portrait_pack_smoke_cli_runs_from_repo_root_without_pythonpath(monkeypatch, tmp_path):
