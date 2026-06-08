@@ -61,6 +61,8 @@ def test_extract_portrait_motion_frames_builds_blink_candidate_pack(tmp_path: Pa
         frames_dir=frames,
         output_dir=output,
         idle_frame_count=3,
+        source_tool="Gemini video",
+        generation_prompt="Subtle breathing, one natural blink, static camera.",
     )
 
     assert report.ok is True
@@ -75,6 +77,7 @@ def test_extract_portrait_motion_frames_builds_blink_candidate_pack(tmp_path: Pa
     )
     assert (output / "portrait_candidate.json").is_file()
     assert (output / "candidate-motion-frame-report.json").is_file()
+    assert (output / "portrait_video_provenance.md").is_file()
     assert (output / "motion_frames" / "idle_0001.png").is_file()
 
     payload = json.loads((output / "portrait_candidate.json").read_text(encoding="utf-8"))
@@ -91,6 +94,9 @@ def test_extract_portrait_motion_frames_builds_blink_candidate_pack(tmp_path: Pa
         "motion_frames/idle_0002.png",
         "motion_frames/idle_0003.png",
     ]
+    assert payload["provenance"] == "portrait_video_provenance.md"
+    assert "Gemini video" in (output / "portrait_video_provenance.md").read_text(encoding="utf-8")
+    assert "Subtle breathing" in (output / "portrait_video_provenance.md").read_text(encoding="utf-8")
     assert validate_portrait_candidate(output / "portrait_candidate.json").ok is True
 
     with Image.open(output / "portraits" / "neutral_open.png") as opened:
@@ -119,6 +125,10 @@ def test_extract_portrait_motion_frames_cli_runs_from_repo_root(tmp_path: Path):
             str(output),
             "--report",
             str(report_path),
+            "--source-tool",
+            "Gemini video",
+            "--generation-prompt",
+            "Static portrait, one blink.",
         ],
         cwd=Path(__file__).resolve().parents[1],
         capture_output=True,
@@ -131,4 +141,5 @@ def test_extract_portrait_motion_frames_cli_runs_from_repo_root(tmp_path: Path):
     payload = json.loads(result.stdout)
     assert payload["ok"] is True
     assert payload["selected_blink_closed_frame"] == "frame_0003.png"
+    assert payload["provenance_path"].endswith("portrait_video_provenance.md")
     assert report_path.is_file()

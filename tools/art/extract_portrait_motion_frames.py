@@ -54,6 +54,7 @@ class PortraitMotionFrameExtractionReport:
     output_dir: str
     manifest_path: str
     report_path: str
+    provenance_path: str
     selected_open_frame: str
     selected_blink_half_frame: str
     selected_blink_closed_frame: str
@@ -74,6 +75,7 @@ class PortraitMotionFrameExtractionReport:
             "output_dir": self.output_dir,
             "manifest_path": self.manifest_path,
             "report_path": self.report_path,
+            "provenance_path": self.provenance_path,
             "selected_open_frame": self.selected_open_frame,
             "selected_blink_half_frame": self.selected_blink_half_frame,
             "selected_blink_closed_frame": self.selected_blink_closed_frame,
@@ -97,6 +99,8 @@ def extract_portrait_motion_frames(
     idle_frame_count: int = DEFAULT_IDLE_FRAME_COUNT,
     max_body_drift: float = DEFAULT_MAX_BODY_DRIFT,
     video_fps: int = DEFAULT_VIDEO_FPS,
+    source_tool: str = "",
+    generation_prompt: str = "",
     eye_boxes: tuple[tuple[float, float, float, float], ...] = DEFAULT_EYE_BOXES,
 ) -> PortraitMotionFrameExtractionReport:
     reference_path = Path(reference_image_path)
@@ -144,6 +148,8 @@ def extract_portrait_motion_frames(
             idle_frame_count=idle_frame_count,
             max_body_drift=max_body_drift,
             eye_boxes=eye_boxes,
+            source_tool=source_tool,
+            generation_prompt=generation_prompt,
         )
 
     with TemporaryDirectory() as tmp:
@@ -171,6 +177,8 @@ def extract_portrait_motion_frames(
             idle_frame_count=idle_frame_count,
             max_body_drift=max_body_drift,
             eye_boxes=eye_boxes,
+            source_tool=source_tool,
+            generation_prompt=generation_prompt,
         )
 
 
@@ -185,6 +193,8 @@ def _extract_from_frames_dir(
     idle_frame_count: int,
     max_body_drift: float,
     eye_boxes: tuple[tuple[float, float, float, float], ...],
+    source_tool: str,
+    generation_prompt: str,
 ) -> PortraitMotionFrameExtractionReport:
     errors: list[str] = []
     frame_paths = _frame_paths(frames_dir)
@@ -258,6 +268,19 @@ def _extract_from_frames_dir(
         output=output,
         generated_frames=generated_frames,
         idle_frame_count=max(0, int(idle_frame_count)),
+        provenance_path=Path("portrait_video_provenance.md"),
+    )
+    provenance_path = output / "portrait_video_provenance.md"
+    _write_provenance(
+        provenance_path,
+        source_tool=source_tool,
+        generation_prompt=generation_prompt,
+        reference_path=reference_path,
+        frames_dir=frames_dir,
+        video_path=video_path,
+        half_frame=half.name,
+        closed_frame=closed.name,
+        motion_frames=motion_frames,
     )
     validation = validate_portrait_candidate(output / "portrait_candidate.json")
     errors.extend(validation.errors)
@@ -269,6 +292,7 @@ def _extract_from_frames_dir(
         output_dir=str(output),
         manifest_path=str(output / "portrait_candidate.json"),
         report_path=str(report_path),
+        provenance_path=str(provenance_path),
         selected_open_frame="reference",
         selected_blink_half_frame=half.name,
         selected_blink_closed_frame=closed.name,
@@ -390,6 +414,7 @@ def _write_candidate_outputs(
     output: Path,
     generated_frames: tuple[str, str, str],
     idle_frame_count: int,
+    provenance_path: Path,
 ) -> tuple[str, ...]:
     portraits = output / "portraits"
     motion_dir = output / "motion_frames"
@@ -411,6 +436,7 @@ def _write_candidate_outputs(
         "approval_required": True,
         "runtime_manifest_safe": False,
         "source": "ai_video_frame_extraction",
+        "provenance": provenance_path.as_posix(),
         "expressions": {
             "neutral": {
                 "open": generated_frames[0],
@@ -422,6 +448,48 @@ def _write_candidate_outputs(
     }
     (output / "portrait_candidate.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return tuple(motion_frames)
+
+
+def _write_provenance(
+    target: Path,
+    *,
+    source_tool: str,
+    generation_prompt: str,
+    reference_path: Path,
+    frames_dir: Path,
+    video_path: Path | None,
+    half_frame: str,
+    closed_frame: str,
+    motion_frames: tuple[str, ...],
+) -> None:
+    lines = [
+        "# Portrait Video Provenance",
+        "",
+        f"- Source tool: {_markdown_value(source_tool) or 'unspecified'}",
+        f"- Reference image: `{reference_path}`",
+        f"- Exported frames directory: `{frames_dir}`",
+        f"- Source video: `{video_path}`" if video_path is not None else "- Source video: `not recorded`",
+        f"- Selected blink half frame: `{half_frame}`",
+        f"- Selected blink closed frame: `{closed_frame}`",
+        f"- Idle frame count: `{len(motion_frames)}`",
+        "",
+        "## Generation Prompt",
+        "",
+        _markdown_value(generation_prompt) or "Not recorded.",
+        "",
+        "## QA Note",
+        "",
+        "This is a local review candidate generated from AI video frames. Do not promote it to a runtime manifest without human visual QA, provenance approval, and the strict portrait promotion gate.",
+        "",
+    ]
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text("\n".join(lines), encoding="utf-8")
+
+
+def _markdown_value(value: str) -> str:
+    if not isinstance(value, str):
+        return ""
+    return value.replace("\r\n", "\n").replace("\r", "\n").strip()
 
 
 def _empty_report(
@@ -443,6 +511,7 @@ def _empty_report(
         output_dir=str(output),
         manifest_path="",
         report_path=str(report_path),
+        provenance_path="",
         selected_open_frame="",
         selected_blink_half_frame="",
         selected_blink_closed_frame="",
@@ -474,6 +543,8 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--idle-frame-count", type=int, default=DEFAULT_IDLE_FRAME_COUNT)
     parser.add_argument("--max-body-drift", type=float, default=DEFAULT_MAX_BODY_DRIFT)
     parser.add_argument("--video-fps", type=int, default=DEFAULT_VIDEO_FPS)
+    parser.add_argument("--source-tool", default="")
+    parser.add_argument("--generation-prompt", default="")
     return parser.parse_args(argv)
 
 
@@ -488,6 +559,8 @@ def main(argv: list[str] | None = None) -> int:
         idle_frame_count=args.idle_frame_count,
         max_body_drift=args.max_body_drift,
         video_fps=args.video_fps,
+        source_tool=args.source_tool,
+        generation_prompt=args.generation_prompt,
     )
     print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
     return 0 if report.ok else 1
