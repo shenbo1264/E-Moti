@@ -229,6 +229,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds per-file attention summaries to release readiness when an LLM smoke artifact directory contains old-format, failing, or provider-error reports.
   - Current ignored directory report lists each needing-attention smoke file with status, issue count, and reason where available.
   - This is offline reporting only. It does not delete old artifacts, call providers, change prompts, or alter runtime state.
+- `P3/P5-release-readiness-portrait-candidate` package:
+  - Extends `tools/release_readiness_report.py` with repeatable `--portrait-candidate-report` inputs.
+  - Release readiness can now include existing portrait candidate decision-brief blockers, warnings, validation errors, and next human decisions.
+  - Current ignored candidate report remains `needs_iteration` with unapproved metadata, missing expression/blink frames, and `light_edge_halo_risk`; this does not promote or reject the art.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

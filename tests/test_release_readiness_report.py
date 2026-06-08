@@ -116,6 +116,27 @@ def _write_portrait_workflow_report(path: Path, *, ok: bool = False) -> Path:
     return path
 
 
+def _write_portrait_candidate_report(path: Path, *, decision_state: str = "needs_iteration") -> Path:
+    payload = {
+        "ok": True,
+        "path": "artifacts\\portrait-candidate-xingxi-vn-20260607\\portrait_candidate.json",
+        "status": "candidate",
+        "image_count": 1,
+        "decision_state": decision_state,
+        "blockers": [
+            "candidate status is not approved",
+            "neutral expression requires blink_half and blink_closed frames",
+        ],
+        "warnings": ["neutral.open: light_edge_halo_risk"],
+        "validation_errors": [],
+        "next_human_decisions": [
+            "approve edge cleanup and expression/blink generation for this candidate, or reject it and regenerate"
+        ],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _run_tool(
     character_pack: Path,
     app_dir: Path,
@@ -124,6 +145,7 @@ def _run_tool(
     *,
     llm_reports: list[Path] | None = None,
     portrait_workflow_reports: list[Path] | None = None,
+    portrait_candidate_reports: list[Path] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     args = [
         sys.executable,
@@ -139,6 +161,8 @@ def _run_tool(
         args.extend(["--llm-report", str(report)])
     for report in portrait_workflow_reports or []:
         args.extend(["--portrait-workflow-report", str(report)])
+    for report in portrait_candidate_reports or []:
+        args.extend(["--portrait-candidate-report", str(report)])
     args.extend(
         [
             "--json",
@@ -374,4 +398,54 @@ def test_release_readiness_report_surfaces_portrait_workflow_issue(tmp_path: Pat
         "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608 "
         "--output-pack-dir artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized "
         "--report artifacts\\portrait-video-frame-normalization.json`"
+    ) in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_candidate_decision_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    candidate_report = _write_portrait_candidate_report(tmp_path / "portrait-candidate-decision.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_candidate_reports=[candidate_report],
+    )
+
+    payload = json.loads(result.stdout)
+    candidate_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["status"] == "needs_attention"
+    assert candidate_check["id"] == "portrait_candidate_decision"
+    assert candidate_check["ok"] is False
+    assert candidate_check["status"] == "needs_iteration"
+    assert candidate_check["decision_state"] == "needs_iteration"
+    assert candidate_check["candidate_status"] == "candidate"
+    assert candidate_check["image_count"] == 1
+    assert candidate_check["blocker_count"] == 2
+    assert candidate_check["warning_count"] == 1
+    assert candidate_check["blockers"] == [
+        "candidate status is not approved",
+        "neutral expression requires blink_half and blink_closed frames",
+    ]
+    assert candidate_check["warnings"] == ["neutral.open: light_edge_halo_risk"]
+    assert candidate_check["next_human_decisions"] == [
+        "approve edge cleanup and expression/blink generation for this candidate, or reject it and regenerate"
+    ]
+    assert "resolve portrait candidate blockers before manifest promotion" in payload["next_actions"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Candidate Decision" in markdown
+    assert "- Decision state: `needs_iteration`" in markdown
+    assert "- Candidate status: `candidate`" in markdown
+    assert "- Blockers:" in markdown
+    assert "  - `candidate status is not approved`" in markdown
+    assert "- Candidate warnings:" in markdown
+    assert "  - `neutral.open: light_edge_halo_risk`" in markdown
+    assert "- Next human decisions:" in markdown
+    assert (
+        "  - `approve edge cleanup and expression/blink generation for this candidate, "
+        "or reject it and regenerate`"
     ) in markdown

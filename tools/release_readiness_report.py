@@ -29,12 +29,14 @@ def build_release_readiness_report(
     installer_path: Path | str | None = DEFAULT_INSTALLER,
     llm_reports: Iterable[Path | str] = (),
     portrait_workflow_reports: Iterable[Path | str] = (),
+    portrait_candidate_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
     checks = [source_check, build_check]
     checks.extend(_llm_report_check(Path(report_path)) for report_path in llm_reports)
     checks.extend(_portrait_workflow_report_check(Path(report_path)) for report_path in portrait_workflow_reports)
+    checks.extend(_portrait_candidate_report_check(Path(report_path)) for report_path in portrait_candidate_reports)
     ok = all(check["ok"] is True for check in checks)
     return {
         "ok": ok,
@@ -71,7 +73,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if errors:
             lines.append("- Errors: `" + "; ".join(errors) + "`")
         warnings = _string_list(check.get("warnings"))
-        if warnings:
+        if warnings and check.get("id") == "portrait_candidate_decision":
+            lines.append("- Candidate warnings:")
+            lines.extend(f"  - `{warning}`" for warning in warnings)
+        elif warnings:
             lines.append("- Warnings: `" + "; ".join(warnings) + "`")
         distribution_boundary = _optional_string(check.get("distribution_boundary"))
         if distribution_boundary:
@@ -112,6 +117,32 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
                 lines.append(f"- {label}: `{value}`")
         if isinstance(check.get("state_mutation_ok"), bool):
             lines.append(f"- State guard: `{'passed' if check.get('state_mutation_ok') else 'failed'}`")
+        decision_state = _optional_string(check.get("decision_state"))
+        if decision_state:
+            lines.append(f"- Decision state: `{decision_state}`")
+        candidate_status = _optional_string(check.get("candidate_status"))
+        if candidate_status:
+            lines.append(f"- Candidate status: `{candidate_status}`")
+        for key, label in (
+            ("image_count", "Images"),
+            ("blocker_count", "Blockers"),
+            ("warning_count", "Candidate warnings"),
+        ):
+            value = _optional_int(check.get(key))
+            if value is not None:
+                lines.append(f"- {label}: `{value}`")
+        blockers = _string_list(check.get("blockers"))
+        if blockers:
+            lines.append("- Blockers:")
+            lines.extend(f"  - `{blocker}`" for blocker in blockers)
+        validation_errors = _string_list(check.get("validation_errors"))
+        if validation_errors:
+            lines.append("- Validation errors:")
+            lines.extend(f"  - `{error}`" for error in validation_errors)
+        next_human_decisions = _string_list(check.get("next_human_decisions"))
+        if next_human_decisions:
+            lines.append("- Next human decisions:")
+            lines.extend(f"  - `{decision}`" for decision in next_human_decisions)
         attention_reports = _string_list(check.get("attention_reports"))
         if attention_reports:
             lines.append("- Reports needing attention:")
@@ -273,6 +304,53 @@ def _portrait_workflow_report_check(report_path: Path) -> dict[str, object]:
     }
 
 
+def _portrait_candidate_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_candidate_decision",
+            "label": "Portrait Candidate Decision",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "decision_state": "",
+            "candidate_status": "",
+            "image_count": 0,
+            "blocker_count": 0,
+            "warning_count": 0,
+            "blockers": [],
+            "warnings": [],
+            "validation_errors": ["portrait candidate decision report must be a JSON object"],
+            "next_human_decisions": [],
+            "errors": ["portrait candidate decision report must be a JSON object"],
+            "next_actions": ["review portrait candidate decision report before release"],
+        }
+    decision_state = _optional_string(payload.get("decision_state")) or "unknown"
+    blockers = _string_list(payload.get("blockers"))
+    warnings = _string_list(payload.get("warnings"))
+    validation_errors = _string_list(payload.get("validation_errors"))
+    next_human_decisions = _string_list(payload.get("next_human_decisions"))
+    ok = payload.get("ok") is True and decision_state == "ready_for_pack_promotion_review"
+    return {
+        "id": "portrait_candidate_decision",
+        "label": "Portrait Candidate Decision",
+        "ok": ok,
+        "status": "ready" if ok else decision_state,
+        "path": str(report_path),
+        "decision_state": decision_state,
+        "candidate_status": _optional_string(payload.get("status")),
+        "image_count": _nonnegative_int(payload.get("image_count")),
+        "blocker_count": len(blockers),
+        "warning_count": len(warnings),
+        "blockers": blockers,
+        "warnings": warnings,
+        "validation_errors": validation_errors,
+        "next_human_decisions": next_human_decisions,
+        "errors": validation_errors,
+        "next_actions": [] if ok else ["resolve portrait candidate blockers before manifest promotion"],
+    }
+
+
 def _load_json_object(path: Path) -> dict[str, object] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -365,6 +443,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=[],
         help="Optional portrait AI-video workflow JSON report to include.",
     )
+    parser.add_argument(
+        "--portrait-candidate-report",
+        action="append",
+        default=[],
+        help="Optional portrait candidate decision brief JSON report to include.",
+    )
     parser.add_argument("--json", default="", help="Optional JSON output path.")
     parser.add_argument("--markdown", default="", help="Optional Markdown output path.")
     return parser.parse_args(argv)
@@ -378,6 +462,7 @@ def main(argv: list[str] | None = None) -> int:
         installer_path=None if args.skip_installer else Path(args.installer),
         llm_reports=[Path(item) for item in args.llm_report],
         portrait_workflow_reports=[Path(item) for item in args.portrait_workflow_report],
+        portrait_candidate_reports=[Path(item) for item in args.portrait_candidate_report],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")
