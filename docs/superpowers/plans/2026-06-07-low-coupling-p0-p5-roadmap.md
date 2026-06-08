@@ -33,13 +33,21 @@ python -m pytest tests\test_ai_expressor.py tests\test_companion_dialogue_policy
 
 Result: `175 passed`.
 
+Latest focused character-pack/P4 tests run on 2026-06-09:
+
+```powershell
+python -m pytest tests\test_character_generation_workflow.py tests\test_character_registry.py tests\test_character_session.py tests\test_character_pack.py tests\test_character_pack_validator_tool.py tests\test_character_draft_validator_tool.py tests\test_character_pack_import_tool.py tests\test_character_pack_status_review_tool.py tests\test_app.py tests\test_repository_hygiene.py -q
+```
+
+Result: `146 passed`.
+
 Full suite run on 2026-06-09:
 
 ```powershell
 python -m pytest
 ```
 
-Result: `671 passed`.
+Result: `676 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -142,6 +150,12 @@ Latest non-confirmation packages completed after the original plan:
   - Extends `tools/review_llm_smoke_report.py` so the same offline review CLI can read expression cue probe JSON reports as well as dialogue smoke reports.
   - Review output now exposes report type, cue case count, cue failure count, cue-case miss messages, and cue-derived expression/motion coverage.
   - This is offline artifact review only. It does not call providers, change prompt policy, change expression parsing, or alter runtime state.
+- `P4-character-pack-status-review` package:
+  - Adds `tools/review_character_pack_status.py`, a read-only release/import status review for generated drafts and complete runtime packs.
+  - The report summarizes validation status, import readiness, manual QA needs, provenance/license files, local fanwork distribution boundaries, and next actions.
+  - Adds a pack-level `assets/companion/original_oc/LICENSE.md` so the bundled original Xingxi runtime pack can be reviewed as distribution-ready alongside `portrait_assets_provenance.md`.
+  - Local character-pack status reports stay ignored under `artifacts/character-pack-status*.json` and `artifacts/character-pack-status*.md`.
+  - This does not generate characters, copy packs, change active character state, update renderer manifests, or alter runtime behavior.
 
 Latest confirmation-gated packages completed after user approval:
 
@@ -374,9 +388,11 @@ Primary files:
 - `src/guanghe_companion/character_generation_workflow.py`
 - `src/guanghe_companion/character_registry.py`
 - `src/guanghe_companion/character_session.py`
+- `tools/review_character_pack_status.py`
 - `tests/test_character_generation_workflow.py`
 - `tests/test_character_registry.py`
 - `tests/test_character_session.py`
+- `tests/test_character_pack_status_review_tool.py`
 
 Acceptance:
 

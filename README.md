@@ -101,6 +101,7 @@ Character pack validation:
 
 ```powershell
 python tools\validate_character_pack.py assets\companion\original_oc
+python tools\review_character_pack_status.py assets\companion\original_oc --json artifacts\character-pack-status-original-oc.json --markdown artifacts\character-pack-status-original-oc.md
 ```
 
 Generated character draft validation:
@@ -117,6 +118,7 @@ python tools\import_character_pack.py path\to\complete_pack --target-root "%LOCA
 ```
 
 Generated drafts are not import-ready until final art, icons, spritesheet, provenance, and manual QA are complete. Use `--force` only when intentionally replacing an existing local pack with the same `character_id`.
+`review_character_pack_status.py` is a read-only release/import review helper for generated drafts and complete runtime packs. It reports validation status, import readiness, manual QA needs, provenance/license files, local fanwork distribution boundaries, and next actions without copying files or changing runtime manifests.
 
 Portrait candidate validation before manifest promotion:
 

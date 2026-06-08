@@ -41,6 +41,8 @@ REQUIRED_GITIGNORE_PATTERNS = (
     "data/dialogue_history.json",
     "artifacts/simulation/",
     "artifacts/llm_smoke/",
+    "artifacts/character-pack-status*.json",
+    "artifacts/character-pack-status*.md",
     "artifacts/portrait-video-frame-preflight*.json",
     "artifacts/portrait-candidate*.png",
     "artifacts/portrait-candidate*/",
