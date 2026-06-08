@@ -25,7 +25,10 @@ def _write_halo_portrait(path: Path) -> None:
 
 
 def test_portrait_candidate_decision_brief_reports_blockers_and_warnings(tmp_path: Path):
-    from tools.art.portrait_candidate_decision_brief import build_portrait_candidate_decision_brief
+    from tools.art.portrait_candidate_decision_brief import (
+        build_portrait_candidate_decision_brief,
+        render_portrait_candidate_decision_markdown,
+    )
 
     candidate = tmp_path / "portrait-candidate"
     _write_halo_portrait(candidate / "portraits" / "neutral_open.png")
@@ -54,6 +57,12 @@ def test_portrait_candidate_decision_brief_reports_blockers_and_warnings(tmp_pat
     assert brief.next_human_decisions == (
         "approve edge cleanup and expression/blink generation for this candidate, or reject it and regenerate",
     )
+    markdown = render_portrait_candidate_decision_markdown(brief)
+    assert "# Portrait Candidate Decision Brief" in markdown
+    assert "Decision state: `needs_iteration`" in markdown
+    assert "- candidate status is not approved" in markdown
+    assert "- neutral.open: light_edge_halo_risk" in markdown
+    assert "approve edge cleanup and expression/blink generation" in markdown
 
 
 def test_portrait_candidate_decision_brief_accepts_ready_metadata_without_visual_warnings(tmp_path: Path):
@@ -100,6 +109,7 @@ def test_portrait_candidate_decision_brief_accepts_ready_metadata_without_visual
 def test_portrait_candidate_decision_brief_cli_writes_json_from_repo_root(tmp_path: Path):
     candidate = tmp_path / "portrait-candidate"
     report_path = tmp_path / "decision-brief.json"
+    markdown_path = tmp_path / "decision-brief.md"
     _write_halo_portrait(candidate / "portraits" / "neutral_open.png")
     manifest = _write_candidate_manifest(
         candidate,
@@ -113,6 +123,8 @@ def test_portrait_candidate_decision_brief_cli_writes_json_from_repo_root(tmp_pa
             str(manifest),
             "--report",
             str(report_path),
+            "--markdown",
+            str(markdown_path),
         ],
         cwd=Path(__file__).resolve().parents[1],
         capture_output=True,
@@ -126,3 +138,5 @@ def test_portrait_candidate_decision_brief_cli_writes_json_from_repo_root(tmp_pa
     assert payload["ok"] is True
     assert payload["decision_state"] == "needs_iteration"
     assert report_path.is_file()
+    assert markdown_path.is_file()
+    assert "Decision state: `needs_iteration`" in markdown_path.read_text(encoding="utf-8")

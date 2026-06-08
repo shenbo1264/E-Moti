@@ -79,6 +79,37 @@ def build_portrait_candidate_decision_brief(candidate_manifest_path: Path | str)
     )
 
 
+def render_portrait_candidate_decision_markdown(brief: PortraitCandidateDecisionBrief) -> str:
+    lines = [
+        "# Portrait Candidate Decision Brief",
+        "",
+        f"- Manifest: `{brief.path}`",
+        f"- Status: `{brief.status}`",
+        f"- Decision state: `{brief.decision_state}`",
+        f"- Image count: `{brief.image_count}`",
+        "",
+        "## Blockers",
+        *_markdown_list(brief.blockers),
+        "",
+        "## Warnings",
+        *_markdown_list(brief.warnings),
+        "",
+        "## Validation Errors",
+        *_markdown_list(brief.validation_errors),
+        "",
+        "## Next Human Decisions",
+        *_markdown_list(brief.next_human_decisions),
+        "",
+    ]
+    return "\n".join(lines)
+
+
+def _markdown_list(items: tuple[str, ...]) -> list[str]:
+    if not items:
+        return ["- None"]
+    return [f"- {item}" for item in items]
+
+
 def _read_manifest_object(path: Path) -> dict[str, object]:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -133,6 +164,7 @@ def _parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Summarize portrait candidate readiness for human QA decisions.")
     parser.add_argument("candidate_manifest")
     parser.add_argument("--report", default="")
+    parser.add_argument("--markdown", default="")
     return parser.parse_args(argv)
 
 
@@ -144,6 +176,10 @@ def main(argv: list[str] | None = None) -> int:
         target = Path(args.report)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(payload, encoding="utf-8")
+    if args.markdown:
+        target = Path(args.markdown)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(render_portrait_candidate_decision_markdown(brief), encoding="utf-8")
     print(payload)
     return 0 if brief.ok else 1
 
