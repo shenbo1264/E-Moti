@@ -128,6 +128,36 @@ def test_build_portrait_candidate_visual_qa_writes_preview_and_metrics(tmp_path:
         assert image.height >= 640
 
 
+def test_build_portrait_candidate_visual_qa_includes_optional_motion_frames(tmp_path: Path):
+    from tools.art.portrait_candidate_visual_qa import build_portrait_candidate_visual_qa
+    from tools.art.prepare_portrait_candidate import prepare_portrait_candidate
+
+    source = tmp_path / "source.png"
+    candidate = tmp_path / "portrait-candidate"
+    report_path = tmp_path / "portrait-qa-report.json"
+    preview_path = tmp_path / "portrait-qa-preview.png"
+    _write_rgb_source(source)
+    prepare_portrait_candidate(source, candidate)
+    motion_frame = candidate / "motion_frames" / "idle_0001.png"
+    motion_frame.parent.mkdir(parents=True)
+    Image.open(candidate / "portraits" / "neutral_open.png").save(motion_frame)
+    payload = json.loads((candidate / "portrait_candidate.json").read_text(encoding="utf-8"))
+    payload["motion_frames"] = ["motion_frames/idle_0001.png"]
+    (candidate / "portrait_candidate.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    report = build_portrait_candidate_visual_qa(
+        candidate / "portrait_candidate.json",
+        preview_path=preview_path,
+        report_path=report_path,
+    )
+
+    labels = [image["label"] for image in report.images]
+    assert labels == ["neutral.open", "motion_frames.0"]
+    assert report.image_count == 2
+    assert report_path.is_file()
+    assert preview_path.is_file()
+
+
 def test_inspect_portrait_candidate_visual_qa_does_not_write_preview(tmp_path: Path):
     from tools.art.portrait_candidate_visual_qa import inspect_portrait_candidate_visual_qa
     from tools.art.prepare_portrait_candidate import prepare_portrait_candidate

@@ -129,6 +129,12 @@ def _manifest_image_entries(manifest_path: Path, errors: list[str]) -> list[tupl
                 errors.append(f"expressions.{label} path must stay inside candidate directory")
                 continue
             entries.append((label, resolved))
+    for label, frame_path in _motion_frame_paths(payload, errors):
+        resolved = _safe_image_path(root, frame_path)
+        if resolved is None:
+            errors.append(f"{label} path must stay inside candidate directory")
+            continue
+        entries.append((label, resolved))
     return entries
 
 
@@ -148,8 +154,21 @@ def _frame_paths(value: object) -> Iterable[tuple[str, object]]:
             yield str(key), item
 
 
+def _motion_frame_paths(payload: dict[str, object], errors: list[str]) -> Iterable[tuple[str, object]]:
+    value = payload.get("motion_frames")
+    if value is None:
+        return
+    if not isinstance(value, list):
+        errors.append("motion_frames must be an array")
+        return
+    for index, item in enumerate(value):
+        yield f"motion_frames.{index}", item
+
+
 def _safe_image_path(root: Path, value: object) -> Path | None:
     if not isinstance(value, str) or not value.strip():
+        return None
+    if len(value) > 180 or any(ord(char) < 32 or ord(char) == 127 for char in value):
         return None
     path = Path(value)
     if path.is_absolute() or ".." in path.parts or path.suffix.lower() != ".png":

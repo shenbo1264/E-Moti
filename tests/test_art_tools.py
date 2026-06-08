@@ -236,6 +236,58 @@ def test_validate_portrait_candidate_writes_contact_sheet(tmp_path: Path):
         assert image.height >= 512
 
 
+def test_validate_portrait_candidate_includes_optional_motion_frames(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png")
+    (candidate / "motion_frames").mkdir()
+    write_portrait_candidate_image(candidate / "motion_frames" / "idle_0001.png")
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "candidate",
+                "expressions": {"neutral": "neutral_open.png"},
+                "motion_frames": ["motion_frames/idle_0001.png"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    contact_sheet = tmp_path / "candidate-contact-sheet.png"
+
+    report = validate_portrait_candidate(manifest, contact_sheet_path=contact_sheet)
+
+    assert report.ok is True
+    assert report.image_count == 2
+    assert contact_sheet.exists()
+
+
+def test_validate_portrait_candidate_rejects_unsafe_motion_frame_path(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png")
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "candidate",
+                "expressions": {"neutral": "neutral_open.png"},
+                "motion_frames": ["../idle_0001.png"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(manifest)
+
+    assert report.ok is False
+    assert "motion_frames.0 path must stay inside candidate directory" in report.errors
+
+
 def test_validate_portrait_candidate_rejects_invalid_status_and_unsafe_path(tmp_path: Path):
     from tools.art.validate_portrait_candidates import validate_portrait_candidate
 

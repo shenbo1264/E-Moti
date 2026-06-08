@@ -125,6 +125,15 @@ def _candidate_image_entries(
             if resolved not in seen:
                 seen.add(resolved)
                 entries.append((label, resolved))
+    for label, frame_path in _motion_frame_paths(payload, errors):
+        resolved = _safe_candidate_image_path(root, frame_path)
+        if resolved is None:
+            errors.append(f"{label} path must stay inside candidate directory")
+            continue
+        _validate_candidate_image(resolved, label, errors)
+        if resolved not in seen:
+            seen.add(resolved)
+            entries.append((label, resolved))
     if not entries and not errors:
         errors.append("expressions must include at least one image")
     return entries
@@ -145,6 +154,16 @@ def _portrait_frame_paths(value: object) -> tuple[tuple[str, object], ...]:
         if key not in {"open", "blink_half", "blink_closed"}:
             frames.append((str(key), item))
     return tuple(frames)
+
+
+def _motion_frame_paths(payload: dict[str, object], errors: list[str]) -> tuple[tuple[str, object], ...]:
+    value = payload.get("motion_frames")
+    if value is None:
+        return ()
+    if not isinstance(value, list):
+        errors.append("motion_frames must be an array")
+        return ()
+    return tuple((f"motion_frames.{index}", item) for index, item in enumerate(value))
 
 
 def _safe_candidate_image_path(root: Path, value: object) -> Path | None:
