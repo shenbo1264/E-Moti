@@ -168,6 +168,11 @@ Latest non-confirmation packages completed after the original plan:
   - Adds `reference_size` to generated `source_pack.json` metadata and shows the exact required frame size in `AI_VIDEO_HANDOFF_README.md`.
   - The current ignored neutral source pack now tells operators to export frames at `1024x1536`, matching the reference portrait instead of the rejected `496x744` video output.
   - This is source-pack metadata/handoff guidance only. It does not call providers, change runtime manifests, process frames, or approve generated assets.
+- `P3-video-frame-normalization` package:
+  - Adds `tools/art/normalize_portrait_video_source_frames.py` for free/trial providers that export lower-resolution frames with the same portrait aspect ratio.
+  - The tool clones a source pack, writes resized frames to a sibling ignored source pack, and leaves the original provider frames untouched.
+  - Local simulation on the current `496x744` ignored frames produced a `1024x1536` normalized clone, but frame preflight still reported 60 body-drift warnings and the single-pack processor blocked extraction.
+  - The normalized clone must still pass frame preflight before processing. This does not loosen body-drift checks, call providers, change runtime manifests, or approve generated assets.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

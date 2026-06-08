@@ -62,11 +62,11 @@ Recommended fallback order for this project:
 
 | Route | Use When | Notes |
 | --- | --- | --- |
-| Runway | Need a fast online image-to-video check. | Use the official pricing/account page to confirm current free credits or watermarks before batch work: <https://runwayml.com/pricing>. |
-| Hailuo | Need another online image-to-video pass with simple prompt control. | Use the image-to-video tool and confirm account limits in the current UI: <https://hailuoai.video/tools/image-to-video>. |
-| Vidu | Need an anime-friendly online reference/image-to-video attempt. | Confirm current free or trial allowance before use: <https://www.vidu.com/pricing>. |
+| Pika | Need the most direct free online image-to-video attempt. | Current public pricing shows free monthly video credits and free 480p image-to-video access, so expect low-resolution output and use frame normalization only when aspect ratio matches: <https://pika.art/pricing>. |
+| Runway | Need a fast online image-to-video check. | Current public pricing shows one-time free credits and Gen-4 Turbo image-to-video access; confirm account credits and watermark/export limits before batch work: <https://runwayml.com/pricing>. |
+| Krea | Need another free-credit online pass. | Current public pricing shows daily compute units and limited video-model access; expect low-resolution output and run the normalizer/preflight gates: <https://www.krea.ai/pricing>. |
 | LivePortrait | Need a no-account fallback for subtle portrait motion. | This is not text-to-video; use the portrait as source image and a restrained driving clip/template for blink and breathing: <https://github.com/KwaiVGI/LivePortrait>. |
-| Pika, Kling, PixVerse, Krea | Need extra variations after the first three routes fail. | Use the same `provider_prompts.md`; verify current account credits and watermark/export rules before spending time on batch runs. |
+| Hailuo, Kling, PixVerse, Vidu | Need extra variations after the first routes fail. | Use the same `provider_prompts.md`; verify current account credits and watermark/export rules in the logged-in UI before spending time on batch runs. |
 | Wan2.1 or LTX-Video | Need an open-source image-to-video experiment later. | These routes are heavier than LivePortrait and should stay research-only until a separate local/GPU/cloud workflow is approved: <https://github.com/Wan-Video/Wan2.1>, <https://github.com/Lightricks/ltx-video>. |
 
 For blink and breathing, prefer conservative outputs over cinematic motion:
@@ -76,6 +76,17 @@ For blink and breathing, prefer conservative outputs over cinematic motion:
 3. Export PNG frames back into the matching `frames/` folder.
 4. Run the frame preflight before extraction.
 5. Keep the runtime manifest unchanged until the promotion gate and human QA pass.
+
+Some free or trial providers only export lower-resolution vertical clips. If the exported PNG frames have the same aspect ratio as the reference image, clone the source pack and resize those frames into a normalized ignored source pack instead of overwriting the originals:
+
+```powershell
+python tools\art\normalize_portrait_video_source_frames.py `
+  artifacts\portrait-video-source\xingxi-vn-neutral-20260608 `
+  --output-pack-dir artifacts\portrait-video-source\xingxi-vn-neutral-20260608-normalized `
+  --report artifacts\portrait-video-frame-normalization.json
+```
+
+This is only a canvas-size repair step. It rejects aspect-ratio mismatches, preserves the original provider frames, and still requires the normalized source pack to pass frame preflight before extraction.
 
 ## Bundle Handoff Zips
 
@@ -136,6 +147,21 @@ python tools\art\inspect_portrait_video_source_frames.py `
 ```
 
 The preflight report opens every PNG frame, rejects unreadable frames as `invalid_frames`, reports `insufficient_frames` below 3 readable PNGs, and flags size mismatches or high body drift as `ready_with_warnings` for manual review before extraction.
+
+If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
+
+```powershell
+python tools\art\normalize_portrait_video_source_frames.py `
+  artifacts\portrait-video-source\xingxi-vn-neutral-20260608 `
+  --output-pack-dir artifacts\portrait-video-source\xingxi-vn-neutral-20260608-normalized `
+  --report artifacts\portrait-video-frame-normalization.json
+
+python tools\art\inspect_portrait_video_source_frames.py `
+  artifacts\portrait-video-source `
+  --report artifacts\portrait-video-frame-preflight.json
+```
+
+Do not use normalization for cropped, reframed, widened, or recomposed output. Those need regeneration, not resizing.
 
 ## Extract Blink And Idle Candidates
 

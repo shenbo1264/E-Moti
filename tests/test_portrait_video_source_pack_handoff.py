@@ -67,6 +67,9 @@ def test_bundle_portrait_video_source_packs_writes_one_zip_per_source_pack(tmp_p
         assert "Export PNG frames at the same pixel size as the reference image" in handoff
         assert "Required frame size: `256x512`" in handoff
         assert "python tools\\art\\inspect_portrait_video_source_frames.py" in handoff
+        assert "python tools\\art\\normalize_portrait_video_source_frames.py" in handoff
+        assert "same-aspect lower-resolution frames" in handoff
+        assert "normalized pack still must report `ready`" in handoff
         assert "ready_with_warnings" in handoff
         assert "regenerate the AI video" in handoff
         assert "Put exported PNG frames back into" in handoff

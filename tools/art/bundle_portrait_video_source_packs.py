@@ -239,6 +239,8 @@ def _handoff_readme(*, set_id: str, source_pack: Path, reference_size: tuple[int
             "",
             "- Run `python tools\\art\\inspect_portrait_video_source_frames.py artifacts\\portrait-video-source --report artifacts\\portrait-video-frame-preflight.json`.",
             "- Continue only when the source pack reports `ready`.",
+            "- If the provider only exports same-aspect lower-resolution frames, clone them with `python tools\\art\\normalize_portrait_video_source_frames.py <source-pack-dir> --output-pack-dir <normalized-source-pack-dir>`.",
+            "- The normalized pack still must report `ready` before extraction; normalization is not approval.",
             "- If it reports `ready_with_warnings`, size mismatches, pose drift, crop, zoom, or body recomposition, regenerate the AI video before extraction.",
             "",
             "Do not commit generated videos or rejected frames unless they are explicitly approved release assets.",
