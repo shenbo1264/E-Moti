@@ -225,11 +225,12 @@ Validate the frozen app bundle and installer artifacts:
 python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
 python tools\release_readiness_report.py --json artifacts\release-readiness.json --markdown artifacts\release-readiness.md
 python tools\release_readiness_report.py --llm-report artifacts\llm_smoke\deepseek-expression-cue-probe.json --llm-report artifacts\llm_smoke\deepseek-live-smoke.json --json artifacts\release-readiness-with-llm.json --markdown artifacts\release-readiness-with-llm.md
+python tools\release_readiness_report.py --llm-report artifacts\llm_smoke --json artifacts\release-readiness-with-llm-directory.json --markdown artifacts\release-readiness-with-llm-directory.md
 python tools\release_readiness_report.py --portrait-workflow-report artifacts\portrait-video-workflow-report.json --json artifacts\release-readiness-with-portrait-workflow.json --markdown artifacts\release-readiness-with-portrait-workflow.md
 ```
 
 The build validator also checks that the frozen bundled `original_oc` character pack includes its manifest, portraits, preview, item icons, provenance note, and pack-level `LICENSE.md`.
-`release_readiness_report.py` is a read-only aggregate report that combines the source character-pack status review with frozen Windows build validation. Pass one or more `--llm-report` paths to include existing dialogue smoke or expression cue probe JSON reports without calling a provider. Pass `--portrait-workflow-report` to include an existing AI-video workflow JSON report so unresolved motion-frame blockers and suggested local follow-up commands stay visible in release notes.
+`release_readiness_report.py` is a read-only aggregate report that combines the source character-pack status review with frozen Windows build validation. Pass one or more `--llm-report` paths to include existing dialogue smoke or expression cue probe JSON reports without calling a provider. `--llm-report` also accepts an ignored smoke artifact directory and summarizes the batch review; old-format or failing reports in that directory intentionally make release readiness need attention. Pass `--portrait-workflow-report` to include an existing AI-video workflow JSON report so unresolved motion-frame blockers and suggested local follow-up commands stay visible in release notes.
 
 ## Optional AI Capabilities
 

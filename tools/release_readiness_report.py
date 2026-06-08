@@ -15,7 +15,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from tools.review_character_pack_status import review_character_pack_status
-from tools.review_llm_smoke_report import review_llm_smoke_report
+from tools.review_llm_smoke_report import review_llm_smoke_report, review_llm_smoke_reports_in_directory
 from tools.validate_windows_build import DEFAULT_APP_DIR, DEFAULT_INSTALLER, validate_windows_build
 
 
@@ -96,6 +96,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if model:
             lines.append(f"- Model: `{model}`")
         for key, label in (
+            ("report_count", "Reports"),
+            ("passed_count", "Passed reports"),
+            ("needs_attention_count", "Needs attention"),
+            ("invalid_count", "Invalid reports"),
             ("turn_count", "Turns"),
             ("case_count", "Cue cases"),
             ("cue_failed_count", "Cue failures"),
@@ -157,6 +161,9 @@ def _windows_build_check(app_dir: Path, installer_path: Path | None) -> dict[str
 
 
 def _llm_report_check(report_path: Path) -> dict[str, object]:
+    if report_path.is_dir():
+        return _llm_report_directory_check(report_path)
+
     payload = _load_json_object(report_path)
     if not isinstance(payload, dict):
         return {
@@ -192,6 +199,25 @@ def _llm_report_check(report_path: Path) -> dict[str, object]:
         "errors": [f"{issue.kind}: {issue.message}" for issue in review.issues],
         "warnings": [],
         "next_actions": [] if review.ok else ["review LLM smoke report before release"],
+    }
+
+
+def _llm_report_directory_check(report_path: Path) -> dict[str, object]:
+    review = review_llm_smoke_reports_in_directory(report_path)
+    ok = review.get("ok") is True
+    return {
+        "id": "llm_report_directory",
+        "label": "LLM Smoke Report Directory",
+        "ok": ok,
+        "status": str(review.get("status") or "unknown"),
+        "path": str(report_path),
+        "report_count": _nonnegative_int(review.get("report_count")),
+        "passed_count": _nonnegative_int(review.get("passed_count")),
+        "needs_attention_count": _nonnegative_int(review.get("needs_attention_count")),
+        "invalid_count": _nonnegative_int(review.get("invalid_count")),
+        "errors": _string_list(review.get("errors")),
+        "warnings": [],
+        "next_actions": [] if ok else ["review LLM smoke artifact directory before release"],
     }
 
 

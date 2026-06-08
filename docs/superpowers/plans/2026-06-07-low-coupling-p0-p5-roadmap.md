@@ -221,6 +221,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes release readiness JSON and Markdown carry LLM smoke review metadata from `tools/review_llm_smoke_report.py`.
   - LLM checks now expose provider, model, report type, turn/cue counts, fallback count, issue count, speech-quality violations, and state-guard status.
   - This is offline report explainability only. It does not call providers, persist prompts, change prompt policy, or alter runtime state.
+- `P1/P5-release-readiness-llm-directory` package:
+  - Allows `tools/release_readiness_report.py --llm-report` to accept an ignored LLM smoke artifact directory.
+  - The directory check reuses `tools/review_llm_smoke_report.py` batch review and exposes report counts, passed count, needs-attention count, and invalid count.
+  - Current local directory summary is intentionally `needs_attention` because older smoke artifacts remain in the ignored folder; this prevents stale artifacts from being treated as release proof.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

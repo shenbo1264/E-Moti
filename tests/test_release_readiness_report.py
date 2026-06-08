@@ -221,6 +221,34 @@ def test_release_readiness_report_accepts_ready_llm_report(tmp_path: Path):
     assert "- State guard: `passed`" in markdown
 
 
+def test_release_readiness_report_accepts_ready_llm_report_directory(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    llm_dir = tmp_path / "llm-smoke"
+    llm_dir.mkdir()
+    _write_llm_report(llm_dir / "llm-cue.json", ok=True)
+
+    result = _run_tool(character_pack, app_dir, installer, tmp_path, llm_reports=[llm_dir])
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0, result.stderr
+    llm_check = payload["checks"][2]
+    assert llm_check["id"] == "llm_report_directory"
+    assert llm_check["ok"] is True
+    assert llm_check["status"] == "passed"
+    assert llm_check["report_count"] == 1
+    assert llm_check["passed_count"] == 1
+    assert llm_check["needs_attention_count"] == 0
+    assert llm_check["invalid_count"] == 0
+    assert llm_check["next_actions"] == []
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### LLM Smoke Report Directory" in markdown
+    assert "- Reports: `1`" in markdown
+    assert "- Passed reports: `1`" in markdown
+    assert "- Needs attention: `0`" in markdown
+    assert "- Invalid reports: `0`" in markdown
+
+
 def test_release_readiness_report_surfaces_source_pack_distribution_issue(tmp_path: Path):
     character_pack = _copy_original_pack(tmp_path / "source")
     (character_pack / "LICENSE.md").unlink()
