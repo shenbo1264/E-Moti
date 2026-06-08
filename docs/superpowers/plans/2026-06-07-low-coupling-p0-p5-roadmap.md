@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this expression-cue-probe package: `b07a7e8 feat: strengthen llm expression cue guidance`
+- Latest committed checkpoint before this cue-probe-review package: `abbf46d feat: add llm expression cue probes`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -31,7 +31,7 @@ Latest focused LLM/review tests run on 2026-06-09:
 python -m pytest tests\test_ai_expressor.py tests\test_companion_dialogue_policy.py tests\test_expression_clients.py tests\test_expression_diagnostics.py tests\test_expression_event_pipeline.py tests\test_visual_actions.py tests\test_llm_smoke.py tests\test_llm_smoke_review.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `173 passed`.
+Result: `175 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -39,7 +39,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `669 passed`.
+Result: `671 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -138,6 +138,10 @@ Latest non-confirmation packages completed after the original plan:
   - The probe sends five explicit player-like cue cases for `joy`, `sadness`, `sleepy`, `focused`, and `surprised`, then checks typed `visual_actions.expression` ids, fallback use, speech length gates, and state mutation.
   - First DeepSeek live run hit one transient `provider_error` fallback on the sadness case; rerun artifact `artifacts/llm_smoke/deepseek-expression-cue-probe-20260609-rerun.json` passed with 5/5 cases, no speech quality violations, and clean state guard.
   - This is a QA/probe tool only. It does not change runtime renderer behavior, state ownership, provider clients, assets, or manifests.
+- `P1-cue-probe-review` package:
+  - Extends `tools/review_llm_smoke_report.py` so the same offline review CLI can read expression cue probe JSON reports as well as dialogue smoke reports.
+  - Review output now exposes report type, cue case count, cue failure count, cue-case miss messages, and cue-derived expression/motion coverage.
+  - This is offline artifact review only. It does not call providers, change prompt policy, change expression parsing, or alter runtime state.
 
 Latest confirmation-gated packages completed after user approval:
 

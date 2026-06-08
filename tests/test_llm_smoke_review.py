@@ -53,6 +53,58 @@ def _passing_report() -> dict[str, object]:
     }
 
 
+def _passing_cue_probe_report() -> dict[str, object]:
+    return {
+        "ok": True,
+        "reason": "",
+        "diagnostic": {
+            "ok": True,
+            "stage": "event_validation",
+            "reason": "",
+            "provider": "deepseek",
+            "model": "deepseek-v4-flash",
+            "base_url": "https://api.deepseek.com",
+        },
+        "probe_count": 2,
+        "passed_count": 2,
+        "failed_count": 0,
+        "cases": [
+            {
+                "case_id": "joy",
+                "expected_expression_id": "joy",
+                "ok": True,
+                "reason": "",
+                "speech_len": 18,
+                "speech_preview": "太好了，我也跟着开心起来。",
+                "expression_ids": ["joy"],
+                "motion_ids": ["Raised"],
+                "fallback_reason": "",
+            },
+            {
+                "case_id": "sadness",
+                "expected_expression_id": "sadness",
+                "ok": True,
+                "reason": "",
+                "speech_len": 22,
+                "speech_preview": "那我靠近一点，先陪你待一会儿。",
+                "expression_ids": ["sadness"],
+                "motion_ids": ["SwitchDown"],
+                "fallback_reason": "",
+            },
+        ],
+        "speech_quality": {
+            "min_speech_chars": 8,
+            "max_speech_chars": 80,
+            "empty_count": 0,
+            "short_count": 0,
+            "long_count": 0,
+            "violations": [],
+        },
+        "state_mutation_check": {"ok": True, "changed_fields": []},
+        "history_len": 4,
+    }
+
+
 def test_review_llm_smoke_report_marks_clean_report_passed():
     from tools.review_llm_smoke_report import review_llm_smoke_report, render_llm_smoke_review_markdown
 
@@ -70,6 +122,54 @@ def test_review_llm_smoke_report_marks_clean_report_passed():
     assert "- Status: `passed`" in markdown
     assert "- Speech quality violations: `0`" in markdown
     assert "- State guard: `passed`" in markdown
+
+
+def test_review_llm_smoke_report_accepts_expression_cue_probe_report():
+    from tools.review_llm_smoke_report import review_llm_smoke_report, render_llm_smoke_review_markdown
+
+    review = review_llm_smoke_report(_passing_cue_probe_report())
+
+    assert review.ok is True
+    assert review.status == "passed"
+    assert review.report_type == "expression_cue_probe"
+    assert review.case_count == 2
+    assert review.cue_failed_count == 0
+    payload = review.to_dict()
+    assert payload["report_type"] == "expression_cue_probe"
+    assert payload["case_count"] == 2
+    assert payload["cue_failed_count"] == 0
+    markdown = render_llm_smoke_review_markdown(review)
+    assert "- Report type: `expression_cue_probe`" in markdown
+    assert "- Cue cases: `2`" in markdown
+    assert "- Cue failures: `0`" in markdown
+
+
+def test_review_llm_smoke_report_surfaces_expression_cue_failures():
+    from tools.review_llm_smoke_report import review_llm_smoke_report, render_llm_smoke_review_markdown
+
+    payload = _passing_cue_probe_report()
+    payload["ok"] = False
+    payload["reason"] = "cue:sadness:expected_expression:sadness"
+    payload["passed_count"] = 1
+    payload["failed_count"] = 1
+    payload["cases"][1] = {
+        **payload["cases"][1],
+        "ok": False,
+        "reason": "expected_expression:sadness",
+        "expression_ids": ["calm"],
+    }
+
+    review = review_llm_smoke_report(payload)
+
+    assert review.ok is False
+    assert review.status == "needs_attention"
+    assert review.report_type == "expression_cue_probe"
+    assert review.case_count == 2
+    assert review.cue_failed_count == 1
+    assert [issue.kind for issue in review.issues] == ["report_failed", "cue_case_failed"]
+    markdown = render_llm_smoke_review_markdown(review)
+    assert "cue:sadness:expected_expression:sadness" in markdown
+    assert "sadness expected `sadness` got `[calm]`" in markdown
 
 
 def test_review_llm_smoke_report_surfaces_speech_quality_failures():

@@ -24,10 +24,14 @@ class LLMSmokeReviewIssue:
 class LLMSmokeReview:
     ok: bool
     status: str
+    report_type: str
     provider: str
     model: str
     reason: str
     turn_count: int
+    case_count: int
+    cue_passed_count: int
+    cue_failed_count: int
     fallback_count: int
     issue_count: int
     speech_quality: dict[str, object]
@@ -39,10 +43,14 @@ class LLMSmokeReview:
         return {
             "ok": self.ok,
             "status": self.status,
+            "report_type": self.report_type,
             "provider": self.provider,
             "model": self.model,
             "reason": self.reason,
             "turn_count": self.turn_count,
+            "case_count": self.case_count,
+            "cue_passed_count": self.cue_passed_count,
+            "cue_failed_count": self.cue_failed_count,
             "fallback_count": self.fallback_count,
             "issue_count": self.issue_count,
             "speech_quality": dict(self.speech_quality),
@@ -55,8 +63,10 @@ class LLMSmokeReview:
 def review_llm_smoke_report(report: Mapping[str, object]) -> LLMSmokeReview:
     diagnostic = _mapping(report.get("diagnostic"))
     turns = _list_of_mappings(report.get("turns"))
+    cases = _list_of_mappings(report.get("cases"))
+    report_type = _report_type(report, cases)
     speech_quality = _speech_quality_summary(report.get("speech_quality"))
-    visual_action_coverage = _mapping(report.get("visual_action_coverage"))
+    visual_action_coverage = _mapping(report.get("visual_action_coverage")) or _cue_visual_action_coverage(cases)
     state_mutation_check = _mapping(report.get("state_mutation_check")) or {"ok": True, "changed_fields": []}
     reason = _string(report.get("reason"))
 
@@ -71,6 +81,8 @@ def review_llm_smoke_report(report: Mapping[str, object]) -> LLMSmokeReview:
 
     fallback_issues = _fallback_issues(turns)
     issues.extend(fallback_issues)
+    cue_case_issues = _cue_case_issues(cases)
+    issues.extend(cue_case_issues)
 
     if report.get("speech_quality") is None:
         issues.append(
@@ -92,11 +104,15 @@ def review_llm_smoke_report(report: Mapping[str, object]) -> LLMSmokeReview:
     return LLMSmokeReview(
         ok=review_ok,
         status="passed" if review_ok else "needs_attention",
+        report_type=report_type,
         provider=provider,
         model=model,
         reason=reason,
         turn_count=len(turns),
-        fallback_count=len(fallback_issues),
+        case_count=len(cases),
+        cue_passed_count=sum(1 for case in cases if case.get("ok") is True),
+        cue_failed_count=sum(1 for case in cases if case.get("ok") is not True),
+        fallback_count=len(fallback_issues) + _cue_fallback_count(cases),
         issue_count=len(issues),
         speech_quality=speech_quality,
         visual_action_coverage=dict(visual_action_coverage),
@@ -110,10 +126,13 @@ def render_llm_smoke_review_markdown(review: LLMSmokeReview) -> str:
         "# LLM Smoke Review",
         "",
         f"- Status: `{review.status}`",
+        f"- Report type: `{review.report_type}`",
         f"- Provider: `{review.provider or 'unknown'}`",
         f"- Model: `{review.model or 'unknown'}`",
         f"- Reason: `{review.reason or ''}`",
         f"- Turns: `{review.turn_count}`",
+        f"- Cue cases: `{review.case_count}`",
+        f"- Cue failures: `{review.cue_failed_count}`",
         f"- Fallback turns: `{review.fallback_count}`",
         f"- Speech quality violations: `{review.speech_quality['violation_count']}`",
         f"- State guard: `{'passed' if review.state_mutation_check.get('ok') is not False else 'failed'}`",
@@ -170,8 +189,8 @@ def render_llm_smoke_batch_review_markdown(batch: Mapping[str, object]) -> str:
         f"- Needs attention: `{_int(batch.get('needs_attention_count'))}`",
         f"- Invalid: `{_int(batch.get('invalid_count'))}`",
         "",
-        "| File | Status | Provider | Model | Reason | Issues | Turns | Fallback | Speech Violations | State Guard |",
-        "| --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | --- |",
+        "| File | Status | Type | Provider | Model | Reason | Issues | Turns | Cue Cases | Cue Failures | Fallback | Speech Violations | State Guard |",
+        "| --- | --- | --- | --- | --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | --- |",
     ]
     for item in reports:
         speech_quality = _mapping(item.get("speech_quality"))
@@ -183,11 +202,14 @@ def render_llm_smoke_batch_review_markdown(batch: Mapping[str, object]) -> str:
                 (
                     _escape_markdown_table(path_name),
                     f"`{_string(item.get('status')) or 'unknown'}`",
+                    _escape_markdown_table(_string(item.get("report_type")) or "unknown"),
                     _escape_markdown_table(_string(item.get("provider")) or "unknown"),
                     _escape_markdown_table(_string(item.get("model")) or "unknown"),
                     _escape_markdown_table(_string(item.get("reason"))),
                     str(_int(item.get("issue_count"))),
                     str(_int(item.get("turn_count"))),
+                    str(_int(item.get("case_count"))),
+                    str(_int(item.get("cue_failed_count"))),
                     str(_int(item.get("fallback_count"))),
                     str(_int(speech_quality.get("violation_count"))),
                     "`passed`" if state_guard.get("ok") is not False else "`failed`",
@@ -244,10 +266,14 @@ def _invalid_review(errors: tuple[str, ...]) -> LLMSmokeReview:
     return LLMSmokeReview(
         ok=False,
         status="invalid_report",
+        report_type="invalid",
         provider="",
         model="",
         reason=errors[0] if errors else "invalid report",
         turn_count=0,
+        case_count=0,
+        cue_passed_count=0,
+        cue_failed_count=0,
         fallback_count=0,
         issue_count=len(errors) or 1,
         speech_quality=_speech_quality_summary({}),
@@ -291,6 +317,48 @@ def _fallback_issues(turns: tuple[Mapping[str, object], ...]) -> list[LLMSmokeRe
         if fallback:
             issues.append(LLMSmokeReviewIssue("turn_fallback", f"turn {turn.get('turn')}: {fallback}"))
     return issues
+
+
+def _cue_case_issues(cases: tuple[Mapping[str, object], ...]) -> list[LLMSmokeReviewIssue]:
+    issues: list[LLMSmokeReviewIssue] = []
+    for case in cases:
+        if case.get("ok") is True:
+            continue
+        case_id = _string(case.get("case_id")) or "unknown"
+        expected = _string(case.get("expected_expression_id")) or "unknown"
+        expression_ids = _inline_code_list(case.get("expression_ids"))
+        reason = _string(case.get("reason"))
+        suffix = f" ({reason})" if reason else ""
+        issues.append(
+            LLMSmokeReviewIssue(
+                "cue_case_failed",
+                f"{case_id} expected `{expected}` got {expression_ids}{suffix}",
+            )
+        )
+    return issues
+
+
+def _cue_fallback_count(cases: tuple[Mapping[str, object], ...]) -> int:
+    return sum(1 for case in cases if _string(case.get("fallback_reason")))
+
+
+def _cue_visual_action_coverage(cases: tuple[Mapping[str, object], ...]) -> dict[str, object]:
+    if not cases:
+        return {}
+    expression_ids = sorted({item for case in cases for item in _string_list(case.get("expression_ids"))})
+    motion_ids = sorted({item for case in cases for item in _string_list(case.get("motion_ids"))})
+    return {
+        "expression_count": len(expression_ids),
+        "expression_ids": expression_ids,
+        "motion_count": len(motion_ids),
+        "motion_ids": motion_ids,
+    }
+
+
+def _report_type(report: Mapping[str, object], cases: tuple[Mapping[str, object], ...]) -> str:
+    if cases or "probe_count" in report:
+        return "expression_cue_probe"
+    return "dialogue_smoke"
 
 
 def _inline_code_list(value: object) -> str:

@@ -163,7 +163,7 @@ python tools\review_llm_smoke_report.py artifacts\llm_smoke --json artifacts\llm
 Remove-Item Env:\DEEPSEEK_API_KEY
 ```
 
-The dry run prints sanitized provider settings without API calls. The live LLM smoke uses a temporary save directory and can write a UTF-8 JSON report with `--report`. It fails if the provider cannot be called, if fallback is used, if growth state mutates, if expression/motion coverage is too weak, or if speech is empty, too short, or too long for the configured smoke thresholds. `llm_expression_cue_probe.py` sends explicit player-like joy, sadness, sleepy, focused, and surprised cue cases and verifies that the typed expression action includes the expected visible emotion. `review_llm_smoke_report.py` converts an existing smoke JSON or an ignored smoke artifact directory into compact JSON/Markdown review output without calling any provider.
+The dry run prints sanitized provider settings without API calls. The live LLM smoke uses a temporary save directory and can write a UTF-8 JSON report with `--report`. It fails if the provider cannot be called, if fallback is used, if growth state mutates, if expression/motion coverage is too weak, or if speech is empty, too short, or too long for the configured smoke thresholds. `llm_expression_cue_probe.py` sends explicit player-like joy, sadness, sleepy, focused, and surprised cue cases and verifies that the typed expression action includes the expected visible emotion. `review_llm_smoke_report.py` converts an existing dialogue smoke JSON, expression cue probe JSON, or ignored smoke artifact directory into compact JSON/Markdown review output without calling any provider.
 
 Live2D smoke tests require local-only verification dependencies that are not committed:
 
