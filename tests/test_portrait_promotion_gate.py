@@ -170,6 +170,22 @@ def test_portrait_promotion_gate_accepts_approved_distinct_vn_pack(tmp_path: Pat
     assert report.image_count == 8
 
 
+def test_portrait_promotion_gate_accepts_video_frame_provenance_note(tmp_path: Path):
+    from tools.portrait_promotion_gate import validate_portrait_promotion_candidate
+
+    pack_dir = _write_promotion_pack(tmp_path)
+    (pack_dir / "portrait_assets_provenance.md").unlink()
+    (pack_dir / "portrait_video_provenance.md").write_text(
+        "# Portrait Video Provenance\n\nGemini video prompt and exported frame notes.\n",
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_promotion_candidate(pack_dir)
+
+    assert report.ok is True
+    assert report.errors == ()
+
+
 def test_portrait_promotion_gate_reports_visual_qa_warnings_without_blocking(tmp_path: Path):
     from tools.portrait_promotion_gate import validate_portrait_promotion_candidate
 

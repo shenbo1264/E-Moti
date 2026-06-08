@@ -106,7 +106,7 @@ def _validate_approval_metadata(path: Path, errors: list[str]) -> None:
 
 
 def _validate_provenance(root: Path, errors: list[str]) -> None:
-    for filename in ("portrait_assets_provenance.md", "provenance.md"):
+    for filename in ("portrait_assets_provenance.md", "portrait_video_provenance.md", "provenance.md"):
         path = root / filename
         if path.is_file() and path.stat().st_size > 0:
             return
