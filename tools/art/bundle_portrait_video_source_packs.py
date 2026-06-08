@@ -194,7 +194,7 @@ def _handoff_readme(*, set_id: str, source_pack: Path) -> str:
             "",
             "Use the image under `reference/` as the identity anchor.",
             "",
-            "Provider options: Pika, Hailuo, Kling, PixVerse, Runway.",
+            "Provider options: Pika, Hailuo, Kling, PixVerse, Runway, Vidu, LivePortrait.",
             "",
             "Use `provider_prompts.md` when Gemini is unavailable. `gemini_prompt.md` is kept as the baseline prompt.",
             "",

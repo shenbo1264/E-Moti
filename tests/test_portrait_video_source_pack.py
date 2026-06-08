@@ -46,6 +46,8 @@ def test_create_portrait_video_source_pack_writes_reference_prompt_and_dropzones
     assert "Pika" in provider_prompts
     assert "Hailuo" in provider_prompts
     assert "Kling" in provider_prompts
+    assert "Vidu" in provider_prompts
+    assert "LivePortrait" in provider_prompts
     assert "Use the same reference image" in provider_prompts
 
     payload = json.loads((output / "source_pack.json").read_text(encoding="utf-8"))

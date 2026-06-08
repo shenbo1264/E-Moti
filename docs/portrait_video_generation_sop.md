@@ -52,7 +52,30 @@ python tools\art\create_portrait_video_source_pack.py `
   --source-label "VN neutral candidate"
 ```
 
-Open `provider_prompts.md`, upload the image under `reference/`, and use the matching prompt in Pika, Hailuo, Kling, PixVerse, Runway, or Gemini. `gemini_prompt.md` remains the baseline prompt.
+Open `provider_prompts.md`, upload the image under `reference/`, and use the matching prompt in Pika, Hailuo, Kling, PixVerse, Runway, Vidu, LivePortrait, or Gemini. `gemini_prompt.md` remains the baseline prompt.
+
+## When Gemini Is Unavailable
+
+Free and trial video quotas change often. Treat provider availability as account-local state, not a project guarantee. Keep every generated video and exported frame under ignored `artifacts/` folders until a candidate survives QA.
+
+Recommended fallback order for this project:
+
+| Route | Use When | Notes |
+| --- | --- | --- |
+| Runway | Need a fast online image-to-video check. | Use the official pricing/account page to confirm current free credits or watermarks before batch work: <https://runwayml.com/pricing>. |
+| Hailuo | Need another online image-to-video pass with simple prompt control. | Use the image-to-video tool and confirm account limits in the current UI: <https://hailuoai.video/tools/image-to-video>. |
+| Vidu | Need an anime-friendly online reference/image-to-video attempt. | Confirm current free or trial allowance before use: <https://www.vidu.com/pricing>. |
+| LivePortrait | Need a no-account fallback for subtle portrait motion. | This is not text-to-video; use the portrait as source image and a restrained driving clip/template for blink and breathing: <https://github.com/KwaiVGI/LivePortrait>. |
+| Pika, Kling, PixVerse, Krea | Need extra variations after the first three routes fail. | Use the same `provider_prompts.md`; verify current account credits and watermark/export rules before spending time on batch runs. |
+| Wan2.1 or LTX-Video | Need an open-source image-to-video experiment later. | These routes are heavier than LivePortrait and should stay research-only until a separate local/GPU/cloud workflow is approved: <https://github.com/Wan-Video/Wan2.1>, <https://github.com/Lightricks/ltx-video>. |
+
+For blink and breathing, prefer conservative outputs over cinematic motion:
+
+1. Generate 3-4 seconds only.
+2. Reject clips with camera movement, pose changes, mouth talking, or expression drift.
+3. Export PNG frames back into the matching `frames/` folder.
+4. Run the frame preflight before extraction.
+5. Keep the runtime manifest unchanged until the promotion gate and human QA pass.
 
 ## Bundle Handoff Zips
 

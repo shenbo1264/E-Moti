@@ -59,9 +59,11 @@ def test_bundle_portrait_video_source_packs_writes_one_zip_per_source_pack(tmp_p
         assert "Pika" in provider_prompts
         assert "Hailuo" in provider_prompts
         assert "Kling" in provider_prompts
+        assert "Vidu" in provider_prompts
+        assert "LivePortrait" in provider_prompts
         handoff = archive.read("AI_VIDEO_HANDOFF_README.md").decode("utf-8")
         assert "xingxi-vn-neutral-20260608" in handoff
-        assert "Pika, Hailuo, Kling, PixVerse, Runway" in handoff
+        assert "Pika, Hailuo, Kling, PixVerse, Runway, Vidu, LivePortrait" in handoff
         assert "Put exported PNG frames back into" in handoff
 
 

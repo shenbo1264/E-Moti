@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this smoke-review package: `b191bae feat: gate llm smoke speech quality`
+- Latest committed checkpoint before this video-fallback package: `c0750ed feat: review llm smoke reports`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -20,10 +20,10 @@ Result: `13 passed`.
 Latest focused AI-video workflow tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_portrait_video_workflow_status.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_source_pack_processing.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_portrait_video_source_pack.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_pack_batch_create.py tests\test_portrait_video_workflow_status.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_source_pack_processing.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `18 passed`.
+Result: `27 passed`.
 
 Latest focused LLM/review tests run on 2026-06-09:
 
@@ -116,6 +116,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds speech length and emptiness quality metrics to the LLM dialogue smoke report.
   - Keeps this as a smoke/QA gate only; it does not change prompt policy, character state, renderer behavior, or provider clients.
   - Dry-run artifacts remain under ignored `artifacts/llm_smoke/`.
+- `P3-video-provider-fallbacks` package:
+  - Adds Vidu and LivePortrait to the local AI-video handoff prompts and handoff README.
+  - Documents the Gemini-unavailable fallback route in `docs/portrait_video_generation_sop.md`.
+  - Keeps this as a source-pack/SOP change only; it does not call providers, generate assets, update runtime manifests, or add dependencies.
 
 Latest confirmation-gated packages completed after user approval:
 
@@ -144,7 +148,7 @@ Latest confirmation-gated packages completed after user approval:
   - `tools/art/review_portrait_candidate.py` runs the candidate validation, contact sheet, visual QA, and decision brief steps together into one ignored review directory.
   - `tools/art/extract_portrait_motion_frames.py` supports the AI-video route by selecting blink and idle candidate frames from exported PNG frame sequences, or from `--video` when local `ffmpeg` is available.
   - `tools/art/create_portrait_video_source_pack.py` and `tools/art/create_portrait_video_source_packs_from_candidate.py` generate ignored source-pack folders under `artifacts/portrait-video-source/`.
-  - Source packs now include `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, `reference/`, `video/`, and `frames/`, so Pika, Hailuo, Kling, PixVerse, Runway, or Gemini can be used without changing downstream tooling.
+  - Source packs now include `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, `reference/`, `video/`, and `frames/`, so Pika, Hailuo, Kling, PixVerse, Runway, Vidu, LivePortrait, or Gemini can be used without changing downstream tooling.
   - `tools/art/bundle_portrait_video_source_packs.py` generates ignored handoff zip files under `artifacts/portrait-video-handoff/`, including `AI_VIDEO_HANDOFF_README.md`, the reference image, prompts, and metadata only.
   - `tools/art/inspect_portrait_video_source_frames.py` preflights exported PNG frames before extraction, rejecting unreadable frames and flagging size mismatches for manual review.
   - `tools/art/batch_process_portrait_video_source_packs.py` reports `waiting_for_frames`, `insufficient_frames`, `ready`, and processed states; it only processes packs with at least 3 exported PNG frames.
@@ -430,7 +434,7 @@ Rationale:
 The next high-value packages are:
 
 ```text
-P3-ai-video-generation: use the ignored handoff zip with Pika/Hailuo/Kling/PixVerse/Runway/Gemini, then place exported PNG frames into the matching frames folder
+P3-ai-video-generation: use the ignored handoff zip with Pika/Hailuo/Kling/PixVerse/Runway/Vidu/LivePortrait/Gemini, then place exported PNG frames into the matching frames folder
 P3-frame-intake-QA: after frames exist, run frame preflight, batch processing, visual QA, and decision brief without changing the runtime manifest
 P1-quality-tuning: tune prompt/personality/expression quality after reviewing live smoke output
 P3-visual-QA: approve, reject, or iterate the generated VN portrait candidate
