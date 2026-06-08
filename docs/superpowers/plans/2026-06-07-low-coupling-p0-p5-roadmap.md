@@ -301,7 +301,7 @@ Latest confirmation-gated packages completed after user approval:
   - Edge cleanup result: `changed_pixel_count=17703`, visual QA `light_edge_alpha_pixel_count=0`, `light_edge_alpha_ratio=0.0`, warnings cleared.
   - `tools/art/inspect_liveportrait_preflight.py` checks a local external LivePortrait checkout, required human-mode weight files, driving clip/template, FFmpeg, and source-pack reference image before manual inference.
   - Current ignored LivePortrait checkout: `tmp/liveportrait_research/LivePortrait`, external HEAD `9b294b3`.
-  - Current LivePortrait preflight is an ignored local report only. It now reports missing human-mode weights and missing driving clip; it does not install dependencies, run inference, export frames, create a candidate, or update runtime manifests.
+  - Current LivePortrait preflight is an ignored local report only. It now reports missing human-mode weights and `driving_status=missing`; it rejects empty or obvious fake driving videos before inference and does not install dependencies, run inference, export frames, create a candidate, or update runtime manifests.
   - `tools/art/inspect_portrait_video_workflow.py` now emits a matching LivePortrait preflight suggested command when a source pack is waiting for AI-video frames.
   - Current edge-cleaned decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, and missing neutral blink frames.
   - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, approved AI-video blink/motion frames, final provenance approval, and manifest integration.

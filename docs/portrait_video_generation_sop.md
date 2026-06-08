@@ -115,6 +115,8 @@ Pop-Location
 
 The project preflight checks the human-mode files listed by LivePortrait's official directory structure: `liveportrait/base_models/*.pth`, `liveportrait/retargeting_models/stitching_retargeting_module.pth`, `liveportrait/landmark.onnx`, and the two `insightface/models/buffalo_l/*.onnx` detectors. A checkout with only `pretrained_weights/.gitkeep` is not considered ready.
 
+The driving input is also checked before inference. Empty files and obvious fake video files are rejected. MP4/MOV, WebM/MKV, AVI, and `.pkl` motion templates are accepted only when they pass a lightweight file-signature check.
+
 For blink and breathing, prefer conservative outputs over cinematic motion:
 
 1. Generate 3-4 seconds only.

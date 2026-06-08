@@ -53,13 +53,17 @@ def _write_liveportrait_root(root: Path, *, with_weights: bool = True) -> Path:
     return root
 
 
+def _write_minimal_mp4_header(path: Path) -> None:
+    path.write_bytes(b"\x00\x00\x00\x18ftypmp42\x00\x00\x00\x00mp42isom")
+
+
 def test_liveportrait_preflight_reports_ready_command(tmp_path: Path):
     from tools.art.inspect_liveportrait_preflight import inspect_liveportrait_preflight
 
     source_pack = _write_source_pack(tmp_path)
     liveportrait_root = _write_liveportrait_root(tmp_path / "LivePortrait")
     driving = tmp_path / "blink_driver.mp4"
-    driving.write_bytes(b"fake video")
+    _write_minimal_mp4_header(driving)
     metadata_before = (source_pack / "source_pack.json").read_text(encoding="utf-8")
     frame_files_before = tuple((source_pack / "frames").iterdir())
 
@@ -76,6 +80,7 @@ def test_liveportrait_preflight_reports_ready_command(tmp_path: Path):
         "reference/neutral_open.png"
     )
     assert report.driving_path == str(driving)
+    assert report.driving_status == "valid_video"
     assert report.ffmpeg_path == sys.executable
     assert report.missing_weight_paths == ()
     assert report.errors == ()
@@ -92,7 +97,7 @@ def test_liveportrait_preflight_blocks_missing_external_setup(tmp_path: Path):
 
     source_pack = _write_source_pack(tmp_path)
     driving = tmp_path / "blink_driver.mp4"
-    driving.write_bytes(b"fake video")
+    _write_minimal_mp4_header(driving)
 
     report = inspect_liveportrait_preflight(
         source_pack,
@@ -130,7 +135,7 @@ def test_liveportrait_preflight_cli_writes_report_and_markdown(tmp_path: Path):
     source_pack = _write_source_pack(tmp_path)
     liveportrait_root = _write_liveportrait_root(tmp_path / "LivePortrait")
     driving = tmp_path / "blink_driver.mp4"
-    driving.write_bytes(b"fake video")
+    _write_minimal_mp4_header(driving)
     report_path = tmp_path / "liveportrait-preflight.json"
     markdown_path = tmp_path / "liveportrait-preflight.md"
 
@@ -164,3 +169,37 @@ def test_liveportrait_preflight_cli_writes_report_and_markdown(tmp_path: Path):
     assert report_path.is_file()
     assert markdown_path.is_file()
     assert "LivePortrait Preflight" in markdown_path.read_text(encoding="utf-8")
+
+
+def test_liveportrait_preflight_rejects_empty_or_fake_driving_video(tmp_path: Path):
+    from tools.art.inspect_liveportrait_preflight import inspect_liveportrait_preflight
+
+    source_pack = _write_source_pack(tmp_path)
+    liveportrait_root = _write_liveportrait_root(tmp_path / "LivePortrait")
+    fake_driving = tmp_path / "fake_driver.mp4"
+    fake_driving.write_bytes(b"fake video")
+
+    fake_report = inspect_liveportrait_preflight(
+        source_pack,
+        liveportrait_root=liveportrait_root,
+        driving_path=fake_driving,
+        ffmpeg_path=sys.executable,
+    )
+
+    assert fake_report.ok is False
+    assert fake_report.next_action == "add_driving_video"
+    assert fake_report.driving_status == "invalid_video"
+    assert "driving video signature is invalid" in fake_report.errors
+
+    empty_driving = tmp_path / "empty_driver.mp4"
+    empty_driving.write_bytes(b"")
+    empty_report = inspect_liveportrait_preflight(
+        source_pack,
+        liveportrait_root=liveportrait_root,
+        driving_path=empty_driving,
+        ffmpeg_path=sys.executable,
+    )
+
+    assert empty_report.ok is False
+    assert empty_report.driving_status == "invalid_video"
+    assert "driving video is empty" in empty_report.errors

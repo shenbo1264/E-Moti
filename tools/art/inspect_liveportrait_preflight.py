@@ -32,6 +32,7 @@ class LivePortraitPreflightReport:
     source_image_path: str
     reference_size: tuple[int, int] | tuple[()]
     driving_path: str
+    driving_status: str
     ffmpeg_path: str
     next_action: str
     suggested_command: str
@@ -47,6 +48,7 @@ class LivePortraitPreflightReport:
             "source_image_path": self.source_image_path,
             "reference_size": list(self.reference_size),
             "driving_path": self.driving_path,
+            "driving_status": self.driving_status,
             "ffmpeg_path": self.ffmpeg_path,
             "next_action": self.next_action,
             "suggested_command": self.suggested_command,
@@ -75,7 +77,7 @@ def inspect_liveportrait_preflight(
     missing_weight_paths = _missing_human_weight_paths(liveportrait) if liveportrait.exists() else tuple(REQUIRED_HUMAN_WEIGHT_PATHS)
     if liveportrait.exists() and missing_weight_paths:
         errors.append("required pretrained weights are missing")
-    driving = _validate_driving_path(driving_path, errors)
+    driving, driving_status = _validate_driving_path(driving_path, errors)
     ffmpeg = _resolve_ffmpeg(ffmpeg_path, errors)
     next_action = _next_action(
         liveportrait=liveportrait,
@@ -93,6 +95,7 @@ def inspect_liveportrait_preflight(
         source_image_path=str(source_image) if source_image is not None else "",
         reference_size=reference_size,
         driving_path=str(driving) if driving is not None else "",
+        driving_status=driving_status,
         ffmpeg_path=ffmpeg,
         next_action=next_action,
         suggested_command=suggested_command,
@@ -115,6 +118,7 @@ def render_liveportrait_preflight_markdown(report: LivePortraitPreflightReport) 
         f"- Source image: `{report.source_image_path}`",
         f"- Reference size: `{_size_text(report.reference_size)}`",
         f"- Driving input: `{report.driving_path}`",
+        f"- Driving status: `{report.driving_status}`",
         f"- FFmpeg: `{report.ffmpeg_path}`",
         f"- Next action: `{report.next_action}`",
         "",
@@ -194,18 +198,50 @@ def _missing_human_weight_paths(root: Path) -> tuple[str, ...]:
     return tuple(missing)
 
 
-def _validate_driving_path(value: Path | str, errors: list[str]) -> Path | None:
+def _validate_driving_path(value: Path | str, errors: list[str]) -> tuple[Path | None, str]:
     if value == "":
         errors.append("driving video or motion template is required")
-        return None
+        return None, "missing"
     path = Path(value)
     if not path.is_file():
         errors.append("driving video or motion template not found")
-        return None
+        return None, "missing"
     if path.suffix.lower() not in ALLOWED_DRIVING_SUFFIXES:
         errors.append("driving input must be a video file or LivePortrait motion template")
-        return None
-    return path
+        return None, "invalid_type"
+    status = _driving_file_status(path, errors)
+    if status.startswith("valid_"):
+        return path, status
+    return None, status
+
+
+def _driving_file_status(path: Path, errors: list[str]) -> str:
+    try:
+        payload = path.read_bytes()
+    except OSError as exc:
+        errors.append(f"driving input could not be read: {exc}")
+        return "invalid_video"
+    if not payload:
+        errors.append("driving video is empty")
+        return "invalid_video"
+    suffix = path.suffix.lower()
+    if suffix == ".pkl":
+        return "valid_motion_template"
+    if _looks_like_video(path, payload):
+        return "valid_video"
+    errors.append("driving video signature is invalid")
+    return "invalid_video"
+
+
+def _looks_like_video(path: Path, payload: bytes) -> bool:
+    suffix = path.suffix.lower()
+    if suffix in {".mp4", ".mov"}:
+        return b"ftyp" in payload[:32]
+    if suffix in {".webm", ".mkv"}:
+        return payload.startswith(b"\x1a\x45\xdf\xa3")
+    if suffix == ".avi":
+        return len(payload) >= 12 and payload.startswith(b"RIFF") and payload[8:12] == b"AVI "
+    return False
 
 
 def _resolve_ffmpeg(value: Path | str, errors: list[str]) -> str:
