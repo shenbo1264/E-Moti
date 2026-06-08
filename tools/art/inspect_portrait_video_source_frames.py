@@ -17,6 +17,7 @@ if str(REPO_ROOT) not in sys.path:
 DEFAULT_SOURCE_ROOT = Path("artifacts") / "portrait-video-source"
 MIN_READY_FRAME_COUNT = 3
 DEFAULT_MAX_BODY_DRIFT = 16.0
+ASPECT_RATIO_TOLERANCE = 0.002
 
 
 @dataclass(frozen=True, slots=True)
@@ -29,6 +30,7 @@ class PortraitVideoFramePreflightItem:
     readable_frame_count: int
     invalid_frame_count: int
     size_mismatch_count: int
+    normalizable_size_mismatch_count: int
     body_drift_warning_count: int
     status: str
     next_action: str
@@ -45,6 +47,7 @@ class PortraitVideoFramePreflightItem:
             "readable_frame_count": self.readable_frame_count,
             "invalid_frame_count": self.invalid_frame_count,
             "size_mismatch_count": self.size_mismatch_count,
+            "normalizable_size_mismatch_count": self.normalizable_size_mismatch_count,
             "body_drift_warning_count": self.body_drift_warning_count,
             "status": self.status,
             "next_action": self.next_action,
@@ -131,6 +134,7 @@ def _inspect_source_pack(path: Path) -> PortraitVideoFramePreflightItem:
     readable_count = 0
     invalid_count = 0
     mismatch_count = 0
+    normalizable_mismatch_count = 0
     body_drift_count = 0
     for frame_path in frame_paths:
         frame_image = _load_rgba_image(frame_path)
@@ -142,10 +146,18 @@ def _inspect_source_pack(path: Path) -> PortraitVideoFramePreflightItem:
         readable_count += 1
         if reference_size is not None and frame_size != reference_size:
             mismatch_count += 1
-            warnings.append(
-                f"{frame_path.name} size {frame_size[0]}x{frame_size[1]} "
-                f"differs from reference {reference_size[0]}x{reference_size[1]}"
-            )
+            if _same_aspect(frame_size, reference_size):
+                normalizable_mismatch_count += 1
+                warnings.append(
+                    f"{frame_path.name} size {frame_size[0]}x{frame_size[1]} "
+                    f"differs from reference {reference_size[0]}x{reference_size[1]} "
+                    "but keeps the same aspect ratio and can be normalized before preflight rerun"
+                )
+            else:
+                warnings.append(
+                    f"{frame_path.name} size {frame_size[0]}x{frame_size[1]} "
+                    f"differs from reference {reference_size[0]}x{reference_size[1]}"
+                )
             continue
         if reference_image is not None:
             body_drift = _body_drift(reference_image, frame_image)
@@ -171,9 +183,15 @@ def _inspect_source_pack(path: Path) -> PortraitVideoFramePreflightItem:
         readable_frame_count=readable_count,
         invalid_frame_count=invalid_count,
         size_mismatch_count=mismatch_count,
+        normalizable_size_mismatch_count=normalizable_mismatch_count,
         body_drift_warning_count=body_drift_count,
         status=status,
-        next_action=_next_action(status),
+        next_action=_next_action(
+            status,
+            size_mismatch_count=mismatch_count,
+            normalizable_size_mismatch_count=normalizable_mismatch_count,
+            body_drift_warning_count=body_drift_count,
+        ),
         warnings=tuple(warnings),
         errors=tuple(errors),
     )
@@ -237,6 +255,16 @@ def _body_drift(reference: Image.Image, frame: Image.Image) -> float:
     return sum(stat.mean) / 3.0
 
 
+def _same_aspect(size: tuple[int, int], reference_size: tuple[int, int]) -> bool:
+    width, height = size
+    reference_width, reference_height = reference_size
+    if width <= 0 or height <= 0 or reference_width <= 0 or reference_height <= 0:
+        return False
+    delta = abs(width * reference_height - height * reference_width)
+    scale = max(width * reference_height, height * reference_width)
+    return delta / scale <= ASPECT_RATIO_TOLERANCE
+
+
 def _status(
     *,
     errors: tuple[str, ...],
@@ -255,7 +283,13 @@ def _status(
     return "ready"
 
 
-def _next_action(status: str) -> str:
+def _next_action(
+    status: str,
+    *,
+    size_mismatch_count: int,
+    normalizable_size_mismatch_count: int,
+    body_drift_warning_count: int,
+) -> str:
     if status == "waiting_for_frames":
         return "generate_ai_video"
     if status == "insufficient_frames":
@@ -263,6 +297,12 @@ def _next_action(status: str) -> str:
     if status == "invalid_frames":
         return "replace_invalid_frames"
     if status == "ready_with_warnings":
+        if (
+            size_mismatch_count > 0
+            and normalizable_size_mismatch_count == size_mismatch_count
+            and body_drift_warning_count == 0
+        ):
+            return "normalize_frames"
         return "review_frame_warnings"
     if status == "ready":
         return "process_frames"

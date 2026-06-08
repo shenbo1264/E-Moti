@@ -114,7 +114,7 @@ python tools\art\inspect_portrait_video_workflow.py `
   --markdown artifacts\portrait-video-workflow-report.md
 ```
 
-Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_more_frames`, `replace_invalid_frames`, `review_frame_warnings`, `process_frames`, `review_motion_candidate`, `regenerate_ai_video`, and `inspect_motion_candidate`.
+Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_more_frames`, `replace_invalid_frames`, `normalize_frames`, `review_frame_warnings`, `process_frames`, `review_motion_candidate`, `regenerate_ai_video`, and `inspect_motion_candidate`.
 
 ## AI Video Output Rules
 
@@ -146,7 +146,7 @@ python tools\art\inspect_portrait_video_source_frames.py `
   --report artifacts\portrait-video-frame-preflight.json
 ```
 
-The preflight report opens every PNG frame, rejects unreadable frames as `invalid_frames`, reports `insufficient_frames` below 3 readable PNGs, and flags size mismatches or high body drift as `ready_with_warnings` for manual review before extraction.
+The preflight report opens every PNG frame, rejects unreadable frames as `invalid_frames`, reports `insufficient_frames` below 3 readable PNGs, and flags size mismatches or high body drift as `ready_with_warnings` before extraction. Same-aspect lower-resolution frames report `next_action=normalize_frames`; non-normalizable size mismatch, crop, reframe, or body drift reports `next_action=review_frame_warnings`.
 
 If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
 

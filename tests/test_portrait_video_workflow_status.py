@@ -229,6 +229,37 @@ def test_inspect_portrait_video_workflow_uses_frame_preflight_for_size_warnings(
     assert "| xingxi-warning-20260609 | ready_with_warnings | 3 | present | missing | review_frame_warnings |" in render_portrait_video_workflow_markdown(report)
 
 
+def test_inspect_portrait_video_workflow_recommends_normalization_for_same_aspect_size_warnings(tmp_path: Path):
+    from tools.art.bundle_portrait_video_source_packs import bundle_portrait_video_source_packs
+    from tools.art.inspect_portrait_video_workflow import (
+        inspect_portrait_video_workflow,
+        render_portrait_video_workflow_markdown,
+    )
+
+    source_root = tmp_path / "portrait-video-source"
+    pack = _write_source_pack(tmp_path, "xingxi-lowres-20260609", frame_count=0)
+    frames = pack / "frames"
+    _write_frame(frames / "frame_0001.png", eye="open", size=(120, 240))
+    _write_frame(frames / "frame_0002.png", eye="closed", size=(120, 240))
+    _write_frame(frames / "frame_0003.png", eye="open", size=(120, 240))
+    handoff_dir = tmp_path / "handoff"
+    bundle_portrait_video_source_packs(source_root=source_root, output_dir=handoff_dir)
+
+    report = inspect_portrait_video_workflow(
+        source_root=source_root,
+        handoff_dir=handoff_dir,
+        candidate_root=tmp_path / "candidates",
+    )
+
+    assert report.ok is True
+    item = report.items[0]
+    assert item.source_status == "ready_with_warnings"
+    assert item.size_mismatch_count == 3
+    assert item.normalizable_size_mismatch_count == 3
+    assert item.next_action == "normalize_frames"
+    assert "| xingxi-lowres-20260609 | ready_with_warnings | 3 | present | missing | normalize_frames |" in render_portrait_video_workflow_markdown(report)
+
+
 def test_inspect_portrait_video_workflow_surfaces_failed_motion_extraction(tmp_path: Path):
     from tools.art.bundle_portrait_video_source_packs import bundle_portrait_video_source_packs
     from tools.art.inspect_portrait_video_workflow import (

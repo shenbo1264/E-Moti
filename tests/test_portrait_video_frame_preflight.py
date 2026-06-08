@@ -121,8 +121,30 @@ def test_inspect_portrait_video_source_frames_warns_on_size_mismatch(tmp_path: P
     item = report.items[0]
     assert item.status == "ready_with_warnings"
     assert item.size_mismatch_count == 1
+    assert item.normalizable_size_mismatch_count == 0
     assert item.next_action == "review_frame_warnings"
     assert any("frame_0002.png size 320x480 differs from reference 240x480" in warning for warning in item.warnings)
+
+
+def test_inspect_portrait_video_source_frames_recommends_normalization_for_same_aspect_mismatch(tmp_path: Path):
+    from tools.art.inspect_portrait_video_source_frames import inspect_portrait_video_source_frames
+
+    source_root = tmp_path / "portrait-video-source"
+    pack = _write_source_pack(tmp_path, "xingxi-lowres-20260609")
+    _write_frame(pack / "frames" / "frame_0001.png", size=(120, 240))
+    _write_frame(pack / "frames" / "frame_0002.png", size=(120, 240))
+    _write_frame(pack / "frames" / "frame_0003.png", size=(120, 240))
+
+    report = inspect_portrait_video_source_frames(source_root=source_root)
+
+    assert report.ok is True
+    assert report.warning_count == 1
+    item = report.items[0]
+    assert item.status == "ready_with_warnings"
+    assert item.size_mismatch_count == 3
+    assert item.normalizable_size_mismatch_count == 3
+    assert item.next_action == "normalize_frames"
+    assert any("can be normalized" in warning for warning in item.warnings)
 
 
 def test_inspect_portrait_video_source_frames_warns_on_body_drift(tmp_path: Path):

@@ -29,6 +29,7 @@ class PortraitVideoWorkflowItem:
     readable_frame_count: int
     invalid_frame_count: int
     size_mismatch_count: int
+    normalizable_size_mismatch_count: int
     handoff_zip_path: str
     handoff_status: str
     motion_candidate_dir: str
@@ -46,6 +47,7 @@ class PortraitVideoWorkflowItem:
             "readable_frame_count": self.readable_frame_count,
             "invalid_frame_count": self.invalid_frame_count,
             "size_mismatch_count": self.size_mismatch_count,
+            "normalizable_size_mismatch_count": self.normalizable_size_mismatch_count,
             "handoff_zip_path": self.handoff_zip_path,
             "handoff_status": self.handoff_status,
             "motion_candidate_dir": self.motion_candidate_dir,
@@ -178,6 +180,9 @@ def _workflow_item(
     readable_frame_count = preflight.readable_frame_count if preflight is not None else pack.frame_count
     invalid_frame_count = preflight.invalid_frame_count if preflight is not None else 0
     size_mismatch_count = preflight.size_mismatch_count if preflight is not None else 0
+    normalizable_size_mismatch_count = (
+        preflight.normalizable_size_mismatch_count if preflight is not None else 0
+    )
     warnings = preflight.warnings if preflight is not None else ()
     errors = preflight.errors if preflight is not None else pack.errors
     handoff_zip = handoff_dir / f"{pack.set_id}.zip"
@@ -192,6 +197,7 @@ def _workflow_item(
     item_errors = tuple(errors) + motion_candidate_errors
     next_action = _next_action(
         source_status=source_status,
+        source_next_action=preflight.next_action if preflight is not None else "",
         handoff_status=handoff_status,
         motion_candidate_status=motion_candidate_status,
     )
@@ -203,6 +209,7 @@ def _workflow_item(
         readable_frame_count=readable_frame_count,
         invalid_frame_count=invalid_frame_count,
         size_mismatch_count=size_mismatch_count,
+        normalizable_size_mismatch_count=normalizable_size_mismatch_count,
         handoff_zip_path=str(handoff_zip),
         handoff_status=handoff_status,
         motion_candidate_dir=str(motion_candidate_dir),
@@ -239,7 +246,13 @@ def _motion_candidate_status(*, manifest_path: Path, report_path: Path) -> tuple
     return "invalid_report", ("motion extraction report missing boolean ok field",)
 
 
-def _next_action(*, source_status: str, handoff_status: str, motion_candidate_status: str) -> str:
+def _next_action(
+    *,
+    source_status: str,
+    source_next_action: str,
+    handoff_status: str,
+    motion_candidate_status: str,
+) -> str:
     if source_status in {"invalid", "failed"}:
         return "fix_source_pack"
     if source_status == "invalid_frames":
@@ -255,6 +268,8 @@ def _next_action(*, source_status: str, handoff_status: str, motion_candidate_st
     if source_status == "insufficient_frames":
         return "export_more_frames"
     if source_status == "ready_with_warnings":
+        if source_next_action == "normalize_frames":
+            return "normalize_frames"
         return "review_frame_warnings"
     if source_status == "ready":
         return "review_motion_candidate" if motion_candidate_status == "present" else "process_frames"

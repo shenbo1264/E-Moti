@@ -20,7 +20,7 @@ Result: `14 passed`.
 Latest focused AI-video workflow tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_portrait_video_source_pack.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_pack_batch_create.py tests\test_portrait_video_workflow_status.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_source_pack_processing.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_workflow_status.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_source_pack_processing.py tests\test_repository_hygiene.py -q
 ```
 
 Result: `27 passed`.
@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `686 passed`.
+Result: `691 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -173,6 +173,10 @@ Latest non-confirmation packages completed after the original plan:
   - The tool clones a source pack, writes resized frames to a sibling ignored source pack, and leaves the original provider frames untouched.
   - Local simulation on the current `496x744` ignored frames produced a `1024x1536` normalized clone, but frame preflight still reported 60 body-drift warnings and the single-pack processor blocked extraction.
   - The normalized clone must still pass frame preflight before processing. This does not loosen body-drift checks, call providers, change runtime manifests, or approve generated assets.
+- `P3-preflight-normalize-next-action` package:
+  - Makes frame preflight distinguish same-aspect lower-resolution frames from non-normalizable size mismatch.
+  - Adds `normalizable_size_mismatch_count` and `next_action=normalize_frames` to preflight/workflow reports when normalization is the next safe local step.
+  - Keeps `ready_with_warnings` as the source status, so batch and single-pack processing still block extraction until the normalized clone passes a fresh preflight.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.
@@ -235,6 +239,7 @@ Latest confirmation-gated packages completed after user approval:
   - `tools/art/batch_process_portrait_video_source_packs.py` reports `waiting_for_frames`, `insufficient_frames`, `ready`, and processed states; it only processes packs with at least 3 exported PNG frames.
   - `tools/art/inspect_portrait_video_workflow.py` writes ignored JSON/Markdown workflow reports with frame preflight source status, handoff status, frame count, motion-candidate status, and next action.
   - Current workflow report: `artifacts/portrait-video-workflow-report.md`, `ok=false`, `source_status=ready_with_warnings`, `frame_count=60`, `handoff_status=present`, `motion_candidate_status=failed`, `next_action=regenerate_ai_video`.
+  - Current frame preflight also reports the original `496x744` frames as `normalizable_size_mismatch_count=60` with `next_action=normalize_frames`; the normalized sibling still reports `body_drift_warning_count=60` and remains blocked.
   - Current decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, missing neutral blink frames, and warning `neutral.open: light_edge_halo_risk`.
   - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, exported AI-video frames, blink frames, final provenance approval, edge cleanup, and manifest integration.
 
