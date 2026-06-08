@@ -101,6 +101,16 @@ frame_0002.png
 frame_0003.png
 ```
 
+Before processing, preflight the exported PNG frames:
+
+```powershell
+python tools\art\inspect_portrait_video_source_frames.py `
+  artifacts\portrait-video-source `
+  --report artifacts\portrait-video-frame-preflight.json
+```
+
+The preflight report opens every PNG frame, rejects unreadable frames as `invalid_frames`, reports `insufficient_frames` below 3 readable PNGs, and flags size mismatches as `ready_with_warnings` for manual review before extraction.
+
 ## Extract Blink And Idle Candidates
 
 To check all source folders:
