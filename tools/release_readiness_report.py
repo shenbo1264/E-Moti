@@ -32,6 +32,7 @@ def build_release_readiness_report(
     portrait_candidate_reports: Iterable[Path | str] = (),
     liveportrait_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_qa_reports: Iterable[Path | str] = (),
+    portrait_regeneration_brief_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -41,6 +42,10 @@ def build_release_readiness_report(
     checks.extend(_portrait_candidate_report_check(Path(report_path)) for report_path in portrait_candidate_reports)
     checks.extend(_liveportrait_preflight_report_check(Path(report_path)) for report_path in liveportrait_preflight_reports)
     checks.extend(_portrait_frame_qa_report_check(Path(report_path)) for report_path in portrait_frame_qa_reports)
+    checks.extend(
+        _portrait_regeneration_brief_report_check(Path(report_path))
+        for report_path in portrait_regeneration_brief_reports
+    )
     ok = all(check["ok"] is True for check in checks)
     return {
         "ok": ok,
@@ -124,6 +129,9 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         decision_state = _optional_string(check.get("decision_state"))
         if decision_state:
             lines.append(f"- Decision state: `{decision_state}`")
+        frame_status = _optional_string(check.get("frame_status"))
+        if frame_status:
+            lines.append(f"- Frame status: `{frame_status}`")
         candidate_status = _optional_string(check.get("candidate_status"))
         if candidate_status:
             lines.append(f"- Candidate status: `{candidate_status}`")
@@ -139,6 +147,18 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if blockers:
             lines.append("- Blockers:")
             lines.extend(f"  - `{blocker}`" for blocker in blockers)
+        retry_prompt = _optional_string(check.get("retry_prompt"))
+        if retry_prompt:
+            lines.append("- Retry prompt:")
+            lines.append(f"  - `{retry_prompt}`")
+        negative_prompt = _optional_string(check.get("negative_prompt"))
+        if negative_prompt:
+            lines.append("- Negative prompt:")
+            lines.append(f"  - `{negative_prompt}`")
+        prompt_constraints = _string_list(check.get("prompt_constraints"))
+        if prompt_constraints:
+            lines.append("- Prompt constraints:")
+            lines.extend(f"  - `{constraint}`" for constraint in prompt_constraints)
         validation_errors = _string_list(check.get("validation_errors"))
         if validation_errors:
             lines.append("- Validation errors:")
@@ -467,6 +487,63 @@ def _portrait_frame_qa_report_check(report_path: Path) -> dict[str, object]:
     }
 
 
+def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_video_regeneration_brief",
+            "label": "Portrait Video Regeneration Brief",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "set_id": "",
+            "decision_state": "",
+            "frame_status": "",
+            "preview_path": "",
+            "frame_count": 0,
+            "sampled_frame_count": 0,
+            "size_mismatch_count": 0,
+            "max_body_drift": 0.0,
+            "blockers": [],
+            "retry_prompt": "",
+            "negative_prompt": "",
+            "prompt_constraints": [],
+            "suggested_commands": [],
+            "errors": ["portrait regeneration brief report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video regeneration brief before release"],
+        }
+    decision_state = _optional_string(payload.get("decision_state")) or "unknown"
+    blockers = _string_list(payload.get("blockers"))
+    errors = _string_list(payload.get("errors"))
+    ok = payload.get("ok") is True and decision_state == "process_frames" and not blockers and not errors
+    return {
+        "id": "portrait_video_regeneration_brief",
+        "label": "Portrait Video Regeneration Brief",
+        "ok": ok,
+        "status": "ready" if ok else decision_state,
+        "path": str(report_path),
+        "set_id": _optional_string(payload.get("set_id")),
+        "decision_state": decision_state,
+        "frame_status": _optional_string(payload.get("frame_status")),
+        "preview_path": _optional_string(payload.get("preview_path")),
+        "frame_count": _nonnegative_int(payload.get("frame_count")),
+        "sampled_frame_count": _nonnegative_int(payload.get("sampled_frame_count")),
+        "size_mismatch_count": _nonnegative_int(payload.get("size_mismatch_count")),
+        "max_body_drift": _nonnegative_float(payload.get("max_body_drift")),
+        "blockers": blockers,
+        "retry_prompt": _optional_string(payload.get("retry_prompt")),
+        "negative_prompt": _optional_string(payload.get("negative_prompt")),
+        "prompt_constraints": _string_list(payload.get("prompt_constraints")),
+        "suggested_commands": _string_list(payload.get("suggested_commands")),
+        "errors": errors,
+        "warnings": [],
+        "next_actions": []
+        if ok
+        else ["regenerate portrait AI-video using the brief retry prompts before motion extraction"],
+    }
+
+
 def _load_json_object(path: Path) -> dict[str, object] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -593,6 +670,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=[],
         help="Optional portrait AI-video frame visual QA JSON report to include.",
     )
+    parser.add_argument(
+        "--portrait-regeneration-brief-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video regeneration brief JSON report to include.",
+    )
     parser.add_argument("--json", default="", help="Optional JSON output path.")
     parser.add_argument("--markdown", default="", help="Optional Markdown output path.")
     return parser.parse_args(argv)
@@ -609,6 +692,7 @@ def main(argv: list[str] | None = None) -> int:
         portrait_candidate_reports=[Path(item) for item in args.portrait_candidate_report],
         liveportrait_preflight_reports=[Path(item) for item in args.liveportrait_preflight_report],
         portrait_frame_qa_reports=[Path(item) for item in args.portrait_frame_qa_report],
+        portrait_regeneration_brief_reports=[Path(item) for item in args.portrait_regeneration_brief_report],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")

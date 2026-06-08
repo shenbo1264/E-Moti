@@ -239,6 +239,15 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-frame-qa.md
 ```
 
+To keep the retry prompt visible in release readiness:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-regeneration-brief-report artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json `
+  --json artifacts\release-readiness-with-portrait-regeneration-brief.json `
+  --markdown artifacts\release-readiness-with-portrait-regeneration-brief.md
+```
+
 If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
 
 ```powershell

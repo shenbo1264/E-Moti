@@ -191,6 +191,42 @@ def _write_portrait_frame_qa_report(path: Path, *, status: str = "ready_with_war
     return path
 
 
+def _write_portrait_regeneration_brief_report(path: Path) -> Path:
+    payload = {
+        "ok": True,
+        "workflow_report_path": "artifacts\\portrait-video-workflow-report.json",
+        "frame_qa_report_path": "artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json",
+        "set_id": "xingxi-vn-neutral-20260608-normalized",
+        "decision_state": "regenerate_ai_video",
+        "frame_status": "ready_with_warnings",
+        "frame_count": 60,
+        "sampled_frame_count": 12,
+        "size_mismatch_count": 0,
+        "max_body_drift": 44.72,
+        "preview_path": "artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.png",
+        "blockers": [
+            "workflow attention: body_drift_warnings",
+            "frame visual QA status: ready_with_warnings",
+            "max body drift 44.72 exceeds 16.0",
+        ],
+        "retry_prompt": (
+            "Previous attempt failed because body drift was too high: max body drift 44.72 exceeded 16.0. "
+            "Use a locked static camera with same canvas, same crop, same full-body framing."
+        ),
+        "negative_prompt": "No camera movement, zoom, pan, crop, reframing, body recomposition, or pose change.",
+        "prompt_constraints": [
+            "Keep the exact same canvas, aspect ratio, crop, camera, and full-body framing as the reference.",
+            "Only eyelids, tiny chest breathing, and slight hair-tip movement may animate.",
+        ],
+        "suggested_commands": [
+            "python tools\\art\\portrait_video_frame_visual_qa.py artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized --preview artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.png --report artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json",
+        ],
+        "errors": [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _run_tool(
     character_pack: Path,
     app_dir: Path,
@@ -202,6 +238,7 @@ def _run_tool(
     portrait_candidate_reports: list[Path] | None = None,
     liveportrait_preflight_reports: list[Path] | None = None,
     portrait_frame_qa_reports: list[Path] | None = None,
+    portrait_regeneration_brief_reports: list[Path] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     args = [
         sys.executable,
@@ -223,6 +260,8 @@ def _run_tool(
         args.extend(["--liveportrait-preflight-report", str(report)])
     for report in portrait_frame_qa_reports or []:
         args.extend(["--portrait-frame-qa-report", str(report)])
+    for report in portrait_regeneration_brief_reports or []:
+        args.extend(["--portrait-regeneration-brief-report", str(report)])
     args.extend(
         [
             "--json",
@@ -593,3 +632,47 @@ def test_release_readiness_report_surfaces_portrait_frame_visual_qa_issue(tmp_pa
     assert "- Frames: `60`" in markdown
     assert "- Sampled frames: `12`" in markdown
     assert "- Max body drift: `44.72`" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    regeneration_brief = _write_portrait_regeneration_brief_report(tmp_path / "portrait-regeneration-brief.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_regeneration_brief_reports=[regeneration_brief],
+    )
+
+    payload = json.loads(result.stdout)
+    regeneration_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert regeneration_check["id"] == "portrait_video_regeneration_brief"
+    assert regeneration_check["ok"] is False
+    assert regeneration_check["status"] == "regenerate_ai_video"
+    assert regeneration_check["set_id"] == "xingxi-vn-neutral-20260608-normalized"
+    assert regeneration_check["decision_state"] == "regenerate_ai_video"
+    assert regeneration_check["frame_status"] == "ready_with_warnings"
+    assert regeneration_check["frame_count"] == 60
+    assert regeneration_check["sampled_frame_count"] == 12
+    assert regeneration_check["max_body_drift"] == 44.72
+    assert "max body drift 44.72 exceeds 16.0" in regeneration_check["blockers"]
+    assert "Previous attempt failed because body drift was too high" in regeneration_check["retry_prompt"]
+    assert "body recomposition" in regeneration_check["negative_prompt"]
+    assert regeneration_check["next_actions"] == [
+        "regenerate portrait AI-video using the brief retry prompts before motion extraction"
+    ]
+    assert "regenerate portrait AI-video using the brief retry prompts before motion extraction" in payload["next_actions"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Video Regeneration Brief" in markdown
+    assert "- Decision state: `regenerate_ai_video`" in markdown
+    assert "- Frame status: `ready_with_warnings`" in markdown
+    assert "- Max body drift: `44.72`" in markdown
+    assert "- Retry prompt:" in markdown
+    assert "Previous attempt failed because body drift was too high" in markdown
+    assert "- Negative prompt:" in markdown
+    assert "body recomposition" in markdown
