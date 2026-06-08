@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QPoint, QSize, QTimer, Qt, Slot
-from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
+from PySide6.QtGui import QAction, QFont, QFontDatabase, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -94,6 +95,13 @@ CONTROL_PANEL_SPRITE_STYLE = (
 DESKTOP_SPRITE_STYLE = "QLabel { border: none; padding: 0; background: transparent; }"
 DESKTOP_HERO_STYLE = "QGroupBox { border: none; margin: 0; padding: 0; background: transparent; }"
 APP_FONT_FAMILY = "Microsoft YaHei UI"
+WINDOWS_CJK_FONT_FILENAMES = (
+    "msyh.ttc",
+    "msyhbd.ttc",
+    "simhei.ttf",
+    "simsun.ttc",
+)
+_LOADED_COMPANION_FONT_FAMILIES: tuple[str, ...] | None = None
 STAT_LABELS = {
     "focus": "专注",
     "charge": "能量",
@@ -221,10 +229,62 @@ QListWidget::item:selected {
 """
 
 
+def _windows_font_dirs() -> tuple[Path, ...]:
+    roots = (os.environ.get("WINDIR"), os.environ.get("SystemRoot"), r"C:\Windows")
+    dirs: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        if not root:
+            continue
+        font_dir = Path(root) / "Fonts"
+        key = str(font_dir).casefold()
+        if key not in seen:
+            dirs.append(font_dir)
+            seen.add(key)
+    return tuple(dirs)
+
+
+def _companion_font_candidates() -> tuple[Path, ...]:
+    return tuple(font_dir / name for font_dir in _windows_font_dirs() for name in WINDOWS_CJK_FONT_FILENAMES)
+
+
+def load_companion_font_files(
+    *,
+    candidates: tuple[Path, ...] | None = None,
+    font_database: type[QFontDatabase] = QFontDatabase,
+) -> tuple[str, ...]:
+    loaded: list[str] = []
+    for path in candidates or _companion_font_candidates():
+        if not path.is_file():
+            continue
+        try:
+            font_id = font_database.addApplicationFont(str(path))
+        except Exception:
+            continue
+        if font_id < 0:
+            continue
+        try:
+            families = font_database.applicationFontFamilies(font_id)
+        except Exception:
+            families = ()
+        for family in families:
+            if family and family not in loaded:
+                loaded.append(str(family))
+    return tuple(loaded)
+
+
+def ensure_companion_font_files_loaded() -> tuple[str, ...]:
+    global _LOADED_COMPANION_FONT_FAMILIES
+    if _LOADED_COMPANION_FONT_FAMILIES is None:
+        _LOADED_COMPANION_FONT_FAMILIES = load_companion_font_files()
+    return _LOADED_COMPANION_FONT_FAMILIES
+
+
 def configure_application_style(app: QApplication | None = None) -> bool:
     target = app if app is not None else QApplication.instance()
     if target is None:
         return False
+    ensure_companion_font_files_loaded()
     fusion = QStyleFactory.create("Fusion")
     if fusion is not None and hasattr(target, "setStyle"):
         target.setStyle(fusion)

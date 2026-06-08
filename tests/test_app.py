@@ -305,6 +305,53 @@ def test_application_style_uses_fusion_and_chinese_font(monkeypatch):
     assert "font-family" in app.styleSheet()
 
 
+def test_companion_font_loader_adds_available_cjk_font_files(tmp_path):
+    from guanghe_companion import app as app_module
+
+    font_file = tmp_path / "msyh.ttc"
+    font_file.write_bytes(b"fake-font")
+
+    class FakeFontDatabase:
+        loaded_paths: list[str] = []
+
+        @staticmethod
+        def addApplicationFont(path: str) -> int:
+            FakeFontDatabase.loaded_paths.append(path)
+            return 7
+
+        @staticmethod
+        def applicationFontFamilies(font_id: int) -> list[str]:
+            assert font_id == 7
+            return ["Microsoft YaHei UI", "Microsoft YaHei"]
+
+    families = app_module.load_companion_font_files(
+        candidates=(tmp_path / "missing.ttc", font_file),
+        font_database=FakeFontDatabase,
+    )
+
+    assert families == ("Microsoft YaHei UI", "Microsoft YaHei")
+    assert FakeFontDatabase.loaded_paths == [str(font_file)]
+
+
+def test_application_style_attempts_to_load_companion_fonts(monkeypatch):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion import app as app_module
+
+    calls: list[bool] = []
+    monkeypatch.setattr(
+        app_module,
+        "ensure_companion_font_files_loaded",
+        lambda: calls.append(True) or ("Microsoft YaHei UI",),
+    )
+    app = QApplication.instance() or QApplication([])
+
+    assert app_module.configure_application_style(app) is True
+    assert calls == [True]
+
+
 def test_control_panel_presents_desktop_pet_as_primary_launch(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
