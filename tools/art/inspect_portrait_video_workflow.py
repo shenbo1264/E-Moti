@@ -38,6 +38,7 @@ class PortraitVideoWorkflowItem:
     next_action: str
     source_next_action: str
     motion_next_action: str
+    suggested_commands: tuple[str, ...] = ()
     attention_reasons: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
@@ -60,6 +61,7 @@ class PortraitVideoWorkflowItem:
             "next_action": self.next_action,
             "source_next_action": self.source_next_action,
             "motion_next_action": self.motion_next_action,
+            "suggested_commands": list(self.suggested_commands),
             "attention_reasons": list(self.attention_reasons),
             "warnings": list(self.warnings),
             "errors": list(self.errors),
@@ -187,6 +189,15 @@ def render_portrait_video_workflow_markdown(report: PortraitVideoWorkflowReport)
                 )
                 + " |"
             )
+        command_items = tuple(item for item in attention if item.suggested_commands)
+        if command_items:
+            lines.extend(["", "## Suggested Commands", ""])
+            for item in command_items:
+                lines.append(f"### {_markdown_cell(item.set_id)}")
+                lines.append("")
+                for command in item.suggested_commands:
+                    lines.append(f"- `{_markdown_cell(command)}`")
+                lines.append("")
     lines.append("")
     return "\n".join(lines)
 
@@ -235,6 +246,15 @@ def _workflow_item(
         motion_next_action=motion_next_action,
         motion_candidate_status=motion_candidate_status,
     )
+    suggested_commands = _suggested_commands(
+        set_id=pack.set_id,
+        source_pack_dir=Path(pack.source_pack_dir),
+        source_root=Path(pack.source_pack_dir).parent,
+        handoff_dir=handoff_dir,
+        candidate_root=candidate_root,
+        source_next_action=source_next_action,
+        motion_next_action=motion_next_action,
+    )
     return PortraitVideoWorkflowItem(
         set_id=pack.set_id,
         source_pack_dir=pack.source_pack_dir,
@@ -252,6 +272,7 @@ def _workflow_item(
         next_action=next_action,
         source_next_action=source_next_action,
         motion_next_action=motion_next_action,
+        suggested_commands=suggested_commands,
         attention_reasons=_attention_reasons(
             source_status=source_status,
             handoff_status=handoff_status,
@@ -373,6 +394,74 @@ def _attention_reasons(
     if motion_candidate_status == "incomplete":
         reasons.append("incomplete_motion_candidate")
     return tuple(reasons)
+
+
+def _suggested_commands(
+    *,
+    set_id: str,
+    source_pack_dir: Path,
+    source_root: Path,
+    handoff_dir: Path,
+    candidate_root: Path,
+    source_next_action: str,
+    motion_next_action: str,
+) -> tuple[str, ...]:
+    commands: list[str] = []
+    if source_next_action == "bundle_handoff":
+        commands.append(
+            "python tools\\art\\bundle_portrait_video_source_packs.py "
+            f"{_command_path(source_root)} --output-dir {_command_path(handoff_dir)} "
+            "--report artifacts\\portrait-video-handoff-report.json"
+        )
+    elif source_next_action == "normalize_frames":
+        output_pack = _normalized_source_pack_dir(source_pack_dir)
+        commands.append(
+            "python tools\\art\\normalize_portrait_video_source_frames.py "
+            f"{_command_path(source_pack_dir)} --output-pack-dir {_command_path(output_pack)} "
+            "--report artifacts\\portrait-video-frame-normalization.json"
+        )
+        commands.append(
+            "python tools\\art\\inspect_portrait_video_source_frames.py "
+            f"{_command_path(source_root)} --report artifacts\\portrait-video-frame-preflight.json"
+        )
+    elif source_next_action in {"review_frame_warnings", "replace_invalid_frames"}:
+        commands.append(
+            "python tools\\art\\inspect_portrait_video_source_frames.py "
+            f"{_command_path(source_root)} --report artifacts\\portrait-video-frame-preflight.json"
+        )
+    elif source_next_action == "process_frames":
+        output_dir = candidate_root / f"portrait-candidate-{set_id}-motion"
+        commands.append(
+            "python tools\\art\\process_portrait_video_source_pack.py "
+            f"{_command_path(source_pack_dir)} --output-dir {_command_path(output_dir)}"
+        )
+    if motion_next_action == "regenerate_ai_video":
+        commands.append(
+            "python tools\\art\\inspect_portrait_video_workflow.py "
+            f"{_command_path(source_root)} --handoff-dir {_command_path(handoff_dir)} "
+            f"--candidate-root {_command_path(candidate_root)} "
+            "--report artifacts\\portrait-video-workflow-report.json "
+            "--markdown artifacts\\portrait-video-workflow-report.md"
+        )
+    return _dedupe(commands)
+
+
+def _normalized_source_pack_dir(source_pack_dir: Path) -> Path:
+    normalized_name = source_pack_dir.name if source_pack_dir.name.endswith("-normalized") else f"{source_pack_dir.name}-normalized"
+    return source_pack_dir.parent / normalized_name
+
+
+def _command_path(path: Path) -> str:
+    text = str(path)
+    return f'"{text}"' if any(char.isspace() for char in text) else text
+
+
+def _dedupe(items: list[str]) -> tuple[str, ...]:
+    result: list[str] = []
+    for item in items:
+        if item not in result:
+            result.append(item)
+    return tuple(result)
 
 
 def _report(

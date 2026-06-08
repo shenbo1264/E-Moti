@@ -197,6 +197,10 @@ Latest non-confirmation packages completed after the original plan:
   - Extends `tools/release_readiness_report.py` with repeatable `--portrait-workflow-report` inputs.
   - Release readiness can now include existing portrait AI-video workflow blockers such as `normalizable_size_mismatch`, `body_drift_warnings`, and `failed_motion_extraction`.
   - This is offline report aggregation only. It does not process frames, call providers, change runtime manifests, change renderer behavior, or approve generated assets.
+- `P3-workflow-suggested-commands` package:
+  - Adds `suggested_commands` to portrait AI-video workflow JSON/Markdown reports for local follow-up steps such as normalization, preflight rerun, single-pack processing, and workflow inspection.
+  - Keeps external provider regeneration as a human/operator step; generated commands only run existing local tooling.
+  - This is report guidance only. It does not process frames automatically, call providers, change runtime manifests, change renderer behavior, or approve generated assets.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

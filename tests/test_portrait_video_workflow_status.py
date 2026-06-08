@@ -258,9 +258,13 @@ def test_inspect_portrait_video_workflow_recommends_normalization_for_same_aspec
     assert item.normalizable_size_mismatch_count == 3
     assert item.attention_reasons == ("normalizable_size_mismatch",)
     assert item.next_action == "normalize_frames"
+    assert any("normalize_portrait_video_source_frames.py" in command for command in item.suggested_commands)
+    assert any("inspect_portrait_video_source_frames.py" in command for command in item.suggested_commands)
     markdown = render_portrait_video_workflow_markdown(report)
     assert "| xingxi-lowres-20260609 | ready_with_warnings | 3 | present | missing | normalize_frames |" in markdown
     assert "- `xingxi-lowres-20260609`: `normalizable_size_mismatch`" in markdown
+    assert "## Suggested Commands" in markdown
+    assert "normalize_portrait_video_source_frames.py" in markdown
 
 
 def test_inspect_portrait_video_workflow_surfaces_failed_motion_extraction(tmp_path: Path):
@@ -334,6 +338,8 @@ def test_inspect_portrait_video_workflow_splits_source_and_motion_next_actions(t
     assert item.motion_next_action == "regenerate_ai_video"
     assert item.next_action == "regenerate_ai_video"
     assert item.attention_reasons == ("normalizable_size_mismatch", "failed_motion_extraction")
+    assert any("normalize_portrait_video_source_frames.py" in command for command in item.suggested_commands)
+    assert any("inspect_portrait_video_source_frames.py" in command for command in item.suggested_commands)
     markdown = render_portrait_video_workflow_markdown(report)
     assert "| xingxi-lowres-failed-20260609 | normalize_frames | regenerate_ai_video |" in markdown
 
