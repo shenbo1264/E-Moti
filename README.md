@@ -224,6 +224,8 @@ Validate the frozen app bundle and installer artifacts:
 python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
 ```
 
+The build validator also checks that the frozen bundled `original_oc` character pack includes its manifest, portraits, preview, item icons, provenance note, and pack-level `LICENSE.md`.
+
 ## Optional AI Capabilities
 
 The demo can run without network services. Optional capabilities must be configured by the user in the app UI:

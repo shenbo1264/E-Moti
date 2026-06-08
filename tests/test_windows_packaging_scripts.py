@@ -32,6 +32,7 @@ def test_pyinstaller_build_script_copies_complete_character_assets():
     assert "portrait_manifest.json" in script
     assert "portraits" in script
     assert "portrait_assets_provenance.md" in script
+    assert "LICENSE.md" in script
 
 
 def test_pyinstaller_build_script_does_not_hardcode_bare_python():

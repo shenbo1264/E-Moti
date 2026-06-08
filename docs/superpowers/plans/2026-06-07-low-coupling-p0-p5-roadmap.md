@@ -15,7 +15,7 @@ Date: 2026-06-07
 python -m pytest tests\test_repository_hygiene.py tests\test_windows_build_validator.py tests\test_windows_packaging_scripts.py tests\test_packaging_entrypoints.py -q
 ```
 
-Result: `13 passed`.
+Result: `14 passed`.
 
 Latest focused AI-video workflow tests run on 2026-06-09:
 
@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `676 passed`.
+Result: `677 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -120,6 +120,11 @@ Latest non-confirmation packages completed after the original plan:
   - Adds `tools/validate_windows_build.py` to verify the frozen app executable, installer executable, and bundled frozen character pack.
   - Validates that the frozen `original_oc` pack contains `portrait_manifest.json`, `portraits/`, `preview/`, `item_icons/`, and `portrait_assets_provenance.md`.
   - Adds ignored `artifacts/windows-build-validation*.json` QA reports.
+- `P5-frozen-character-license-gate` package:
+  - Extends the Windows build validator so the frozen bundled `original_oc` pack must include pack-level `LICENSE.md` along with portrait manifest, portraits, preview, item icons, and provenance.
+  - Keeps the existing PyInstaller copy strategy unchanged because the build script already copies the complete source character directory.
+  - Verified Windows app build, installer build, `tools/validate_windows_build.py`, frozen control-panel 5-second smoke, and frozen `--pet-mode` 5-second smoke.
+  - This is a release validation gate only. It does not change runtime behavior, installer paths, dependencies, renderer behavior, or bundled third-party assets.
 - `P1-speech-quality-gate` package:
   - Adds speech length and emptiness quality metrics to the LLM dialogue smoke report.
   - Keeps this as a smoke/QA gate only; it does not change prompt policy, character state, renderer behavior, or provider clients.

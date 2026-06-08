@@ -108,7 +108,7 @@ New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
 New-Item -ItemType Directory -Force -Path $RuntimeCharacterDir | Out-Null
 
 # Keep the frozen pack equivalent to the validated source character pack.
-# Required examples: item_icons, portrait_manifest.json, portraits, preview, portrait_assets_provenance.md.
+# Required examples: item_icons, portrait_manifest.json, portraits, preview, portrait_assets_provenance.md, LICENSE.md.
 Get-ChildItem -Force -LiteralPath $SourceCharacterDir | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination $RuntimeCharacterDir -Recurse -Force
 }

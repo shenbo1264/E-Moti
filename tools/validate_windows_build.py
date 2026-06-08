@@ -65,6 +65,7 @@ def validate_windows_build(
     for required in (
         "portrait_manifest.json",
         "portrait_assets_provenance.md",
+        "LICENSE.md",
         "portraits",
         "preview",
         "item_icons",

@@ -99,6 +99,7 @@ def _write_character_pack(root: Path) -> None:
         },
     )
     (root / "portrait_assets_provenance.md").write_text("fixture provenance\n", encoding="utf-8")
+    (root / "LICENSE.md").write_text("fixture character pack license\n", encoding="utf-8")
 
 
 def _write_windows_build(root: Path, *, include_portraits: bool = True, include_installer: bool = True) -> tuple[Path, Path]:
@@ -140,6 +141,19 @@ def test_validate_windows_build_rejects_missing_portrait_assets(tmp_path: Path):
 
     assert report.ok is False
     assert any("portrait image not found" in error for error in report.errors)
+
+
+def test_validate_windows_build_rejects_missing_character_pack_license(tmp_path: Path):
+    from tools.validate_windows_build import validate_windows_build
+
+    app_dir, installer = _write_windows_build(tmp_path)
+    license_path = app_dir / "_internal" / "assets" / "companion" / "original_oc" / "LICENSE.md"
+    license_path.unlink()
+
+    report = validate_windows_build(app_dir=app_dir, installer_path=installer)
+
+    assert report.ok is False
+    assert "frozen character pack missing required bundled asset: LICENSE.md" in report.errors
 
 
 def test_validate_windows_build_cli_writes_report_from_repo_root(tmp_path: Path):
