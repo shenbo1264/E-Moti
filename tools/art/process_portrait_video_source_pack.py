@@ -16,6 +16,10 @@ from tools.art.extract_portrait_motion_frames import (  # noqa: E402
     DEFAULT_MAX_BODY_DRIFT,
     extract_portrait_motion_frames,
 )
+from tools.art.inspect_portrait_video_source_frames import (  # noqa: E402
+    PortraitVideoFramePreflightItem,
+    inspect_portrait_video_source_frames,
+)
 
 
 DEFAULT_CANDIDATE_ROOT = Path("artifacts")
@@ -33,7 +37,9 @@ class PortraitVideoSourcePackProcessReport:
     candidate_manifest_path: str
     extraction_report_path: str
     motion_frame_count: int
-    errors: tuple[str, ...]
+    preflight_status: str = ""
+    preflight_warnings: tuple[str, ...] = ()
+    errors: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -47,6 +53,8 @@ class PortraitVideoSourcePackProcessReport:
             "candidate_manifest_path": self.candidate_manifest_path,
             "extraction_report_path": self.extraction_report_path,
             "motion_frame_count": self.motion_frame_count,
+            "preflight_status": self.preflight_status,
+            "preflight_warnings": list(self.preflight_warnings),
             "errors": list(self.errors),
         }
 
@@ -86,6 +94,34 @@ def process_portrait_video_source_pack(
     provider_prompts_path = source_root / provider_prompts_rel if provider_prompts_rel else None
     output = Path(output_dir) if output_dir is not None else DEFAULT_CANDIDATE_ROOT / f"portrait-candidate-{set_id}-motion"
     report_path = output / "candidate-motion-frame-report.json"
+    preflight_item = _preflight_item_for_source_pack(source_root)
+    if preflight_item is None:
+        return _blocked_preflight_report(
+            set_id=set_id,
+            source_root=source_root,
+            output=output,
+            reference_path=reference_path,
+            frames_dir=frames_dir,
+            prompt_path=prompt_path,
+            status="missing",
+            warnings=(),
+            errors=("frame preflight item not found; inspect_manually before extraction",),
+        )
+    if preflight_item.status != "ready":
+        return _blocked_preflight_report(
+            set_id=set_id,
+            source_root=source_root,
+            output=output,
+            reference_path=reference_path,
+            frames_dir=frames_dir,
+            prompt_path=prompt_path,
+            status=preflight_item.status,
+            warnings=preflight_item.warnings,
+            errors=(
+                f"frame preflight status {preflight_item.status}; {preflight_item.next_action} before extraction",
+                *preflight_item.errors,
+            ),
+        )
     prompt_text = _read_text(provider_prompts_path) if provider_prompts_path is not None else _read_text(prompt_path)
 
     extraction = extract_portrait_motion_frames(
@@ -109,7 +145,53 @@ def process_portrait_video_source_pack(
         candidate_manifest_path=extraction.manifest_path,
         extraction_report_path=extraction.report_path,
         motion_frame_count=len(extraction.motion_frames),
+        preflight_status=preflight_item.status,
+        preflight_warnings=preflight_item.warnings,
         errors=extraction.errors,
+    )
+
+
+def _preflight_item_for_source_pack(source_root: Path) -> PortraitVideoFramePreflightItem | None:
+    report = inspect_portrait_video_source_frames(source_root=source_root.parent)
+    for item in report.items:
+        if _same_path(Path(item.source_pack_dir), source_root):
+            return item
+    return None
+
+
+def _same_path(left: Path, right: Path) -> bool:
+    try:
+        return left.resolve() == right.resolve()
+    except OSError:
+        return left == right
+
+
+def _blocked_preflight_report(
+    *,
+    set_id: str,
+    source_root: Path,
+    output: Path,
+    reference_path: Path,
+    frames_dir: Path,
+    prompt_path: Path,
+    status: str,
+    warnings: tuple[str, ...],
+    errors: tuple[str, ...],
+) -> PortraitVideoSourcePackProcessReport:
+    return PortraitVideoSourcePackProcessReport(
+        ok=False,
+        set_id=set_id,
+        source_pack_dir=str(source_root),
+        output_dir=str(output),
+        reference_image=str(reference_path),
+        frames_dir=str(frames_dir),
+        prompt_path=str(prompt_path),
+        candidate_manifest_path="",
+        extraction_report_path="",
+        motion_frame_count=0,
+        preflight_status=status,
+        preflight_warnings=warnings,
+        errors=errors,
     )
 
 
@@ -169,6 +251,8 @@ def _empty_report(
         candidate_manifest_path="",
         extraction_report_path="",
         motion_frame_count=0,
+        preflight_status="",
+        preflight_warnings=(),
         errors=errors,
     )
 

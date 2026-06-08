@@ -310,7 +310,7 @@ def _frames_readme_text() -> str:
             "frame_0003.png",
             "```",
             "",
-            "After frames are present, run the `next_command` from `../source_pack.json` or adapt it with the exact paths.",
+            "After frame preflight reports `ready`, run the `next_command` from `../source_pack.json` or adapt it with the exact paths.",
             "",
         ]
     )

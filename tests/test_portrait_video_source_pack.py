@@ -35,6 +35,8 @@ def test_create_portrait_video_source_pack_writes_reference_prompt_and_dropzones
     assert (output / "gemini_prompt.md").is_file()
     assert (output / "provider_prompts.md").is_file()
     assert (output / "source_pack.json").is_file()
+    frames_readme = (output / "frames" / "README.md").read_text(encoding="utf-8")
+    assert "After frame preflight reports `ready`" in frames_readme
 
     prompt = (output / "gemini_prompt.md").read_text(encoding="utf-8")
     assert "Static camera" in prompt

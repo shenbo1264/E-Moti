@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `685 passed`.
+Result: `686 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -160,6 +160,10 @@ Latest non-confirmation packages completed after the original plan:
 - `P3-body-drift-preflight` package:
   - Makes `tools/art/inspect_portrait_video_source_frames.py` flag same-size PNG frames with high body drift as `ready_with_warnings`.
   - This catches likely pose/body recomposition before `--process-ready` can process the frames. It does not loosen extraction thresholds, call providers, change runtime manifests, or approve current bad video frames.
+- `P3-single-processor-preflight-guard` package:
+  - Makes `tools/art/process_portrait_video_source_pack.py` run frame preflight before extraction and block any source pack that is not `ready`.
+  - Blocked reports include `preflight_status`, `preflight_warnings`, and the preflight next action so direct `next_command` use cannot silently process warned frames.
+  - This is a source-pack tooling guard only. It does not change runtime manifests, renderer behavior, extraction thresholds, provider prompts, or art approval gates.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

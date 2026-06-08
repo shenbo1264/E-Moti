@@ -159,7 +159,7 @@ python tools\art\batch_process_portrait_video_source_packs.py `
 
 `--process-ready` skips `ready_with_warnings`. For size mismatches or obvious pose drift, regenerate the AI video or replace frames first instead of forcing a motion candidate.
 
-To process one folder after frames are present, run:
+To process one folder after frame preflight reports `ready`, run:
 
 ```powershell
 python tools\art\process_portrait_video_source_pack.py `

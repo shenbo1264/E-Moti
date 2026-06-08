@@ -37,12 +37,30 @@ def _write_frame(path: Path, *, eye: str, drift: int = 0) -> None:
     image.save(path)
 
 
+def _write_mismatched_frame(path: Path, *, eye: str) -> None:
+    image = Image.new("RGB", (320, 480), (245, 247, 250))
+    draw = ImageDraw.Draw(image)
+    draw.rounded_rectangle((96, 28, 224, 456), radius=24, fill=(64, 92, 148))
+    draw.ellipse((112, 42, 208, 126), fill=(238, 210, 194))
+    if eye == "open":
+        draw.ellipse((137, 78, 153, 94), fill=(94, 66, 38))
+        draw.ellipse((170, 78, 186, 94), fill=(94, 66, 38))
+    image.save(path)
+
+
 def _write_frames(root: Path) -> None:
     root.mkdir(parents=True, exist_ok=True)
     _write_frame(root / "frame_0001.png", eye="open")
     _write_frame(root / "frame_0002.png", eye="half")
     _write_frame(root / "frame_0003.png", eye="closed")
-    _write_frame(root / "frame_0004.png", eye="open", drift=22)
+    _write_frame(root / "frame_0004.png", eye="open")
+
+
+def _write_warning_frames(root: Path) -> None:
+    root.mkdir(parents=True, exist_ok=True)
+    _write_frame(root / "frame_0001.png", eye="open")
+    _write_mismatched_frame(root / "frame_0002.png", eye="open")
+    _write_frame(root / "frame_0003.png", eye="closed")
 
 
 def _write_source_pack(tmp_path: Path) -> Path:
@@ -73,7 +91,7 @@ def test_process_portrait_video_source_pack_extracts_candidate_from_frames(tmp_p
     assert report.set_id == "xingxi-vn-neutral-20260608"
     assert Path(report.candidate_manifest_path).is_file()
     assert Path(report.extraction_report_path).is_file()
-    assert report.motion_frame_count == 3
+    assert report.motion_frame_count == 4
     provenance = (output_dir / "portrait_video_provenance.md").read_text(encoding="utf-8")
     assert "AI video" in provenance
     assert "AI Video Provider Prompt Notes" in provenance
@@ -89,7 +107,24 @@ def test_process_portrait_video_source_pack_reports_missing_frames(tmp_path: Pat
     report = process_portrait_video_source_pack(source_pack_dir=source_pack, output_dir=tmp_path / "motion-candidate")
 
     assert report.ok is False
-    assert "no png frames found" in report.errors
+    assert report.preflight_status == "waiting_for_frames"
+    assert "frame preflight status waiting_for_frames; generate_ai_video before extraction" in report.errors
+
+
+def test_process_portrait_video_source_pack_blocks_preflight_warnings(tmp_path: Path):
+    from tools.art.process_portrait_video_source_pack import process_portrait_video_source_pack
+
+    source_pack = _write_source_pack(tmp_path)
+    _write_warning_frames(source_pack / "frames")
+    output_dir = tmp_path / "motion-candidate"
+
+    report = process_portrait_video_source_pack(source_pack_dir=source_pack, output_dir=output_dir)
+
+    assert report.ok is False
+    assert report.preflight_status == "ready_with_warnings"
+    assert report.preflight_warnings
+    assert "frame preflight status ready_with_warnings; review_frame_warnings before extraction" in report.errors
+    assert not (output_dir / "portrait_candidate.json").exists()
 
 
 def test_process_portrait_video_source_pack_rejects_unsafe_metadata_paths(tmp_path: Path):
@@ -133,6 +168,6 @@ def test_process_portrait_video_source_pack_cli_runs_from_repo_root(tmp_path: Pa
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["ok"] is True
-    assert payload["motion_frame_count"] == 3
+    assert payload["motion_frame_count"] == 4
     assert (output_dir / "portrait_candidate.json").is_file()
     assert "Pika" in (output_dir / "portrait_video_provenance.md").read_text(encoding="utf-8")
