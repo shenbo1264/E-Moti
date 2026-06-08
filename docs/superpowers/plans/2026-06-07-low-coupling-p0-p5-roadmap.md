@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this smoke-batch-review package: `d25ece1 feat: add ai video fallback prompts`
+- Latest committed checkpoint before this expression-cue package: `52465f8 feat: batch review llm smoke reports`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -28,10 +28,10 @@ Result: `27 passed`.
 Latest focused LLM/review tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_llm_smoke_review.py tests\test_llm_smoke.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_ai_expressor.py tests\test_companion_dialogue_policy.py tests\test_expression_clients.py tests\test_expression_diagnostics.py tests\test_expression_event_pipeline.py tests\test_visual_actions.py tests\test_llm_smoke.py tests\test_llm_smoke_review.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `19 passed`.
+Result: `169 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -126,6 +126,13 @@ Latest non-confirmation packages completed after the original plan:
   - Keeps this as an offline QA/reporting tool only; it does not call providers, persist prompts, or change runtime behavior.
   - Local ignored batch review artifact: `artifacts/llm_smoke/llm-smoke-batch-review-20260609.json`.
   - Current local artifact summary: 10 reviewed smoke JSON files, 0 passed, 10 need attention, 0 invalid. Most are old-format reports missing the newer `speech_quality` field, so they are not current proof of LLM quality.
+- `P1-expression-cue-guidance` package:
+  - Strengthens the performance prompt so the LLM must choose one visible emotion tag and cannot collapse explicit sad, tired, playful, focused, or surprised cues to `[calm]`.
+  - Fixes the cue mapping so `[focused]` owns 专注/学习 and `[calm]` is only the quiet-companion fallback.
+  - Initial current-tool DeepSeek live smoke failed with `visual_action_coverage:expressions=3/4,motions=5/3`.
+  - Rerun artifact after prompt guidance: `artifacts/llm_smoke/deepseek-speech-quality-live-20260609-rerun.json`, `ok=true`, 10 turns, 4 expressions, 4 motions, 0 fallback, 0 speech quality violations, state guard clean.
+  - Targeted sadness cue probe: `artifacts/llm_smoke/deepseek-sadness-cue-live-20260609.json`, `ok=true`, expression `sadness`, motions `SwitchDown` and `TouchHead`, state guard clean.
+  - All live artifacts stay ignored under `artifacts/llm_smoke/`; no API key or raw provider transcript is committed.
 
 Latest confirmation-gated packages completed after user approval:
 

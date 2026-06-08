@@ -61,6 +61,10 @@ def test_dialogue_policy_includes_performance_quality_guidance():
     assert "Emotion cue mapping:" in prompt
     assert "[sadness]" in prompt
     assert "[sleepy]" in prompt
+    assert "[focused]" in prompt
+    assert "Use exactly one visible emotion tag" in prompt
+    assert "Use [calm] only when no stronger cue applies" in prompt
+    assert "If the player explicitly names an emotion or expression cue" in prompt
     assert "Do not narrate hidden systems" in prompt
     assert "Do not copy the player's prompt" in prompt
 
