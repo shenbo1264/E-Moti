@@ -73,6 +73,19 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         warnings = _string_list(check.get("warnings"))
         if warnings:
             lines.append("- Warnings: `" + "; ".join(warnings) + "`")
+        distribution_boundary = _optional_string(check.get("distribution_boundary"))
+        if distribution_boundary:
+            lines.append(f"- Distribution boundary: `{distribution_boundary}`")
+        if isinstance(check.get("manual_qa_required"), bool):
+            lines.append(f"- Manual QA required: `{'yes' if check.get('manual_qa_required') else 'no'}`")
+        provenance_files = _string_list(check.get("provenance_files"))
+        if provenance_files:
+            lines.append("- Provenance files:")
+            lines.extend(f"  - `{filename}`" for filename in provenance_files)
+        license_files = _string_list(check.get("license_files"))
+        if license_files:
+            lines.append("- License files:")
+            lines.extend(f"  - `{filename}`" for filename in license_files)
         attention_reasons = _string_list(check.get("attention_reasons"))
         if attention_reasons:
             lines.append("- Attention reasons:")
@@ -94,6 +107,10 @@ def _source_character_pack_check(character_pack: Path) -> dict[str, object]:
         "status": str(report.get("status") or "unknown"),
         "path": str(character_pack),
         "character_id": str(report.get("character_id") or ""),
+        "manual_qa_required": report.get("manual_qa_required") is True,
+        "distribution_boundary": str(report.get("distribution_boundary") or "unknown"),
+        "provenance_files": _string_list(report.get("provenance_files")),
+        "license_files": _string_list(report.get("license_files")),
         "errors": _string_list(report.get("errors")),
         "warnings": _string_list(report.get("warnings")),
         "next_actions": _string_list(report.get("next_actions")),
@@ -231,6 +248,10 @@ def _string_list(value: object) -> list[str]:
     if not isinstance(value, list):
         return []
     return [item for item in value if isinstance(item, str) and item]
+
+
+def _optional_string(value: object) -> str:
+    return value if isinstance(value, str) and value else ""
 
 
 def _nonnegative_int(value: object) -> int:

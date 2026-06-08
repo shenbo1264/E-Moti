@@ -173,8 +173,20 @@ def test_release_readiness_report_accepts_ready_source_and_frozen_artifacts(tmp_
     assert payload["status"] == "ready"
     assert [check["id"] for check in payload["checks"]] == ["source_character_pack", "windows_build"]
     assert all(check["ok"] is True for check in payload["checks"])
+    source_check = payload["checks"][0]
+    assert source_check["manual_qa_required"] is False
+    assert source_check["distribution_boundary"] == "shareable_after_review"
+    assert "portrait_assets_provenance.md" in source_check["provenance_files"]
+    assert "LICENSE.md" in source_check["license_files"]
     assert payload["next_actions"] == []
-    assert (tmp_path / "readiness.md").read_text(encoding="utf-8").startswith("# E-Moti Release Readiness")
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert markdown.startswith("# E-Moti Release Readiness")
+    assert "- Distribution boundary: `shareable_after_review`" in markdown
+    assert "- Manual QA required: `no`" in markdown
+    assert "- Provenance files:" in markdown
+    assert "  - `portrait_assets_provenance.md`" in markdown
+    assert "- License files:" in markdown
+    assert "  - `LICENSE.md`" in markdown
 
 
 def test_release_readiness_report_accepts_ready_llm_report(tmp_path: Path):

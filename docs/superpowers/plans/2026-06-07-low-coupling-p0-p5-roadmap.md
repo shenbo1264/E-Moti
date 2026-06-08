@@ -213,6 +213,10 @@ Latest non-confirmation packages completed after the original plan:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.
   - Keeps online provider work as an operator step and local open-source video as research-only until a separate GPU/cloud pipeline is approved.
+- `P4/P5-release-readiness-pack-metadata` package:
+  - Makes release readiness JSON and Markdown carry source character-pack review metadata from `tools/review_character_pack_status.py`.
+  - Source pack checks now expose manual QA status, distribution boundary, provenance files, and license files alongside pass/fail state.
+  - This is report explainability only. It does not copy packs, change runtime manifests, alter character switching, or approve any art.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.
