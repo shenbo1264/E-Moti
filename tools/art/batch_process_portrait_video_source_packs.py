@@ -18,6 +18,7 @@ from tools.art.process_portrait_video_source_pack import (  # noqa: E402
 
 DEFAULT_SOURCE_ROOT = Path("artifacts") / "portrait-video-source"
 DEFAULT_OUTPUT_ROOT = Path("artifacts")
+MIN_READY_FRAME_COUNT = 3
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,6 +49,7 @@ class PortraitVideoSourceBatchReport:
     pack_count: int
     ready_count: int
     waiting_count: int
+    insufficient_count: int
     processed_count: int
     failed_count: int
     packs: tuple[PortraitVideoSourcePackStatus, ...]
@@ -61,6 +63,7 @@ class PortraitVideoSourceBatchReport:
             "pack_count": self.pack_count,
             "ready_count": self.ready_count,
             "waiting_count": self.waiting_count,
+            "insufficient_count": self.insufficient_count,
             "processed_count": self.processed_count,
             "failed_count": self.failed_count,
             "packs": [pack.to_dict() for pack in self.packs],
@@ -147,6 +150,13 @@ def _source_pack_status(path: Path) -> PortraitVideoSourcePackStatus:
             frame_count=0,
             status="waiting_for_frames",
         )
+    if frame_count < MIN_READY_FRAME_COUNT:
+        return PortraitVideoSourcePackStatus(
+            set_id=str(set_id),
+            source_pack_dir=str(path),
+            frame_count=frame_count,
+            status="insufficient_frames",
+        )
     return PortraitVideoSourcePackStatus(
         set_id=str(set_id),
         source_pack_dir=str(path),
@@ -183,6 +193,7 @@ def _report(
 ) -> PortraitVideoSourceBatchReport:
     ready_count = sum(1 for pack in packs if pack.status == "ready")
     waiting_count = sum(1 for pack in packs if pack.status == "waiting_for_frames")
+    insufficient_count = sum(1 for pack in packs if pack.status == "insufficient_frames")
     processed_count = sum(1 for pack in packs if pack.status == "processed")
     failed_count = sum(1 for pack in packs if pack.status in {"failed", "invalid"})
     return PortraitVideoSourceBatchReport(
@@ -192,6 +203,7 @@ def _report(
         pack_count=len(packs),
         ready_count=ready_count,
         waiting_count=waiting_count,
+        insufficient_count=insufficient_count,
         processed_count=processed_count,
         failed_count=failed_count,
         packs=packs,

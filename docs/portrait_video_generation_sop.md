@@ -66,7 +66,7 @@ python tools\art\batch_process_portrait_video_source_packs.py `
   --report artifacts\portrait-video-source-batch-report.json
 ```
 
-The batch report shows `ready` for folders with exported PNG frames and `waiting_for_frames` for folders that still need Gemini output.
+The batch report shows `ready` for folders with at least 3 exported PNG frames, `insufficient_frames` for folders with 1-2 PNG frames, and `waiting_for_frames` for folders that still need Gemini output.
 
 To process every ready folder:
 
