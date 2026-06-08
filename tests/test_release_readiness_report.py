@@ -229,6 +229,22 @@ def _write_portrait_regeneration_brief_report(path: Path) -> Path:
     return path
 
 
+def _write_portrait_retry_handoff_report(path: Path, *, ok: bool = True) -> Path:
+    payload = {
+        "ok": ok,
+        "set_id": "xingxi-vn-neutral-20260608-normalized",
+        "regeneration_brief_path": "artifacts\\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json",
+        "reference_image_path": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
+        "output_dir": "artifacts\\portrait-video-retry-handoff",
+        "zip_path": "artifacts\\portrait-video-retry-handoff\\xingxi-vn-neutral-20260608-normalized-retry.zip"
+        if ok
+        else "",
+        "errors": [] if ok else ["reference_image_path must point to an existing file"],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _run_tool(
     character_pack: Path,
     app_dir: Path,
@@ -241,6 +257,7 @@ def _run_tool(
     liveportrait_preflight_reports: list[Path] | None = None,
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
+    portrait_retry_handoff_reports: list[Path] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     args = [
         sys.executable,
@@ -264,6 +281,8 @@ def _run_tool(
         args.extend(["--portrait-frame-qa-report", str(report)])
     for report in portrait_regeneration_brief_reports or []:
         args.extend(["--portrait-regeneration-brief-report", str(report)])
+    for report in portrait_retry_handoff_reports or []:
+        args.extend(["--portrait-retry-handoff-report", str(report)])
     args.extend(
         [
             "--json",
@@ -688,3 +707,77 @@ def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp
     assert "Previous attempt failed because body drift was too high" in markdown
     assert "- Negative prompt:" in markdown
     assert "body recomposition" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_retry_handoff(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    retry_handoff = _write_portrait_retry_handoff_report(tmp_path / "portrait-retry-handoff.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_retry_handoff_reports=[retry_handoff],
+    )
+
+    payload = json.loads(result.stdout)
+    retry_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert retry_check["id"] == "portrait_video_retry_handoff"
+    assert retry_check["ok"] is True
+    assert retry_check["status"] == "ready"
+    assert retry_check["set_id"] == "xingxi-vn-neutral-20260608-normalized"
+    assert (
+        retry_check["regeneration_brief_path"]
+        == "artifacts\\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json"
+    )
+    assert (
+        retry_check["reference_image_path"]
+        == "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png"
+    )
+    assert retry_check["output_dir"] == "artifacts\\portrait-video-retry-handoff"
+    assert retry_check["zip_path"] == (
+        "artifacts\\portrait-video-retry-handoff\\xingxi-vn-neutral-20260608-normalized-retry.zip"
+    )
+    assert retry_check["next_actions"] == []
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Video Retry Handoff" in markdown
+    assert "- Set: `xingxi-vn-neutral-20260608-normalized`" in markdown
+    assert (
+        "- Regeneration brief: `artifacts\\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json`"
+        in markdown
+    )
+    assert (
+        "- Retry handoff zip: `artifacts\\portrait-video-retry-handoff\\xingxi-vn-neutral-20260608-normalized-retry.zip`"
+        in markdown
+    )
+
+
+def test_release_readiness_report_surfaces_portrait_retry_handoff_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    retry_handoff = _write_portrait_retry_handoff_report(tmp_path / "portrait-retry-handoff.json", ok=False)
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_retry_handoff_reports=[retry_handoff],
+    )
+
+    payload = json.loads(result.stdout)
+    retry_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert retry_check["id"] == "portrait_video_retry_handoff"
+    assert retry_check["ok"] is False
+    assert retry_check["status"] == "needs_attention"
+    assert retry_check["errors"] == ["reference_image_path must point to an existing file"]
+    assert retry_check["next_actions"] == [
+        "create or repair portrait AI-video retry handoff zip before manual provider upload"
+    ]
+    assert "create or repair portrait AI-video retry handoff zip before manual provider upload" in payload["next_actions"]

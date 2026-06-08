@@ -259,6 +259,15 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-regeneration-brief.md
 ```
 
+To keep the manual provider upload zip visible in release readiness:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-retry-handoff-report artifacts\portrait-video-retry-handoff-report.json `
+  --json artifacts\release-readiness-with-portrait-retry-handoff.json `
+  --markdown artifacts\release-readiness-with-portrait-retry-handoff.md
+```
+
 If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
 
 ```powershell

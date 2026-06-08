@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this workflow retry-handoff command package: `254a69b feat: bundle portrait video retry handoff`
+- Latest committed checkpoint before this release-readiness retry-handoff package: `201a51a feat: suggest retry handoff from workflow`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -23,7 +23,7 @@ Latest focused AI-video workflow tests run on 2026-06-09:
 python -m pytest tests\test_portrait_video_workflow_status.py tests\test_portrait_video_retry_handoff.py tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `25 passed`.
+Result: `27 passed`.
 
 Latest focused LLM/review tests run on 2026-06-09:
 
@@ -44,10 +44,10 @@ Result: `146 passed`.
 Latest focused release-readiness/report tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_regeneration_brief.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `17 passed`.
+Result: `22 passed`.
 
 Latest focused AI-video regeneration brief tests run on 2026-06-09:
 
@@ -55,7 +55,7 @@ Latest focused AI-video regeneration brief tests run on 2026-06-09:
 python -m pytest tests\test_portrait_video_retry_handoff.py tests\test_portrait_video_regeneration_brief.py tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `20 passed`.
+Result: `22 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -63,7 +63,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `717 passed`.
+Result: `719 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -269,6 +269,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/art/inspect_portrait_video_workflow.py` emit a matching `bundle_portrait_video_retry_handoff.py` command when a source pack needs `review_frame_warnings`.
   - The workflow suggested command chain now routes warning frames through visual QA, regeneration brief, retry handoff zip, and frame preflight.
   - This is report guidance only. It does not run visual QA, create the brief or zip automatically, call providers, edit frames, create motion candidates, update runtime manifests, or approve generated assets.
+- `P3/P5-release-readiness-retry-handoff` package:
+  - Makes `tools/release_readiness_report.py` accept `--portrait-retry-handoff-report` so the ignored retry handoff zip path, reference image path, and regeneration brief path are visible in release readiness.
+  - The release report can now explain that a manual provider upload bundle exists without treating it as generated video success or motion asset approval.
+  - This is offline report aggregation only. It does not call providers, upload files, edit frames, create motion candidates, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

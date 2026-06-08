@@ -33,6 +33,7 @@ def build_release_readiness_report(
     liveportrait_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_qa_reports: Iterable[Path | str] = (),
     portrait_regeneration_brief_reports: Iterable[Path | str] = (),
+    portrait_retry_handoff_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -45,6 +46,10 @@ def build_release_readiness_report(
     checks.extend(
         _portrait_regeneration_brief_report_check(Path(report_path))
         for report_path in portrait_regeneration_brief_reports
+    )
+    checks.extend(
+        _portrait_retry_handoff_report_check(Path(report_path))
+        for report_path in portrait_retry_handoff_reports
     )
     ok = all(check["ok"] is True for check in checks)
     return {
@@ -184,6 +189,15 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         reference_image_path = _optional_string(check.get("reference_image_path"))
         if reference_image_path:
             lines.append(f"- Reference image: `{reference_image_path}`")
+        regeneration_brief_path = _optional_string(check.get("regeneration_brief_path"))
+        if regeneration_brief_path:
+            lines.append(f"- Regeneration brief: `{regeneration_brief_path}`")
+        output_dir = _optional_string(check.get("output_dir"))
+        if output_dir:
+            lines.append(f"- Output dir: `{output_dir}`")
+        zip_path = _optional_string(check.get("zip_path"))
+        if zip_path:
+            lines.append(f"- Retry handoff zip: `{zip_path}`")
         preview_path = _optional_string(check.get("preview_path"))
         if preview_path:
             lines.append(f"- Preview: `{preview_path}`")
@@ -554,6 +568,45 @@ def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, ob
     }
 
 
+def _portrait_retry_handoff_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_video_retry_handoff",
+            "label": "Portrait Video Retry Handoff",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "set_id": "",
+            "regeneration_brief_path": "",
+            "reference_image_path": "",
+            "output_dir": "",
+            "zip_path": "",
+            "errors": ["portrait retry handoff report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video retry handoff report before release"],
+        }
+    errors = _string_list(payload.get("errors"))
+    ok = payload.get("ok") is True and bool(_optional_string(payload.get("zip_path"))) and not errors
+    return {
+        "id": "portrait_video_retry_handoff",
+        "label": "Portrait Video Retry Handoff",
+        "ok": ok,
+        "status": "ready" if ok else "needs_attention",
+        "path": str(report_path),
+        "set_id": _optional_string(payload.get("set_id")),
+        "regeneration_brief_path": _optional_string(payload.get("regeneration_brief_path")),
+        "reference_image_path": _optional_string(payload.get("reference_image_path")),
+        "output_dir": _optional_string(payload.get("output_dir")),
+        "zip_path": _optional_string(payload.get("zip_path")),
+        "errors": errors,
+        "warnings": [],
+        "next_actions": []
+        if ok
+        else ["create or repair portrait AI-video retry handoff zip before manual provider upload"],
+    }
+
+
 def _load_json_object(path: Path) -> dict[str, object] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -686,6 +739,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=[],
         help="Optional portrait AI-video regeneration brief JSON report to include.",
     )
+    parser.add_argument(
+        "--portrait-retry-handoff-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video retry handoff JSON report to include.",
+    )
     parser.add_argument("--json", default="", help="Optional JSON output path.")
     parser.add_argument("--markdown", default="", help="Optional Markdown output path.")
     return parser.parse_args(argv)
@@ -703,6 +762,7 @@ def main(argv: list[str] | None = None) -> int:
         liveportrait_preflight_reports=[Path(item) for item in args.liveportrait_preflight_report],
         portrait_frame_qa_reports=[Path(item) for item in args.portrait_frame_qa_report],
         portrait_regeneration_brief_reports=[Path(item) for item in args.portrait_regeneration_brief_report],
+        portrait_retry_handoff_reports=[Path(item) for item in args.portrait_retry_handoff_report],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")
