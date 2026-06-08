@@ -58,6 +58,9 @@ def test_dialogue_policy_includes_performance_quality_guidance():
     assert "visual-novel desktop companion" in prompt
     assert "18-60 Chinese characters" in prompt
     assert "tiny emotional or sensory detail" in prompt
+    assert "Emotion cue mapping:" in prompt
+    assert "[sadness]" in prompt
+    assert "[sleepy]" in prompt
     assert "Do not narrate hidden systems" in prompt
     assert "Do not copy the player's prompt" in prompt
 

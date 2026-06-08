@@ -32,6 +32,16 @@ def test_default_llm_smoke_prompts_use_player_like_scenarios():
     assert not any(prompt.startswith("Smoke turn") for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
 
 
+def test_default_llm_smoke_prompts_cover_quality_gate_emotional_cues():
+    joined = "\n".join(DEFAULT_LLM_SMOKE_PROMPTS)
+
+    assert "\u5b89\u9759" in joined
+    assert "\u5f00\u5fc3" in joined
+    assert "\u60ca\u8bb6" in joined
+    assert "\u96be\u8fc7" in joined
+    assert "\u56f0\u5026" in joined
+
+
 def test_configured_llm_dialogue_smoke_uses_llm_path_without_growth_mutation(tmp_path):
     class FakeExpressor:
         enabled = True
@@ -250,6 +260,29 @@ def test_llm_dialogue_smoke_entrypoint_reads_deepseek_env_without_printing_key(m
     assert captured["kwargs"]["min_expression_actions"] == 4
     assert captured["kwargs"]["min_motion_actions"] == 3
     assert "sk-secret" not in capsys.readouterr().out
+
+
+def test_llm_dialogue_smoke_entrypoint_writes_utf8_report_without_printing_key(monkeypatch, capsys, tmp_path):
+    module = _load_tool(REPO_ROOT / "tools" / "llm_dialogue_smoke.py")
+    report_path = tmp_path / "nested" / "smoke-report.json"
+
+    class FakeReport:
+        ok = True
+
+        def to_public_dict(self):
+            return {"ok": True, "reason": "", "speech_preview": "\u661f\u6c50\u5728\u8fd9\u91cc"}
+
+    monkeypatch.setattr(module, "run_llm_dialogue_smoke", lambda *args, **kwargs: FakeReport())
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "sk-secret")
+
+    assert module.main(["--provider", "deepseek", "--prompt", "hello", "--report", str(report_path)]) == 0
+
+    stdout_payload = json.loads(capsys.readouterr().out)
+    report_text = report_path.read_text(encoding="utf-8")
+    report_payload = json.loads(report_text)
+    assert stdout_payload == report_payload
+    assert report_payload["speech_preview"] == "\u661f\u6c50\u5728\u8fd9\u91cc"
+    assert "sk-secret" not in report_text
 
 
 def test_llm_dialogue_smoke_dry_run_reports_sanitized_deepseek_settings_without_calling_provider(
