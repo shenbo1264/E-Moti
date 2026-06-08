@@ -178,6 +178,12 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         set_id = _optional_string(check.get("set_id"))
         if set_id:
             lines.append(f"- Set: `{set_id}`")
+        source_pack_dir = _optional_string(check.get("source_pack_dir"))
+        if source_pack_dir:
+            lines.append(f"- Source pack: `{source_pack_dir}`")
+        reference_image_path = _optional_string(check.get("reference_image_path"))
+        if reference_image_path:
+            lines.append(f"- Reference image: `{reference_image_path}`")
         preview_path = _optional_string(check.get("preview_path"))
         if preview_path:
             lines.append(f"- Preview: `{preview_path}`")
@@ -497,6 +503,8 @@ def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, ob
             "status": "invalid_report",
             "path": str(report_path),
             "set_id": "",
+            "source_pack_dir": "",
+            "reference_image_path": "",
             "decision_state": "",
             "frame_status": "",
             "preview_path": "",
@@ -524,6 +532,8 @@ def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, ob
         "status": "ready" if ok else decision_state,
         "path": str(report_path),
         "set_id": _optional_string(payload.get("set_id")),
+        "source_pack_dir": _optional_string(payload.get("source_pack_dir")),
+        "reference_image_path": _optional_string(payload.get("reference_image_path")),
         "decision_state": decision_state,
         "frame_status": _optional_string(payload.get("frame_status")),
         "preview_path": _optional_string(payload.get("preview_path")),

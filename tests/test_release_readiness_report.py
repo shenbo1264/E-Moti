@@ -197,6 +197,8 @@ def _write_portrait_regeneration_brief_report(path: Path) -> Path:
         "workflow_report_path": "artifacts\\portrait-video-workflow-report.json",
         "frame_qa_report_path": "artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json",
         "set_id": "xingxi-vn-neutral-20260608-normalized",
+        "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized",
+        "reference_image_path": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
         "decision_state": "regenerate_ai_video",
         "frame_status": "ready_with_warnings",
         "frame_count": 60,
@@ -655,6 +657,11 @@ def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp
     assert regeneration_check["ok"] is False
     assert regeneration_check["status"] == "regenerate_ai_video"
     assert regeneration_check["set_id"] == "xingxi-vn-neutral-20260608-normalized"
+    assert regeneration_check["source_pack_dir"] == "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized"
+    assert (
+        regeneration_check["reference_image_path"]
+        == "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png"
+    )
     assert regeneration_check["decision_state"] == "regenerate_ai_video"
     assert regeneration_check["frame_status"] == "ready_with_warnings"
     assert regeneration_check["frame_count"] == 60
@@ -669,6 +676,11 @@ def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp
     assert "regenerate portrait AI-video using the brief retry prompts before motion extraction" in payload["next_actions"]
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "### Portrait Video Regeneration Brief" in markdown
+    assert "- Source pack: `artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized`" in markdown
+    assert (
+        "- Reference image: `artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png`"
+        in markdown
+    )
     assert "- Decision state: `regenerate_ai_video`" in markdown
     assert "- Frame status: `ready_with_warnings`" in markdown
     assert "- Max body drift: `44.72`" in markdown

@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this regeneration-brief command hygiene package: `f535a92 feat: suggest regeneration brief from workflow`
+- Latest committed checkpoint before this regeneration-brief reference package: `11b4e4d fix: avoid regeneration brief self command`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -257,6 +257,10 @@ Latest non-confirmation packages completed after the original plan:
   - Filters `portrait_video_regeneration_brief.py` out of regeneration brief `suggested_commands` when the source workflow already suggests creating that brief.
   - The generated brief keeps follow-up commands such as visual QA and frame preflight, but does not tell the operator to recreate itself.
   - This is report hygiene only. It does not call providers, edit frames, create motion candidates, update runtime manifests, or approve generated assets.
+- `P3/P5-regeneration-brief-reference-path` package:
+  - Adds source-pack and reference-image paths to regeneration brief JSON/Markdown and release readiness aggregation.
+  - The next external provider retry now has the exact reference image to upload alongside the retry and negative prompts.
+  - This is report metadata only. It does not call providers, edit frames, create motion candidates, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

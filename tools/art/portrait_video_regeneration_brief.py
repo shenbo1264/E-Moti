@@ -28,6 +28,8 @@ class PortraitVideoRegenerationBrief:
     workflow_report_path: str
     frame_qa_report_path: str
     set_id: str
+    source_pack_dir: str
+    reference_image_path: str
     decision_state: str
     frame_status: str
     frame_count: int
@@ -48,6 +50,8 @@ class PortraitVideoRegenerationBrief:
             "workflow_report_path": self.workflow_report_path,
             "frame_qa_report_path": self.frame_qa_report_path,
             "set_id": self.set_id,
+            "source_pack_dir": self.source_pack_dir,
+            "reference_image_path": self.reference_image_path,
             "decision_state": self.decision_state,
             "frame_status": self.frame_status,
             "frame_count": self.frame_count,
@@ -86,11 +90,15 @@ def build_portrait_video_regeneration_brief(
     decision_state = _decision_state(blockers, item, frame_qa)
     suggested_commands = _suggested_commands(item)
     max_body_drift = _nonnegative_float(frame_qa.get("max_body_drift"))
+    source_pack_dir = Path(_optional_string(item.get("source_pack_dir") if item else ""))
+    reference_image_path = _reference_image_path(source_pack_dir)
     return PortraitVideoRegenerationBrief(
         ok=not errors,
         workflow_report_path=str(workflow_path),
         frame_qa_report_path=str(frame_qa_path) if frame_qa_path is not None else "",
         set_id=target_set_id,
+        source_pack_dir=str(source_pack_dir) if str(source_pack_dir) != "." else "",
+        reference_image_path=reference_image_path,
         decision_state="invalid_report" if errors else decision_state,
         frame_status=_optional_string(frame_qa.get("status")) or _optional_string(item.get("source_status") if item else None),
         frame_count=_nonnegative_int(frame_qa.get("frame_count")) or _nonnegative_int(item.get("frame_count") if item else None),
@@ -112,6 +120,8 @@ def render_portrait_video_regeneration_markdown(brief: PortraitVideoRegeneration
         "# Portrait Video Regeneration Brief",
         "",
         f"- Set: `{brief.set_id}`",
+        f"- Source pack: `{brief.source_pack_dir}`",
+        f"- Reference image: `{brief.reference_image_path}`",
         f"- Decision state: `{brief.decision_state}`",
         f"- Frame status: `{brief.frame_status}`",
         f"- Frame count: `{brief.frame_count}`",
@@ -212,6 +222,24 @@ def _suggested_commands(item: dict[str, object] | None) -> list[str]:
         for command in _string_list(item.get("suggested_commands"))
         if "portrait_video_regeneration_brief.py" not in command
     ]
+
+
+def _reference_image_path(source_pack_dir: Path) -> str:
+    if not str(source_pack_dir) or str(source_pack_dir) == ".":
+        return ""
+    metadata = _load_json_object(source_pack_dir / "source_pack.json")
+    reference_rel = _optional_string(metadata.get("reference_image"))
+    if not _safe_relative_path(reference_rel):
+        return ""
+    reference_path = source_pack_dir / reference_rel
+    return str(reference_path) if reference_path.is_file() else ""
+
+
+def _safe_relative_path(value: str) -> bool:
+    if not value:
+        return False
+    path = Path(value)
+    return not path.is_absolute() and ".." not in path.parts and not any(ord(char) < 32 for char in value)
 
 
 def _provider_retry_prompt(*, set_id: str, max_body_drift: float, blockers: list[str]) -> str:

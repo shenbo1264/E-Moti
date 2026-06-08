@@ -6,7 +6,30 @@ import sys
 from pathlib import Path
 
 
-def _write_workflow_report(path: Path) -> Path:
+def _write_source_pack(root: Path) -> Path:
+    source_pack_dir = root / "portrait-video-source" / "xingxi-vn-neutral-20260608-normalized"
+    reference = source_pack_dir / "reference" / "neutral_open.png"
+    reference.parent.mkdir(parents=True, exist_ok=True)
+    reference.write_bytes(b"\x89PNG\r\n\x1a\n")
+    (source_pack_dir / "source_pack.json").write_text(
+        json.dumps(
+            {
+                "set_id": "xingxi-vn-neutral-20260608-normalized",
+                "reference_image": "reference/neutral_open.png",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return source_pack_dir
+
+
+def _write_workflow_report(path: Path, *, source_pack_dir: Path | None = None) -> Path:
+    source_pack_dir_text = (
+        str(source_pack_dir)
+        if source_pack_dir is not None
+        else "artifacts/portrait-video-source/xingxi-vn-neutral-20260608-normalized"
+    )
     payload = {
         "ok": False,
         "source_root": "artifacts/portrait-video-source",
@@ -16,7 +39,7 @@ def _write_workflow_report(path: Path) -> Path:
         "items": [
             {
                 "set_id": "xingxi-vn-neutral-20260608-normalized",
-                "source_pack_dir": "artifacts/portrait-video-source/xingxi-vn-neutral-20260608-normalized",
+                "source_pack_dir": source_pack_dir_text,
                 "source_status": "ready_with_warnings",
                 "frame_count": 60,
                 "readable_frame_count": 60,
@@ -69,7 +92,8 @@ def test_portrait_video_regeneration_brief_rejects_drifted_frames(tmp_path: Path
         render_portrait_video_regeneration_markdown,
     )
 
-    workflow = _write_workflow_report(tmp_path / "workflow.json")
+    source_pack_dir = _write_source_pack(tmp_path)
+    workflow = _write_workflow_report(tmp_path / "workflow.json", source_pack_dir=source_pack_dir)
     frame_qa = _write_frame_qa_report(tmp_path / "frame-qa.json")
 
     brief = build_portrait_video_regeneration_brief(
@@ -80,6 +104,8 @@ def test_portrait_video_regeneration_brief_rejects_drifted_frames(tmp_path: Path
     assert brief.ok is True
     assert brief.set_id == "xingxi-vn-neutral-20260608-normalized"
     assert brief.decision_state == "regenerate_ai_video"
+    assert brief.source_pack_dir == str(source_pack_dir)
+    assert brief.reference_image_path == str(source_pack_dir / "reference" / "neutral_open.png")
     assert brief.frame_status == "ready_with_warnings"
     assert brief.max_body_drift == 44.72
     assert "workflow attention: body_drift_warnings" in brief.blockers
@@ -97,6 +123,7 @@ def test_portrait_video_regeneration_brief_rejects_drifted_frames(tmp_path: Path
     markdown = render_portrait_video_regeneration_markdown(brief)
     assert "# Portrait Video Regeneration Brief" in markdown
     assert "- Decision state: `regenerate_ai_video`" in markdown
+    assert f"- Reference image: `{source_pack_dir / 'reference' / 'neutral_open.png'}`" in markdown
     assert "- Max body drift: `44.72`" in markdown
     assert "## Prompt Constraints" in markdown
     assert "## Provider Retry Prompt" in markdown
