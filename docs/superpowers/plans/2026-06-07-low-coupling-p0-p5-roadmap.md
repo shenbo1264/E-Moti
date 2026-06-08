@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this regeneration brief package: `ccaaead feat: include frame visual qa in readiness`
+- Latest committed checkpoint before this provider-prompt package: `779f0ec feat: add portrait video regeneration brief`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -241,6 +241,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds `tools/art/portrait_video_regeneration_brief.py`, a read-only brief builder for an AI-video workflow report plus optional frame visual QA report.
   - Current normalized neutral frames resolve to `decision_state=regenerate_ai_video` because workflow attention and visual QA show high body drift.
   - This is operator guidance only. It does not call providers, edit frames, create motion candidates, update runtime manifests, or approve generated assets.
+- `P3-video-regeneration-provider-prompts` package:
+  - Extends the regeneration brief with paste-ready provider retry and negative prompt text for Pika, Runway, Krea, or similar external image-to-video attempts.
+  - The retry prompt explicitly carries the previous high body-drift failure into the next provider attempt and locks canvas, crop, full-body framing, pose, identity, and allowed motion.
+  - This is prompt packaging only. It does not call providers, edit frames, create motion candidates, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

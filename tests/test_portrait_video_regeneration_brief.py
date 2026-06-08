@@ -83,6 +83,11 @@ def test_portrait_video_regeneration_brief_rejects_drifted_frames(tmp_path: Path
     assert brief.max_body_drift == 44.72
     assert "workflow attention: body_drift_warnings" in brief.blockers
     assert "max body drift 44.72 exceeds 16.0" in brief.blockers
+    assert "Previous attempt failed because body drift was too high" in brief.retry_prompt
+    assert "same canvas, same crop, same full-body framing" in brief.retry_prompt
+    assert "only eyelids, tiny chest breathing, and slight hair-tip movement" in brief.retry_prompt
+    assert "body recomposition" in brief.negative_prompt
+    assert "camera movement" in brief.negative_prompt
     assert any("same canvas" in item for item in brief.prompt_constraints)
     assert any("Only eyelids" in item for item in brief.prompt_constraints)
     assert any("portrait_video_frame_visual_qa.py" in item for item in brief.suggested_commands)
@@ -91,6 +96,9 @@ def test_portrait_video_regeneration_brief_rejects_drifted_frames(tmp_path: Path
     assert "- Decision state: `regenerate_ai_video`" in markdown
     assert "- Max body drift: `44.72`" in markdown
     assert "## Prompt Constraints" in markdown
+    assert "## Provider Retry Prompt" in markdown
+    assert "## Provider Negative Prompt" in markdown
+    assert "Previous attempt failed because body drift was too high" in markdown
     assert "Only eyelids" in markdown
 
 
@@ -140,6 +148,8 @@ def test_portrait_video_regeneration_brief_cli_writes_outputs(tmp_path: Path):
     assert result.returncode == 0, result.stderr
     payload = json.loads(result.stdout)
     assert payload["decision_state"] == "regenerate_ai_video"
+    assert "Previous attempt failed because body drift was too high" in payload["retry_prompt"]
+    assert "body recomposition" in payload["negative_prompt"]
     assert report_path.is_file()
     assert markdown_path.is_file()
     assert "Prompt Constraints" in markdown_path.read_text(encoding="utf-8")

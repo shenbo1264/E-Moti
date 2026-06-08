@@ -36,6 +36,8 @@ class PortraitVideoRegenerationBrief:
     max_body_drift: float
     preview_path: str
     blockers: tuple[str, ...]
+    retry_prompt: str
+    negative_prompt: str
     prompt_constraints: tuple[str, ...]
     suggested_commands: tuple[str, ...]
     errors: tuple[str, ...] = ()
@@ -54,6 +56,8 @@ class PortraitVideoRegenerationBrief:
             "max_body_drift": self.max_body_drift,
             "preview_path": self.preview_path,
             "blockers": list(self.blockers),
+            "retry_prompt": self.retry_prompt,
+            "negative_prompt": self.negative_prompt,
             "prompt_constraints": list(self.prompt_constraints),
             "suggested_commands": list(self.suggested_commands),
             "errors": list(self.errors),
@@ -81,6 +85,7 @@ def build_portrait_video_regeneration_brief(
     blockers = _blockers(item, frame_qa)
     decision_state = _decision_state(blockers, item, frame_qa)
     suggested_commands = _suggested_commands(item)
+    max_body_drift = _nonnegative_float(frame_qa.get("max_body_drift"))
     return PortraitVideoRegenerationBrief(
         ok=not errors,
         workflow_report_path=str(workflow_path),
@@ -91,9 +96,11 @@ def build_portrait_video_regeneration_brief(
         frame_count=_nonnegative_int(frame_qa.get("frame_count")) or _nonnegative_int(item.get("frame_count") if item else None),
         sampled_frame_count=_nonnegative_int(frame_qa.get("sampled_frame_count")),
         size_mismatch_count=_nonnegative_int(frame_qa.get("size_mismatch_count")) or _nonnegative_int(item.get("size_mismatch_count") if item else None),
-        max_body_drift=_nonnegative_float(frame_qa.get("max_body_drift")),
+        max_body_drift=max_body_drift,
         preview_path=_optional_string(frame_qa.get("preview_path")),
         blockers=tuple(blockers),
+        retry_prompt=_provider_retry_prompt(set_id=target_set_id, max_body_drift=max_body_drift, blockers=blockers),
+        negative_prompt=_provider_negative_prompt(),
         prompt_constraints=PROMPT_CONSTRAINTS,
         suggested_commands=tuple(suggested_commands),
         errors=tuple(errors),
@@ -115,6 +122,14 @@ def render_portrait_video_regeneration_markdown(brief: PortraitVideoRegeneration
         "",
         "## Blockers",
         *_markdown_list(brief.blockers),
+        "",
+        "## Provider Retry Prompt",
+        "",
+        brief.retry_prompt or "None",
+        "",
+        "## Provider Negative Prompt",
+        "",
+        brief.negative_prompt or "None",
         "",
         "## Prompt Constraints",
         *_markdown_list(brief.prompt_constraints),
@@ -193,6 +208,35 @@ def _suggested_commands(item: dict[str, object] | None) -> list[str]:
     if not item:
         return []
     return _string_list(item.get("suggested_commands"))
+
+
+def _provider_retry_prompt(*, set_id: str, max_body_drift: float, blockers: list[str]) -> str:
+    failure_note = "Previous attempt failed because body drift was too high"
+    if max_body_drift:
+        failure_note = f"{failure_note}: max body drift {max_body_drift} exceeded {DEFAULT_MAX_BODY_DRIFT:.1f}."
+    elif blockers:
+        failure_note = f"{failure_note}: {'; '.join(blockers)}."
+    else:
+        failure_note = "Previous attempt needs a stricter static portrait retry."
+    return " ".join(
+        [
+            failure_note,
+            f"Regenerate set {set_id or '<set_id>'} from the same reference image.",
+            "Use a locked static camera with same canvas, same crop, same full-body framing, same pose, same outfit, same proportions, and the same silhouette.",
+            "The character must remain anchored in place from frame to frame.",
+            "Animate only eyelids, tiny chest breathing, and slight hair-tip movement.",
+            "Keep face, eyes, hairstyle, hands, feet, shoulders, hips, clothing details, palette, and transparent or plain background unchanged.",
+            "Export a short conservative portrait clip suitable for PNG frame extraction.",
+        ]
+    )
+
+
+def _provider_negative_prompt() -> str:
+    return " ".join(
+        [
+            "No camera movement, zoom, pan, crop, reframing, body recomposition, pose change, gesture, head turn, mouth talking, expression exaggeration, scene change, background character, object insertion, text, subtitle, logo, watermark, blur, red edge halo, glow border, dramatic lighting, costume redesign, palette shift, or changed body proportions.",
+        ]
+    )
 
 
 def _dedupe(items: list[str]) -> list[str]:

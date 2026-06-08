@@ -228,7 +228,7 @@ python tools\art\portrait_video_regeneration_brief.py `
   --markdown artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.md
 ```
 
-The regeneration brief is read-only. It packages the workflow blockers, frame QA drift values, suggested local follow-up commands, and the next provider prompt constraints. It does not call a provider, edit frames, create motion candidates, update runtime manifests, or approve assets. If it reports `decision_state=regenerate_ai_video`, rerun the external video attempt with stricter framing constraints instead of forcing extraction.
+The regeneration brief is read-only. It packages the workflow blockers, frame QA drift values, suggested local follow-up commands, the next provider prompt constraints, and paste-ready `Provider Retry Prompt` / `Provider Negative Prompt` sections. It does not call a provider, edit frames, create motion candidates, update runtime manifests, or approve assets. If it reports `decision_state=regenerate_ai_video`, paste those provider prompt sections into the next Pika, Runway, Krea, or other external video attempt instead of forcing extraction.
 
 To keep that frame QA result visible in release readiness:
 
