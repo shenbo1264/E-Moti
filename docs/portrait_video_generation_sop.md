@@ -66,6 +66,20 @@ python tools\art\bundle_portrait_video_source_packs.py `
 
 Each zip contains `reference/`, `gemini_prompt.md`, `source_pack.json`, and `GEMINI_HANDOFF_README.md`. It does not contain generated videos or exported frames.
 
+## Inspect Workflow Status
+
+To see every source pack, handoff zip, frame count, motion candidate, and next action:
+
+```powershell
+python tools\art\inspect_portrait_video_workflow.py `
+  artifacts\portrait-video-source `
+  --handoff-dir artifacts\portrait-video-handoff `
+  --candidate-root artifacts `
+  --report artifacts\portrait-video-workflow-report.json
+```
+
+Typical `next_action` values are `bundle_handoff`, `generate_gemini_video`, `export_more_frames`, `process_frames`, and `review_motion_candidate`.
+
 ## Gemini Output Rules
 
 Ask Gemini for:

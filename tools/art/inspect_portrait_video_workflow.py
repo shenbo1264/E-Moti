@@ -1,0 +1,203 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from dataclasses import dataclass
+from pathlib import Path
+
+
+REPO_ROOT = Path(__file__).resolve().parents[2]
+if str(REPO_ROOT) not in sys.path:
+    sys.path.insert(0, str(REPO_ROOT))
+
+from tools.art.batch_process_portrait_video_source_packs import (  # noqa: E402
+    DEFAULT_OUTPUT_ROOT,
+    DEFAULT_SOURCE_ROOT,
+    scan_portrait_video_source_packs,
+)
+from tools.art.bundle_portrait_video_source_packs import DEFAULT_OUTPUT_DIR as DEFAULT_HANDOFF_DIR  # noqa: E402
+
+
+@dataclass(frozen=True, slots=True)
+class PortraitVideoWorkflowItem:
+    set_id: str
+    source_pack_dir: str
+    source_status: str
+    frame_count: int
+    handoff_zip_path: str
+    handoff_status: str
+    motion_candidate_dir: str
+    motion_candidate_status: str
+    next_action: str
+    errors: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "set_id": self.set_id,
+            "source_pack_dir": self.source_pack_dir,
+            "source_status": self.source_status,
+            "frame_count": self.frame_count,
+            "handoff_zip_path": self.handoff_zip_path,
+            "handoff_status": self.handoff_status,
+            "motion_candidate_dir": self.motion_candidate_dir,
+            "motion_candidate_status": self.motion_candidate_status,
+            "next_action": self.next_action,
+            "errors": list(self.errors),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class PortraitVideoWorkflowReport:
+    ok: bool
+    source_root: str
+    handoff_dir: str
+    candidate_root: str
+    pack_count: int
+    missing_handoff_count: int
+    ready_count: int
+    waiting_count: int
+    insufficient_count: int
+    motion_candidate_count: int
+    items: tuple[PortraitVideoWorkflowItem, ...]
+    errors: tuple[str, ...] = ()
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "ok": self.ok,
+            "source_root": self.source_root,
+            "handoff_dir": self.handoff_dir,
+            "candidate_root": self.candidate_root,
+            "pack_count": self.pack_count,
+            "missing_handoff_count": self.missing_handoff_count,
+            "ready_count": self.ready_count,
+            "waiting_count": self.waiting_count,
+            "insufficient_count": self.insufficient_count,
+            "motion_candidate_count": self.motion_candidate_count,
+            "items": [item.to_dict() for item in self.items],
+            "errors": list(self.errors),
+        }
+
+
+def inspect_portrait_video_workflow(
+    *,
+    source_root: Path | str = DEFAULT_SOURCE_ROOT,
+    handoff_dir: Path | str = DEFAULT_HANDOFF_DIR,
+    candidate_root: Path | str = DEFAULT_OUTPUT_ROOT,
+) -> PortraitVideoWorkflowReport:
+    root = Path(source_root)
+    handoff = Path(handoff_dir)
+    candidates = Path(candidate_root)
+    batch = scan_portrait_video_source_packs(source_root=root)
+    errors: list[str] = list(batch.errors)
+
+    items: list[PortraitVideoWorkflowItem] = []
+    for pack in batch.packs:
+        item = _workflow_item(pack=pack, handoff_dir=handoff, candidate_root=candidates)
+        errors.extend(item.errors)
+        items.append(item)
+
+    return _report(
+        source_root=root,
+        handoff_dir=handoff,
+        candidate_root=candidates,
+        items=tuple(items),
+        errors=tuple(errors),
+    )
+
+
+def _workflow_item(
+    *,
+    pack,
+    handoff_dir: Path,
+    candidate_root: Path,
+) -> PortraitVideoWorkflowItem:
+    handoff_zip = handoff_dir / f"{pack.set_id}.zip"
+    handoff_status = "present" if handoff_zip.is_file() else "missing"
+    motion_candidate_dir = candidate_root / f"portrait-candidate-{pack.set_id}-motion"
+    motion_candidate_manifest = motion_candidate_dir / "portrait_candidate.json"
+    motion_candidate_status = "present" if motion_candidate_manifest.is_file() else "missing"
+    next_action = _next_action(
+        source_status=pack.status,
+        handoff_status=handoff_status,
+        motion_candidate_status=motion_candidate_status,
+    )
+    return PortraitVideoWorkflowItem(
+        set_id=pack.set_id,
+        source_pack_dir=pack.source_pack_dir,
+        source_status=pack.status,
+        frame_count=pack.frame_count,
+        handoff_zip_path=str(handoff_zip),
+        handoff_status=handoff_status,
+        motion_candidate_dir=str(motion_candidate_dir),
+        motion_candidate_status=motion_candidate_status,
+        next_action=next_action,
+        errors=pack.errors,
+    )
+
+
+def _next_action(*, source_status: str, handoff_status: str, motion_candidate_status: str) -> str:
+    if source_status in {"invalid", "failed"}:
+        return "fix_source_pack"
+    if handoff_status == "missing":
+        return "bundle_handoff"
+    if source_status == "waiting_for_frames":
+        return "generate_gemini_video"
+    if source_status == "insufficient_frames":
+        return "export_more_frames"
+    if source_status == "ready":
+        return "review_motion_candidate" if motion_candidate_status == "present" else "process_frames"
+    return "inspect_manually"
+
+
+def _report(
+    *,
+    source_root: Path,
+    handoff_dir: Path,
+    candidate_root: Path,
+    items: tuple[PortraitVideoWorkflowItem, ...],
+    errors: tuple[str, ...],
+) -> PortraitVideoWorkflowReport:
+    return PortraitVideoWorkflowReport(
+        ok=not errors,
+        source_root=str(source_root),
+        handoff_dir=str(handoff_dir),
+        candidate_root=str(candidate_root),
+        pack_count=len(items),
+        missing_handoff_count=sum(1 for item in items if item.handoff_status == "missing"),
+        ready_count=sum(1 for item in items if item.source_status == "ready"),
+        waiting_count=sum(1 for item in items if item.source_status == "waiting_for_frames"),
+        insufficient_count=sum(1 for item in items if item.source_status == "insufficient_frames"),
+        motion_candidate_count=sum(1 for item in items if item.motion_candidate_status == "present"),
+        items=items,
+        errors=errors,
+    )
+
+
+def _parse_args(argv: list[str]) -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description="Inspect Gemini portrait video source pack workflow status.")
+    parser.add_argument("source_root", nargs="?", default=str(DEFAULT_SOURCE_ROOT))
+    parser.add_argument("--handoff-dir", default=str(DEFAULT_HANDOFF_DIR))
+    parser.add_argument("--candidate-root", default=str(DEFAULT_OUTPUT_ROOT))
+    parser.add_argument("--report", default="")
+    return parser.parse_args(argv)
+
+
+def main(argv: list[str] | None = None) -> int:
+    args = _parse_args(sys.argv[1:] if argv is None else argv)
+    report = inspect_portrait_video_workflow(
+        source_root=args.source_root,
+        handoff_dir=args.handoff_dir,
+        candidate_root=args.candidate_root,
+    )
+    payload = json.dumps(report.to_dict(), ensure_ascii=False, indent=2)
+    if args.report:
+        target = Path(args.report)
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(payload, encoding="utf-8")
+    print(payload)
+    return 0 if report.ok else 1
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())
