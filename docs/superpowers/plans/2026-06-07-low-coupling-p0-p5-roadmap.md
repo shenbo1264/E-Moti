@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `683 passed`.
+Result: `684 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -146,6 +146,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds next actions `regenerate_ai_video` and `inspect_motion_candidate` so bad AI-video outputs do not look like missing candidates.
   - Current ignored frame-intake artifact found 60 readable frames, all size-mismatched with the 1024x1536 reference, and motion extraction failed with `not enough stable frames after body drift filtering`.
   - This is workflow reporting only. It does not update runtime manifests, loosen art gates, change renderer behavior, or promote generated frames.
+- `P3-batch-preflight-guard` package:
+  - Makes `tools/art/batch_process_portrait_video_source_packs.py` reuse frame preflight before reporting or processing source packs.
+  - Source packs with size warnings now report `ready_with_warnings`, increase `warning_count`, and are skipped by `--process-ready`.
+  - This prevents bad AI-video frames from being auto-processed into failed motion candidates. It does not change extraction thresholds, runtime manifests, renderer behavior, or art approval gates.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.

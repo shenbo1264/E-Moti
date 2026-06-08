@@ -14,6 +14,10 @@ if str(REPO_ROOT) not in sys.path:
 from tools.art.process_portrait_video_source_pack import (  # noqa: E402
     process_portrait_video_source_pack,
 )
+from tools.art.inspect_portrait_video_source_frames import (  # noqa: E402
+    PortraitVideoFramePreflightItem,
+    inspect_portrait_video_source_frames,
+)
 
 
 DEFAULT_SOURCE_ROOT = Path("artifacts") / "portrait-video-source"
@@ -28,6 +32,7 @@ class PortraitVideoSourcePackStatus:
     frame_count: int
     status: str
     output_dir: str = ""
+    warnings: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
@@ -37,6 +42,7 @@ class PortraitVideoSourcePackStatus:
             "frame_count": self.frame_count,
             "status": self.status,
             "output_dir": self.output_dir,
+            "warnings": list(self.warnings),
             "errors": list(self.errors),
         }
 
@@ -48,6 +54,7 @@ class PortraitVideoSourceBatchReport:
     process_ready: bool
     pack_count: int
     ready_count: int
+    warning_count: int
     waiting_count: int
     insufficient_count: int
     processed_count: int
@@ -62,6 +69,7 @@ class PortraitVideoSourceBatchReport:
             "process_ready": self.process_ready,
             "pack_count": self.pack_count,
             "ready_count": self.ready_count,
+            "warning_count": self.warning_count,
             "waiting_count": self.waiting_count,
             "insufficient_count": self.insufficient_count,
             "processed_count": self.processed_count,
@@ -89,8 +97,10 @@ def scan_portrait_video_source_packs(
         )
 
     packs: list[PortraitVideoSourcePackStatus] = []
+    preflight = inspect_portrait_video_source_frames(source_root=root)
+    preflight_items = {Path(item.source_pack_dir): item for item in preflight.items}
     for source_pack in _source_pack_dirs(root):
-        status = _source_pack_status(source_pack)
+        status = _source_pack_status(source_pack, preflight=preflight_items.get(source_pack))
         if process_ready and status.status == "ready":
             output = Path(output_root) / f"portrait-candidate-{status.set_id}-motion"
             processed = process_portrait_video_source_pack(source_pack_dir=source_pack, output_dir=output)
@@ -101,6 +111,7 @@ def scan_portrait_video_source_packs(
                     frame_count=status.frame_count,
                     status="processed",
                     output_dir=processed.output_dir,
+                    warnings=status.warnings,
                 )
             else:
                 status = PortraitVideoSourcePackStatus(
@@ -109,6 +120,7 @@ def scan_portrait_video_source_packs(
                     frame_count=status.frame_count,
                     status="failed",
                     output_dir=processed.output_dir,
+                    warnings=status.warnings,
                     errors=processed.errors,
                 )
         packs.append(status)
@@ -129,7 +141,11 @@ def _source_pack_dirs(root: Path) -> tuple[Path, ...]:
     )
 
 
-def _source_pack_status(path: Path) -> PortraitVideoSourcePackStatus:
+def _source_pack_status(
+    path: Path,
+    *,
+    preflight: PortraitVideoFramePreflightItem | None = None,
+) -> PortraitVideoSourcePackStatus:
     payload, errors = _read_metadata(path / "source_pack.json")
     set_id = payload.get("set_id") if isinstance(payload.get("set_id"), str) else path.name
     frames_dir_name = payload.get("frames_dir") if isinstance(payload.get("frames_dir"), str) else "frames"
@@ -142,6 +158,15 @@ def _source_pack_status(path: Path) -> PortraitVideoSourcePackStatus:
             frame_count=frame_count,
             status="invalid",
             errors=errors,
+        )
+    if preflight is not None:
+        return PortraitVideoSourcePackStatus(
+            set_id=preflight.set_id,
+            source_pack_dir=str(path),
+            frame_count=preflight.frame_count,
+            status=preflight.status,
+            warnings=preflight.warnings,
+            errors=preflight.errors,
         )
     if frame_count <= 0:
         return PortraitVideoSourcePackStatus(
@@ -192,16 +217,18 @@ def _report(
     errors: tuple[str, ...],
 ) -> PortraitVideoSourceBatchReport:
     ready_count = sum(1 for pack in packs if pack.status == "ready")
+    warning_count = sum(1 for pack in packs if pack.status == "ready_with_warnings" or pack.warnings)
     waiting_count = sum(1 for pack in packs if pack.status == "waiting_for_frames")
     insufficient_count = sum(1 for pack in packs if pack.status == "insufficient_frames")
     processed_count = sum(1 for pack in packs if pack.status == "processed")
-    failed_count = sum(1 for pack in packs if pack.status in {"failed", "invalid"})
+    failed_count = sum(1 for pack in packs if pack.status in {"failed", "invalid", "invalid_frames"})
     return PortraitVideoSourceBatchReport(
         ok=not errors and failed_count == 0,
         source_root=str(source_root),
         process_ready=process_ready,
         pack_count=len(packs),
         ready_count=ready_count,
+        warning_count=warning_count,
         waiting_count=waiting_count,
         insufficient_count=insufficient_count,
         processed_count=processed_count,

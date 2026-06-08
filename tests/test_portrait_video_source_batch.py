@@ -19,21 +19,92 @@ def _write_reference(path: Path) -> None:
     image.save(path)
 
 
-def _write_frame(path: Path, *, eye: str, drift: int = 0) -> None:
-    image = Image.new("RGB", (240, 480), (245, 247, 250))
+def _write_frame(path: Path, *, eye: str, drift: int = 0, size: tuple[int, int] = (240, 480)) -> None:
+    image = Image.new("RGB", size, (245, 247, 250))
     draw = ImageDraw.Draw(image)
+    scale_x = size[0] / 240
+    scale_y = size[1] / 480
     offset = drift
-    draw.rounded_rectangle((72 + offset, 28, 168 + offset, 456), radius=24, fill=(64, 92, 148))
-    draw.ellipse((84 + offset, 42, 156 + offset, 126), fill=(238, 210, 194))
+    draw.rounded_rectangle(
+        (
+            int((72 + offset) * scale_x),
+            int(28 * scale_y),
+            int((168 + offset) * scale_x),
+            int(456 * scale_y),
+        ),
+        radius=max(4, int(24 * min(scale_x, scale_y))),
+        fill=(64, 92, 148),
+    )
+    draw.ellipse(
+        (
+            int((84 + offset) * scale_x),
+            int(42 * scale_y),
+            int((156 + offset) * scale_x),
+            int(126 * scale_y),
+        ),
+        fill=(238, 210, 194),
+    )
     if eye == "open":
-        draw.ellipse((103 + offset, 78, 115 + offset, 94), fill=(94, 66, 38))
-        draw.ellipse((128 + offset, 78, 140 + offset, 94), fill=(94, 66, 38))
+        draw.ellipse(
+            (
+                int((103 + offset) * scale_x),
+                int(78 * scale_y),
+                int((115 + offset) * scale_x),
+                int(94 * scale_y),
+            ),
+            fill=(94, 66, 38),
+        )
+        draw.ellipse(
+            (
+                int((128 + offset) * scale_x),
+                int(78 * scale_y),
+                int((140 + offset) * scale_x),
+                int(94 * scale_y),
+            ),
+            fill=(94, 66, 38),
+        )
     elif eye == "half":
-        draw.line((102 + offset, 84, 116 + offset, 88), fill=(68, 50, 48), width=3)
-        draw.line((127 + offset, 84, 141 + offset, 88), fill=(68, 50, 48), width=3)
+        draw.line(
+            (
+                int((102 + offset) * scale_x),
+                int(84 * scale_y),
+                int((116 + offset) * scale_x),
+                int(88 * scale_y),
+            ),
+            fill=(68, 50, 48),
+            width=max(1, int(3 * min(scale_x, scale_y))),
+        )
+        draw.line(
+            (
+                int((127 + offset) * scale_x),
+                int(84 * scale_y),
+                int((141 + offset) * scale_x),
+                int(88 * scale_y),
+            ),
+            fill=(68, 50, 48),
+            width=max(1, int(3 * min(scale_x, scale_y))),
+        )
     elif eye == "closed":
-        draw.line((102 + offset, 88, 116 + offset, 88), fill=(68, 50, 48), width=4)
-        draw.line((127 + offset, 88, 141 + offset, 88), fill=(68, 50, 48), width=4)
+        draw.line(
+            (
+                int((102 + offset) * scale_x),
+                int(88 * scale_y),
+                int((116 + offset) * scale_x),
+                int(88 * scale_y),
+            ),
+            fill=(68, 50, 48),
+            width=max(1, int(4 * min(scale_x, scale_y))),
+        )
+        draw.line(
+            (
+                int((127 + offset) * scale_x),
+                int(88 * scale_y),
+                int((141 + offset) * scale_x),
+                int(88 * scale_y),
+            ),
+            fill=(68, 50, 48),
+            width=max(1, int(4 * min(scale_x, scale_y))),
+        )
     image.save(path)
 
 
@@ -114,6 +185,36 @@ def test_batch_process_portrait_video_source_packs_processes_ready_only(tmp_path
     assert (output_root / "portrait-candidate-xingxi-ready-20260608-motion" / "portrait_candidate.json").is_file()
     assert not (output_root / "portrait-candidate-xingxi-short-20260608-motion").exists()
     assert not (output_root / "portrait-candidate-xingxi-waiting-20260608-motion").exists()
+
+
+def test_batch_process_portrait_video_source_packs_skips_frame_warnings(tmp_path: Path):
+    from tools.art.batch_process_portrait_video_source_packs import scan_portrait_video_source_packs
+
+    source_root = tmp_path / "portrait-video-source"
+    pack = _write_source_pack(tmp_path, "xingxi-warning-20260609", frame_count=0)
+    frames = pack / "frames"
+    _write_frame(frames / "frame_0001.png", eye="open")
+    _write_frame(frames / "frame_0002.png", eye="half", size=(320, 480))
+    _write_frame(frames / "frame_0003.png", eye="closed")
+    output_root = tmp_path / "candidates"
+
+    scan = scan_portrait_video_source_packs(source_root=source_root)
+    process = scan_portrait_video_source_packs(
+        source_root=source_root,
+        process_ready=True,
+        output_root=output_root,
+    )
+
+    assert scan.ok is True
+    assert scan.ready_count == 0
+    assert scan.warning_count == 1
+    assert scan.packs[0].status == "ready_with_warnings"
+    assert scan.packs[0].warnings
+    assert process.ok is True
+    assert process.processed_count == 0
+    assert process.warning_count == 1
+    assert process.packs[0].status == "ready_with_warnings"
+    assert not (output_root / "portrait-candidate-xingxi-warning-20260609-motion").exists()
 
 
 def test_batch_process_portrait_video_source_packs_cli_writes_report(tmp_path: Path):
