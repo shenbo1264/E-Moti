@@ -148,6 +148,14 @@ def test_inspect_portrait_video_workflow_reports_next_actions(tmp_path: Path):
     assert "| xingxi-ready-20260608 | ready | 4 | present | missing | process_frames |" in markdown
     assert "| xingxi-short-20260608 | insufficient_frames | 2 | present | missing | export_more_frames |" in markdown
     assert "| xingxi-waiting-20260608 | waiting_for_frames | 0 | present | missing | generate_ai_video |" in markdown
+    waiting_item = next(item for item in report.items if item.set_id == "xingxi-waiting-20260608")
+    assert any("inspect_liveportrait_preflight.py" in command for command in waiting_item.suggested_commands)
+    assert any("tmp\\liveportrait_research\\LivePortrait" in command for command in waiting_item.suggested_commands)
+    assert any(
+        "tmp\\liveportrait_research\\drivers\\xingxi-waiting-20260608-blink-driver.mp4" in command
+        for command in waiting_item.suggested_commands
+    )
+    assert "inspect_liveportrait_preflight.py" in markdown
 
 
 def test_inspect_portrait_video_workflow_reports_missing_handoff_first(tmp_path: Path):

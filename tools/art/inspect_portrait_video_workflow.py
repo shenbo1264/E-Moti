@@ -429,6 +429,15 @@ def _suggested_commands(
             "python tools\\art\\inspect_portrait_video_source_frames.py "
             f"{_command_path(source_root)} --report artifacts\\portrait-video-frame-preflight.json"
         )
+    elif source_next_action == "generate_ai_video":
+        commands.append(
+            "python tools\\art\\inspect_liveportrait_preflight.py "
+            f"{_command_path(source_pack_dir)} "
+            "--liveportrait-root tmp\\liveportrait_research\\LivePortrait "
+            f"--driving tmp\\liveportrait_research\\drivers\\{set_id}-blink-driver.mp4 "
+            f"--report artifacts\\liveportrait-preflight-{set_id}.json "
+            f"--markdown artifacts\\liveportrait-preflight-{set_id}.md"
+        )
     elif source_next_action == "process_frames":
         output_dir = candidate_root / f"portrait-candidate-{set_id}-motion"
         commands.append(
