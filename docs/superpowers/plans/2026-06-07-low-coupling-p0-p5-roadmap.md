@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `677 passed`.
+Result: `680 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -125,6 +125,10 @@ Latest non-confirmation packages completed after the original plan:
   - Keeps the existing PyInstaller copy strategy unchanged because the build script already copies the complete source character directory.
   - Verified Windows app build, installer build, `tools/validate_windows_build.py`, frozen control-panel 5-second smoke, and frozen `--pet-mode` 5-second smoke.
   - This is a release validation gate only. It does not change runtime behavior, installer paths, dependencies, renderer behavior, or bundled third-party assets.
+- `P0/P5-release-readiness-report` package:
+  - Adds `tools/release_readiness_report.py`, a read-only aggregate report over source character-pack status and frozen Windows build validation.
+  - The report writes JSON/Markdown under ignored `artifacts/release-readiness*.json` and `artifacts/release-readiness*.md`.
+  - This makes release state easier to reproduce and explain without changing runtime behavior, build strategy, UI, provider calls, or assets.
 - `P1-speech-quality-gate` package:
   - Adds speech length and emptiness quality metrics to the LLM dialogue smoke report.
   - Keeps this as a smoke/QA gate only; it does not change prompt policy, character state, renderer behavior, or provider clients.

@@ -43,6 +43,8 @@ REQUIRED_GITIGNORE_PATTERNS = (
     "artifacts/llm_smoke/",
     "artifacts/character-pack-status*.json",
     "artifacts/character-pack-status*.md",
+    "artifacts/release-readiness*.json",
+    "artifacts/release-readiness*.md",
     "artifacts/portrait-video-frame-preflight*.json",
     "artifacts/portrait-candidate*.png",
     "artifacts/portrait-candidate*/",
