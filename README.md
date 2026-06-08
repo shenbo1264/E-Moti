@@ -167,6 +167,12 @@ Build the frozen Windows app:
 powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1
 ```
 
+If `python` on PATH points to the wrong interpreter, pass a known Python 3.11+ executable:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1 -PythonPath "C:\Path\To\Python311\python.exe"
+```
+
 The app executable is written to:
 
 ```text
@@ -178,6 +184,8 @@ Build the installer after the app has been built:
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild
 ```
+
+When the installer script needs to build the app first, the same `-PythonPath` argument is forwarded to `tools\build_windows_app.ps1`.
 
 The installer is written to:
 
