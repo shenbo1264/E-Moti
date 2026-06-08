@@ -42,6 +42,7 @@ data/dialogue_history.json
 artifacts/simulation/
 artifacts/llm_smoke/
 artifacts/portrait-candidate*.png
+artifacts/windows-build-validation*.json
 assets/companion/original_oc/preview/pyside_*smoke*.png
 assets/companion/original_oc/preview/qa_diagnostics_*/
 

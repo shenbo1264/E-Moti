@@ -195,6 +195,12 @@ dist\installer\E-Moti_Setup_0.1.0.exe
 
 If Inno Setup is installed somewhere else, pass `-ISCCPath` to `tools\build_windows_installer.ps1`.
 
+Validate the frozen app bundle and installer artifacts:
+
+```powershell
+python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
+```
+
 ## Optional AI Capabilities
 
 The demo can run without network services. Optional capabilities must be configured by the user in the app UI:

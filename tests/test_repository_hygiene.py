@@ -42,6 +42,7 @@ REQUIRED_GITIGNORE_PATTERNS = (
     "artifacts/simulation/",
     "artifacts/llm_smoke/",
     "artifacts/portrait-candidate*.png",
+    "artifacts/windows-build-validation*.json",
     "*.key",
 )
 
