@@ -53,6 +53,19 @@ python tools\art\create_portrait_video_source_pack.py `
 
 Open `gemini_prompt.md`, upload the image under `reference/`, and use the prompt in Gemini.
 
+## Bundle Handoff Zips
+
+To create one zip per source pack for Gemini handoff:
+
+```powershell
+python tools\art\bundle_portrait_video_source_packs.py `
+  artifacts\portrait-video-source `
+  --output-dir artifacts\portrait-video-handoff `
+  --report artifacts\portrait-video-handoff-report.json
+```
+
+Each zip contains `reference/`, `gemini_prompt.md`, `source_pack.json`, and `GEMINI_HANDOFF_README.md`. It does not contain generated videos or exported frames.
+
 ## Gemini Output Rules
 
 Ask Gemini for:

@@ -44,6 +44,8 @@ artifacts/llm_smoke/
 artifacts/portrait-video-source/
 artifacts/portrait-video-source-create-report*.json
 artifacts/portrait-video-source-batch-report*.json
+artifacts/portrait-video-handoff/
+artifacts/portrait-video-handoff-report*.json
 artifacts/portrait-candidate*.png
 artifacts/portrait-candidate*/
 artifacts/windows-build-validation*.json
