@@ -185,7 +185,7 @@ def _next_action(*, source_status: str, handoff_status: str, motion_candidate_st
     if handoff_status == "missing":
         return "bundle_handoff"
     if source_status == "waiting_for_frames":
-        return "generate_gemini_video"
+        return "generate_ai_video"
     if source_status == "insufficient_frames":
         return "export_more_frames"
     if source_status == "ready":
@@ -218,7 +218,7 @@ def _report(
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Inspect Gemini portrait video source pack workflow status.")
+    parser = argparse.ArgumentParser(description="Inspect AI video portrait source pack workflow status.")
     parser.add_argument("source_root", nargs="?", default=str(DEFAULT_SOURCE_ROOT))
     parser.add_argument("--handoff-dir", default=str(DEFAULT_HANDOFF_DIR))
     parser.add_argument("--candidate-root", default=str(DEFAULT_OUTPUT_ROOT))

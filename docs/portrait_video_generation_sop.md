@@ -80,7 +80,7 @@ python tools\art\inspect_portrait_video_workflow.py `
   --markdown artifacts\portrait-video-workflow-report.md
 ```
 
-Typical `next_action` values are `bundle_handoff`, `generate_gemini_video`, `export_more_frames`, `process_frames`, and `review_motion_candidate`.
+Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_more_frames`, `process_frames`, and `review_motion_candidate`.
 
 ## AI Video Output Rules
 
@@ -111,7 +111,7 @@ python tools\art\batch_process_portrait_video_source_packs.py `
   --report artifacts\portrait-video-source-batch-report.json
 ```
 
-The batch report shows `ready` for folders with at least 3 exported PNG frames, `insufficient_frames` for folders with 1-2 PNG frames, and `waiting_for_frames` for folders that still need Gemini output.
+The batch report shows `ready` for folders with at least 3 exported PNG frames, `insufficient_frames` for folders with 1-2 PNG frames, and `waiting_for_frames` for folders that still need AI video output.
 
 To process every ready folder:
 

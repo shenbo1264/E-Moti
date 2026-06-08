@@ -75,7 +75,9 @@ def test_process_portrait_video_source_pack_extracts_candidate_from_frames(tmp_p
     assert Path(report.extraction_report_path).is_file()
     assert report.motion_frame_count == 3
     provenance = (output_dir / "portrait_video_provenance.md").read_text(encoding="utf-8")
-    assert "Gemini Portrait Video Prompt" in provenance
+    assert "AI video" in provenance
+    assert "AI Video Provider Prompt Notes" in provenance
+    assert "Pika" in provenance
     assert "VN neutral candidate" in provenance
 
 
@@ -118,6 +120,8 @@ def test_process_portrait_video_source_pack_cli_runs_from_repo_root(tmp_path: Pa
             str(source_pack),
             "--output-dir",
             str(output_dir),
+            "--source-tool",
+            "Pika",
         ],
         cwd=Path(__file__).resolve().parents[1],
         capture_output=True,
@@ -131,3 +135,4 @@ def test_process_portrait_video_source_pack_cli_runs_from_repo_root(tmp_path: Pa
     assert payload["ok"] is True
     assert payload["motion_frame_count"] == 3
     assert (output_dir / "portrait_candidate.json").is_file()
+    assert "Pika" in (output_dir / "portrait_video_provenance.md").read_text(encoding="utf-8")

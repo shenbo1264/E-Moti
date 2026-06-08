@@ -82,7 +82,7 @@ def test_inspect_portrait_video_workflow_reports_next_actions(tmp_path: Path):
     assert actions == {
         "xingxi-ready-20260608": "process_frames",
         "xingxi-short-20260608": "export_more_frames",
-        "xingxi-waiting-20260608": "generate_gemini_video",
+        "xingxi-waiting-20260608": "generate_ai_video",
     }
     handoff = {item.set_id: item.handoff_status for item in report.items}
     assert handoff == {
@@ -94,7 +94,7 @@ def test_inspect_portrait_video_workflow_reports_next_actions(tmp_path: Path):
     assert "| Set | Frames | Handoff | Motion Candidate | Next Action |" in markdown
     assert "| xingxi-ready-20260608 | 4 | present | missing | process_frames |" in markdown
     assert "| xingxi-short-20260608 | 2 | present | missing | export_more_frames |" in markdown
-    assert "| xingxi-waiting-20260608 | 0 | present | missing | generate_gemini_video |" in markdown
+    assert "| xingxi-waiting-20260608 | 0 | present | missing | generate_ai_video |" in markdown
 
 
 def test_inspect_portrait_video_workflow_reports_missing_handoff_first(tmp_path: Path):

@@ -232,7 +232,7 @@ def _report(
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Bundle Gemini portrait video source packs into handoff zip files.")
+    parser = argparse.ArgumentParser(description="Bundle AI video portrait source packs into handoff zip files.")
     parser.add_argument("source_root", nargs="?", default=str(DEFAULT_SOURCE_ROOT))
     parser.add_argument("--output-dir", default=str(DEFAULT_OUTPUT_DIR))
     parser.add_argument("--report", default="")

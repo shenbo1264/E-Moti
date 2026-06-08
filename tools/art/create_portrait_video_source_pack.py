@@ -112,12 +112,10 @@ def create_portrait_video_source_pack(
                 "frames_dir": "frames",
                 "video_dir": "video",
                 "next_command": (
-                    "python tools\\art\\extract_portrait_motion_frames.py "
-                    f"--reference-image \"{reference_target}\" "
-                    f"--frames-dir \"{frames_dir}\" "
+                    "python tools\\art\\process_portrait_video_source_pack.py "
+                    f"\"{output}\" "
                     f"--output-dir \"artifacts\\portrait-candidate-{safe_set_id}-motion\" "
-                    f"--report \"artifacts\\portrait-candidate-{safe_set_id}-motion\\candidate-motion-frame-report.json\" "
-                    "--source-tool \"Gemini video\" --generation-prompt \"see gemini_prompt.md\""
+                    "--source-tool \"AI video\""
                 ),
             },
             ensure_ascii=False,
@@ -275,7 +273,7 @@ def _frames_readme_text() -> str:
         [
             "# Exported PNG Frames",
             "",
-            "Put Gemini-exported PNG frames here.",
+            "Put AI-video-exported PNG frames here.",
             "",
             "Expected naming:",
             "",
@@ -294,9 +292,9 @@ def _frames_readme_text() -> str:
 def _video_readme_text() -> str:
     return "\n".join(
         [
-            "# Gemini Video Downloads",
+            "# AI Video Downloads",
             "",
-            "Put the downloaded Gemini video here before exporting frames.",
+            "Put the downloaded AI video here before exporting frames.",
             "",
             "Do not commit raw generated video unless it has been explicitly approved for release.",
             "",
@@ -305,7 +303,7 @@ def _video_readme_text() -> str:
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Create a local Gemini video source pack for one portrait set.")
+    parser = argparse.ArgumentParser(description="Create a local AI video source pack for one portrait set.")
     parser.add_argument("--source-image", required=True)
     parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT))
     parser.add_argument("--set-id", required=True)

@@ -57,6 +57,7 @@ def process_portrait_video_source_pack(
     output_dir: Path | str | None = None,
     idle_frame_count: int = DEFAULT_IDLE_FRAME_COUNT,
     max_body_drift: float = DEFAULT_MAX_BODY_DRIFT,
+    source_tool: str = "AI video",
 ) -> PortraitVideoSourcePackProcessReport:
     source_root = Path(source_pack_dir)
     metadata_path = source_root / "source_pack.json"
@@ -68,11 +69,13 @@ def process_portrait_video_source_pack(
     reference_rel = _metadata_string(metadata, "reference_image")
     frames_rel = _metadata_string(metadata, "frames_dir") or "frames"
     prompt_rel = _metadata_string(metadata, "prompt_path") or "gemini_prompt.md"
+    provider_prompts_rel = _metadata_string(metadata, "provider_prompts_path") or ""
     path_errors = _metadata_path_errors(
         {
             "reference_image": reference_rel,
             "frames_dir": frames_rel,
             "prompt_path": prompt_rel,
+            **({"provider_prompts_path": provider_prompts_rel} if provider_prompts_rel else {}),
         }
     )
     if path_errors:
@@ -80,9 +83,10 @@ def process_portrait_video_source_pack(
     reference_path = source_root / reference_rel
     frames_dir = source_root / frames_rel
     prompt_path = source_root / prompt_rel
+    provider_prompts_path = source_root / provider_prompts_rel if provider_prompts_rel else None
     output = Path(output_dir) if output_dir is not None else DEFAULT_CANDIDATE_ROOT / f"portrait-candidate-{set_id}-motion"
     report_path = output / "candidate-motion-frame-report.json"
-    prompt_text = _read_text(prompt_path)
+    prompt_text = _read_text(provider_prompts_path) if provider_prompts_path is not None else _read_text(prompt_path)
 
     extraction = extract_portrait_motion_frames(
         reference_image_path=reference_path,
@@ -91,7 +95,7 @@ def process_portrait_video_source_pack(
         report_path=report_path,
         idle_frame_count=idle_frame_count,
         max_body_drift=max_body_drift,
-        source_tool="Gemini video",
+        source_tool=source_tool.strip() or "AI video",
         generation_prompt=prompt_text,
     )
     return PortraitVideoSourcePackProcessReport(
@@ -175,6 +179,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--output-dir", default="")
     parser.add_argument("--idle-frame-count", type=int, default=DEFAULT_IDLE_FRAME_COUNT)
     parser.add_argument("--max-body-drift", type=float, default=DEFAULT_MAX_BODY_DRIFT)
+    parser.add_argument("--source-tool", default="AI video")
     return parser.parse_args(argv)
 
 
@@ -185,6 +190,7 @@ def main(argv: list[str] | None = None) -> int:
         output_dir=args.output_dir or None,
         idle_frame_count=args.idle_frame_count,
         max_body_drift=args.max_body_drift,
+        source_tool=args.source_tool,
     )
     print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
     return 0 if report.ok else 1

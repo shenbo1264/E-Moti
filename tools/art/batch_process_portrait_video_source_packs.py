@@ -212,7 +212,7 @@ def _report(
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
-    parser = argparse.ArgumentParser(description="Scan or process local Gemini portrait video source packs.")
+    parser = argparse.ArgumentParser(description="Scan or process local AI video portrait source packs.")
     parser.add_argument("source_root", nargs="?", default=str(DEFAULT_SOURCE_ROOT))
     parser.add_argument("--process-ready", action="store_true")
     parser.add_argument("--output-root", default=str(DEFAULT_OUTPUT_ROOT))
