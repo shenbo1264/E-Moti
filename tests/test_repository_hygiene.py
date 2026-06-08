@@ -48,6 +48,8 @@ REQUIRED_GITIGNORE_PATTERNS = (
     "artifacts/release-readiness*.md",
     "artifacts/portrait-video-frame-normalization*.json",
     "artifacts/portrait-video-frame-preflight*.json",
+    "artifacts/portrait-video-frame-qa*.json",
+    "artifacts/portrait-video-frame-qa*.png",
     "artifacts/liveportrait-preflight*.json",
     "artifacts/liveportrait-preflight*.md",
     "artifacts/portrait-candidate*.png",

@@ -207,6 +207,17 @@ python tools\art\inspect_portrait_video_source_frames.py `
 
 The preflight report opens every PNG frame, rejects unreadable frames as `invalid_frames`, reports `insufficient_frames` below 3 readable PNGs, and flags size mismatches or high body drift as `ready_with_warnings` before extraction. Same-aspect lower-resolution frames report `next_action=normalize_frames`; non-normalizable size mismatch, crop, reframe, or body drift reports `next_action=review_frame_warnings`.
 
+When preflight reports warnings, build a visual QA sheet for the specific source pack before deciding whether to normalize, regenerate, or process:
+
+```powershell
+python tools\art\portrait_video_frame_visual_qa.py `
+  artifacts\portrait-video-source\xingxi-vn-neutral-20260608-normalized `
+  --preview artifacts\portrait-video-frame-qa-xingxi-vn-neutral-normalized.png `
+  --report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-normalized.json
+```
+
+The sheet samples the reference and exported frames, and the JSON report records frame sizes plus body-drift values when the frame size matches the reference. It is a human QA aid only; it does not edit frames, create motion candidates, or approve assets.
+
 If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
 
 ```powershell

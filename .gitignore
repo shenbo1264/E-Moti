@@ -53,6 +53,8 @@ artifacts/portrait-video-handoff/
 artifacts/portrait-video-handoff-report*.json
 artifacts/portrait-video-frame-normalization*.json
 artifacts/portrait-video-frame-preflight*.json
+artifacts/portrait-video-frame-qa*.json
+artifacts/portrait-video-frame-qa*.png
 artifacts/portrait-video-workflow-report*.json
 artifacts/portrait-video-workflow-report*.md
 artifacts/liveportrait-preflight*.json

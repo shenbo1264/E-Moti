@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this LivePortrait command package: `9d911ab feat: include liveportrait preflight in readiness`
+- Latest committed checkpoint before this frame visual QA package: `060e93c feat: add liveportrait preflight commands`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -20,10 +20,10 @@ Result: `14 passed`.
 Latest focused AI-video workflow tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_workflow_status.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_source_pack_processing.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_portrait_video_frame_visual_qa.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_workflow_status.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `28 passed`.
+Result: `20 passed`.
 
 Latest focused LLM/review tests run on 2026-06-09:
 
@@ -55,7 +55,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `705 passed`.
+Result: `709 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -217,6 +217,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/art/inspect_liveportrait_preflight.py` emit `suggested_commands` for local follow-up steps such as cloning the external repo, downloading weights, preparing the driving clip folder, rerunning preflight, installing FFmpeg, or running inference when ready.
   - `suggested_command` remains as the legacy single inference command, while `suggested_commands` carries multi-step blockers for release readiness and Markdown reports.
   - This is report guidance only. It does not execute commands, clone LivePortrait, install dependencies, download weights, run inference, export frames, update runtime manifests, or approve generated assets.
+- `P3-frame-visual-qa-sheet` package:
+  - Adds `tools/art/portrait_video_frame_visual_qa.py`, a read-only visual QA sheet builder for one portrait AI-video source pack.
+  - The tool samples the reference and exported frames, writes an ignored PNG contact sheet, and records sampled frame sizes plus body-drift values when the frame size matches the reference.
+  - This is human QA support only. It does not edit frames, create motion candidates, call providers, change extraction thresholds, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.
