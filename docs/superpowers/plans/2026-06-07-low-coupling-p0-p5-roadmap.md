@@ -5,17 +5,17 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest verified non-doc checkpoint: `d5e65ef test: add portrait promotion gate`
+- Latest verified non-doc checkpoint: `34328c0 test: add windows build artifact validator`
 - Docs-only sync commits may be newer than this checkpoint; use `git log --oneline --decorate -8` for the absolute current HEAD.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
-- Latest focused portrait/art/character gate tests run on 2026-06-08:
+- Latest focused Windows build/package tests run on 2026-06-08:
 
 ```powershell
-python -m pytest tests\test_portrait_promotion_gate.py tests\test_portrait_pack_smoke.py tests\test_art_tools.py tests\test_character_registry.py -q
+python -m pytest tests\test_repository_hygiene.py tests\test_windows_build_validator.py tests\test_windows_packaging_scripts.py tests\test_packaging_entrypoints.py -q
 ```
 
-Result: `50 passed`.
+Result: `13 passed`.
 
 Full suite run on 2026-06-08:
 
@@ -23,7 +23,7 @@ Full suite run on 2026-06-08:
 python -m pytest
 ```
 
-Result: `599 passed`.
+Result: `604 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -87,6 +87,15 @@ Latest non-confirmation packages completed after the original plan:
   - Adds `tools/portrait_promotion_gate.py` as a stricter final-art gate before official manifest promotion.
   - Requires approved candidate metadata, provenance, transparent tall VN portraits, distinct expression open frames, and distinct neutral blink frames.
   - The current ignored runtime candidate pack fails this gate, so it remains smoke-only and is not promotion-ready.
+- `399de6b fix: harden windows packaging python and assets`
+  - Adds `-PythonPath` support and Python 3.11+ probing to the Windows app build script.
+  - Makes the installer script forward `-PythonPath` when it builds the app.
+  - Copies the complete validated `assets/companion/original_oc` pack into the frozen app, including portrait manifest, portrait PNGs, preview, provenance, and item icons.
+  - Verified Windows app build, installer build, frozen control-panel smoke, and frozen `--pet-mode` smoke.
+- `34328c0 test: add windows build artifact validator`
+  - Adds `tools/validate_windows_build.py` to verify the frozen app executable, installer executable, and bundled frozen character pack.
+  - Validates that the frozen `original_oc` pack contains `portrait_manifest.json`, `portraits/`, `preview/`, `item_icons/`, and `portrait_assets_provenance.md`.
+  - Adds ignored `artifacts/windows-build-validation*.json` QA reports.
 
 Latest confirmation-gated packages completed after user approval:
 
@@ -348,8 +357,9 @@ python -m pytest
 Packaging acceptance if runtime or installer behavior changes:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1
+powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1 -PythonPath "C:\Path\To\Python311\python.exe"
 powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild
+python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
 ```
 
 Stop for confirmation:

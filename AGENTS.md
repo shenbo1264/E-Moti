@@ -103,7 +103,10 @@ If packaging or release behavior changes, also run:
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1
 powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild
+python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
 ```
+
+If `python` on PATH is not the intended Python 3.11+ interpreter, pass `-PythonPath` to the build scripts instead of editing the environment inside the repo.
 
 ## Execution Rules
 
