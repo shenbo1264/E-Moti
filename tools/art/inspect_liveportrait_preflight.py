@@ -12,6 +12,16 @@ from PIL import Image, UnidentifiedImageError
 
 ALLOWED_DRIVING_SUFFIXES = {".mp4", ".mov", ".webm", ".mkv", ".avi", ".pkl"}
 REQUIRED_LIVEPORTRAIT_FILES = ("inference.py", "app.py", "requirements.txt")
+REQUIRED_HUMAN_WEIGHT_PATHS = (
+    "pretrained_weights/liveportrait/base_models/appearance_feature_extractor.pth",
+    "pretrained_weights/liveportrait/base_models/motion_extractor.pth",
+    "pretrained_weights/liveportrait/base_models/spade_generator.pth",
+    "pretrained_weights/liveportrait/base_models/warping_module.pth",
+    "pretrained_weights/liveportrait/landmark.onnx",
+    "pretrained_weights/liveportrait/retargeting_models/stitching_retargeting_module.pth",
+    "pretrained_weights/insightface/models/buffalo_l/2d106det.onnx",
+    "pretrained_weights/insightface/models/buffalo_l/det_10g.onnx",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +36,7 @@ class LivePortraitPreflightReport:
     next_action: str
     suggested_command: str
     errors: tuple[str, ...]
+    missing_weight_paths: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
 
     def to_dict(self) -> dict[str, object]:
@@ -40,6 +51,7 @@ class LivePortraitPreflightReport:
             "next_action": self.next_action,
             "suggested_command": self.suggested_command,
             "errors": list(self.errors),
+            "missing_weight_paths": list(self.missing_weight_paths),
             "warnings": list(self.warnings),
         }
 
@@ -60,15 +72,15 @@ def inspect_liveportrait_preflight(
 
     source_image, reference_size = _source_pack_reference(source_root, errors)
     _validate_liveportrait_root(liveportrait, errors)
-    weights_present = (liveportrait / "pretrained_weights").is_dir() if liveportrait.exists() else False
-    if liveportrait.exists() and not weights_present:
-        errors.append("pretrained_weights directory not found")
+    missing_weight_paths = _missing_human_weight_paths(liveportrait) if liveportrait.exists() else tuple(REQUIRED_HUMAN_WEIGHT_PATHS)
+    if liveportrait.exists() and missing_weight_paths:
+        errors.append("required pretrained weights are missing")
     driving = _validate_driving_path(driving_path, errors)
     ffmpeg = _resolve_ffmpeg(ffmpeg_path, errors)
     next_action = _next_action(
         liveportrait=liveportrait,
         errors=errors,
-        weights_present=weights_present,
+        missing_weight_paths=missing_weight_paths,
         driving=driving,
         ffmpeg=ffmpeg,
     )
@@ -85,6 +97,7 @@ def inspect_liveportrait_preflight(
         next_action=next_action,
         suggested_command=suggested_command,
         errors=tuple(errors),
+        missing_weight_paths=missing_weight_paths,
         warnings=tuple(warnings),
     )
     _write_report(report, report_path)
@@ -104,6 +117,9 @@ def render_liveportrait_preflight_markdown(report: LivePortraitPreflightReport) 
         f"- Driving input: `{report.driving_path}`",
         f"- FFmpeg: `{report.ffmpeg_path}`",
         f"- Next action: `{report.next_action}`",
+        "",
+        "## Missing Weights",
+        *_markdown_list(report.missing_weight_paths),
         "",
         "## Errors",
         *_markdown_list(report.errors),
@@ -170,6 +186,14 @@ def _validate_liveportrait_root(root: Path, errors: list[str]) -> None:
             errors.append(f"liveportrait file not found: {filename}")
 
 
+def _missing_human_weight_paths(root: Path) -> tuple[str, ...]:
+    missing: list[str] = []
+    for relative_path in REQUIRED_HUMAN_WEIGHT_PATHS:
+        if not (root / relative_path).is_file():
+            missing.append(relative_path)
+    return tuple(missing)
+
+
 def _validate_driving_path(value: Path | str, errors: list[str]) -> Path | None:
     if value == "":
         errors.append("driving video or motion template is required")
@@ -205,13 +229,13 @@ def _next_action(
     *,
     liveportrait: Path,
     errors: list[str],
-    weights_present: bool,
+    missing_weight_paths: tuple[str, ...],
     driving: Path | None,
     ffmpeg: str,
 ) -> str:
     if not liveportrait.is_dir() or any(error.startswith("liveportrait file not found:") for error in errors):
         return "install_liveportrait"
-    if not weights_present:
+    if missing_weight_paths:
         return "download_liveportrait_weights"
     if driving is None:
         return "add_driving_video"

@@ -8,6 +8,18 @@ from pathlib import Path
 from PIL import Image
 
 
+REQUIRED_HUMAN_WEIGHT_PATHS = (
+    "pretrained_weights/liveportrait/base_models/appearance_feature_extractor.pth",
+    "pretrained_weights/liveportrait/base_models/motion_extractor.pth",
+    "pretrained_weights/liveportrait/base_models/spade_generator.pth",
+    "pretrained_weights/liveportrait/base_models/warping_module.pth",
+    "pretrained_weights/liveportrait/landmark.onnx",
+    "pretrained_weights/liveportrait/retargeting_models/stitching_retargeting_module.pth",
+    "pretrained_weights/insightface/models/buffalo_l/2d106det.onnx",
+    "pretrained_weights/insightface/models/buffalo_l/det_10g.onnx",
+)
+
+
 def _write_reference(path: Path) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     Image.new("RGBA", (256, 512), (0, 0, 0, 0)).save(path)
@@ -34,7 +46,10 @@ def _write_liveportrait_root(root: Path, *, with_weights: bool = True) -> Path:
     (root / "app.py").write_text("print('fake gradio')\n", encoding="utf-8")
     (root / "requirements.txt").write_text("torch\n", encoding="utf-8")
     if with_weights:
-        (root / "pretrained_weights").mkdir()
+        for relative_path in REQUIRED_HUMAN_WEIGHT_PATHS:
+            weight_path = root / relative_path
+            weight_path.parent.mkdir(parents=True, exist_ok=True)
+            weight_path.write_bytes(b"fake weight")
     return root
 
 
@@ -62,6 +77,7 @@ def test_liveportrait_preflight_reports_ready_command(tmp_path: Path):
     )
     assert report.driving_path == str(driving)
     assert report.ffmpeg_path == sys.executable
+    assert report.missing_weight_paths == ()
     assert report.errors == ()
     assert "inference.py" in report.suggested_command
     assert " -s " in report.suggested_command
@@ -105,7 +121,8 @@ def test_liveportrait_preflight_blocks_missing_weights_and_driving(tmp_path: Pat
 
     assert report.ok is False
     assert report.next_action == "download_liveportrait_weights"
-    assert "pretrained_weights directory not found" in report.errors
+    assert "required pretrained weights are missing" in report.errors
+    assert set(report.missing_weight_paths) == set(REQUIRED_HUMAN_WEIGHT_PATHS)
     assert "driving video or motion template is required" in report.errors
 
 

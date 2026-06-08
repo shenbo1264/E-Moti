@@ -105,6 +105,16 @@ python tools\art\inspect_liveportrait_preflight.py `
 
 The preflight only reads files. It does not clone LivePortrait, install packages, download weights, run inference, export frames, create a portrait candidate, or update runtime manifests.
 
+For the external LivePortrait checkout, the official repository currently documents this HuggingFace weight download command:
+
+```powershell
+Push-Location tmp\liveportrait_research\LivePortrait
+huggingface-cli download KlingTeam/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"
+Pop-Location
+```
+
+The project preflight checks the human-mode files listed by LivePortrait's official directory structure: `liveportrait/base_models/*.pth`, `liveportrait/retargeting_models/stitching_retargeting_module.pth`, `liveportrait/landmark.onnx`, and the two `insightface/models/buffalo_l/*.onnx` detectors. A checkout with only `pretrained_weights/.gitkeep` is not considered ready.
+
 For blink and breathing, prefer conservative outputs over cinematic motion:
 
 1. Generate 3-4 seconds only.
