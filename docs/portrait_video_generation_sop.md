@@ -116,7 +116,7 @@ python tools\art\inspect_portrait_video_workflow.py `
 
 Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_more_frames`, `replace_invalid_frames`, `normalize_frames`, `review_frame_warnings`, `process_frames`, `review_motion_candidate`, `regenerate_ai_video`, and `inspect_motion_candidate`.
 
-The Markdown report also includes an `Attention` section when a pack needs operator action. Common reasons are `normalizable_size_mismatch`, `size_mismatch`, `body_drift_warnings`, `failed_motion_extraction`, `missing_handoff`, `waiting_for_frames`, and `insufficient_frames`.
+The JSON and Markdown reports keep `next_action` for compatibility, and also include split `source_next_action` and `motion_next_action` values when source-frame cleanup and a stale motion-candidate failure both need attention. The Markdown report also includes an `Attention` section when a pack needs operator action. Common reasons are `normalizable_size_mismatch`, `size_mismatch`, `body_drift_warnings`, `failed_motion_extraction`, `missing_handoff`, `waiting_for_frames`, and `insufficient_frames`.
 
 ## AI Video Output Rules
 

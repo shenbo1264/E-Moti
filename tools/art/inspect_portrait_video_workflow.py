@@ -36,6 +36,8 @@ class PortraitVideoWorkflowItem:
     motion_candidate_dir: str
     motion_candidate_status: str
     next_action: str
+    source_next_action: str
+    motion_next_action: str
     attention_reasons: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
@@ -56,6 +58,8 @@ class PortraitVideoWorkflowItem:
             "motion_candidate_dir": self.motion_candidate_dir,
             "motion_candidate_status": self.motion_candidate_status,
             "next_action": self.next_action,
+            "source_next_action": self.source_next_action,
+            "motion_next_action": self.motion_next_action,
             "attention_reasons": list(self.attention_reasons),
             "warnings": list(self.warnings),
             "errors": list(self.errors),
@@ -170,6 +174,19 @@ def render_portrait_video_workflow_markdown(report: PortraitVideoWorkflowReport)
         for item in attention:
             reasons = ", ".join(f"`{_markdown_cell(reason)}`" for reason in item.attention_reasons)
             lines.append(f"- `{_markdown_cell(item.set_id)}`: {reasons}")
+        lines.extend(["", "| Set | Source Next | Motion Next |", "| --- | --- | --- |"])
+        for item in attention:
+            lines.append(
+                "| "
+                + " | ".join(
+                    (
+                        _markdown_cell(item.set_id),
+                        _markdown_cell(item.source_next_action),
+                        _markdown_cell(item.motion_next_action),
+                    )
+                )
+                + " |"
+            )
     lines.append("")
     return "\n".join(lines)
 
@@ -206,10 +223,16 @@ def _workflow_item(
         report_path=motion_candidate_report,
     )
     item_errors = tuple(errors) + motion_candidate_errors
-    next_action = _next_action(
+    source_next_action = _source_next_action(
         source_status=source_status,
         source_next_action=preflight.next_action if preflight is not None else "",
         handoff_status=handoff_status,
+        motion_candidate_status=motion_candidate_status,
+    )
+    motion_next_action = _motion_next_action(motion_candidate_status=motion_candidate_status)
+    next_action = _next_action(
+        source_next_action=source_next_action,
+        motion_next_action=motion_next_action,
         motion_candidate_status=motion_candidate_status,
     )
     return PortraitVideoWorkflowItem(
@@ -227,6 +250,8 @@ def _workflow_item(
         motion_candidate_dir=str(motion_candidate_dir),
         motion_candidate_status=motion_candidate_status,
         next_action=next_action,
+        source_next_action=source_next_action,
+        motion_next_action=motion_next_action,
         attention_reasons=_attention_reasons(
             source_status=source_status,
             handoff_status=handoff_status,
@@ -267,7 +292,7 @@ def _motion_candidate_status(*, manifest_path: Path, report_path: Path) -> tuple
     return "invalid_report", ("motion extraction report missing boolean ok field",)
 
 
-def _next_action(
+def _source_next_action(
     *,
     source_status: str,
     source_next_action: str,
@@ -278,10 +303,6 @@ def _next_action(
         return "fix_source_pack"
     if source_status == "invalid_frames":
         return "replace_invalid_frames"
-    if motion_candidate_status == "failed":
-        return "regenerate_ai_video"
-    if motion_candidate_status in {"invalid_report", "incomplete"}:
-        return "inspect_motion_candidate"
     if handoff_status == "missing":
         return "bundle_handoff"
     if source_status == "waiting_for_frames":
@@ -294,6 +315,29 @@ def _next_action(
         return "review_frame_warnings"
     if source_status == "ready":
         return "review_motion_candidate" if motion_candidate_status == "present" else "process_frames"
+    return "inspect_manually"
+
+
+def _motion_next_action(*, motion_candidate_status: str) -> str:
+    if motion_candidate_status == "failed":
+        return "regenerate_ai_video"
+    if motion_candidate_status in {"invalid_report", "incomplete"}:
+        return "inspect_motion_candidate"
+    if motion_candidate_status == "present":
+        return "review_motion_candidate"
+    return "none"
+
+
+def _next_action(
+    *,
+    source_next_action: str,
+    motion_next_action: str,
+    motion_candidate_status: str,
+) -> str:
+    if motion_candidate_status in {"failed", "invalid_report", "incomplete"}:
+        return motion_next_action
+    if source_next_action:
+        return source_next_action
     return "inspect_manually"
 
 

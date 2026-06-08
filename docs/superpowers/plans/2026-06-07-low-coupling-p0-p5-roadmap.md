@@ -23,7 +23,7 @@ Latest focused AI-video workflow tests run on 2026-06-09:
 python -m pytest tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_workflow_status.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_source_pack_processing.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `27 passed`.
+Result: `28 passed`.
 
 Latest focused LLM/review tests run on 2026-06-09:
 
@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `691 passed`.
+Result: `692 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -181,6 +181,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds compact `attention_reasons` to portrait AI-video workflow JSON/Markdown reports.
   - The report can now summarize `normalizable_size_mismatch`, `body_drift_warnings`, `failed_motion_extraction`, missing handoff, waiting frames, and insufficient frames without reading long warning lists.
   - This is read-only reporting only. It does not change frame preflight gates, batch processing, extraction thresholds, runtime manifests, renderer behavior, or asset approval.
+- `P3-workflow-split-next-actions` package:
+  - Adds split `source_next_action` and `motion_next_action` fields to the portrait AI-video workflow report while preserving the compatibility `next_action`.
+  - This prevents a stale failed motion extraction from hiding the current source-frame cleanup step, or vice versa, in JSON/Markdown review.
+  - This is report shaping only. It does not change preflight decisions, extraction behavior, runtime manifests, renderer behavior, or asset approval.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.
