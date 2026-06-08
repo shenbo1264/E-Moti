@@ -129,6 +129,10 @@ def test_liveportrait_preflight_blocks_missing_weights_and_driving(tmp_path: Pat
     assert "required pretrained weights are missing" in report.errors
     assert set(report.missing_weight_paths) == set(REQUIRED_HUMAN_WEIGHT_PATHS)
     assert "driving video or motion template is required" in report.errors
+    assert report.suggested_command == ""
+    assert any("huggingface-cli download KlingTeam/LivePortrait" in command for command in report.suggested_commands)
+    assert any("New-Item -ItemType Directory -Force" in command for command in report.suggested_commands)
+    assert any("blink_driver.mp4" in command for command in report.suggested_commands)
 
 
 def test_liveportrait_preflight_cli_writes_report_and_markdown(tmp_path: Path):
@@ -166,6 +170,7 @@ def test_liveportrait_preflight_cli_writes_report_and_markdown(tmp_path: Path):
     payload = json.loads(result.stdout)
     assert payload["ok"] is True
     assert payload["next_action"] == "run_liveportrait"
+    assert payload["suggested_commands"] == [payload["suggested_command"]]
     assert report_path.is_file()
     assert markdown_path.is_file()
     assert "LivePortrait Preflight" in markdown_path.read_text(encoding="utf-8")

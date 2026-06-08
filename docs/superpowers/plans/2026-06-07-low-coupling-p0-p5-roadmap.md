@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this LivePortrait readiness package: `2d8f9e7 test: validate liveportrait driving input`
+- Latest committed checkpoint before this LivePortrait command package: `9d911ab feat: include liveportrait preflight in readiness`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -213,6 +213,10 @@ Latest non-confirmation packages completed after the original plan:
   - Extends `tools/release_readiness_report.py` with repeatable `--liveportrait-preflight-report` inputs.
   - Release readiness can now include existing local LivePortrait setup blockers such as missing human-mode weights, invalid or missing driving input, and suggested manual commands.
   - This is offline report aggregation only. It does not clone LivePortrait, install dependencies, download weights, run inference, export frames, update runtime manifests, or approve generated assets.
+- `P3-liveportrait-actionable-commands` package:
+  - Makes `tools/art/inspect_liveportrait_preflight.py` emit `suggested_commands` for local follow-up steps such as cloning the external repo, downloading weights, preparing the driving clip folder, rerunning preflight, installing FFmpeg, or running inference when ready.
+  - `suggested_command` remains as the legacy single inference command, while `suggested_commands` carries multi-step blockers for release readiness and Markdown reports.
+  - This is report guidance only. It does not execute commands, clone LivePortrait, install dependencies, download weights, run inference, export frames, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

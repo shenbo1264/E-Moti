@@ -103,7 +103,7 @@ python tools\art\inspect_liveportrait_preflight.py `
   --markdown artifacts\liveportrait-preflight-xingxi-vn-neutral.md
 ```
 
-The preflight only reads files. It does not clone LivePortrait, install packages, download weights, run inference, export frames, create a portrait candidate, or update runtime manifests.
+The preflight only reads files. It does not clone LivePortrait, install packages, download weights, run inference, export frames, create a portrait candidate, or update runtime manifests. When blockers are found, the JSON and Markdown reports include `suggested_commands` such as weight download, driver-folder preparation, preflight rerun, FFmpeg install, or final inference commands. Treat those as manual next steps, not automation.
 
 To include that ignored preflight result in a release/readiness review without rerunning inference:
 

@@ -149,6 +149,12 @@ def _write_liveportrait_preflight_report(path: Path, *, ok: bool = False) -> Pat
         "ffmpeg_path": "ffmpeg",
         "next_action": "download_liveportrait_weights" if not ok else "run_liveportrait",
         "suggested_command": "" if not ok else "python inference.py -s source.png -d driver.mp4",
+        "suggested_commands": [
+            "Push-Location tmp\\liveportrait_research\\LivePortrait; huggingface-cli download KlingTeam/LivePortrait --local-dir pretrained_weights --exclude \"*.git*\" \"README.md\" \"docs\"; Pop-Location",
+            "New-Item -ItemType Directory -Force tmp\\liveportrait_research\\drivers",
+        ]
+        if not ok
+        else ["python inference.py -s source.png -d driver.mp4"],
         "errors": ["required pretrained weights are missing", "driving video or motion template not found"]
         if not ok
         else [],
@@ -511,6 +517,10 @@ def test_release_readiness_report_surfaces_liveportrait_preflight_issue(tmp_path
         "required pretrained weights are missing",
         "driving video or motion template not found",
     ]
+    assert preflight_check["suggested_commands"] == [
+        "Push-Location tmp\\liveportrait_research\\LivePortrait; huggingface-cli download KlingTeam/LivePortrait --local-dir pretrained_weights --exclude \"*.git*\" \"README.md\" \"docs\"; Pop-Location",
+        "New-Item -ItemType Directory -Force tmp\\liveportrait_research\\drivers",
+    ]
     assert "resolve LivePortrait preflight blockers before local inference" in payload["next_actions"]
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "### LivePortrait Preflight" in markdown
@@ -518,3 +528,5 @@ def test_release_readiness_report_surfaces_liveportrait_preflight_issue(tmp_path
     assert "- Missing weights: `2`" in markdown
     assert "- Missing weight paths:" in markdown
     assert "  - `pretrained_weights/liveportrait/base_models/appearance_feature_extractor.pth`" in markdown
+    assert "- Suggested commands:" in markdown
+    assert "  - `New-Item -ItemType Directory -Force tmp\\liveportrait_research\\drivers`" in markdown

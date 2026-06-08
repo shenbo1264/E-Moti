@@ -381,7 +381,13 @@ def _liveportrait_preflight_report_check(report_path: Path) -> dict[str, object]
             "next_actions": ["review LivePortrait preflight report before release"],
         }
     ok = payload.get("ok") is True
-    suggested_command = _optional_string(payload.get("suggested_command"))
+    legacy_suggested_command = _optional_string(payload.get("suggested_command"))
+    suggested_commands = _dedupe(
+        [
+            *_string_list(payload.get("suggested_commands")),
+            *([legacy_suggested_command] if legacy_suggested_command else []),
+        ]
+    )
     return {
         "id": "liveportrait_preflight",
         "label": "LivePortrait Preflight",
@@ -394,7 +400,7 @@ def _liveportrait_preflight_report_check(report_path: Path) -> dict[str, object]
         "driving_status": _optional_string(payload.get("driving_status")),
         "missing_weight_count": len(_string_list(payload.get("missing_weight_paths"))),
         "missing_weight_paths": _string_list(payload.get("missing_weight_paths")),
-        "suggested_commands": [suggested_command] if suggested_command else [],
+        "suggested_commands": suggested_commands,
         "errors": _string_list(payload.get("errors")),
         "warnings": _string_list(payload.get("warnings")),
         "next_actions": [] if ok else ["resolve LivePortrait preflight blockers before local inference"],

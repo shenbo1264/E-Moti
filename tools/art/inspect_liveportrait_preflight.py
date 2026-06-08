@@ -36,6 +36,7 @@ class LivePortraitPreflightReport:
     ffmpeg_path: str
     next_action: str
     suggested_command: str
+    suggested_commands: tuple[str, ...]
     errors: tuple[str, ...]
     missing_weight_paths: tuple[str, ...] = ()
     warnings: tuple[str, ...] = ()
@@ -52,6 +53,7 @@ class LivePortraitPreflightReport:
             "ffmpeg_path": self.ffmpeg_path,
             "next_action": self.next_action,
             "suggested_command": self.suggested_command,
+            "suggested_commands": list(self.suggested_commands),
             "errors": list(self.errors),
             "missing_weight_paths": list(self.missing_weight_paths),
             "warnings": list(self.warnings),
@@ -87,6 +89,14 @@ def inspect_liveportrait_preflight(
         ffmpeg=ffmpeg,
     )
     suggested_command = _suggested_command(liveportrait, source_image, driving) if next_action == "run_liveportrait" else ""
+    suggested_commands = _suggested_commands(
+        source_root=source_root,
+        liveportrait=liveportrait,
+        driving=driving,
+        missing_weight_paths=missing_weight_paths,
+        next_action=next_action,
+        legacy_run_command=suggested_command,
+    )
 
     report = LivePortraitPreflightReport(
         ok=not errors,
@@ -99,6 +109,7 @@ def inspect_liveportrait_preflight(
         ffmpeg_path=ffmpeg,
         next_action=next_action,
         suggested_command=suggested_command,
+        suggested_commands=suggested_commands,
         errors=tuple(errors),
         missing_weight_paths=missing_weight_paths,
         warnings=tuple(warnings),
@@ -128,11 +139,12 @@ def render_liveportrait_preflight_markdown(report: LivePortraitPreflightReport) 
         "## Errors",
         *_markdown_list(report.errors),
         "",
-        "## Suggested Command",
+        "## Suggested Commands",
         "",
     ]
-    if report.suggested_command:
-        lines.extend(["```powershell", report.suggested_command, "```"])
+    if report.suggested_commands:
+        for command in report.suggested_commands:
+            lines.extend(["```powershell", command, "```", ""])
     else:
         lines.append("- None")
     lines.append("")
@@ -288,6 +300,44 @@ def _suggested_command(liveportrait: Path, source_image: Path | None, driving: P
     return (
         f"Push-Location {_quote(liveportrait)}; "
         f"python inference.py -s {_quote(source_image.resolve())} -d {_quote(driving.resolve())}; "
+        "Pop-Location"
+    )
+
+
+def _suggested_commands(
+    *,
+    source_root: Path,
+    liveportrait: Path,
+    driving: Path | None,
+    missing_weight_paths: tuple[str, ...],
+    next_action: str,
+    legacy_run_command: str,
+) -> tuple[str, ...]:
+    commands: list[str] = []
+    if next_action == "install_liveportrait":
+        commands.append(f"New-Item -ItemType Directory -Force {_quote(liveportrait.parent)}")
+        commands.append(f"git clone https://github.com/KwaiVGI/LivePortrait.git {_quote(liveportrait)}")
+    if missing_weight_paths and liveportrait.is_dir():
+        commands.append(_download_weights_command(liveportrait))
+    if driving is None:
+        driver_dir = liveportrait.parent / "drivers"
+        commands.append(f"New-Item -ItemType Directory -Force {_quote(driver_dir)}")
+        commands.append(
+            "python tools\\art\\inspect_liveportrait_preflight.py "
+            f"{_quote(source_root)} --liveportrait-root {_quote(liveportrait)} "
+            f"--driving {_quote(driver_dir / 'blink_driver.mp4')}"
+        )
+    if next_action == "install_ffmpeg":
+        commands.append("winget install Gyan.FFmpeg")
+    if legacy_run_command:
+        commands.append(legacy_run_command)
+    return tuple(dict.fromkeys(command for command in commands if command))
+
+
+def _download_weights_command(liveportrait: Path) -> str:
+    return (
+        f"Push-Location {_quote(liveportrait)}; "
+        'huggingface-cli download KlingTeam/LivePortrait --local-dir pretrained_weights --exclude "*.git*" "README.md" "docs"; '
         "Pop-Location"
     )
 
