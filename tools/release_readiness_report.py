@@ -15,6 +15,7 @@ if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
 from tools.review_character_pack_status import review_character_pack_status
+from tools.review_llm_smoke_report import review_llm_smoke_report
 from tools.validate_windows_build import DEFAULT_APP_DIR, DEFAULT_INSTALLER, validate_windows_build
 
 
@@ -26,10 +27,12 @@ def build_release_readiness_report(
     character_pack: Path | str = DEFAULT_CHARACTER_PACK,
     app_dir: Path | str = DEFAULT_APP_DIR,
     installer_path: Path | str | None = DEFAULT_INSTALLER,
+    llm_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
     checks = [source_check, build_check]
+    checks.extend(_llm_report_check(Path(report_path)) for report_path in llm_reports)
     ok = all(check["ok"] is True for check in checks)
     return {
         "ok": ok,
@@ -104,6 +107,46 @@ def _windows_build_check(app_dir: Path, installer_path: Path | None) -> dict[str
     }
 
 
+def _llm_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "llm_report",
+            "label": "LLM Smoke Report",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "provider": "",
+            "model": "",
+            "report_type": "invalid",
+            "errors": ["LLM smoke report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review LLM smoke report before release"],
+        }
+    review = review_llm_smoke_report(payload)
+    return {
+        "id": "llm_report",
+        "label": "LLM Smoke Report",
+        "ok": review.ok,
+        "status": review.status,
+        "path": str(report_path),
+        "provider": review.provider,
+        "model": review.model,
+        "report_type": review.report_type,
+        "errors": [f"{issue.kind}: {issue.message}" for issue in review.issues],
+        "warnings": [],
+        "next_actions": [] if review.ok else ["review LLM smoke report before release"],
+    }
+
+
+def _load_json_object(path: Path) -> dict[str, object] | None:
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return None
+    return payload if isinstance(payload, dict) else None
+
+
 def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:
     actions: list[str] = []
     for check in checks:
@@ -147,6 +190,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--app-dir", default=str(DEFAULT_APP_DIR))
     parser.add_argument("--installer", default=str(DEFAULT_INSTALLER))
     parser.add_argument("--skip-installer", action="store_true")
+    parser.add_argument(
+        "--llm-report",
+        action="append",
+        default=[],
+        help="Optional LLM dialogue smoke or expression cue probe JSON report to include.",
+    )
     parser.add_argument("--json", default="", help="Optional JSON output path.")
     parser.add_argument("--markdown", default="", help="Optional Markdown output path.")
     return parser.parse_args(argv)
@@ -158,6 +207,7 @@ def main(argv: list[str] | None = None) -> int:
         character_pack=Path(args.character_pack),
         app_dir=Path(args.app_dir),
         installer_path=None if args.skip_installer else Path(args.installer),
+        llm_reports=[Path(item) for item in args.llm_report],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")

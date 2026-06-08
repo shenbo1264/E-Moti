@@ -223,10 +223,11 @@ Validate the frozen app bundle and installer artifacts:
 ```powershell
 python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
 python tools\release_readiness_report.py --json artifacts\release-readiness.json --markdown artifacts\release-readiness.md
+python tools\release_readiness_report.py --llm-report artifacts\llm_smoke\deepseek-expression-cue-probe.json --llm-report artifacts\llm_smoke\deepseek-live-smoke.json --json artifacts\release-readiness-with-llm.json --markdown artifacts\release-readiness-with-llm.md
 ```
 
 The build validator also checks that the frozen bundled `original_oc` character pack includes its manifest, portraits, preview, item icons, provenance note, and pack-level `LICENSE.md`.
-`release_readiness_report.py` is a read-only aggregate report that combines the source character-pack status review with frozen Windows build validation.
+`release_readiness_report.py` is a read-only aggregate report that combines the source character-pack status review with frozen Windows build validation. Pass one or more `--llm-report` paths to include existing dialogue smoke or expression cue probe JSON reports without calling a provider.
 
 ## Optional AI Capabilities
 

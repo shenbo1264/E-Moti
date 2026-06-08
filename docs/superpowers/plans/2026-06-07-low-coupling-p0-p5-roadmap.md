@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `680 passed`.
+Result: `682 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -129,6 +129,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds `tools/release_readiness_report.py`, a read-only aggregate report over source character-pack status and frozen Windows build validation.
   - The report writes JSON/Markdown under ignored `artifacts/release-readiness*.json` and `artifacts/release-readiness*.md`.
   - This makes release state easier to reproduce and explain without changing runtime behavior, build strategy, UI, provider calls, or assets.
+- `P1/P5-release-readiness-llm-reports` package:
+  - Extends `tools/release_readiness_report.py` with repeatable `--llm-report` inputs that reuse `tools/review_llm_smoke_report.py`.
+  - Current ignored aggregate artifact `artifacts/release-readiness-with-llm.json` passed with source pack ready, frozen build ready, DeepSeek expression cue probe passed, and DeepSeek dialogue smoke passed.
+  - This is offline report aggregation only. It does not call providers, change prompts, alter runtime state, touch UI, or change build strategy.
 - `P1-speech-quality-gate` package:
   - Adds speech length and emptiness quality metrics to the LLM dialogue smoke report.
   - Keeps this as a smoke/QA gate only; it does not change prompt policy, character state, renderer behavior, or provider clients.
