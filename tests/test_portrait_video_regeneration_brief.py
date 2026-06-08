@@ -32,6 +32,7 @@ def _write_workflow_report(path: Path) -> Path:
                 "attention_reasons": ["body_drift_warnings"],
                 "suggested_commands": [
                     "python tools\\art\\portrait_video_frame_visual_qa.py artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized --preview artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.png --report artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json",
+                    "python tools\\art\\portrait_video_regeneration_brief.py --workflow-report artifacts\\portrait-video-workflow-report.json --frame-qa-report artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json --report artifacts\\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json --markdown artifacts\\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.md",
                     "python tools\\art\\inspect_portrait_video_source_frames.py artifacts\\portrait-video-source --report artifacts\\portrait-video-frame-preflight.json",
                 ],
                 "warnings": ["frame_00006.png body drift 44.7 exceeds 16.0"],
@@ -91,6 +92,8 @@ def test_portrait_video_regeneration_brief_rejects_drifted_frames(tmp_path: Path
     assert any("same canvas" in item for item in brief.prompt_constraints)
     assert any("Only eyelids" in item for item in brief.prompt_constraints)
     assert any("portrait_video_frame_visual_qa.py" in item for item in brief.suggested_commands)
+    assert not any("portrait_video_regeneration_brief.py" in item for item in brief.suggested_commands)
+    assert any("inspect_portrait_video_source_frames.py" in item for item in brief.suggested_commands)
     markdown = render_portrait_video_regeneration_markdown(brief)
     assert "# Portrait Video Regeneration Brief" in markdown
     assert "- Decision state: `regenerate_ai_video`" in markdown

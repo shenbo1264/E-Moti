@@ -207,7 +207,11 @@ def _decision_state(
 def _suggested_commands(item: dict[str, object] | None) -> list[str]:
     if not item:
         return []
-    return _string_list(item.get("suggested_commands"))
+    return [
+        command
+        for command in _string_list(item.get("suggested_commands"))
+        if "portrait_video_regeneration_brief.py" not in command
+    ]
 
 
 def _provider_retry_prompt(*, set_id: str, max_body_drift: float, blockers: list[str]) -> str:
