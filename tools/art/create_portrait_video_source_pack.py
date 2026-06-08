@@ -77,12 +77,21 @@ def create_portrait_video_source_pack(
     shutil.copy2(source, reference_target)
 
     prompt_path = output / "gemini_prompt.md"
+    provider_prompts_path = output / "provider_prompts.md"
     metadata_path = output / "source_pack.json"
     frames_readme = frames_dir / "README.md"
     video_readme = video_dir / "README.md"
 
     prompt_path.write_text(
         _render_gemini_prompt(
+            character_name=character_name,
+            reference_image=reference_target.relative_to(output).as_posix(),
+            source_label=source_label,
+        ),
+        encoding="utf-8",
+    )
+    provider_prompts_path.write_text(
+        _render_provider_prompts(
             character_name=character_name,
             reference_image=reference_target.relative_to(output).as_posix(),
             source_label=source_label,
@@ -99,6 +108,7 @@ def create_portrait_video_source_pack(
                 "character_name": character_name,
                 "reference_image": reference_target.relative_to(output).as_posix(),
                 "prompt_path": "gemini_prompt.md",
+                "provider_prompts_path": "provider_prompts.md",
                 "frames_dir": "frames",
                 "video_dir": "video",
                 "next_command": (
@@ -182,6 +192,79 @@ def _render_gemini_prompt(*, character_name: str, reference_image: str, source_l
             "- Keep the first frame close to the reference pose.",
             "- Download the video into `video/`.",
             "- Export PNG frames into `frames/` using sequential names such as `frame_0001.png`.",
+            "",
+        ]
+    )
+
+
+def _render_provider_prompts(*, character_name: str, reference_image: str, source_label: str) -> str:
+    clean_name = character_name.strip() or "Xingxi"
+    clean_label = source_label.strip() or "portrait reference"
+    shared_prompt = (
+        "Use the same reference image as the identity anchor. Static camera, same character, outfit, pose, "
+        "and proportions. Create a short portrait video with subtle breathing, one natural blink, and very slight "
+        "hair sway. No camera movement, no zoom, no scene change, no hand gesture, no mouth talking, no extra objects, "
+        "no text, no logo, no watermark."
+    )
+    negative_prompt = (
+        "Do not redesign the character. Do not change age, body proportion, face shape, hairstyle, eye color, costume, "
+        "palette, or silhouette. Avoid red edge halos, blur, dramatic lighting, and background characters."
+    )
+    return "\n".join(
+        [
+            "# AI Video Provider Prompt Notes",
+            "",
+            f"Reference image: `{reference_image}`",
+            f"Character: {clean_name}",
+            f"Source label: {clean_label}",
+            "",
+            "These prompts are interchangeable fallbacks when Gemini is unavailable. Keep outputs short and conservative.",
+            "",
+            "## Pika",
+            "",
+            shared_prompt,
+            "",
+            "Negative prompt:",
+            "",
+            negative_prompt,
+            "",
+            "## Hailuo",
+            "",
+            shared_prompt,
+            "",
+            "Negative prompt:",
+            "",
+            negative_prompt,
+            "",
+            "## Kling",
+            "",
+            shared_prompt,
+            "",
+            "Negative prompt:",
+            "",
+            negative_prompt,
+            "",
+            "## PixVerse",
+            "",
+            shared_prompt,
+            "",
+            "Negative prompt:",
+            "",
+            negative_prompt,
+            "",
+            "## Runway",
+            "",
+            shared_prompt,
+            "",
+            "Negative prompt:",
+            "",
+            negative_prompt,
+            "",
+            "Export request:",
+            "",
+            "- Download the raw video into `video/`.",
+            "- Export PNG frames into `frames/` using sequential names such as `frame_0001.png`.",
+            "- Keep at least 3 usable PNG frames before processing.",
             "",
         ]
     )

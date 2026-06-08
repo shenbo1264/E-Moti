@@ -1,6 +1,6 @@
-# Portrait Video Generation SOP
+# Portrait AI Video Generation SOP
 
-This workflow prepares one local Gemini video task folder for each portrait set. It keeps generated videos, exported frames, and temporary candidates under ignored `artifacts/` paths until human QA approves them.
+This workflow prepares one local AI video task folder for each portrait set. It keeps generated videos, exported frames, and temporary candidates under ignored `artifacts/` paths until human QA approves them.
 
 ## Folder Contract
 
@@ -11,6 +11,7 @@ artifacts/portrait-video-source/<set_id>/
   reference/
     neutral_open.png
   gemini_prompt.md
+  provider_prompts.md
   source_pack.json
   video/
     README.md
@@ -51,11 +52,11 @@ python tools\art\create_portrait_video_source_pack.py `
   --source-label "VN neutral candidate"
 ```
 
-Open `gemini_prompt.md`, upload the image under `reference/`, and use the prompt in Gemini.
+Open `provider_prompts.md`, upload the image under `reference/`, and use the matching prompt in Pika, Hailuo, Kling, PixVerse, Runway, or Gemini. `gemini_prompt.md` remains the baseline prompt.
 
 ## Bundle Handoff Zips
 
-To create one zip per source pack for Gemini handoff:
+To create one zip per source pack for AI video handoff:
 
 ```powershell
 python tools\art\bundle_portrait_video_source_packs.py `
@@ -64,7 +65,7 @@ python tools\art\bundle_portrait_video_source_packs.py `
   --report artifacts\portrait-video-handoff-report.json
 ```
 
-Each zip contains `reference/`, `gemini_prompt.md`, `source_pack.json`, and `GEMINI_HANDOFF_README.md`. It does not contain generated videos or exported frames.
+Each zip contains `reference/`, `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, and `AI_VIDEO_HANDOFF_README.md`. It does not contain generated videos or exported frames.
 
 ## Inspect Workflow Status
 
@@ -81,9 +82,9 @@ python tools\art\inspect_portrait_video_workflow.py `
 
 Typical `next_action` values are `bundle_handoff`, `generate_gemini_video`, `export_more_frames`, `process_frames`, and `review_motion_candidate`.
 
-## Gemini Output Rules
+## AI Video Output Rules
 
-Ask Gemini for:
+Ask the selected provider for:
 
 - static camera;
 - same character, outfit, pose, and proportions;

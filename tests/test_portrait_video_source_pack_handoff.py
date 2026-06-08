@@ -46,16 +46,22 @@ def test_bundle_portrait_video_source_packs_writes_one_zip_per_source_pack(tmp_p
     with zipfile.ZipFile(bundle) as archive:
         names = set(archive.namelist())
         assert names == {
-            "GEMINI_HANDOFF_README.md",
+            "AI_VIDEO_HANDOFF_README.md",
             "gemini_prompt.md",
+            "provider_prompts.md",
             "source_pack.json",
             "reference/neutral_open.png",
         }
         prompt = archive.read("gemini_prompt.md").decode("utf-8")
         assert "Static camera" in prompt
         assert "one natural blink" in prompt
-        handoff = archive.read("GEMINI_HANDOFF_README.md").decode("utf-8")
+        provider_prompts = archive.read("provider_prompts.md").decode("utf-8")
+        assert "Pika" in provider_prompts
+        assert "Hailuo" in provider_prompts
+        assert "Kling" in provider_prompts
+        handoff = archive.read("AI_VIDEO_HANDOFF_README.md").decode("utf-8")
         assert "xingxi-vn-neutral-20260608" in handoff
+        assert "Pika, Hailuo, Kling, PixVerse, Runway" in handoff
         assert "Put exported PNG frames back into" in handoff
 
 

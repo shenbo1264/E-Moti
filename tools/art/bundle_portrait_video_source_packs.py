@@ -98,10 +98,12 @@ def _bundle_one_source_pack(*, source_pack: Path, output_dir: Path) -> PortraitV
 
     reference_rel = _metadata_string(metadata, "reference_image")
     prompt_rel = _metadata_string(metadata, "prompt_path") or "gemini_prompt.md"
+    provider_prompts_rel = _metadata_string(metadata, "provider_prompts_path") or "provider_prompts.md"
     path_errors = _metadata_path_errors(
         {
             "reference_image": reference_rel,
             "prompt_path": prompt_rel,
+            "provider_prompts_path": provider_prompts_rel,
         }
     )
     if path_errors:
@@ -115,9 +117,11 @@ def _bundle_one_source_pack(*, source_pack: Path, output_dir: Path) -> PortraitV
 
     reference_path = source_pack / reference_rel
     prompt_path = source_pack / prompt_rel
+    provider_prompts_path = source_pack / provider_prompts_rel
     required_files = {
         reference_rel: reference_path,
         prompt_rel: prompt_path,
+        provider_prompts_rel: provider_prompts_path,
         "source_pack.json": source_pack / "source_pack.json",
     }
     missing = tuple(f"{name} not found" for name, path in required_files.items() if not path.is_file())
@@ -132,8 +136,9 @@ def _bundle_one_source_pack(*, source_pack: Path, output_dir: Path) -> PortraitV
 
     output_dir.mkdir(parents=True, exist_ok=True)
     with zipfile.ZipFile(zip_path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
-        archive.writestr("GEMINI_HANDOFF_README.md", _handoff_readme(set_id=set_id, source_pack=source_pack))
+        archive.writestr("AI_VIDEO_HANDOFF_README.md", _handoff_readme(set_id=set_id, source_pack=source_pack))
         archive.write(prompt_path, arcname=prompt_rel)
+        archive.write(provider_prompts_path, arcname=provider_prompts_rel)
         archive.write(source_pack / "source_pack.json", arcname="source_pack.json")
         archive.write(reference_path, arcname=reference_rel)
 
@@ -183,13 +188,17 @@ def _handoff_readme(*, set_id: str, source_pack: Path) -> str:
     video_dir = source_pack / "video"
     return "\n".join(
         [
-            "# Gemini Portrait Video Handoff",
+            "# AI Video Portrait Handoff",
             "",
             f"Set id: `{set_id}`",
             "",
-            "Use the image under `reference/` as the identity anchor and paste `gemini_prompt.md` into Gemini.",
+            "Use the image under `reference/` as the identity anchor.",
             "",
-            "After Gemini finishes:",
+            "Provider options: Pika, Hailuo, Kling, PixVerse, Runway.",
+            "",
+            "Use `provider_prompts.md` when Gemini is unavailable. `gemini_prompt.md` is kept as the baseline prompt.",
+            "",
+            "After the video provider finishes:",
             "",
             f"- Save the raw video into `{video_dir}`.",
             f"- Put exported PNG frames back into `{frames_dir}`.",

@@ -33,6 +33,7 @@ def test_create_portrait_video_source_pack_writes_reference_prompt_and_dropzones
     assert (output / "frames" / "README.md").is_file()
     assert (output / "video" / "README.md").is_file()
     assert (output / "gemini_prompt.md").is_file()
+    assert (output / "provider_prompts.md").is_file()
     assert (output / "source_pack.json").is_file()
 
     prompt = (output / "gemini_prompt.md").read_text(encoding="utf-8")
@@ -41,11 +42,17 @@ def test_create_portrait_video_source_pack_writes_reference_prompt_and_dropzones
     assert "one natural blink" in prompt
     assert "subtle breathing" in prompt
     assert "no text" in prompt
+    provider_prompts = (output / "provider_prompts.md").read_text(encoding="utf-8")
+    assert "Pika" in provider_prompts
+    assert "Hailuo" in provider_prompts
+    assert "Kling" in provider_prompts
+    assert "Use the same reference image" in provider_prompts
 
     payload = json.loads((output / "source_pack.json").read_text(encoding="utf-8"))
     assert payload["set_id"] == "xingxi-vn-neutral-20260608"
     assert payload["source_label"] == "VN neutral candidate"
     assert payload["reference_image"] == "reference/neutral_open.png"
+    assert payload["provider_prompts_path"] == "provider_prompts.md"
     assert payload["frames_dir"] == "frames"
     assert payload["video_dir"] == "video"
 
