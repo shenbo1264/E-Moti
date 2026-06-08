@@ -184,7 +184,12 @@ def _workflow_item(
     handoff_status = "present" if handoff_zip.is_file() else "missing"
     motion_candidate_dir = candidate_root / f"portrait-candidate-{pack.set_id}-motion"
     motion_candidate_manifest = motion_candidate_dir / "portrait_candidate.json"
-    motion_candidate_status = "present" if motion_candidate_manifest.is_file() else "missing"
+    motion_candidate_report = motion_candidate_dir / "candidate-motion-frame-report.json"
+    motion_candidate_status, motion_candidate_errors = _motion_candidate_status(
+        manifest_path=motion_candidate_manifest,
+        report_path=motion_candidate_report,
+    )
+    item_errors = tuple(errors) + motion_candidate_errors
     next_action = _next_action(
         source_status=source_status,
         handoff_status=handoff_status,
@@ -204,17 +209,47 @@ def _workflow_item(
         motion_candidate_status=motion_candidate_status,
         next_action=next_action,
         warnings=warnings,
-        errors=errors,
+        errors=item_errors,
     )
+
+
+def _motion_candidate_status(*, manifest_path: Path, report_path: Path) -> tuple[str, tuple[str, ...]]:
+    if manifest_path.is_file():
+        return "present", ()
+    if not report_path.is_file():
+        return "missing", ()
+    try:
+        payload = json.loads(report_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        return "invalid_report", (f"motion extraction report invalid: {exc}",)
+    if not isinstance(payload, dict):
+        return "invalid_report", ("motion extraction report must be a JSON object",)
+    if payload.get("ok") is False:
+        raw_errors = payload.get("errors")
+        if isinstance(raw_errors, list) and raw_errors:
+            errors = tuple(
+                f"motion extraction failed: {error}"
+                for error in raw_errors
+                if isinstance(error, str) and error.strip()
+            )
+            return "failed", errors or ("motion extraction failed",)
+        return "failed", ("motion extraction failed",)
+    if payload.get("ok") is True:
+        return "incomplete", ("motion extraction report passed but portrait_candidate.json is missing",)
+    return "invalid_report", ("motion extraction report missing boolean ok field",)
 
 
 def _next_action(*, source_status: str, handoff_status: str, motion_candidate_status: str) -> str:
     if source_status in {"invalid", "failed"}:
         return "fix_source_pack"
-    if handoff_status == "missing":
-        return "bundle_handoff"
     if source_status == "invalid_frames":
         return "replace_invalid_frames"
+    if motion_candidate_status == "failed":
+        return "regenerate_ai_video"
+    if motion_candidate_status in {"invalid_report", "incomplete"}:
+        return "inspect_motion_candidate"
+    if handoff_status == "missing":
+        return "bundle_handoff"
     if source_status == "waiting_for_frames":
         return "generate_ai_video"
     if source_status == "insufficient_frames":

@@ -47,7 +47,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `682 passed`.
+Result: `683 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -141,6 +141,11 @@ Latest non-confirmation packages completed after the original plan:
   - Adds Vidu and LivePortrait to the local AI-video handoff prompts and handoff README.
   - Documents the Gemini-unavailable fallback route in `docs/portrait_video_generation_sop.md`.
   - Keeps this as a source-pack/SOP change only; it does not call providers, generate assets, update runtime manifests, or add dependencies.
+- `P3-frame-intake-failure-report` package:
+  - Makes `tools/art/inspect_portrait_video_workflow.py` surface failed `candidate-motion-frame-report.json` files as `motion_candidate_status=failed`.
+  - Adds next actions `regenerate_ai_video` and `inspect_motion_candidate` so bad AI-video outputs do not look like missing candidates.
+  - Current ignored frame-intake artifact found 60 readable frames, all size-mismatched with the 1024x1536 reference, and motion extraction failed with `not enough stable frames after body drift filtering`.
+  - This is workflow reporting only. It does not update runtime manifests, loosen art gates, change renderer behavior, or promote generated frames.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.
@@ -202,7 +207,7 @@ Latest confirmation-gated packages completed after user approval:
   - `tools/art/inspect_portrait_video_source_frames.py` preflights exported PNG frames before extraction, rejecting unreadable frames and flagging size mismatches for manual review.
   - `tools/art/batch_process_portrait_video_source_packs.py` reports `waiting_for_frames`, `insufficient_frames`, `ready`, and processed states; it only processes packs with at least 3 exported PNG frames.
   - `tools/art/inspect_portrait_video_workflow.py` writes ignored JSON/Markdown workflow reports with frame preflight source status, handoff status, frame count, motion-candidate status, and next action.
-  - Current workflow report: `artifacts/portrait-video-workflow-report.md`, `ok=true`, `source_status=waiting_for_frames`, `frame_count=0`, `handoff_status=present`, `next_action=generate_ai_video`.
+  - Current workflow report: `artifacts/portrait-video-workflow-report.md`, `ok=false`, `source_status=ready_with_warnings`, `frame_count=60`, `handoff_status=present`, `motion_candidate_status=failed`, `next_action=regenerate_ai_video`.
   - Current decision brief state: `needs_iteration`, with blockers for unapproved candidate metadata, missing expression set, missing neutral blink frames, and warning `neutral.open: light_edge_halo_risk`.
   - Remaining limitation: this is still one neutral candidate only. It lacks expression variants, exported AI-video frames, blink frames, final provenance approval, edge cleanup, and manifest integration.
 

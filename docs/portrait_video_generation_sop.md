@@ -103,7 +103,7 @@ python tools\art\inspect_portrait_video_workflow.py `
   --markdown artifacts\portrait-video-workflow-report.md
 ```
 
-Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_more_frames`, `replace_invalid_frames`, `review_frame_warnings`, `process_frames`, and `review_motion_candidate`.
+Typical `next_action` values are `bundle_handoff`, `generate_ai_video`, `export_more_frames`, `replace_invalid_frames`, `review_frame_warnings`, `process_frames`, `review_motion_candidate`, `regenerate_ai_video`, and `inspect_motion_candidate`.
 
 ## AI Video Output Rules
 
