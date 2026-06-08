@@ -58,6 +58,17 @@ Open `provider_prompts.md`, upload the image under `reference/`, and use the mat
 
 Free and trial video quotas change often. Treat provider availability as account-local state, not a project guarantee. Keep every generated video and exported frame under ignored `artifacts/` folders until a candidate survives QA.
 
+Provider snapshot checked on 2026-06-09:
+
+| Route | Current free or low-friction signal | Project judgment |
+| --- | --- | --- |
+| Pika | Public pricing shows a free Basic plan with monthly video credits, 480p-only Pika 2.5 access, and 5s Text-to-Video / Image-to-Video free-tier credit options. | Best first retry when Gemini is blocked. Expect lower-resolution frames; normalize only if aspect ratio matches, then still run preflight. |
+| Runway | Public pricing shows a free plan with one-time credits and Gen-4 Turbo image-to-video access. | Good second retry for a fast quality check. Use for a few neutral/blink attempts, not batch production. |
+| Krea | Public pricing shows 100 free compute units per day; actual video-model access is account- and provider-dependent. | Useful as an extra daily attempt, but model access and export quality may vary by account. |
+| LivePortrait | Open-source portrait animation route that uses a source portrait plus a restrained driving clip/template. | Best free technical fallback for subtle blink/breathing if online generators keep recomposing the body. It is not a text-to-video model. |
+| Wan2.1 | Open-source repo supports image-to-video, ComfyUI/Diffusers/Gradio paths, and 480p/720p model variants. | Research-only for now. The I2V route is heavier than this project needs for a few blink frames. Prefer cloud/ComfyUI experiments, not local production on low-VRAM machines. |
+| LTX-Video | Open-source repo supports image-to-video and has smaller/distilled model paths plus online demo links. | Research-only fallback after LivePortrait; useful if we later build a separate ComfyUI/cloud pipeline. |
+
 Recommended fallback order for this project:
 
 | Route | Use When | Notes |

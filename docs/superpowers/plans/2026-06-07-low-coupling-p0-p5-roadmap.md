@@ -205,6 +205,14 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/release_readiness_report.py` preserve `suggested_commands` from portrait AI-video workflow reports.
   - Release notes can now carry both blocker reasons and the exact local commands needed for normalization/preflight follow-up.
   - This is offline report aggregation only. It does not execute suggested commands, process frames, call providers, change runtime manifests, or approve generated assets.
+- `P3/P5-release-readiness-markdown-details` package:
+  - Makes release readiness Markdown list portrait AI-video `attention_reasons` and `suggested_commands` as readable per-check bullets.
+  - Current ignored release readiness Markdown now clearly shows `normalizable_size_mismatch`, `failed_motion_extraction`, and `body_drift_warnings`.
+  - This is report rendering only. It does not execute suggested commands, process frames, call providers, change runtime manifests, change renderer behavior, or approve generated assets.
+- `P3-provider-snapshot-refresh` package:
+  - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
+  - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.
+  - Keeps online provider work as an operator step and local open-source video as research-only until a separate GPU/cloud pipeline is approved.
 - `P1-smoke-batch-review` package:
   - Allows `tools/review_llm_smoke_report.py` to accept either one smoke JSON file or an ignored smoke artifact directory.
   - Directory review skips existing `review` outputs and creates a compact passed/needs-attention/invalid summary.
