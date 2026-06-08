@@ -285,3 +285,14 @@ def test_release_readiness_report_surfaces_portrait_workflow_issue(tmp_path: Pat
         "python tools\\art\\inspect_portrait_video_source_frames.py artifacts\\portrait-video-source --report artifacts\\portrait-video-frame-preflight.json",
     ]
     assert "resolve portrait AI-video workflow blockers before promoting motion assets" in payload["next_actions"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "- Attention reasons:" in markdown
+    assert "  - `normalizable_size_mismatch`" in markdown
+    assert "  - `failed_motion_extraction`" in markdown
+    assert "- Suggested commands:\n" in markdown
+    assert (
+        "  - `python tools\\art\\normalize_portrait_video_source_frames.py "
+        "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608 "
+        "--output-pack-dir artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized "
+        "--report artifacts\\portrait-video-frame-normalization.json`"
+    ) in markdown

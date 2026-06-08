@@ -73,9 +73,14 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         warnings = _string_list(check.get("warnings"))
         if warnings:
             lines.append("- Warnings: `" + "; ".join(warnings) + "`")
+        attention_reasons = _string_list(check.get("attention_reasons"))
+        if attention_reasons:
+            lines.append("- Attention reasons:")
+            lines.extend(f"  - `{reason}`" for reason in attention_reasons)
         commands = _string_list(check.get("suggested_commands"))
         if commands:
-            lines.append("- Suggested commands: `" + "`; `".join(commands) + "`")
+            lines.append("- Suggested commands:")
+            lines.extend(f"  - `{command}`" for command in commands)
         lines.append("")
     return "\n".join(lines)
 
