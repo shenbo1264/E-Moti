@@ -51,6 +51,8 @@ artifacts/portrait-video-source-create-report*.json
 artifacts/portrait-video-source-batch-report*.json
 artifacts/portrait-video-handoff/
 artifacts/portrait-video-handoff-report*.json
+artifacts/portrait-video-retry-handoff/
+artifacts/portrait-video-retry-handoff-report*.json
 artifacts/portrait-video-frame-normalization*.json
 artifacts/portrait-video-frame-preflight*.json
 artifacts/portrait-video-frame-qa*.json

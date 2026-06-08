@@ -230,6 +230,17 @@ python tools\art\portrait_video_regeneration_brief.py `
 
 The regeneration brief is read-only. It packages the workflow blockers, source-pack reference image path, frame QA drift values, suggested local follow-up commands, the next provider prompt constraints, and paste-ready `Provider Retry Prompt` / `Provider Negative Prompt` sections. It does not call a provider, edit frames, create motion candidates, update runtime manifests, or approve assets. If it reports `decision_state=regenerate_ai_video`, upload the reported reference image and paste those provider prompt sections into the next Pika, Runway, Krea, or other external video attempt instead of forcing extraction.
 
+To bundle that retry attempt for manual provider upload:
+
+```powershell
+python tools\art\bundle_portrait_video_retry_handoff.py `
+  artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json `
+  --output-dir artifacts\portrait-video-retry-handoff `
+  --report artifacts\portrait-video-retry-handoff-report.json
+```
+
+The retry handoff zip contains the reference image, `retry_prompt.txt`, `negative_prompt.txt`, the full regeneration brief JSON, and a README. It does not include generated videos or exported frames, and it does not call any provider.
+
 To keep that frame QA result visible in release readiness:
 
 ```powershell
