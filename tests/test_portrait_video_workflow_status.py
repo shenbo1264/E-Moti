@@ -236,9 +236,19 @@ def test_inspect_portrait_video_workflow_uses_frame_preflight_for_size_warnings(
     assert any("frame_0002.png size 320x480 differs from reference 240x480" in warning for warning in item.warnings)
     assert any("portrait_video_frame_visual_qa.py" in command for command in item.suggested_commands)
     assert any("artifacts\\portrait-video-frame-qa-xingxi-warning-20260609.png" in command for command in item.suggested_commands)
+    assert any("portrait_video_regeneration_brief.py" in command for command in item.suggested_commands)
+    assert any(
+        "--frame-qa-report artifacts\\portrait-video-frame-qa-xingxi-warning-20260609.json" in command
+        for command in item.suggested_commands
+    )
+    assert any(
+        "--report artifacts\\portrait-video-regeneration-brief-xingxi-warning-20260609.json" in command
+        for command in item.suggested_commands
+    )
     markdown = render_portrait_video_workflow_markdown(report)
     assert "| xingxi-warning-20260609 | ready_with_warnings | 3 | present | missing | review_frame_warnings |" in markdown
     assert "portrait_video_frame_visual_qa.py" in markdown
+    assert "portrait_video_regeneration_brief.py" in markdown
 
 
 def test_inspect_portrait_video_workflow_recommends_normalization_for_same_aspect_size_warnings(tmp_path: Path):

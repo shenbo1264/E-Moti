@@ -432,6 +432,13 @@ def _suggested_commands(
             f"--report artifacts\\portrait-video-frame-qa-{set_id}.json"
         )
         commands.append(
+            "python tools\\art\\portrait_video_regeneration_brief.py "
+            "--workflow-report artifacts\\portrait-video-workflow-report.json "
+            f"--frame-qa-report artifacts\\portrait-video-frame-qa-{set_id}.json "
+            f"--report artifacts\\portrait-video-regeneration-brief-{set_id}.json "
+            f"--markdown artifacts\\portrait-video-regeneration-brief-{set_id}.md"
+        )
+        commands.append(
             "python tools\\art\\inspect_portrait_video_source_frames.py "
             f"{_command_path(source_root)} --report artifacts\\portrait-video-frame-preflight.json"
         )
