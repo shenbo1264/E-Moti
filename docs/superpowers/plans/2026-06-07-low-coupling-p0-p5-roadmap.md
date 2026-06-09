@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before the source-pack process report package: `e355d48 feat: include video imports in readiness`
+- Latest committed checkpoint before the source-pack process readiness package: `6746a7a feat: write source pack process reports`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -41,13 +41,13 @@ python -m pytest tests\test_character_generation_workflow.py tests\test_characte
 
 Result: `146 passed`.
 
-Latest focused release-readiness/report tests run on 2026-06-09:
+Latest focused source-pack process/readiness tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_source_pack_processing.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `54 passed`.
+Result: `45 passed`.
 
 Latest focused AI-video regeneration brief/readiness tests run on 2026-06-09:
 
@@ -87,7 +87,7 @@ Latest broad AI-video source-pack tooling tests run on 2026-06-09:
 python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_source_pack_import.py tests\test_portrait_video_source_pack.py tests\test_portrait_video_source_pack_batch_create.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_pack_processing.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_workflow_status.py tests\test_portrait_motion_frame_extractor.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `78 passed`.
+Result: `81 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -95,7 +95,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `744 passed`.
+Result: `747 passed`.
 
 Latest full local release readiness snapshot run on 2026-06-09:
 
@@ -377,6 +377,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/art/process_portrait_video_source_pack.py` accept `--report` and persist a source-pack process report for the preflight-gated extraction step.
   - The process report records source pack paths, output candidate path, candidate manifest path, extraction report path, motion frame count, preflight status, warnings, and errors.
   - This is local reporting only. It does not call providers, edit runtime manifests, approve generated assets, or bypass frame preflight and human visual QA.
+- `P3/P5-source-pack-process-readiness-gate` package:
+  - Makes `tools/release_readiness_report.py` accept `--portrait-source-process-report` and verify that a source-pack process report still points to an existing source pack, source prompt, output directory, candidate manifest, extraction report, ready preflight status, and positive motion frame count.
+  - `--full-local-snapshot` auto-includes existing `artifacts\portrait-video-source-process-*.json` and nested `artifacts\portrait-video-source\*\source_pack_process_report.json` files, while missing process reports do not add blockers.
+  - This is offline release evidence only. It does not process frames, call providers, run visual QA, edit runtime manifests, approve generated assets, or bypass human candidate review.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

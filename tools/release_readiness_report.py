@@ -51,6 +51,7 @@ FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "portrait_frame_preflight_reports",
     "portrait_frame_normalization_reports",
     "portrait_source_batch_reports",
+    "portrait_source_process_reports",
     "portrait_video_handoff_reports",
     "portrait_video_import_reports",
     "portrait_frame_qa_reports",
@@ -72,6 +73,7 @@ def build_release_readiness_report(
     portrait_frame_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_normalization_reports: Iterable[Path | str] = (),
     portrait_source_batch_reports: Iterable[Path | str] = (),
+    portrait_source_process_reports: Iterable[Path | str] = (),
     portrait_video_handoff_reports: Iterable[Path | str] = (),
     portrait_video_import_reports: Iterable[Path | str] = (),
     portrait_frame_qa_reports: Iterable[Path | str] = (),
@@ -92,6 +94,10 @@ def build_release_readiness_report(
         for report_path in portrait_frame_normalization_reports
     )
     checks.extend(_portrait_source_batch_report_check(Path(report_path)) for report_path in portrait_source_batch_reports)
+    checks.extend(
+        _portrait_source_process_report_check(Path(report_path))
+        for report_path in portrait_source_process_reports
+    )
     checks.extend(_portrait_video_handoff_report_check(Path(report_path)) for report_path in portrait_video_handoff_reports)
     checks.extend(_portrait_video_import_report_check(Path(report_path)) for report_path in portrait_video_import_reports)
     checks.extend(_portrait_frame_qa_report_check(Path(report_path)) for report_path in portrait_frame_qa_reports)
@@ -208,6 +214,9 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         frame_status = _optional_string(check.get("frame_status"))
         if frame_status:
             lines.append(f"- Frame status: `{frame_status}`")
+        preflight_status = _optional_string(check.get("preflight_status"))
+        if preflight_status:
+            lines.append(f"- Preflight status: `{preflight_status}`")
         candidate_status = _optional_string(check.get("candidate_status"))
         if candidate_status:
             lines.append(f"- Candidate status: `{candidate_status}`")
@@ -323,9 +332,18 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         reference_image_path = _optional_string(check.get("reference_image_path"))
         if reference_image_path:
             lines.append(f"- Reference image: `{reference_image_path}`")
+        prompt_path = _optional_string(check.get("prompt_path"))
+        if prompt_path:
+            lines.append(f"- Prompt: `{prompt_path}`")
         regeneration_brief_path = _optional_string(check.get("regeneration_brief_path"))
         if regeneration_brief_path:
             lines.append(f"- Regeneration brief: `{regeneration_brief_path}`")
+        extraction_report_path = _optional_string(check.get("extraction_report_path"))
+        if extraction_report_path:
+            lines.append(f"- Extraction report: `{extraction_report_path}`")
+        process_report_path = _optional_string(check.get("process_report_path"))
+        if process_report_path:
+            lines.append(f"- Process report: `{process_report_path}`")
         output_dir = _optional_string(check.get("output_dir"))
         if output_dir:
             lines.append(f"- Output dir: `{output_dir}`")
@@ -360,6 +378,7 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
             ("sampled_frame_count", "Sampled frames"),
             ("size_mismatch_count", "Size mismatches"),
             ("actual_frame_count", "Actual PNG frames"),
+            ("motion_frame_count", "Motion frames"),
         ):
             value = _optional_int(check.get(key))
             if value is not None:
@@ -936,6 +955,101 @@ def _portrait_source_batch_report_check(report_path: Path) -> dict[str, object]:
     }
 
 
+def _portrait_source_process_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_source_process",
+            "label": "Portrait Source Process",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "set_id": "",
+            "source_pack_dir": "",
+            "output_dir": "",
+            "reference_image_path": "",
+            "frames_dir": "",
+            "prompt_path": "",
+            "candidate_manifest_path": "",
+            "extraction_report_path": "",
+            "process_report_path": "",
+            "motion_frame_count": 0,
+            "preflight_status": "",
+            "preflight_warnings": [],
+            "errors": ["portrait source process report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["repair portrait source process report before candidate QA"],
+        }
+    errors = _string_list(payload.get("errors"))
+    source_pack_dir = _optional_string(payload.get("source_pack_dir"))
+    output_dir = _optional_string(payload.get("output_dir"))
+    reference_image_path = _optional_string(payload.get("reference_image"))
+    frames_dir = _optional_string(payload.get("frames_dir"))
+    prompt_path = _optional_string(payload.get("prompt_path"))
+    candidate_manifest_path = _optional_string(payload.get("candidate_manifest_path"))
+    extraction_report_path = _optional_string(payload.get("extraction_report_path"))
+    motion_frame_count = _nonnegative_int(payload.get("motion_frame_count"))
+    preflight_status = _optional_string(payload.get("preflight_status"))
+
+    if not source_pack_dir:
+        errors.append("source process source_pack_dir is missing")
+    elif not _reported_dir_exists(source_pack_dir):
+        errors.append(f"source process source pack not found: {source_pack_dir}")
+    if not output_dir:
+        errors.append("source process output_dir is missing")
+    elif not _reported_dir_exists(output_dir):
+        errors.append(f"source process output dir not found: {output_dir}")
+    if not reference_image_path:
+        errors.append("source process reference_image is missing")
+    elif not _reported_file_exists(reference_image_path):
+        errors.append(f"source process reference image not found: {reference_image_path}")
+    if not frames_dir:
+        errors.append("source process frames_dir is missing")
+    elif not _reported_dir_exists(frames_dir):
+        errors.append(f"source process frames dir not found: {frames_dir}")
+    if not prompt_path:
+        errors.append("source process prompt_path is missing")
+    elif not _reported_file_exists(prompt_path):
+        errors.append(f"source process prompt not found: {prompt_path}")
+    if not candidate_manifest_path:
+        errors.append("source process candidate_manifest_path is missing")
+    elif not _reported_file_exists(candidate_manifest_path):
+        errors.append(f"source process candidate manifest not found: {candidate_manifest_path}")
+    if not extraction_report_path:
+        errors.append("source process extraction_report_path is missing")
+    elif not _reported_file_exists(extraction_report_path):
+        errors.append(f"source process extraction report not found: {extraction_report_path}")
+    if motion_frame_count <= 0:
+        errors.append("source process motion_frame_count must be positive")
+    if preflight_status != "ready":
+        errors.append(f"source process preflight status is not ready: {preflight_status or 'missing'}")
+
+    errors = _dedupe(errors)
+    ok = payload.get("ok") is True and motion_frame_count > 0 and preflight_status == "ready" and not errors
+    return {
+        "id": "portrait_source_process",
+        "label": "Portrait Source Process",
+        "ok": ok,
+        "status": "ready" if ok else "needs_attention",
+        "path": str(report_path),
+        "set_id": _optional_string(payload.get("set_id")),
+        "source_pack_dir": source_pack_dir,
+        "output_dir": output_dir,
+        "reference_image_path": reference_image_path,
+        "frames_dir": frames_dir,
+        "prompt_path": prompt_path,
+        "candidate_manifest_path": candidate_manifest_path,
+        "extraction_report_path": extraction_report_path,
+        "process_report_path": _optional_string(payload.get("process_report_path")),
+        "motion_frame_count": motion_frame_count,
+        "preflight_status": preflight_status,
+        "preflight_warnings": _string_list(payload.get("preflight_warnings")),
+        "errors": errors,
+        "warnings": [],
+        "next_actions": [] if ok else ["repair portrait source process report before candidate QA"],
+    }
+
+
 def _portrait_video_handoff_report_check(report_path: Path) -> dict[str, object]:
     payload = _load_json_object(report_path)
     if not isinstance(payload, dict):
@@ -1207,6 +1321,11 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
     video_import_reports = (
         sorted(source_root.glob("*/video_import_report.json")) if source_root.is_dir() else []
     )
+    source_process_reports = sorted(root.glob("portrait-video-source-process-*.json"))
+    if source_root.is_dir():
+        for report_path in sorted(source_root.glob("*/source_pack_process_report.json")):
+            if report_path not in source_process_reports:
+                source_process_reports.append(report_path)
     return {
         "llm_reports": [
             root / "llm_smoke" / "deepseek-expression-cue-probe-20260609-rerun.json",
@@ -1221,6 +1340,7 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
         "portrait_frame_preflight_reports": [root / "portrait-video-frame-preflight.json"],
         "portrait_frame_normalization_reports": [root / "portrait-video-frame-normalization.json"],
         "portrait_source_batch_reports": [root / "portrait-video-source-batch-report.json"],
+        "portrait_source_process_reports": source_process_reports,
         "portrait_video_handoff_reports": [root / "portrait-video-handoff-report.json"],
         "portrait_video_import_reports": video_import_reports,
         "portrait_frame_qa_reports": [
@@ -1523,6 +1643,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional portrait AI-video source batch JSON report to include.",
     )
     parser.add_argument(
+        "--portrait-source-process-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video source-pack process JSON report to include.",
+    )
+    parser.add_argument(
         "--portrait-video-handoff-report",
         action="append",
         default=[],
@@ -1596,6 +1722,9 @@ def main(argv: list[str] | None = None) -> int:
         portrait_source_batch_reports=[
             Path(item) for item in args.portrait_source_batch_report
         ] + snapshot["portrait_source_batch_reports"],
+        portrait_source_process_reports=[
+            Path(item) for item in args.portrait_source_process_report
+        ] + snapshot["portrait_source_process_reports"],
         portrait_video_handoff_reports=[
             Path(item) for item in args.portrait_video_handoff_report
         ] + snapshot["portrait_video_handoff_reports"],

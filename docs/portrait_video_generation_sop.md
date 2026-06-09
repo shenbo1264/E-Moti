@@ -406,6 +406,17 @@ python tools\art\process_portrait_video_source_pack.py `
 
 The processor reads `source_pack.json`, uses `gemini_prompt.md` as provenance text, calls the lower-level frame extractor, and writes a source-pack process report when `--report` is provided. That report records the preflight status, candidate manifest path, extraction report path, motion frame count, and errors for release evidence. It does not approve the motion candidate or update runtime manifests.
 
+To keep that processing result visible in release readiness before candidate QA:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-source-process-report artifacts\portrait-video-source-process-xingxi-vn-neutral-20260608.json `
+  --json artifacts\release-readiness-with-portrait-source-process.json `
+  --markdown artifacts\release-readiness-with-portrait-source-process.md
+```
+
+Release readiness checks that the reported source pack, output directory, source prompt, candidate manifest, extraction report, and positive motion frame count still exist, and that preflight status was `ready`. It does not approve the motion candidate, run visual QA, call a provider, or update runtime manifests.
+
 Then run visual QA and the decision brief before any manifest promotion:
 
 ```powershell

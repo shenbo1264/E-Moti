@@ -548,6 +548,56 @@ def _write_portrait_video_import_report(
     return path
 
 
+def _write_portrait_source_process_report(
+    path: Path,
+    *,
+    candidate_manifest_exists: bool = True,
+    extraction_report_exists: bool = True,
+    output_dir_exists: bool = True,
+    motion_frame_count: int = 4,
+    ok: bool = True,
+    preflight_status: str = "ready",
+    errors: list[str] | None = None,
+) -> Path:
+    source_pack_dir = path.parent / "portrait-video-source" / "xingxi-vn-neutral-20260608"
+    reference_image = source_pack_dir / "reference" / "neutral_open.png"
+    frames_dir = source_pack_dir / "frames"
+    prompt_path = source_pack_dir / "gemini_prompt.md"
+    output_dir = path.parent / "portrait-candidate-xingxi-vn-neutral-20260608-motion"
+    candidate_manifest = output_dir / "portrait_candidate.json"
+    extraction_report = output_dir / "candidate-motion-frame-report.json"
+    reference_image.parent.mkdir(parents=True, exist_ok=True)
+    reference_image.write_bytes(b"png")
+    frames_dir.mkdir(parents=True, exist_ok=True)
+    prompt_path.write_text("Keep identity, subtle blink only.", encoding="utf-8")
+    if output_dir_exists:
+        output_dir.mkdir(parents=True, exist_ok=True)
+    if candidate_manifest_exists:
+        candidate_manifest.parent.mkdir(parents=True, exist_ok=True)
+        candidate_manifest.write_text("{}", encoding="utf-8")
+    if extraction_report_exists:
+        extraction_report.parent.mkdir(parents=True, exist_ok=True)
+        extraction_report.write_text("{}", encoding="utf-8")
+    payload = {
+        "ok": ok,
+        "set_id": "xingxi-vn-neutral-20260608",
+        "source_pack_dir": str(source_pack_dir),
+        "output_dir": str(output_dir),
+        "reference_image": str(reference_image),
+        "frames_dir": str(frames_dir),
+        "prompt_path": str(prompt_path),
+        "candidate_manifest_path": str(candidate_manifest),
+        "extraction_report_path": str(extraction_report),
+        "motion_frame_count": motion_frame_count,
+        "process_report_path": str(path),
+        "preflight_status": preflight_status,
+        "preflight_warnings": [],
+        "errors": errors or [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_full_local_snapshot_artifacts(root: Path) -> Path:
     (root / "llm_smoke").mkdir(parents=True, exist_ok=True)
     candidate_root = root / "portrait-candidate-xingxi-vn-20260607"
@@ -584,6 +634,7 @@ def _run_tool(
     portrait_frame_preflight_reports: list[Path] | None = None,
     portrait_frame_normalization_reports: list[Path] | None = None,
     portrait_source_batch_reports: list[Path] | None = None,
+    portrait_source_process_reports: list[Path] | None = None,
     portrait_video_handoff_reports: list[Path] | None = None,
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
@@ -618,6 +669,8 @@ def _run_tool(
         args.extend(["--portrait-frame-normalization-report", str(report)])
     for report in portrait_source_batch_reports or []:
         args.extend(["--portrait-source-batch-report", str(report)])
+    for report in portrait_source_process_reports or []:
+        args.extend(["--portrait-source-process-report", str(report)])
     for report in portrait_video_handoff_reports or []:
         args.extend(["--portrait-video-handoff-report", str(report)])
     for report in portrait_frame_qa_reports or []:
@@ -876,6 +929,37 @@ def test_release_readiness_report_full_local_snapshot_includes_existing_video_im
     assert import_check["ok"] is True
     assert import_check["status"] == "ready"
     assert import_check["frame_count"] == 3
+
+
+def test_release_readiness_report_full_local_snapshot_includes_existing_source_process_report(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    artifact_root = _write_full_local_snapshot_artifacts(tmp_path / "artifacts")
+    _write_portrait_source_process_report(
+        artifact_root / "portrait-video-source-process-xingxi-vn-neutral-20260608.json"
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        full_local_snapshot=True,
+        snapshot_artifact_root=artifact_root,
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["status"] == "needs_attention"
+    assert payload["check_count"] == 16
+    assert payload["ready_check_count"] == 9
+    assert payload["attention_check_count"] == 7
+    assert "portrait_source_process" in [check["id"] for check in payload["checks"]]
+    process_check = next(check for check in payload["checks"] if check["id"] == "portrait_source_process")
+    assert process_check["ok"] is True
+    assert process_check["status"] == "ready"
+    assert process_check["motion_frame_count"] == 4
 
 
 def test_release_readiness_report_surfaces_source_pack_distribution_issue(tmp_path: Path):
@@ -1421,6 +1505,76 @@ def test_release_readiness_report_surfaces_portrait_source_batch_warnings(tmp_pa
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "- Warning packs: `1`" in markdown
     assert "ready_with_warnings, frames=60" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_source_process(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    process_report = _write_portrait_source_process_report(tmp_path / "portrait-source-process.json")
+    report_payload = json.loads(process_report.read_text(encoding="utf-8"))
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_source_process_reports=[process_report],
+    )
+
+    payload = json.loads(result.stdout)
+    process_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert process_check["id"] == "portrait_source_process"
+    assert process_check["ok"] is True
+    assert process_check["status"] == "ready"
+    assert process_check["set_id"] == "xingxi-vn-neutral-20260608"
+    assert process_check["source_pack_dir"] == report_payload["source_pack_dir"]
+    assert process_check["output_dir"] == report_payload["output_dir"]
+    assert process_check["reference_image_path"] == report_payload["reference_image"]
+    assert process_check["frames_dir"] == report_payload["frames_dir"]
+    assert process_check["prompt_path"] == report_payload["prompt_path"]
+    assert process_check["candidate_manifest_path"] == report_payload["candidate_manifest_path"]
+    assert process_check["extraction_report_path"] == report_payload["extraction_report_path"]
+    assert process_check["process_report_path"] == report_payload["process_report_path"]
+    assert process_check["motion_frame_count"] == 4
+    assert process_check["preflight_status"] == "ready"
+    assert process_check["next_actions"] == []
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Source Process" in markdown
+    assert f"- Candidate manifest: `{report_payload['candidate_manifest_path']}`" in markdown
+    assert f"- Extraction report: `{report_payload['extraction_report_path']}`" in markdown
+    assert "- Motion frames: `4`" in markdown
+
+
+def test_release_readiness_report_blocks_portrait_source_process_missing_candidate_manifest(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    process_report = _write_portrait_source_process_report(
+        tmp_path / "portrait-source-process.json",
+        candidate_manifest_exists=False,
+    )
+    report_payload = json.loads(process_report.read_text(encoding="utf-8"))
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_source_process_reports=[process_report],
+    )
+
+    payload = json.loads(result.stdout)
+    process_check = payload["checks"][2]
+    expected_error = f"source process candidate manifest not found: {report_payload['candidate_manifest_path']}"
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert process_check["id"] == "portrait_source_process"
+    assert process_check["ok"] is False
+    assert process_check["status"] == "needs_attention"
+    assert expected_error in process_check["errors"]
+    assert process_check["next_actions"] == ["repair portrait source process report before candidate QA"]
+    assert "repair portrait source process report before candidate QA" in payload["next_actions"]
 
 
 def test_release_readiness_report_accepts_portrait_video_handoff(tmp_path: Path):
