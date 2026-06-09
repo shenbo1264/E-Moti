@@ -66,6 +66,7 @@ artifacts/liveportrait-preflight*.md
 artifacts/portrait-candidate*.png
 artifacts/portrait-candidate*/
 artifacts/spirit-sequence-drafts/
+artifacts/pixel-pet-sequence-drafts/
 artifacts/windows-build-validation*.json
 assets/companion/original_oc/preview/pyside_*smoke*.png
 assets/companion/original_oc/preview/qa_diagnostics_*/

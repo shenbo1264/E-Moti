@@ -787,8 +787,8 @@ Rationale:
 The next high-value packages are:
 
 ```text
-P3-spirit-sequence-base: keep AI-video paused, generate canonical base portraits under ignored artifacts/spirit-sequence-drafts, and validate base-only portrait candidates without changing the runtime manifest
-P3-spirit-sequence-frames: generate one grounded micro-frame strip at a time from the approved canonical base, then run contact-sheet QA before any promotion
+P3-pixel-pet-base: keep AI-video paused, generate hatch-pet-style canonical base images under ignored artifacts/pixel-pet-sequence-drafts, and validate that the style is compact pixel-adjacent pet art before any row work
+P3-pixel-pet-rows: generate one grounded hatch-pet row at a time from the approved canonical base and layout guide, then run contact-sheet QA before any promotion
 P1-quality-tuning: tune prompt/personality/expression quality after reviewing live smoke output
 P3-visual-QA: approve, reject, or iterate the generated VN portrait candidate
 ```
@@ -836,9 +836,10 @@ Confirmation needed before execution:
 - Creating expression variants, blink frames, or final contact sheets from the candidate.
 - Updating default runtime portrait manifests.
 
-Route adjustment after AI-video drift review:
+Corrected route adjustment after AI-video drift review:
 
 - The AI-video-first route is paused as the near-term default because the current generated frame set showed body drift and failed stable motion extraction.
-- The preferred route is now `docs\spirit_sequence_frame_sop.md`: canonical base portrait first, then state-specific sequence strips, then QA and repair per state.
-- Current local draft folders are ignored under `artifacts\spirit-sequence-drafts\` and are not release assets.
-- Third-party character requests must become original alternatives before open-source distribution.
+- The preferred route is now `docs\pixel_pet_sequence_sop.md`: hatch-pet-style compact pixel-adjacent canonical base first, then row strips with layout guides, then QA and repair per state.
+- Current local draft folders are ignored under `artifacts\pixel-pet-sequence-drafts\` and are not release assets.
+- Xingxi can become an original distributable candidate after QA.
+- Ikaros and Nairong tracks are local UGC fanwork workflow representatives only; they are not distributable without rights.
