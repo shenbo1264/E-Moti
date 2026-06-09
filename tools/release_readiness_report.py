@@ -22,6 +22,14 @@ from tools.validate_windows_build import DEFAULT_APP_DIR, DEFAULT_INSTALLER, val
 
 DEFAULT_CHARACTER_PACK = REPO_ROOT / "assets" / "companion" / "original_oc"
 DEFAULT_SNAPSHOT_ARTIFACT_ROOT = Path("artifacts")
+REQUIRED_VIDEO_HANDOFF_ZIP_ENTRIES = frozenset(
+    {
+        "AI_VIDEO_HANDOFF_README.md",
+        "gemini_prompt.md",
+        "provider_prompts.md",
+        "source_pack.json",
+    }
+)
 REQUIRED_RETRY_HANDOFF_ZIP_ENTRIES = frozenset(
     {
         "AI_VIDEO_RETRY_README.md",
@@ -284,6 +292,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if handoff_bundle_summaries:
             lines.append("- Handoff bundles:")
             lines.extend(f"  - `{item}`" for item in handoff_bundle_summaries)
+        handoff_bundle_zip_summaries = _string_list(check.get("handoff_bundle_zip_summaries"))
+        if handoff_bundle_zip_summaries:
+            lines.append("- Handoff bundle zip entries:")
+            lines.extend(f"  - `{item}`" for item in handoff_bundle_zip_summaries)
         set_id = _optional_string(check.get("set_id"))
         if set_id:
             lines.append(f"- Set: `{set_id}`")
@@ -903,12 +915,14 @@ def _portrait_video_handoff_report_check(report_path: Path) -> dict[str, object]
             "bundle_count": 0,
             "handoff_failed_count": 0,
             "handoff_bundle_summaries": [],
+            "handoff_bundle_zip_summaries": [],
             "errors": ["portrait video handoff report must be a JSON object"],
             "warnings": [],
             "next_actions": ["review portrait AI-video handoff report before release"],
         }
     bundles = _list_of_mappings(payload.get("bundles"))
     errors = _string_list(payload.get("errors"))
+    handoff_zip_entries_by_set_id: dict[str, list[str]] = {}
     for bundle in bundles:
         errors.extend(_string_list(bundle.get("errors")))
         set_id = _optional_string(bundle.get("set_id")) or "unknown"
@@ -920,8 +934,13 @@ def _portrait_video_handoff_report_check(report_path: Path) -> dict[str, object]
         if not zip_path:
             errors.append(f"{set_id}: handoff zip_path is missing")
             continue
-        if not _reported_file_exists(zip_path):
-            errors.append(f"handoff zip not found: {zip_path}")
+        zip_entries = _zip_entries(zip_path, errors, label="handoff zip")
+        handoff_zip_entries_by_set_id[set_id] = zip_entries
+        for required_entry in sorted(REQUIRED_VIDEO_HANDOFF_ZIP_ENTRIES):
+            if required_entry not in zip_entries:
+                errors.append(f"{set_id}: handoff zip missing required entry: {required_entry}")
+        if not any(entry.startswith("reference/") for entry in zip_entries):
+            errors.append(f"{set_id}: handoff zip missing reference image entry")
     pack_count = _nonnegative_int(payload.get("pack_count"))
     bundle_count = _nonnegative_int(payload.get("bundle_count"))
     failed_count = _nonnegative_int(payload.get("failed_count"))
@@ -944,6 +963,7 @@ def _portrait_video_handoff_report_check(report_path: Path) -> dict[str, object]
         "bundle_count": bundle_count,
         "handoff_failed_count": failed_count,
         "handoff_bundle_summaries": _handoff_bundle_summaries(bundles),
+        "handoff_bundle_zip_summaries": _handoff_bundle_zip_summaries(handoff_zip_entries_by_set_id),
         "errors": _dedupe(errors),
         "warnings": [],
         "next_actions": [] if ok else ["create or repair portrait AI-video handoff zips before manual provider upload"],
@@ -1176,6 +1196,14 @@ def _handoff_bundle_summaries(bundles: list[dict[str, object]]) -> list[str]:
     return summaries
 
 
+def _handoff_bundle_zip_summaries(entries_by_set_id: dict[str, list[str]]) -> list[str]:
+    summaries: list[str] = []
+    for set_id in sorted(entries_by_set_id):
+        entries = ", ".join(entries_by_set_id[set_id])
+        summaries.append(f"{set_id}: entries={entries}")
+    return summaries
+
+
 def _reported_file_exists(path_string: str) -> bool:
     path = Path(path_string)
     return path.is_file() if path.is_absolute() else (REPO_ROOT / path).is_file()
@@ -1186,17 +1214,17 @@ def _reported_dir_exists(path_string: str) -> bool:
     return path.is_dir() if path.is_absolute() else (REPO_ROOT / path).is_dir()
 
 
-def _zip_entries(path_string: str, errors: list[str]) -> list[str]:
+def _zip_entries(path_string: str, errors: list[str], *, label: str = "retry handoff zip") -> list[str]:
     path = Path(path_string)
     target = path if path.is_absolute() else REPO_ROOT / path
     if not target.is_file():
-        errors.append(f"retry handoff zip not found: {path_string}")
+        errors.append(f"{label} not found: {path_string}")
         return []
     try:
         with zipfile.ZipFile(target) as archive:
             return sorted(item.filename for item in archive.infolist() if not item.is_dir())
     except (OSError, zipfile.BadZipFile):
-        errors.append(f"retry handoff zip is not readable: {path_string}")
+        errors.append(f"{label} is not readable: {path_string}")
         return []
 
 

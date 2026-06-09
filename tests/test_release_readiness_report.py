@@ -313,14 +313,26 @@ def _write_portrait_source_batch_report(path: Path, *, status: str = "ready_with
     return path
 
 
-def _write_portrait_video_handoff_report(path: Path, *, missing_zip: bool = False) -> Path:
+def _write_portrait_video_handoff_report(
+    path: Path,
+    *,
+    missing_zip: bool = False,
+    omitted_zip_entries: dict[str, set[str]] | None = None,
+) -> Path:
     output_dir = path.parent / "portrait-video-handoff"
     output_dir.mkdir(parents=True, exist_ok=True)
     original_zip = output_dir / "xingxi-vn-neutral-20260608.zip"
     normalized_zip = output_dir / "xingxi-vn-neutral-20260608-normalized.zip"
-    original_zip.write_bytes(b"PK")
+    omitted_entries = omitted_zip_entries or {}
+    _write_video_handoff_zip(
+        original_zip,
+        omitted_entries=omitted_entries.get("xingxi-vn-neutral-20260608", set()),
+    )
     if not missing_zip:
-        normalized_zip.write_bytes(b"PK")
+        _write_video_handoff_zip(
+            normalized_zip,
+            omitted_entries=omitted_entries.get("xingxi-vn-neutral-20260608-normalized", set()),
+        )
     payload = {
         "ok": True,
         "source_root": str(path.parent / "portrait-video-source"),
@@ -349,6 +361,22 @@ def _write_portrait_video_handoff_report(path: Path, *, missing_zip: bool = Fals
         "errors": [],
     }
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def _write_video_handoff_zip(path: Path, *, omitted_entries: set[str]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    entries = {
+        "AI_VIDEO_HANDOFF_README.md": b"# AI Video Portrait Handoff\n",
+        "gemini_prompt.md": b"Keep identity, same canvas, subtle blink only.",
+        "provider_prompts.md": b"Pika/Runway/Krea prompt variants.",
+        "source_pack.json": b'{"set_id":"xingxi-vn-neutral-20260608","reference_image":"reference/neutral_open.png"}\n',
+        "reference/neutral_open.png": b"png",
+    }
+    with zipfile.ZipFile(path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for arcname, content in entries.items():
+            if arcname not in omitted_entries:
+                archive.writestr(arcname, content)
     return path
 
 
@@ -1231,6 +1259,10 @@ def test_release_readiness_report_accepts_portrait_video_handoff(tmp_path: Path)
         "xingxi-vn-neutral-20260608-normalized: bundled, zip="
         + str(tmp_path / "portrait-video-handoff" / "xingxi-vn-neutral-20260608-normalized.zip"),
     ]
+    assert handoff_check["handoff_bundle_zip_summaries"] == [
+        "xingxi-vn-neutral-20260608: entries=AI_VIDEO_HANDOFF_README.md, gemini_prompt.md, provider_prompts.md, reference/neutral_open.png, source_pack.json",
+        "xingxi-vn-neutral-20260608-normalized: entries=AI_VIDEO_HANDOFF_README.md, gemini_prompt.md, provider_prompts.md, reference/neutral_open.png, source_pack.json",
+    ]
     assert handoff_check["next_actions"] == []
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "### Portrait Video Handoff" in markdown
@@ -1238,6 +1270,41 @@ def test_release_readiness_report_accepts_portrait_video_handoff(tmp_path: Path)
     assert "- Failed bundles: `0`" in markdown
     assert "- Handoff bundles:" in markdown
     assert "xingxi-vn-neutral-20260608-normalized: bundled" in markdown
+    assert "- Handoff bundle zip entries:" in markdown
+    assert "provider_prompts.md" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_video_handoff_zip_content_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    handoff = _write_portrait_video_handoff_report(
+        tmp_path / "portrait-video-handoff-report.json",
+        omitted_zip_entries={
+            "xingxi-vn-neutral-20260608-normalized": {"provider_prompts.md"},
+        },
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_video_handoff_reports=[handoff],
+    )
+
+    payload = json.loads(result.stdout)
+    handoff_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert handoff_check["id"] == "portrait_video_handoff"
+    assert handoff_check["ok"] is False
+    assert handoff_check["status"] == "needs_attention"
+    assert handoff_check["errors"] == [
+        "xingxi-vn-neutral-20260608-normalized: handoff zip missing required entry: provider_prompts.md"
+    ]
+    assert handoff_check["next_actions"] == [
+        "create or repair portrait AI-video handoff zips before manual provider upload"
+    ]
 
 
 def test_release_readiness_report_surfaces_portrait_video_handoff_missing_zip(tmp_path: Path):

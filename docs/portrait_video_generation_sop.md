@@ -185,7 +185,7 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-video-handoff.md
 ```
 
-Release readiness checks that every `bundled` zip path in the report still exists. This proves the handoff package is available; it does not prove provider upload, generated video quality, extracted motion frames, or runtime asset approval.
+Release readiness checks that every `bundled` zip path in the report still exists and still contains `AI_VIDEO_HANDOFF_README.md`, `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, and a `reference/` image entry. This proves the handoff package is available and complete enough for manual upload; it does not prove provider upload, generated video quality, extracted motion frames, or runtime asset approval.
 
 ## Inspect Workflow Status
 
