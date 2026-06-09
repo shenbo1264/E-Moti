@@ -455,6 +455,10 @@ def test_release_readiness_report_accepts_ready_source_and_frozen_artifacts(tmp_
     assert payload == saved
     assert payload["ok"] is True
     assert payload["status"] == "ready"
+    assert payload["check_count"] == 2
+    assert payload["ready_check_count"] == 2
+    assert payload["attention_check_count"] == 0
+    assert payload["attention_checks"] == []
     assert [check["id"] for check in payload["checks"]] == ["source_character_pack", "windows_build"]
     assert all(check["ok"] is True for check in payload["checks"])
     source_check = payload["checks"][0]
@@ -465,6 +469,8 @@ def test_release_readiness_report_accepts_ready_source_and_frozen_artifacts(tmp_
     assert payload["next_actions"] == []
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert markdown.startswith("# E-Moti Release Readiness")
+    assert "- Ready checks: `2`" in markdown
+    assert "- Attention checks: `0`" in markdown
     assert "- Distribution boundary: `shareable_after_review`" in markdown
     assert "- Manual QA required: `no`" in markdown
     assert "- Provenance files:" in markdown
@@ -554,7 +560,23 @@ def test_release_readiness_report_summarizes_llm_directory_attention_reports(tmp
     assert llm_check["attention_reports"] == [
         "llm-cue-failing.json: needs_attention, issues=2, reason=cue:sadness:expected_expression:sadness"
     ]
+    assert payload["check_count"] == 3
+    assert payload["ready_check_count"] == 2
+    assert payload["attention_check_count"] == 1
+    assert payload["attention_checks"] == [
+        {
+            "id": "llm_report_directory",
+            "label": "LLM Smoke Report Directory",
+            "status": "needs_attention",
+            "next_actions": ["review LLM smoke artifact directory before release"],
+        }
+    ]
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "## Attention Checks" in markdown
+    assert (
+        "- `LLM Smoke Report Directory` (`needs_attention`): "
+        "`review LLM smoke artifact directory before release`"
+    ) in markdown
     assert "- Reports needing attention:" in markdown
     assert (
         "  - `llm-cue-failing.json: needs_attention, issues=2, "

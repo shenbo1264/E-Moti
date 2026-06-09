@@ -63,9 +63,14 @@ def build_release_readiness_report(
         for report_path in portrait_retry_handoff_reports
     )
     ok = all(check["ok"] is True for check in checks)
+    attention_checks = _attention_checks(checks)
     return {
         "ok": ok,
         "status": "ready" if ok else "needs_attention",
+        "check_count": len(checks),
+        "ready_check_count": sum(1 for check in checks if check.get("ok") is True),
+        "attention_check_count": len(attention_checks),
+        "attention_checks": attention_checks,
         "checks": checks,
         "next_actions": _next_actions(checks),
     }
@@ -78,11 +83,22 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         "",
         f"- Status: `{payload.get('status', 'unknown')}`",
         f"- Checks: `{len(checks)}`",
+        f"- Ready checks: `{_nonnegative_int(payload.get('ready_check_count'))}`",
+        f"- Attention checks: `{_nonnegative_int(payload.get('attention_check_count'))}`",
     ]
     next_actions = _string_list(payload.get("next_actions"))
     if next_actions:
         lines.extend(["", "## Next Actions", ""])
         lines.extend(f"- {item}" for item in next_actions)
+    attention_checks = _list_of_mappings(payload.get("attention_checks"))
+    if attention_checks:
+        lines.extend(["", "## Attention Checks", ""])
+        for item in attention_checks:
+            label = _optional_string(item.get("label")) or _optional_string(item.get("id")) or "unknown"
+            status = _optional_string(item.get("status")) or "unknown"
+            actions = _string_list(item.get("next_actions"))
+            action_text = "; ".join(actions) if actions else "inspect check details"
+            lines.append(f"- `{label}` (`{status}`): `{action_text}`")
     lines.extend(["", "## Checks", ""])
     for check in checks:
         lines.extend(
@@ -994,6 +1010,19 @@ def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:
             continue
         actions.extend(_string_list(check.get("next_actions")))
     return _dedupe(actions)
+
+
+def _attention_checks(checks: Iterable[dict[str, object]]) -> list[dict[str, object]]:
+    return [
+        {
+            "id": _optional_string(check.get("id")),
+            "label": _optional_string(check.get("label")) or _optional_string(check.get("id")),
+            "status": _optional_string(check.get("status")) or "unknown",
+            "next_actions": _string_list(check.get("next_actions")),
+        }
+        for check in checks
+        if check.get("ok") is not True
+    ]
 
 
 def _dedupe(items: Iterable[str]) -> list[str]:
