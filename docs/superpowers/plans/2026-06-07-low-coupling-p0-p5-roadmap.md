@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before the regeneration brief file-reference package: `f5d121a test: validate frame qa preview in readiness`
+- Latest committed checkpoint before the provider-video source-pack import package: `f63cac8 test: validate regeneration brief file references`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -57,13 +57,29 @@ python -m pytest tests\test_release_readiness_report.py tests\test_portrait_vide
 
 Result: `35 passed`.
 
+Latest focused AI-video source-pack import tests run on 2026-06-09:
+
+```powershell
+python -m pytest tests\test_portrait_video_source_pack_import.py tests\test_portrait_video_source_pack.py tests\test_portrait_video_source_pack_processing.py tests\test_portrait_video_frame_preflight.py tests\test_repository_hygiene.py -q
+```
+
+Result: `20 passed`.
+
+Latest broad AI-video source-pack tooling tests run on 2026-06-09:
+
+```powershell
+python -m pytest tests\test_portrait_video_source_pack_import.py tests\test_portrait_video_source_pack.py tests\test_portrait_video_source_pack_batch_create.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_pack_processing.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_workflow_status.py tests\test_portrait_motion_frame_extractor.py tests\test_repository_hygiene.py -q
+```
+
+Result: `43 passed`.
+
 Full suite run on 2026-06-09:
 
 ```powershell
 python -m pytest
 ```
 
-Result: `735 passed`.
+Result: `739 passed`.
 
 Latest full local release readiness snapshot run on 2026-06-09:
 
@@ -333,6 +349,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/release_readiness_report.py` verify that a regeneration brief's source reference image and frame QA preview contact sheet still exist before treating the retry brief as usable.
   - Missing reference or preview files now make `portrait_video_regeneration_brief` report `needs_attention` with explicit file errors instead of silently passing a process-ready brief.
   - This is offline report verification only. It does not create previews, edit frames, create motion candidates, call providers, update runtime manifests, or approve generated assets.
+- `P3-provider-video-source-pack-import` package:
+  - Adds `tools/art/import_portrait_video_to_source_pack.py`, a local CLI for copying a downloaded provider video into a source pack's `video/` folder and extracting PNG frames into `frames/` with FFmpeg.
+  - The tool validates `source_pack.json` paths, refuses to overwrite existing PNG frames unless `--replace-frames` is explicit, writes `video_import_report.json`, and emits the next preflight / visual QA / processing commands.
+  - This is local source-pack workflow only. It does not call providers, upload files, edit runtime manifests, approve generated assets, or bypass frame preflight and human visual QA.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

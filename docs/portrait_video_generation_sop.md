@@ -220,7 +220,17 @@ Ask the selected provider for:
 - only eyelids, tiny chest breathing, and slight hair tips may move;
 - no text, logo, watermark, scene change, zoom, hand gesture, or mouth talking.
 
-Download the raw video into `video/`. Export sequential PNG frames into `frames/`:
+After the provider finishes, download the raw video to any local path and import it into the matching source pack. This copies the video into `video/`, extracts sequential PNG frames into `frames/` with FFmpeg, writes `video_import_report.json`, and refuses to overwrite existing PNG frames unless `--replace-frames` is passed:
+
+```powershell
+python tools\art\import_portrait_video_to_source_pack.py `
+  artifacts\portrait-video-source\xingxi-vn-neutral-20260608 `
+  --video path\to\downloaded-provider-video.mp4 `
+  --source-tool Pika `
+  --fps 12
+```
+
+If FFmpeg is unavailable, export sequential PNG frames into `frames/` manually:
 
 ```text
 frame_0001.png
