@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this release-readiness frame-normalization package: `5a8c4e2 feat: include source batch in readiness`
+- Latest committed checkpoint before this release-readiness video-handoff package: `d336437 feat: include frame normalization in readiness`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -20,10 +20,10 @@ Result: `14 passed`.
 Latest focused AI-video workflow tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_portrait_video_workflow_status.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_retry_handoff.py tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_portrait_video_workflow_status.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_retry_handoff.py tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `37 passed`.
+Result: `42 passed`.
 
 Latest focused LLM/review tests run on 2026-06-09:
 
@@ -44,10 +44,10 @@ Result: `146 passed`.
 Latest focused release-readiness/report tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `41 passed`.
+Result: `46 passed`.
 
 Latest focused AI-video regeneration brief tests run on 2026-06-09:
 
@@ -63,7 +63,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `725 passed`.
+Result: `727 passed`.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -285,6 +285,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/release_readiness_report.py` accept `--portrait-frame-normalization-report` so same-aspect low-resolution frame normalization is visible before preflight reruns.
   - The current ignored report records `xingxi-vn-neutral-20260608` normalized into `xingxi-vn-neutral-20260608-normalized`, with 60 input frames, 60 normalized frames, and 60 resize warnings.
   - This is offline report aggregation only. It does not edit frames, process frames, create motion candidates, call providers, update runtime manifests, or approve generated assets.
+- `P3/P5-release-readiness-video-handoff` package:
+  - Makes `tools/release_readiness_report.py` accept `--portrait-video-handoff-report` so provider-neutral AI-video handoff zip availability is visible before manual upload.
+  - The current ignored handoff report records 2 source packs, 2 bundled zip files, and 0 failed bundles; release readiness also verifies the zip paths still exist.
+  - This is offline report aggregation only. It does not bundle zips, upload files, call providers, process frames, create motion candidates, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

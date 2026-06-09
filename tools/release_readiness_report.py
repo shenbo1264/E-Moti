@@ -34,6 +34,7 @@ def build_release_readiness_report(
     portrait_frame_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_normalization_reports: Iterable[Path | str] = (),
     portrait_source_batch_reports: Iterable[Path | str] = (),
+    portrait_video_handoff_reports: Iterable[Path | str] = (),
     portrait_frame_qa_reports: Iterable[Path | str] = (),
     portrait_regeneration_brief_reports: Iterable[Path | str] = (),
     portrait_retry_handoff_reports: Iterable[Path | str] = (),
@@ -51,6 +52,7 @@ def build_release_readiness_report(
         for report_path in portrait_frame_normalization_reports
     )
     checks.extend(_portrait_source_batch_report_check(Path(report_path)) for report_path in portrait_source_batch_reports)
+    checks.extend(_portrait_video_handoff_report_check(Path(report_path)) for report_path in portrait_video_handoff_reports)
     checks.extend(_portrait_frame_qa_report_check(Path(report_path)) for report_path in portrait_frame_qa_reports)
     checks.extend(
         _portrait_regeneration_brief_report_check(Path(report_path))
@@ -199,6 +201,8 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
             ("insufficient_count", "Insufficient packs"),
             ("invalid_frame_pack_count", "Invalid frame packs"),
             ("warning_pack_count", "Warning packs"),
+            ("bundle_count", "Bundles"),
+            ("handoff_failed_count", "Failed bundles"),
         ):
             value = _optional_int(check.get(key))
             if value is not None:
@@ -220,6 +224,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if source_batch_summaries:
             lines.append("- Source batch packs:")
             lines.extend(f"  - `{item}`" for item in source_batch_summaries)
+        handoff_bundle_summaries = _string_list(check.get("handoff_bundle_summaries"))
+        if handoff_bundle_summaries:
+            lines.append("- Handoff bundles:")
+            lines.extend(f"  - `{item}`" for item in handoff_bundle_summaries)
         set_id = _optional_string(check.get("set_id"))
         if set_id:
             lines.append(f"- Set: `{set_id}`")
@@ -749,6 +757,68 @@ def _portrait_source_batch_report_check(report_path: Path) -> dict[str, object]:
     }
 
 
+def _portrait_video_handoff_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_video_handoff",
+            "label": "Portrait Video Handoff",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "source_root": "",
+            "output_dir": "",
+            "pack_count": 0,
+            "bundle_count": 0,
+            "handoff_failed_count": 0,
+            "handoff_bundle_summaries": [],
+            "errors": ["portrait video handoff report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video handoff report before release"],
+        }
+    bundles = _list_of_mappings(payload.get("bundles"))
+    errors = _string_list(payload.get("errors"))
+    for bundle in bundles:
+        errors.extend(_string_list(bundle.get("errors")))
+        set_id = _optional_string(bundle.get("set_id")) or "unknown"
+        status = _optional_string(bundle.get("status")) or "unknown"
+        zip_path = _optional_string(bundle.get("zip_path"))
+        if status != "bundled":
+            errors.append(f"{set_id}: handoff bundle status {status}")
+            continue
+        if not zip_path:
+            errors.append(f"{set_id}: handoff zip_path is missing")
+            continue
+        if not _reported_file_exists(zip_path):
+            errors.append(f"handoff zip not found: {zip_path}")
+    pack_count = _nonnegative_int(payload.get("pack_count"))
+    bundle_count = _nonnegative_int(payload.get("bundle_count"))
+    failed_count = _nonnegative_int(payload.get("failed_count"))
+    ok = (
+        payload.get("ok") is True
+        and pack_count > 0
+        and bundle_count == pack_count
+        and failed_count == 0
+        and not errors
+    )
+    return {
+        "id": "portrait_video_handoff",
+        "label": "Portrait Video Handoff",
+        "ok": ok,
+        "status": "ready" if ok else "needs_attention",
+        "path": str(report_path),
+        "source_root": _optional_string(payload.get("source_root")),
+        "output_dir": _optional_string(payload.get("output_dir")),
+        "pack_count": pack_count,
+        "bundle_count": bundle_count,
+        "handoff_failed_count": failed_count,
+        "handoff_bundle_summaries": _handoff_bundle_summaries(bundles),
+        "errors": _dedupe(errors),
+        "warnings": [],
+        "next_actions": [] if ok else ["create or repair portrait AI-video handoff zips before manual provider upload"],
+    }
+
+
 def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, object]:
     payload = _load_json_object(report_path)
     if not isinstance(payload, dict):
@@ -899,6 +969,24 @@ def _source_batch_summaries(packs: list[dict[str, object]]) -> list[str]:
     return summaries
 
 
+def _handoff_bundle_summaries(bundles: list[dict[str, object]]) -> list[str]:
+    summaries: list[str] = []
+    for bundle in bundles:
+        set_id = _optional_string(bundle.get("set_id")) or "unknown"
+        status = _optional_string(bundle.get("status")) or "unknown"
+        zip_path = _optional_string(bundle.get("zip_path"))
+        summary = f"{set_id}: {status}"
+        if zip_path:
+            summary += f", zip={zip_path}"
+        summaries.append(summary)
+    return summaries
+
+
+def _reported_file_exists(path_string: str) -> bool:
+    path = Path(path_string)
+    return path.is_file() if path.is_absolute() else (REPO_ROOT / path).is_file()
+
+
 def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:
     actions: list[str] = []
     for check in checks:
@@ -1013,6 +1101,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional portrait AI-video source batch JSON report to include.",
     )
     parser.add_argument(
+        "--portrait-video-handoff-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video handoff bundle JSON report to include.",
+    )
+    parser.add_argument(
         "--portrait-frame-qa-report",
         action="append",
         default=[],
@@ -1050,6 +1144,7 @@ def main(argv: list[str] | None = None) -> int:
             Path(item) for item in args.portrait_frame_normalization_report
         ],
         portrait_source_batch_reports=[Path(item) for item in args.portrait_source_batch_report],
+        portrait_video_handoff_reports=[Path(item) for item in args.portrait_video_handoff_report],
         portrait_frame_qa_reports=[Path(item) for item in args.portrait_frame_qa_report],
         portrait_regeneration_brief_reports=[Path(item) for item in args.portrait_regeneration_brief_report],
         portrait_retry_handoff_reports=[Path(item) for item in args.portrait_retry_handoff_report],

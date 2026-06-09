@@ -280,6 +280,45 @@ def _write_portrait_source_batch_report(path: Path, *, status: str = "ready_with
     return path
 
 
+def _write_portrait_video_handoff_report(path: Path, *, missing_zip: bool = False) -> Path:
+    output_dir = path.parent / "portrait-video-handoff"
+    output_dir.mkdir(parents=True, exist_ok=True)
+    original_zip = output_dir / "xingxi-vn-neutral-20260608.zip"
+    normalized_zip = output_dir / "xingxi-vn-neutral-20260608-normalized.zip"
+    original_zip.write_bytes(b"PK")
+    if not missing_zip:
+        normalized_zip.write_bytes(b"PK")
+    payload = {
+        "ok": True,
+        "source_root": str(path.parent / "portrait-video-source"),
+        "output_dir": str(output_dir),
+        "pack_count": 2,
+        "bundle_count": 2,
+        "failed_count": 0,
+        "bundles": [
+            {
+                "set_id": "xingxi-vn-neutral-20260608",
+                "source_pack_dir": str(path.parent / "portrait-video-source" / "xingxi-vn-neutral-20260608"),
+                "zip_path": str(original_zip),
+                "status": "bundled",
+                "errors": [],
+            },
+            {
+                "set_id": "xingxi-vn-neutral-20260608-normalized",
+                "source_pack_dir": str(
+                    path.parent / "portrait-video-source" / "xingxi-vn-neutral-20260608-normalized"
+                ),
+                "zip_path": str(normalized_zip),
+                "status": "bundled",
+                "errors": [],
+            },
+        ],
+        "errors": [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_portrait_regeneration_brief_report(path: Path) -> Path:
     payload = {
         "ok": True,
@@ -347,6 +386,7 @@ def _run_tool(
     portrait_frame_preflight_reports: list[Path] | None = None,
     portrait_frame_normalization_reports: list[Path] | None = None,
     portrait_source_batch_reports: list[Path] | None = None,
+    portrait_video_handoff_reports: list[Path] | None = None,
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
     portrait_retry_handoff_reports: list[Path] | None = None,
@@ -375,6 +415,8 @@ def _run_tool(
         args.extend(["--portrait-frame-normalization-report", str(report)])
     for report in portrait_source_batch_reports or []:
         args.extend(["--portrait-source-batch-report", str(report)])
+    for report in portrait_video_handoff_reports or []:
+        args.extend(["--portrait-video-handoff-report", str(report)])
     for report in portrait_frame_qa_reports or []:
         args.extend(["--portrait-frame-qa-report", str(report)])
     for report in portrait_regeneration_brief_reports or []:
@@ -956,6 +998,75 @@ def test_release_readiness_report_surfaces_portrait_source_batch_warnings(tmp_pa
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "- Warning packs: `1`" in markdown
     assert "ready_with_warnings, frames=60" in markdown
+
+
+def test_release_readiness_report_accepts_portrait_video_handoff(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    handoff = _write_portrait_video_handoff_report(tmp_path / "portrait-video-handoff-report.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_video_handoff_reports=[handoff],
+    )
+
+    payload = json.loads(result.stdout)
+    handoff_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert handoff_check["id"] == "portrait_video_handoff"
+    assert handoff_check["ok"] is True
+    assert handoff_check["status"] == "ready"
+    assert handoff_check["pack_count"] == 2
+    assert handoff_check["bundle_count"] == 2
+    assert handoff_check["handoff_failed_count"] == 0
+    assert handoff_check["handoff_bundle_summaries"] == [
+        "xingxi-vn-neutral-20260608: bundled, zip="
+        + str(tmp_path / "portrait-video-handoff" / "xingxi-vn-neutral-20260608.zip"),
+        "xingxi-vn-neutral-20260608-normalized: bundled, zip="
+        + str(tmp_path / "portrait-video-handoff" / "xingxi-vn-neutral-20260608-normalized.zip"),
+    ]
+    assert handoff_check["next_actions"] == []
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Video Handoff" in markdown
+    assert "- Bundles: `2`" in markdown
+    assert "- Failed bundles: `0`" in markdown
+    assert "- Handoff bundles:" in markdown
+    assert "xingxi-vn-neutral-20260608-normalized: bundled" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_video_handoff_missing_zip(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    handoff = _write_portrait_video_handoff_report(
+        tmp_path / "portrait-video-handoff-report.json",
+        missing_zip=True,
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_video_handoff_reports=[handoff],
+    )
+
+    payload = json.loads(result.stdout)
+    handoff_check = payload["checks"][2]
+    missing_zip = str(tmp_path / "portrait-video-handoff" / "xingxi-vn-neutral-20260608-normalized.zip")
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert handoff_check["id"] == "portrait_video_handoff"
+    assert handoff_check["ok"] is False
+    assert handoff_check["status"] == "needs_attention"
+    assert f"handoff zip not found: {missing_zip}" in handoff_check["errors"]
+    assert handoff_check["next_actions"] == [
+        "create or repair portrait AI-video handoff zips before manual provider upload"
+    ]
+    assert "create or repair portrait AI-video handoff zips before manual provider upload" in payload["next_actions"]
 
 
 def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp_path: Path):

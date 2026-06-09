@@ -167,6 +167,17 @@ python tools\art\bundle_portrait_video_source_packs.py `
 
 Each zip contains `reference/`, `gemini_prompt.md`, `provider_prompts.md`, `source_pack.json`, and `AI_VIDEO_HANDOFF_README.md`. The README repeats the exact required frame size, the frame preflight command, and tells the operator to regenerate video when frames report `ready_with_warnings`. It does not contain generated videos or exported frames.
 
+To keep the provider-neutral handoff zips visible in release readiness before manual upload:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-video-handoff-report artifacts\portrait-video-handoff-report.json `
+  --json artifacts\release-readiness-with-portrait-video-handoff.json `
+  --markdown artifacts\release-readiness-with-portrait-video-handoff.md
+```
+
+Release readiness checks that every `bundled` zip path in the report still exists. This proves the handoff package is available; it does not prove provider upload, generated video quality, extracted motion frames, or runtime asset approval.
+
 ## Inspect Workflow Status
 
 To see every source pack, frame preflight status, handoff zip, motion candidate, and next action:
