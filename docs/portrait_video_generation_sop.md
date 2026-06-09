@@ -42,6 +42,15 @@ python tools\art\create_portrait_video_source_packs_from_candidate.py `
 
 This creates one source folder per expression open/static portrait, for example `xingxi-vn-neutral-20260608` and `xingxi-vn-smile-20260608`. Blink-half and blink-closed frames are not treated as separate Gemini tasks.
 
+To keep source-pack creation visible in release readiness:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-source-create-report artifacts\portrait-video-source-create-report.json `
+  --json artifacts\release-readiness-with-portrait-source-create.json `
+  --markdown artifacts\release-readiness-with-portrait-source-create.md
+```
+
 Single-image fallback command:
 
 ```powershell
@@ -299,7 +308,7 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-retry-handoff.md
 ```
 
-To produce one local readiness snapshot across the current LLM smoke, portrait candidate, AI-video workflow, handoff, frame QA, regeneration, and retry artifacts:
+To produce one local readiness snapshot across the current LLM smoke, portrait candidate, source-pack creation, AI-video workflow, handoff, frame QA, regeneration, and retry artifacts:
 
 ```powershell
 python tools\release_readiness_report.py `

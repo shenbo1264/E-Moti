@@ -71,7 +71,7 @@ Latest full local release readiness snapshot run on 2026-06-09:
 python tools\release_readiness_report.py --full-local-snapshot --json artifacts\release-readiness-full-local-snapshot.json --markdown artifacts\release-readiness-full-local-snapshot.md
 ```
 
-Result: exit code `1`, status `needs_attention`, `check_count=14`, `ready_check_count=7`, and `attention_check_count=7`. This is expected while art approval, expression/blink frames, LivePortrait setup, and AI-video frame drift blockers remain unresolved.
+Result: exit code `1`, status `needs_attention`, `check_count=15`, `ready_check_count=8`, and `attention_check_count=7`. This is expected while art approval, expression/blink frames, LivePortrait setup, and AI-video frame drift blockers remain unresolved.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -299,7 +299,7 @@ Latest non-confirmation packages completed after the original plan:
   - This is offline report aggregation only. It does not bundle zips, upload files, call providers, process frames, create motion candidates, update runtime manifests, or approve generated assets.
 - `P5-release-readiness-full-local-snapshot` package:
   - Documents a single `tools/release_readiness_report.py` command that aggregates the current passed DeepSeek smoke artifacts with the portrait candidate, AI-video workflow, LivePortrait preflight, handoff, frame preflight, normalization, source batch, frame QA, regeneration brief, and retry handoff reports.
-  - The current ignored full snapshot is `needs_attention`: LLM smoke, source pack, frozen build, frame normalization, provider-neutral handoff, and retry handoff are ready; candidate approval, expression/blink coverage, LivePortrait setup, AI-video workflow, frame preflight, source batch, frame QA, and regeneration remain blockers.
+  - The current ignored full snapshot is `needs_attention`: LLM smoke, source character pack, frozen build, source-pack creation, frame normalization, provider-neutral handoff, and retry handoff are ready; candidate approval, expression/blink coverage, LivePortrait setup, AI-video workflow, frame preflight, source batch, frame QA, and regeneration remain blockers.
   - This is release QA documentation only. It does not call providers, upload files, edit frames, update runtime manifests, change packaging, or approve generated assets.
 - `P5-release-readiness-summary` package:
   - Adds top-level `check_count`, `ready_check_count`, `attention_check_count`, and `attention_checks` to `tools/release_readiness_report.py`.
@@ -307,8 +307,12 @@ Latest non-confirmation packages completed after the original plan:
   - This is report shaping only. It does not change pass/fail logic, call providers, upload files, edit frames, update runtime manifests, change packaging, or approve generated assets.
 - `P5-release-readiness-full-local-preset` package:
   - Adds `--full-local-snapshot` and `--snapshot-artifact-root` to `tools/release_readiness_report.py`.
-  - The preset expands to the current local LLM, portrait candidate, AI-video workflow, LivePortrait, handoff, frame QA, regeneration, and retry handoff artifact paths, preserving the same read-only checks as the explicit long command.
+  - The preset expands to the current local LLM, portrait candidate, source-pack creation, AI-video workflow, LivePortrait, handoff, frame QA, regeneration, and retry handoff artifact paths, preserving the same read-only checks as the explicit long command.
   - This is CLI ergonomics only. It does not change pass/fail logic, call providers, upload files, edit frames, update runtime manifests, change packaging, or approve generated assets.
+- `P3/P5-release-readiness-source-create` package:
+  - Makes `tools/release_readiness_report.py` accept `--portrait-source-create-report` so the ignored source-pack creation report is visible before provider handoff.
+  - The full local snapshot now verifies the source-create report, referenced candidate manifest, source image, and output source-pack directory, raising ready checks from 7 to 8 while the same 7 art/motion blockers remain.
+  - This is offline report aggregation only. It does not create source packs, call providers, upload files, edit frames, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

@@ -137,6 +137,38 @@ def _write_portrait_candidate_report(path: Path, *, decision_state: str = "needs
     return path
 
 
+def _write_portrait_source_create_report(path: Path, *, ok: bool = True) -> Path:
+    candidate_manifest = path.parent / "portrait_candidate.json"
+    source_image = path.parent / "portraits" / "neutral_open.png"
+    output_dir = path.parent / "portrait-video-source" / "xingxi-vn-neutral-20260608"
+    candidate_manifest.write_text("{}", encoding="utf-8")
+    source_image.parent.mkdir(parents=True, exist_ok=True)
+    source_image.write_bytes(b"png")
+    output_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "ok": ok,
+        "candidate_manifest_path": str(candidate_manifest),
+        "output_root": str(path.parent / "portrait-video-source"),
+        "requested_count": 1,
+        "created_count": 1 if ok else 0,
+        "failed_count": 0 if ok else 1,
+        "packs": [
+            {
+                "expression_id": "neutral",
+                "variant": "open",
+                "set_id": "xingxi-vn-neutral-20260608",
+                "source_image": str(source_image),
+                "output_dir": str(output_dir),
+                "status": "created" if ok else "failed",
+                "errors": [] if ok else ["source image conversion failed"],
+            }
+        ],
+        "errors": [] if ok else ["source image conversion failed"],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_liveportrait_preflight_report(path: Path, *, ok: bool = False) -> Path:
     payload = {
         "ok": ok,
@@ -381,6 +413,7 @@ def _write_full_local_snapshot_artifacts(root: Path) -> Path:
     _write_llm_report(root / "llm_smoke" / "deepseek-speech-quality-live-20260609-rerun.json", ok=True)
     _write_portrait_candidate_report(candidate_root / "portrait-decision-brief.json")
     _write_portrait_workflow_report(root / "portrait-video-workflow-report.json")
+    _write_portrait_source_create_report(root / "portrait-video-source-create-report.json")
     _write_liveportrait_preflight_report(root / "liveportrait-preflight-xingxi-vn-neutral.json")
     _write_portrait_video_handoff_report(root / "portrait-video-handoff-report.json")
     _write_portrait_frame_preflight_report(root / "portrait-video-frame-preflight.json")
@@ -403,6 +436,7 @@ def _run_tool(
     llm_reports: list[Path] | None = None,
     portrait_workflow_reports: list[Path] | None = None,
     portrait_candidate_reports: list[Path] | None = None,
+    portrait_source_create_reports: list[Path] | None = None,
     liveportrait_preflight_reports: list[Path] | None = None,
     portrait_frame_preflight_reports: list[Path] | None = None,
     portrait_frame_normalization_reports: list[Path] | None = None,
@@ -430,6 +464,8 @@ def _run_tool(
         args.extend(["--portrait-workflow-report", str(report)])
     for report in portrait_candidate_reports or []:
         args.extend(["--portrait-candidate-report", str(report)])
+    for report in portrait_source_create_reports or []:
+        args.extend(["--portrait-source-create-report", str(report)])
     for report in liveportrait_preflight_reports or []:
         args.extend(["--liveportrait-preflight-report", str(report)])
     for report in portrait_frame_preflight_reports or []:
@@ -629,8 +665,8 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
     assert result.returncode == 1
     assert payload["ok"] is False
     assert payload["status"] == "needs_attention"
-    assert payload["check_count"] == 14
-    assert payload["ready_check_count"] == 7
+    assert payload["check_count"] == 15
+    assert payload["ready_check_count"] == 8
     assert payload["attention_check_count"] == 7
     assert [item["id"] for item in payload["attention_checks"]] == [
         "portrait_video_workflow",
@@ -648,6 +684,7 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
         "llm_report",
         "portrait_video_workflow",
         "portrait_candidate_decision",
+        "portrait_source_create",
         "liveportrait_preflight",
         "portrait_frame_preflight",
         "portrait_frame_normalization",
@@ -658,8 +695,8 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
         "portrait_video_retry_handoff",
     ]
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
-    assert "- Checks: `14`" in markdown
-    assert "- Ready checks: `7`" in markdown
+    assert "- Checks: `15`" in markdown
+    assert "- Ready checks: `8`" in markdown
     assert "- Attention checks: `7`" in markdown
     assert "## Attention Checks" in markdown
 
@@ -811,6 +848,45 @@ def test_release_readiness_report_surfaces_portrait_candidate_decision_issue(tmp
         "  - `approve edge cleanup and expression/blink generation for this candidate, "
         "or reject it and regenerate`"
     ) in markdown
+
+
+def test_release_readiness_report_accepts_portrait_source_create(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    source_create = _write_portrait_source_create_report(tmp_path / "portrait-source-create.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_source_create_reports=[source_create],
+    )
+
+    payload = json.loads(result.stdout)
+    create_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert create_check["id"] == "portrait_source_create"
+    assert create_check["ok"] is True
+    assert create_check["status"] == "ready"
+    assert create_check["requested_count"] == 1
+    assert create_check["created_count"] == 1
+    assert create_check["failed_count"] == 0
+    assert create_check["source_create_summaries"] == [
+        "xingxi-vn-neutral-20260608: created, expression=neutral, variant=open, "
+        f"output={tmp_path / 'portrait-video-source' / 'xingxi-vn-neutral-20260608'}"
+    ]
+    assert create_check["next_actions"] == []
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Source Create" in markdown
+    assert "- Candidate manifest:" in markdown
+    assert "- Output root:" in markdown
+    assert "- Requested packs: `1`" in markdown
+    assert "- Created packs: `1`" in markdown
+    assert "- Failed packs: `0`" in markdown
+    assert "- Source create packs:" in markdown
+    assert "xingxi-vn-neutral-20260608: created, expression=neutral, variant=open" in markdown
 
 
 def test_release_readiness_report_surfaces_liveportrait_preflight_issue(tmp_path: Path):

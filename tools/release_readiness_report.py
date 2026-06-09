@@ -25,6 +25,7 @@ FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "llm_reports",
     "portrait_workflow_reports",
     "portrait_candidate_reports",
+    "portrait_source_create_reports",
     "liveportrait_preflight_reports",
     "portrait_frame_preflight_reports",
     "portrait_frame_normalization_reports",
@@ -44,6 +45,7 @@ def build_release_readiness_report(
     llm_reports: Iterable[Path | str] = (),
     portrait_workflow_reports: Iterable[Path | str] = (),
     portrait_candidate_reports: Iterable[Path | str] = (),
+    portrait_source_create_reports: Iterable[Path | str] = (),
     liveportrait_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_normalization_reports: Iterable[Path | str] = (),
@@ -59,6 +61,7 @@ def build_release_readiness_report(
     checks.extend(_llm_report_check(Path(report_path)) for report_path in llm_reports)
     checks.extend(_portrait_workflow_report_check(Path(report_path)) for report_path in portrait_workflow_reports)
     checks.extend(_portrait_candidate_report_check(Path(report_path)) for report_path in portrait_candidate_reports)
+    checks.extend(_portrait_source_create_report_check(Path(report_path)) for report_path in portrait_source_create_reports)
     checks.extend(_liveportrait_preflight_report_check(Path(report_path)) for report_path in liveportrait_preflight_reports)
     checks.extend(_portrait_frame_preflight_report_check(Path(report_path)) for report_path in portrait_frame_preflight_reports)
     checks.extend(
@@ -224,8 +227,16 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         source_root = _optional_string(check.get("source_root"))
         if source_root:
             lines.append(f"- Source root: `{source_root}`")
+        candidate_manifest_path = _optional_string(check.get("candidate_manifest_path"))
+        if candidate_manifest_path:
+            lines.append(f"- Candidate manifest: `{candidate_manifest_path}`")
+        output_root = _optional_string(check.get("output_root"))
+        if output_root:
+            lines.append(f"- Output root: `{output_root}`")
         for key, label in (
             ("pack_count", "Packs"),
+            ("requested_count", "Requested packs"),
+            ("created_count", "Created packs"),
             ("ready_count", "Ready packs"),
             ("waiting_count", "Waiting packs"),
             ("insufficient_count", "Insufficient packs"),
@@ -254,6 +265,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if source_batch_summaries:
             lines.append("- Source batch packs:")
             lines.extend(f"  - `{item}`" for item in source_batch_summaries)
+        source_create_summaries = _string_list(check.get("source_create_summaries"))
+        if source_create_summaries:
+            lines.append("- Source create packs:")
+            lines.extend(f"  - `{item}`" for item in source_create_summaries)
         handoff_bundle_summaries = _string_list(check.get("handoff_bundle_summaries"))
         if handoff_bundle_summaries:
             lines.append("- Handoff bundles:")
@@ -510,6 +525,77 @@ def _portrait_candidate_report_check(report_path: Path) -> dict[str, object]:
         "next_human_decisions": next_human_decisions,
         "errors": validation_errors,
         "next_actions": [] if ok else ["resolve portrait candidate blockers before manifest promotion"],
+    }
+
+
+def _portrait_source_create_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_source_create",
+            "label": "Portrait Source Create",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "candidate_manifest_path": "",
+            "output_root": "",
+            "requested_count": 0,
+            "created_count": 0,
+            "failed_count": 0,
+            "source_create_summaries": [],
+            "errors": ["portrait source create report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video source create report before provider handoff"],
+        }
+    packs = _list_of_mappings(payload.get("packs"))
+    errors = _string_list(payload.get("errors"))
+    candidate_manifest_path = _optional_string(payload.get("candidate_manifest_path"))
+    if not candidate_manifest_path:
+        errors.append("candidate_manifest_path is missing")
+    elif not _reported_file_exists(candidate_manifest_path):
+        errors.append(f"candidate manifest not found: {candidate_manifest_path}")
+    for pack in packs:
+        set_id = _optional_string(pack.get("set_id")) or "unknown"
+        status = _optional_string(pack.get("status")) or "unknown"
+        errors.extend(_string_list(pack.get("errors")))
+        if status != "created":
+            errors.append(f"{set_id}: source create status {status}")
+        source_image = _optional_string(pack.get("source_image"))
+        if not source_image:
+            errors.append(f"{set_id}: source_image is missing")
+        elif not _reported_file_exists(source_image):
+            errors.append(f"{set_id}: source image not found: {source_image}")
+        output_dir = _optional_string(pack.get("output_dir"))
+        if not output_dir:
+            errors.append(f"{set_id}: output_dir is missing")
+        elif not _reported_dir_exists(output_dir):
+            errors.append(f"{set_id}: source pack output dir not found: {output_dir}")
+    requested_count = _nonnegative_int(payload.get("requested_count"))
+    created_count = _nonnegative_int(payload.get("created_count"))
+    failed_count = _nonnegative_int(payload.get("failed_count"))
+    ok = (
+        payload.get("ok") is True
+        and requested_count > 0
+        and len(packs) == requested_count
+        and created_count == requested_count
+        and failed_count == 0
+        and not errors
+    )
+    return {
+        "id": "portrait_source_create",
+        "label": "Portrait Source Create",
+        "ok": ok,
+        "status": "ready" if ok else "needs_attention",
+        "path": str(report_path),
+        "candidate_manifest_path": candidate_manifest_path,
+        "output_root": _optional_string(payload.get("output_root")),
+        "requested_count": requested_count,
+        "created_count": created_count,
+        "failed_count": failed_count,
+        "source_create_summaries": _source_create_summaries(packs),
+        "errors": _dedupe(errors),
+        "warnings": [],
+        "next_actions": [] if ok else ["create or repair portrait AI-video source packs before provider handoff"],
     }
 
 
@@ -960,6 +1046,7 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
         "portrait_candidate_reports": [
             root / "portrait-candidate-xingxi-vn-20260607" / "portrait-decision-brief.json"
         ],
+        "portrait_source_create_reports": [root / "portrait-video-source-create-report.json"],
         "liveportrait_preflight_reports": [root / "liveportrait-preflight-xingxi-vn-neutral.json"],
         "portrait_frame_preflight_reports": [root / "portrait-video-frame-preflight.json"],
         "portrait_frame_normalization_reports": [root / "portrait-video-frame-normalization.json"],
@@ -1035,6 +1122,21 @@ def _source_batch_summaries(packs: list[dict[str, object]]) -> list[str]:
     return summaries
 
 
+def _source_create_summaries(packs: list[dict[str, object]]) -> list[str]:
+    summaries: list[str] = []
+    for pack in packs:
+        set_id = _optional_string(pack.get("set_id")) or "unknown"
+        status = _optional_string(pack.get("status")) or "unknown"
+        expression_id = _optional_string(pack.get("expression_id")) or "unknown"
+        variant = _optional_string(pack.get("variant")) or "unknown"
+        output_dir = _optional_string(pack.get("output_dir"))
+        summary = f"{set_id}: {status}, expression={expression_id}, variant={variant}"
+        if output_dir:
+            summary += f", output={output_dir}"
+        summaries.append(summary)
+    return summaries
+
+
 def _handoff_bundle_summaries(bundles: list[dict[str, object]]) -> list[str]:
     summaries: list[str] = []
     for bundle in bundles:
@@ -1051,6 +1153,11 @@ def _handoff_bundle_summaries(bundles: list[dict[str, object]]) -> list[str]:
 def _reported_file_exists(path_string: str) -> bool:
     path = Path(path_string)
     return path.is_file() if path.is_absolute() else (REPO_ROOT / path).is_file()
+
+
+def _reported_dir_exists(path_string: str) -> bool:
+    path = Path(path_string)
+    return path.is_dir() if path.is_absolute() else (REPO_ROOT / path).is_dir()
 
 
 def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:
@@ -1156,6 +1263,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional portrait candidate decision brief JSON report to include.",
     )
     parser.add_argument(
+        "--portrait-source-create-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video source pack creation JSON report to include.",
+    )
+    parser.add_argument(
         "--liveportrait-preflight-report",
         action="append",
         default=[],
@@ -1232,6 +1345,9 @@ def main(argv: list[str] | None = None) -> int:
         portrait_candidate_reports=[
             Path(item) for item in args.portrait_candidate_report
         ] + snapshot["portrait_candidate_reports"],
+        portrait_source_create_reports=[
+            Path(item) for item in args.portrait_source_create_report
+        ] + snapshot["portrait_source_create_reports"],
         liveportrait_preflight_reports=[
             Path(item) for item in args.liveportrait_preflight_report
         ] + snapshot["liveportrait_preflight_reports"],
