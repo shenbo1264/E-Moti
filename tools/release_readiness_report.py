@@ -3,6 +3,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
+import zipfile
 from collections.abc import Iterable
 from pathlib import Path
 
@@ -21,6 +22,16 @@ from tools.validate_windows_build import DEFAULT_APP_DIR, DEFAULT_INSTALLER, val
 
 DEFAULT_CHARACTER_PACK = REPO_ROOT / "assets" / "companion" / "original_oc"
 DEFAULT_SNAPSHOT_ARTIFACT_ROOT = Path("artifacts")
+REQUIRED_RETRY_HANDOFF_ZIP_ENTRIES = frozenset(
+    {
+        "AI_VIDEO_RETRY_README.md",
+        "negative_prompt.txt",
+        "reference/neutral_open.png",
+        "regeneration_brief.json",
+        "retry_prompt.txt",
+        "source_pack_reference.txt",
+    }
+)
 FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "llm_reports",
     "portrait_workflow_reports",
@@ -297,6 +308,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         zip_path = _optional_string(check.get("zip_path"))
         if zip_path:
             lines.append(f"- Retry handoff zip: `{zip_path}`")
+        retry_handoff_zip_entries = _string_list(check.get("retry_handoff_zip_entries"))
+        if retry_handoff_zip_entries:
+            lines.append("- Retry handoff zip entries:")
+            lines.extend(f"  - `{entry}`" for entry in retry_handoff_zip_entries)
         preview_path = _optional_string(check.get("preview_path"))
         if preview_path:
             lines.append(f"- Preview: `{preview_path}`")
@@ -1010,12 +1025,22 @@ def _portrait_retry_handoff_report_check(report_path: Path) -> dict[str, object]
             "reference_image_path": "",
             "output_dir": "",
             "zip_path": "",
+            "retry_handoff_zip_entries": [],
             "errors": ["portrait retry handoff report must be a JSON object"],
             "warnings": [],
             "next_actions": ["review portrait AI-video retry handoff report before release"],
         }
     errors = _string_list(payload.get("errors"))
-    ok = payload.get("ok") is True and bool(_optional_string(payload.get("zip_path"))) and not errors
+    zip_path = _optional_string(payload.get("zip_path"))
+    zip_entries: list[str] = []
+    if not zip_path:
+        errors.append("retry handoff zip_path is missing")
+    else:
+        zip_entries = _zip_entries(zip_path, errors)
+        for required_entry in sorted(REQUIRED_RETRY_HANDOFF_ZIP_ENTRIES):
+            if required_entry not in zip_entries:
+                errors.append(f"retry handoff zip missing required entry: {required_entry}")
+    ok = payload.get("ok") is True and bool(zip_path) and not errors
     return {
         "id": "portrait_video_retry_handoff",
         "label": "Portrait Video Retry Handoff",
@@ -1026,8 +1051,9 @@ def _portrait_retry_handoff_report_check(report_path: Path) -> dict[str, object]
         "regeneration_brief_path": _optional_string(payload.get("regeneration_brief_path")),
         "reference_image_path": _optional_string(payload.get("reference_image_path")),
         "output_dir": _optional_string(payload.get("output_dir")),
-        "zip_path": _optional_string(payload.get("zip_path")),
-        "errors": errors,
+        "zip_path": zip_path,
+        "retry_handoff_zip_entries": zip_entries,
+        "errors": _dedupe(errors),
         "warnings": [],
         "next_actions": []
         if ok
@@ -1158,6 +1184,20 @@ def _reported_file_exists(path_string: str) -> bool:
 def _reported_dir_exists(path_string: str) -> bool:
     path = Path(path_string)
     return path.is_dir() if path.is_absolute() else (REPO_ROOT / path).is_dir()
+
+
+def _zip_entries(path_string: str, errors: list[str]) -> list[str]:
+    path = Path(path_string)
+    target = path if path.is_absolute() else REPO_ROOT / path
+    if not target.is_file():
+        errors.append(f"retry handoff zip not found: {path_string}")
+        return []
+    try:
+        with zipfile.ZipFile(target) as archive:
+            return sorted(item.filename for item in archive.infolist() if not item.is_dir())
+    except (OSError, zipfile.BadZipFile):
+        errors.append(f"retry handoff zip is not readable: {path_string}")
+        return []
 
 
 def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:

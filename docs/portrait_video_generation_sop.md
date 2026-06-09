@@ -279,7 +279,7 @@ python tools\art\bundle_portrait_video_retry_handoff.py `
   --report artifacts\portrait-video-retry-handoff-report.json
 ```
 
-The retry handoff zip contains the reference image, `retry_prompt.txt`, `negative_prompt.txt`, the full regeneration brief JSON, and a README. It does not include generated videos or exported frames, and it does not call any provider.
+The retry handoff zip contains the reference image, `retry_prompt.txt`, `negative_prompt.txt`, the full regeneration brief JSON, `source_pack_reference.txt`, and a README. Release readiness verifies those required zip entries before treating the retry handoff as ready. It does not include generated videos or exported frames, and it does not call any provider.
 
 To keep that frame QA result visible in release readiness:
 

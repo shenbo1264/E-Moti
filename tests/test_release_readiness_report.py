@@ -2,6 +2,7 @@ import json
 import shutil
 import subprocess
 import sys
+import zipfile
 from pathlib import Path
 
 
@@ -389,19 +390,42 @@ def _write_portrait_regeneration_brief_report(path: Path) -> Path:
     return path
 
 
-def _write_portrait_retry_handoff_report(path: Path, *, ok: bool = True) -> Path:
+def _write_portrait_retry_handoff_report(
+    path: Path,
+    *,
+    ok: bool = True,
+    omitted_zip_entries: set[str] | None = None,
+) -> Path:
+    zip_path = path.parent / "portrait-video-retry-handoff" / "xingxi-vn-neutral-20260608-normalized-retry.zip"
+    if ok:
+        _write_retry_handoff_zip(zip_path, omitted_entries=omitted_zip_entries or set())
     payload = {
         "ok": ok,
         "set_id": "xingxi-vn-neutral-20260608-normalized",
         "regeneration_brief_path": "artifacts\\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json",
         "reference_image_path": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
-        "output_dir": "artifacts\\portrait-video-retry-handoff",
-        "zip_path": "artifacts\\portrait-video-retry-handoff\\xingxi-vn-neutral-20260608-normalized-retry.zip"
-        if ok
-        else "",
+        "output_dir": str(path.parent / "portrait-video-retry-handoff") if ok else "artifacts\\portrait-video-retry-handoff",
+        "zip_path": str(zip_path) if ok else "",
         "errors": [] if ok else ["reference_image_path must point to an existing file"],
     }
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def _write_retry_handoff_zip(path: Path, *, omitted_entries: set[str]) -> Path:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    entries = {
+        "reference/neutral_open.png": b"png",
+        "retry_prompt.txt": b"same canvas, no crop, subtle blink only",
+        "negative_prompt.txt": b"no body recomposition, no camera movement",
+        "regeneration_brief.json": b'{"set_id":"xingxi-vn-neutral-20260608-normalized"}\n',
+        "source_pack_reference.txt": b"source_pack_dir=artifacts/portrait-video-source/xingxi\n",
+        "AI_VIDEO_RETRY_README.md": b"# AI Video Retry Handoff\n",
+    }
+    with zipfile.ZipFile(path, mode="w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for arcname, content in entries.items():
+            if arcname not in omitted_entries:
+                archive.writestr(arcname, content)
     return path
 
 
@@ -1330,10 +1354,18 @@ def test_release_readiness_report_surfaces_portrait_retry_handoff(tmp_path: Path
         retry_check["reference_image_path"]
         == "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png"
     )
-    assert retry_check["output_dir"] == "artifacts\\portrait-video-retry-handoff"
-    assert retry_check["zip_path"] == (
-        "artifacts\\portrait-video-retry-handoff\\xingxi-vn-neutral-20260608-normalized-retry.zip"
+    assert retry_check["output_dir"] == str(tmp_path / "portrait-video-retry-handoff")
+    assert retry_check["zip_path"] == str(
+        tmp_path / "portrait-video-retry-handoff" / "xingxi-vn-neutral-20260608-normalized-retry.zip"
     )
+    assert retry_check["retry_handoff_zip_entries"] == [
+        "AI_VIDEO_RETRY_README.md",
+        "negative_prompt.txt",
+        "reference/neutral_open.png",
+        "regeneration_brief.json",
+        "retry_prompt.txt",
+        "source_pack_reference.txt",
+    ]
     assert retry_check["next_actions"] == []
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "### Portrait Video Retry Handoff" in markdown
@@ -1343,9 +1375,40 @@ def test_release_readiness_report_surfaces_portrait_retry_handoff(tmp_path: Path
         in markdown
     )
     assert (
-        "- Retry handoff zip: `artifacts\\portrait-video-retry-handoff\\xingxi-vn-neutral-20260608-normalized-retry.zip`"
+        f"- Retry handoff zip: `{tmp_path / 'portrait-video-retry-handoff' / 'xingxi-vn-neutral-20260608-normalized-retry.zip'}`"
         in markdown
     )
+    assert "- Retry handoff zip entries:" in markdown
+    assert "  - `negative_prompt.txt`" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_retry_handoff_zip_content_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    retry_handoff = _write_portrait_retry_handoff_report(
+        tmp_path / "portrait-retry-handoff.json",
+        omitted_zip_entries={"negative_prompt.txt"},
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_retry_handoff_reports=[retry_handoff],
+    )
+
+    payload = json.loads(result.stdout)
+    retry_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert retry_check["id"] == "portrait_video_retry_handoff"
+    assert retry_check["ok"] is False
+    assert retry_check["status"] == "needs_attention"
+    assert retry_check["errors"] == ["retry handoff zip missing required entry: negative_prompt.txt"]
+    assert retry_check["next_actions"] == [
+        "create or repair portrait AI-video retry handoff zip before manual provider upload"
+    ]
 
 
 def test_release_readiness_report_surfaces_portrait_retry_handoff_issue(tmp_path: Path):
@@ -1368,7 +1431,10 @@ def test_release_readiness_report_surfaces_portrait_retry_handoff_issue(tmp_path
     assert retry_check["id"] == "portrait_video_retry_handoff"
     assert retry_check["ok"] is False
     assert retry_check["status"] == "needs_attention"
-    assert retry_check["errors"] == ["reference_image_path must point to an existing file"]
+    assert retry_check["errors"] == [
+        "reference_image_path must point to an existing file",
+        "retry handoff zip_path is missing",
+    ]
     assert retry_check["next_actions"] == [
         "create or repair portrait AI-video retry handoff zip before manual provider upload"
     ]

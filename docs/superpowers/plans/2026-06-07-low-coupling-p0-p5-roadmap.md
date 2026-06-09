@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint after the source-create readiness package: `d61c61f feat: include portrait source creation in readiness`
+- Latest committed checkpoint before the retry-handoff zip content package: `41987d3 docs: sync p0 p5 verification baseline`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -47,7 +47,7 @@ Latest focused release-readiness/report tests run on 2026-06-09:
 python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `48 passed`.
+Result: `49 passed`.
 
 Latest focused AI-video regeneration brief tests run on 2026-06-09:
 
@@ -63,7 +63,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `729 passed`.
+Result: `730 passed`.
 
 Latest full local release readiness snapshot run on 2026-06-09:
 
@@ -313,6 +313,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/release_readiness_report.py` accept `--portrait-source-create-report` so the ignored source-pack creation report is visible before provider handoff.
   - The full local snapshot now verifies the source-create report, referenced candidate manifest, source image, and output source-pack directory, raising ready checks from 7 to 8 while the same 7 art/motion blockers remain.
   - This is offline report aggregation only. It does not create source packs, call providers, upload files, edit frames, update runtime manifests, or approve generated assets.
+- `P3/P5-retry-handoff-zip-content-gate` package:
+  - Makes `tools/release_readiness_report.py` inspect retry handoff zip contents before reporting `portrait_video_retry_handoff` as ready.
+  - Required entries are the reference image, retry prompt, negative prompt, regeneration brief JSON, source-pack reference, and retry README.
+  - This is offline report verification only. It does not create zips, call providers, upload files, edit frames, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.
