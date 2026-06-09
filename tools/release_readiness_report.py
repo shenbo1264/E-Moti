@@ -32,6 +32,7 @@ def build_release_readiness_report(
     portrait_candidate_reports: Iterable[Path | str] = (),
     liveportrait_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_preflight_reports: Iterable[Path | str] = (),
+    portrait_frame_normalization_reports: Iterable[Path | str] = (),
     portrait_source_batch_reports: Iterable[Path | str] = (),
     portrait_frame_qa_reports: Iterable[Path | str] = (),
     portrait_regeneration_brief_reports: Iterable[Path | str] = (),
@@ -45,6 +46,10 @@ def build_release_readiness_report(
     checks.extend(_portrait_candidate_report_check(Path(report_path)) for report_path in portrait_candidate_reports)
     checks.extend(_liveportrait_preflight_report_check(Path(report_path)) for report_path in liveportrait_preflight_reports)
     checks.extend(_portrait_frame_preflight_report_check(Path(report_path)) for report_path in portrait_frame_preflight_reports)
+    checks.extend(
+        _portrait_frame_normalization_report_check(Path(report_path))
+        for report_path in portrait_frame_normalization_reports
+    )
     checks.extend(_portrait_source_batch_report_check(Path(report_path)) for report_path in portrait_source_batch_reports)
     checks.extend(_portrait_frame_qa_report_check(Path(report_path)) for report_path in portrait_frame_qa_reports)
     checks.extend(
@@ -218,9 +223,15 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         set_id = _optional_string(check.get("set_id"))
         if set_id:
             lines.append(f"- Set: `{set_id}`")
+        source_set_id = _optional_string(check.get("source_set_id"))
+        if source_set_id:
+            lines.append(f"- Source set: `{source_set_id}`")
         source_pack_dir = _optional_string(check.get("source_pack_dir"))
         if source_pack_dir:
             lines.append(f"- Source pack: `{source_pack_dir}`")
+        output_pack_dir = _optional_string(check.get("output_pack_dir"))
+        if output_pack_dir:
+            lines.append(f"- Output pack: `{output_pack_dir}`")
         reference_image_path = _optional_string(check.get("reference_image_path"))
         if reference_image_path:
             lines.append(f"- Reference image: `{reference_image_path}`")
@@ -238,6 +249,13 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
             lines.append(f"- Preview: `{preview_path}`")
         for key, label in (
             ("frame_count", "Frames"),
+            ("input_frame_count", "Input frames"),
+            ("normalized_frame_count", "Normalized frames"),
+            ("resized_frame_count", "Resized frames"),
+            ("copied_frame_count", "Copied frames"),
+            ("invalid_frame_count", "Invalid frames"),
+            ("aspect_mismatch_count", "Aspect mismatches"),
+            ("normalization_warning_count", "Normalization warnings"),
             ("sampled_frame_count", "Sampled frames"),
             ("size_mismatch_count", "Size mismatches"),
         ):
@@ -603,6 +621,68 @@ def _portrait_frame_preflight_report_check(report_path: Path) -> dict[str, objec
     }
 
 
+def _portrait_frame_normalization_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_frame_normalization",
+            "label": "Portrait Frame Normalization",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "source_set_id": "",
+            "set_id": "",
+            "source_pack_dir": "",
+            "output_pack_dir": "",
+            "reference_image_path": "",
+            "input_frame_count": 0,
+            "normalized_frame_count": 0,
+            "resized_frame_count": 0,
+            "copied_frame_count": 0,
+            "invalid_frame_count": 0,
+            "aspect_mismatch_count": 0,
+            "normalization_warning_count": 0,
+            "errors": ["portrait frame normalization report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video frame normalization report before release"],
+        }
+    errors = _string_list(payload.get("errors"))
+    input_frame_count = _nonnegative_int(payload.get("input_frame_count"))
+    normalized_frame_count = _nonnegative_int(payload.get("normalized_frame_count"))
+    invalid_frame_count = _nonnegative_int(payload.get("invalid_frame_count"))
+    aspect_mismatch_count = _nonnegative_int(payload.get("aspect_mismatch_count"))
+    ok = (
+        payload.get("ok") is True
+        and input_frame_count > 0
+        and normalized_frame_count == input_frame_count
+        and invalid_frame_count == 0
+        and aspect_mismatch_count == 0
+        and not errors
+    )
+    return {
+        "id": "portrait_frame_normalization",
+        "label": "Portrait Frame Normalization",
+        "ok": ok,
+        "status": "completed" if ok else "needs_attention",
+        "path": str(report_path),
+        "source_set_id": _optional_string(payload.get("source_set_id")),
+        "set_id": _optional_string(payload.get("set_id")),
+        "source_pack_dir": _optional_string(payload.get("source_pack_dir")),
+        "output_pack_dir": _optional_string(payload.get("output_pack_dir")),
+        "reference_image_path": _optional_string(payload.get("reference_image")),
+        "input_frame_count": input_frame_count,
+        "normalized_frame_count": normalized_frame_count,
+        "resized_frame_count": _nonnegative_int(payload.get("resized_frame_count")),
+        "copied_frame_count": _nonnegative_int(payload.get("copied_frame_count")),
+        "invalid_frame_count": invalid_frame_count,
+        "aspect_mismatch_count": aspect_mismatch_count,
+        "normalization_warning_count": len(_string_list(payload.get("warnings"))),
+        "errors": errors,
+        "warnings": [],
+        "next_actions": [] if ok else ["repair portrait AI-video frame normalization before preflight rerun"],
+    }
+
+
 def _portrait_source_batch_report_check(report_path: Path) -> dict[str, object]:
     payload = _load_json_object(report_path)
     if not isinstance(payload, dict):
@@ -921,6 +1001,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional portrait AI-video frame preflight JSON report to include.",
     )
     parser.add_argument(
+        "--portrait-frame-normalization-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video frame normalization JSON report to include.",
+    )
+    parser.add_argument(
         "--portrait-source-batch-report",
         action="append",
         default=[],
@@ -960,6 +1046,9 @@ def main(argv: list[str] | None = None) -> int:
         portrait_candidate_reports=[Path(item) for item in args.portrait_candidate_report],
         liveportrait_preflight_reports=[Path(item) for item in args.liveportrait_preflight_report],
         portrait_frame_preflight_reports=[Path(item) for item in args.portrait_frame_preflight_report],
+        portrait_frame_normalization_reports=[
+            Path(item) for item in args.portrait_frame_normalization_report
+        ],
         portrait_source_batch_reports=[Path(item) for item in args.portrait_source_batch_report],
         portrait_frame_qa_reports=[Path(item) for item in args.portrait_frame_qa_report],
         portrait_regeneration_brief_reports=[Path(item) for item in args.portrait_regeneration_brief_report],

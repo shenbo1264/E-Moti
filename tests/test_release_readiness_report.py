@@ -226,6 +226,30 @@ def _write_portrait_frame_preflight_report(path: Path, *, status: str = "ready_w
     return path
 
 
+def _write_portrait_frame_normalization_report(path: Path, *, ok: bool = True) -> Path:
+    payload = {
+        "ok": ok,
+        "source_set_id": "xingxi-vn-neutral-20260608",
+        "set_id": "xingxi-vn-neutral-20260608-normalized",
+        "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608",
+        "output_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized",
+        "reference_image": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
+        "source_frames_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608\\frames",
+        "output_frames_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\frames",
+        "reference_size": [1024, 1536],
+        "input_frame_count": 60,
+        "normalized_frame_count": 60 if ok else 0,
+        "resized_frame_count": 60 if ok else 0,
+        "copied_frame_count": 0,
+        "invalid_frame_count": 0 if ok else 1,
+        "aspect_mismatch_count": 0 if ok else 1,
+        "warnings": ["frame_00001.png resized from 496x744 to 1024x1536"] if ok else [],
+        "errors": [] if ok else ["frame_00001.png aspect ratio differs from reference"],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_portrait_source_batch_report(path: Path, *, status: str = "ready_with_warnings") -> Path:
     is_processed = status == "processed"
     payload = {
@@ -321,6 +345,7 @@ def _run_tool(
     portrait_candidate_reports: list[Path] | None = None,
     liveportrait_preflight_reports: list[Path] | None = None,
     portrait_frame_preflight_reports: list[Path] | None = None,
+    portrait_frame_normalization_reports: list[Path] | None = None,
     portrait_source_batch_reports: list[Path] | None = None,
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
@@ -346,6 +371,8 @@ def _run_tool(
         args.extend(["--liveportrait-preflight-report", str(report)])
     for report in portrait_frame_preflight_reports or []:
         args.extend(["--portrait-frame-preflight-report", str(report)])
+    for report in portrait_frame_normalization_reports or []:
+        args.extend(["--portrait-frame-normalization-report", str(report)])
     for report in portrait_source_batch_reports or []:
         args.extend(["--portrait-source-batch-report", str(report)])
     for report in portrait_frame_qa_reports or []:
@@ -794,6 +821,71 @@ def test_release_readiness_report_surfaces_portrait_frame_preflight_warnings(tmp
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "- Warning packs: `1`" in markdown
     assert "ready_with_warnings, next_action=review_frame_warnings" in markdown
+
+
+def test_release_readiness_report_accepts_portrait_frame_normalization(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    normalization = _write_portrait_frame_normalization_report(tmp_path / "portrait-frame-normalization.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_frame_normalization_reports=[normalization],
+    )
+
+    payload = json.loads(result.stdout)
+    normalization_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert normalization_check["id"] == "portrait_frame_normalization"
+    assert normalization_check["ok"] is True
+    assert normalization_check["status"] == "completed"
+    assert normalization_check["source_set_id"] == "xingxi-vn-neutral-20260608"
+    assert normalization_check["set_id"] == "xingxi-vn-neutral-20260608-normalized"
+    assert normalization_check["input_frame_count"] == 60
+    assert normalization_check["normalized_frame_count"] == 60
+    assert normalization_check["resized_frame_count"] == 60
+    assert normalization_check["invalid_frame_count"] == 0
+    assert normalization_check["aspect_mismatch_count"] == 0
+    assert normalization_check["next_actions"] == []
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Frame Normalization" in markdown
+    assert "- Source set: `xingxi-vn-neutral-20260608`" in markdown
+    assert "- Set: `xingxi-vn-neutral-20260608-normalized`" in markdown
+    assert "- Normalized frames: `60`" in markdown
+    assert "- Resized frames: `60`" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_frame_normalization_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    normalization = _write_portrait_frame_normalization_report(tmp_path / "portrait-frame-normalization.json", ok=False)
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_frame_normalization_reports=[normalization],
+    )
+
+    payload = json.loads(result.stdout)
+    normalization_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert normalization_check["id"] == "portrait_frame_normalization"
+    assert normalization_check["ok"] is False
+    assert normalization_check["status"] == "needs_attention"
+    assert normalization_check["invalid_frame_count"] == 1
+    assert normalization_check["aspect_mismatch_count"] == 1
+    assert normalization_check["errors"] == ["frame_00001.png aspect ratio differs from reference"]
+    assert normalization_check["next_actions"] == [
+        "repair portrait AI-video frame normalization before preflight rerun"
+    ]
+    assert "repair portrait AI-video frame normalization before preflight rerun" in payload["next_actions"]
 
 
 def test_release_readiness_report_accepts_processed_portrait_source_batch(tmp_path: Path):

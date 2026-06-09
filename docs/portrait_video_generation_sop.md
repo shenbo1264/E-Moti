@@ -145,6 +145,15 @@ python tools\art\normalize_portrait_video_source_frames.py `
 
 This is only a canvas-size repair step. It rejects aspect-ratio mismatches, preserves the original provider frames, and still requires the normalized source pack to pass frame preflight before extraction.
 
+To keep that normalization result visible in release readiness without treating it as motion extraction readiness:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-frame-normalization-report artifacts\portrait-video-frame-normalization.json `
+  --json artifacts\release-readiness-with-portrait-frame-normalization.json `
+  --markdown artifacts\release-readiness-with-portrait-frame-normalization.md
+```
+
 ## Bundle Handoff Zips
 
 To create one zip per source pack for AI video handoff:
@@ -287,12 +296,17 @@ python tools\art\normalize_portrait_video_source_frames.py `
   --output-pack-dir artifacts\portrait-video-source\xingxi-vn-neutral-20260608-normalized `
   --report artifacts\portrait-video-frame-normalization.json
 
+python tools\release_readiness_report.py `
+  --portrait-frame-normalization-report artifacts\portrait-video-frame-normalization.json `
+  --json artifacts\release-readiness-with-portrait-frame-normalization.json `
+  --markdown artifacts\release-readiness-with-portrait-frame-normalization.md
+
 python tools\art\inspect_portrait_video_source_frames.py `
   artifacts\portrait-video-source `
   --report artifacts\portrait-video-frame-preflight.json
 ```
 
-Do not use normalization for cropped, reframed, widened, or recomposed output. Those need regeneration, not resizing.
+Do not use normalization for cropped, reframed, widened, or recomposed output. Those need regeneration, not resizing. A completed normalization report only proves canvas-size repair finished; the normalized sibling must still pass source-frame preflight before processing.
 
 ## Extract Blink And Idle Candidates
 
