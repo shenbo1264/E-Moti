@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before the source-batch process report readiness package: `837ef1c feat: write batch source process reports`
+- Latest committed checkpoint before the attention reason summary package: `290f3b5 test: require process reports for processed source batches`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -41,13 +41,13 @@ python -m pytest tests\test_character_generation_workflow.py tests\test_characte
 
 Result: `146 passed`.
 
-Latest focused source-pack process/readiness tests run on 2026-06-09:
+Latest focused release-readiness attention tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_portrait_video_source_batch.py tests\test_portrait_video_source_pack_processing.py tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `52 passed`.
+Result: `41 passed`.
 
 Latest focused AI-video regeneration brief/readiness tests run on 2026-06-09:
 
@@ -389,6 +389,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes release readiness treat a `processed` source-batch pack as ready only when its `output_dir` exists and its `process_report_path` points to an existing process report file.
   - Old processed batch reports without `process_report_path` now become `needs_attention` instead of implying extraction evidence from count fields alone.
   - This is offline report validation only. It does not rerun extraction, call providers, run visual QA, edit runtime manifests, or approve generated assets.
+- `P5-release-readiness-attention-reasons` package:
+  - Adds compact `reasons` to top-level `attention_checks` in release readiness JSON and Markdown.
+  - Reasons are derived from existing per-check attention reports, attention reasons, blockers, errors, validation errors, and warnings so full-local blockers are readable without opening every detailed check first.
+  - This is report explainability only. It does not change readiness decisions, process frames, call providers, edit manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

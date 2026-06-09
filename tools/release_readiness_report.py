@@ -145,7 +145,11 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
             status = _optional_string(item.get("status")) or "unknown"
             actions = _string_list(item.get("next_actions"))
             action_text = "; ".join(actions) if actions else "inspect check details"
-            lines.append(f"- `{label}` (`{status}`): `{action_text}`")
+            line = f"- `{label}` (`{status}`): `{action_text}`"
+            reasons = _string_list(item.get("reasons"))
+            if reasons:
+                line += " Reasons: `" + "; ".join(reasons) + "`"
+            lines.append(line)
     lines.extend(["", "## Checks", ""])
     for check in checks:
         lines.extend(
@@ -1542,11 +1546,26 @@ def _attention_checks(checks: Iterable[dict[str, object]]) -> list[dict[str, obj
             "id": _optional_string(check.get("id")),
             "label": _optional_string(check.get("label")) or _optional_string(check.get("id")),
             "status": _optional_string(check.get("status")) or "unknown",
+            "reasons": _attention_reasons(check),
             "next_actions": _string_list(check.get("next_actions")),
         }
         for check in checks
         if check.get("ok") is not True
     ]
+
+
+def _attention_reasons(check: dict[str, object]) -> list[str]:
+    reasons: list[str] = []
+    for key in (
+        "attention_reports",
+        "attention_reasons",
+        "blockers",
+        "errors",
+        "validation_errors",
+        "warnings",
+    ):
+        reasons.extend(_string_list(check.get(key)))
+    return _dedupe(reasons)
 
 
 def _dedupe(items: Iterable[str]) -> list[str]:

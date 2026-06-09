@@ -342,7 +342,7 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-full-local-snapshot.md
 ```
 
-The current full local snapshot is expected to report `needs_attention` until the art and motion blockers are resolved. A nonzero exit here is useful release evidence, not a tooling failure, when the Markdown lists the remaining blocker categories. Use the top-level `check_count`, `ready_check_count`, `attention_check_count`, and `Attention Checks` section to brief the current state without reading every detailed check first. If the artifact directory was copied elsewhere, pass `--snapshot-artifact-root <path>`.
+The current full local snapshot is expected to report `needs_attention` until the art and motion blockers are resolved. A nonzero exit here is useful release evidence, not a tooling failure, when the Markdown lists the remaining blocker categories. Use the top-level `check_count`, `ready_check_count`, `attention_check_count`, and `Attention Checks` section to brief the current state without reading every detailed check first; each attention check includes compact reasons when the source report exposes blockers, errors, warnings, or attention summaries. If the artifact directory was copied elsewhere, pass `--snapshot-artifact-root <path>`.
 
 If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
 

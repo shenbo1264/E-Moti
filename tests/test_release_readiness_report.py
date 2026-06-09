@@ -844,6 +844,9 @@ def test_release_readiness_report_summarizes_llm_directory_attention_reports(tmp
             "id": "llm_report_directory",
             "label": "LLM Smoke Report Directory",
             "status": "needs_attention",
+            "reasons": [
+                "llm-cue-failing.json: needs_attention, issues=2, reason=cue:sadness:expected_expression:sadness"
+            ],
             "next_actions": ["review LLM smoke artifact directory before release"],
         }
     ]
@@ -851,7 +854,8 @@ def test_release_readiness_report_summarizes_llm_directory_attention_reports(tmp
     assert "## Attention Checks" in markdown
     assert (
         "- `LLM Smoke Report Directory` (`needs_attention`): "
-        "`review LLM smoke artifact directory before release`"
+        "`review LLM smoke artifact directory before release` Reasons: "
+        "`llm-cue-failing.json: needs_attention, issues=2, reason=cue:sadness:expected_expression:sadness`"
     ) in markdown
     assert "- Reports needing attention:" in markdown
     assert (
@@ -890,6 +894,21 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
         "portrait_frame_visual_qa",
         "portrait_video_regeneration_brief",
     ]
+    attention_by_id = {item["id"]: item for item in payload["attention_checks"]}
+    assert attention_by_id["portrait_video_workflow"]["reasons"] == [
+        "normalizable_size_mismatch",
+        "failed_motion_extraction",
+        "motion extraction failed: not enough stable frames after body drift filtering",
+    ]
+    assert attention_by_id["portrait_candidate_decision"]["reasons"] == [
+        "candidate status is not approved",
+        "neutral expression requires blink_half and blink_closed frames",
+        "neutral.open: light_edge_halo_risk",
+    ]
+    assert attention_by_id["liveportrait_preflight"]["reasons"] == [
+        "required pretrained weights are missing",
+        "driving video or motion template not found",
+    ]
     assert [check["id"] for check in payload["checks"]] == [
         "source_character_pack",
         "windows_build",
@@ -912,6 +931,12 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
     assert "- Ready checks: `8`" in markdown
     assert "- Attention checks: `7`" in markdown
     assert "## Attention Checks" in markdown
+    assert (
+        "- `Portrait AI Video Workflow` (`needs_attention`): "
+        "`resolve portrait AI-video workflow blockers before promoting motion assets` Reasons: "
+        "`normalizable_size_mismatch; failed_motion_extraction; "
+        "motion extraction failed: not enough stable frames after body drift filtering`"
+    ) in markdown
 
 
 def test_release_readiness_report_full_local_snapshot_includes_existing_video_import_report(tmp_path: Path):
