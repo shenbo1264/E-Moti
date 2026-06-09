@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this release-readiness video-handoff package: `d336437 feat: include frame normalization in readiness`
+- Latest committed checkpoint before this release-readiness full-local-snapshot package: `f812134 feat: include video handoff in readiness`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -64,6 +64,14 @@ python -m pytest
 ```
 
 Result: `727 passed`.
+
+Latest full local release readiness snapshot run on 2026-06-09:
+
+```powershell
+python tools\release_readiness_report.py --llm-report artifacts\llm_smoke\deepseek-expression-cue-probe-20260609-rerun.json --llm-report artifacts\llm_smoke\deepseek-speech-quality-live-20260609-rerun.json --portrait-candidate-report artifacts\portrait-candidate-xingxi-vn-20260607\portrait-decision-brief.json --portrait-workflow-report artifacts\portrait-video-workflow-report.json --liveportrait-preflight-report artifacts\liveportrait-preflight-xingxi-vn-neutral.json --portrait-video-handoff-report artifacts\portrait-video-handoff-report.json --portrait-frame-preflight-report artifacts\portrait-video-frame-preflight.json --portrait-frame-normalization-report artifacts\portrait-video-frame-normalization.json --portrait-source-batch-report artifacts\portrait-video-source-batch-report.json --portrait-frame-qa-report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json --portrait-regeneration-brief-report artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json --portrait-retry-handoff-report artifacts\portrait-video-retry-handoff-report.json --json artifacts\release-readiness-full-local-snapshot.json --markdown artifacts\release-readiness-full-local-snapshot.md
+```
+
+Result: exit code `1`, status `needs_attention`, 7 checks ready/passed/completed and 7 checks needing attention. This is expected while art approval, expression/blink frames, LivePortrait setup, and AI-video frame drift blockers remain unresolved.
 
 Latest non-confirmation packages completed after the original plan:
 
@@ -289,6 +297,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/release_readiness_report.py` accept `--portrait-video-handoff-report` so provider-neutral AI-video handoff zip availability is visible before manual upload.
   - The current ignored handoff report records 2 source packs, 2 bundled zip files, and 0 failed bundles; release readiness also verifies the zip paths still exist.
   - This is offline report aggregation only. It does not bundle zips, upload files, call providers, process frames, create motion candidates, update runtime manifests, or approve generated assets.
+- `P5-release-readiness-full-local-snapshot` package:
+  - Documents a single `tools/release_readiness_report.py` command that aggregates the current passed DeepSeek smoke artifacts with the portrait candidate, AI-video workflow, LivePortrait preflight, handoff, frame preflight, normalization, source batch, frame QA, regeneration brief, and retry handoff reports.
+  - The current ignored full snapshot is `needs_attention`: LLM smoke, source pack, frozen build, frame normalization, provider-neutral handoff, and retry handoff are ready; candidate approval, expression/blink coverage, LivePortrait setup, AI-video workflow, frame preflight, source batch, frame QA, and regeneration remain blockers.
+  - This is release QA documentation only. It does not call providers, upload files, edit frames, update runtime manifests, change packaging, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

@@ -299,6 +299,28 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-retry-handoff.md
 ```
 
+To produce one local readiness snapshot across the current LLM smoke, portrait candidate, AI-video workflow, handoff, frame QA, regeneration, and retry artifacts:
+
+```powershell
+python tools\release_readiness_report.py `
+  --llm-report artifacts\llm_smoke\deepseek-expression-cue-probe-20260609-rerun.json `
+  --llm-report artifacts\llm_smoke\deepseek-speech-quality-live-20260609-rerun.json `
+  --portrait-candidate-report artifacts\portrait-candidate-xingxi-vn-20260607\portrait-decision-brief.json `
+  --portrait-workflow-report artifacts\portrait-video-workflow-report.json `
+  --liveportrait-preflight-report artifacts\liveportrait-preflight-xingxi-vn-neutral.json `
+  --portrait-video-handoff-report artifacts\portrait-video-handoff-report.json `
+  --portrait-frame-preflight-report artifacts\portrait-video-frame-preflight.json `
+  --portrait-frame-normalization-report artifacts\portrait-video-frame-normalization.json `
+  --portrait-source-batch-report artifacts\portrait-video-source-batch-report.json `
+  --portrait-frame-qa-report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json `
+  --portrait-regeneration-brief-report artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json `
+  --portrait-retry-handoff-report artifacts\portrait-video-retry-handoff-report.json `
+  --json artifacts\release-readiness-full-local-snapshot.json `
+  --markdown artifacts\release-readiness-full-local-snapshot.md
+```
+
+The current full local snapshot is expected to report `needs_attention` until the art and motion blockers are resolved. A nonzero exit here is useful release evidence, not a tooling failure, when the Markdown lists the remaining blocker categories.
+
 If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
 
 ```powershell
