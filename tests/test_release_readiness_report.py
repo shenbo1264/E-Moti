@@ -319,8 +319,32 @@ def _write_portrait_frame_normalization_report(path: Path, *, ok: bool = True) -
     return path
 
 
-def _write_portrait_source_batch_report(path: Path, *, status: str = "ready_with_warnings") -> Path:
+def _write_portrait_source_batch_report(
+    path: Path,
+    *,
+    status: str = "ready_with_warnings",
+    include_process_report_path: bool = True,
+    process_report_exists: bool = True,
+) -> Path:
     is_processed = status == "processed"
+    output_dir = path.parent / "portrait-candidate-xingxi-vn-neutral-20260608-motion"
+    process_report_path = output_dir / "source_pack_process_report.json"
+    if is_processed:
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "portrait_candidate.json").write_text("{}", encoding="utf-8")
+        if process_report_exists:
+            process_report_path.write_text("{}", encoding="utf-8")
+    pack = {
+        "set_id": "xingxi-vn-neutral-20260608",
+        "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608",
+        "frame_count": 60,
+        "status": status,
+        "output_dir": str(output_dir) if is_processed else "",
+        "warnings": [] if is_processed else ["frame_00001.png size 496x744 differs from reference 1024x1536"],
+        "errors": [],
+    }
+    if is_processed and include_process_report_path:
+        pack["process_report_path"] = str(process_report_path)
     payload = {
         "ok": True,
         "source_root": "artifacts\\portrait-video-source",
@@ -332,17 +356,7 @@ def _write_portrait_source_batch_report(path: Path, *, status: str = "ready_with
         "insufficient_count": 0,
         "processed_count": 1 if is_processed else 0,
         "failed_count": 0,
-        "packs": [
-            {
-                "set_id": "xingxi-vn-neutral-20260608",
-                "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608",
-                "frame_count": 60,
-                "status": status,
-                "output_dir": "artifacts\\portrait-candidate-xingxi-vn-neutral-20260608-motion" if is_processed else "",
-                "warnings": [] if is_processed else ["frame_00001.png size 496x744 differs from reference 1024x1536"],
-                "errors": [],
-            }
-        ],
+        "packs": [pack],
         "errors": [],
     }
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
@@ -1468,6 +1482,8 @@ def test_release_readiness_report_accepts_processed_portrait_source_batch(tmp_pa
     character_pack = _copy_original_pack(tmp_path / "source")
     app_dir, installer = _write_frozen_build(tmp_path / "build")
     source_batch = _write_portrait_source_batch_report(tmp_path / "portrait-source-batch.json", status="processed")
+    report_payload = json.loads(source_batch.read_text(encoding="utf-8"))
+    output_dir = report_payload["packs"][0]["output_dir"]
 
     result = _run_tool(
         character_pack,
@@ -1489,7 +1505,7 @@ def test_release_readiness_report_accepts_processed_portrait_source_batch(tmp_pa
     assert batch_check["processed_count"] == 1
     assert batch_check["warning_pack_count"] == 0
     assert batch_check["source_batch_summaries"] == [
-        "xingxi-vn-neutral-20260608: processed, frames=60, output=artifacts\\portrait-candidate-xingxi-vn-neutral-20260608-motion"
+        f"xingxi-vn-neutral-20260608: processed, frames=60, output={output_dir}"
     ]
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "### Portrait Source Batch" in markdown
@@ -1497,6 +1513,74 @@ def test_release_readiness_report_accepts_processed_portrait_source_batch(tmp_pa
     assert "- Processed packs: `1`" in markdown
     assert "- Source batch packs:" in markdown
     assert "  - `xingxi-vn-neutral-20260608: processed, frames=60" in markdown
+
+
+def test_release_readiness_report_blocks_processed_portrait_source_batch_missing_process_report_path(
+    tmp_path: Path,
+):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    source_batch = _write_portrait_source_batch_report(
+        tmp_path / "portrait-source-batch.json",
+        status="processed",
+        include_process_report_path=False,
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_source_batch_reports=[source_batch],
+    )
+
+    payload = json.loads(result.stdout)
+    batch_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert batch_check["id"] == "portrait_source_batch"
+    assert batch_check["ok"] is False
+    assert batch_check["status"] == "needs_attention"
+    assert batch_check["errors"] == [
+        "xingxi-vn-neutral-20260608: processed source batch process_report_path is missing"
+    ]
+    assert batch_check["next_actions"] == [
+        "resolve portrait AI-video source batch warnings before motion extraction"
+    ]
+
+
+def test_release_readiness_report_blocks_processed_portrait_source_batch_missing_process_report_file(
+    tmp_path: Path,
+):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    source_batch = _write_portrait_source_batch_report(
+        tmp_path / "portrait-source-batch.json",
+        status="processed",
+        process_report_exists=False,
+    )
+    report_payload = json.loads(source_batch.read_text(encoding="utf-8"))
+    process_report_path = report_payload["packs"][0]["process_report_path"]
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_source_batch_reports=[source_batch],
+    )
+
+    payload = json.loads(result.stdout)
+    batch_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert batch_check["id"] == "portrait_source_batch"
+    assert batch_check["ok"] is False
+    assert batch_check["status"] == "needs_attention"
+    assert batch_check["errors"] == [
+        f"xingxi-vn-neutral-20260608: processed source batch process report not found: {process_report_path}"
+    ]
+    assert "resolve portrait AI-video source batch warnings before motion extraction" in payload["next_actions"]
 
 
 def test_release_readiness_report_surfaces_portrait_source_batch_warnings(tmp_path: Path):

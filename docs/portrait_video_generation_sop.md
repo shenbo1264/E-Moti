@@ -385,6 +385,8 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-source-batch.md
 ```
 
+When a batch report marks a pack as `processed`, release readiness requires both the processed `output_dir` and its `process_report_path` file to exist. Old processed batch reports that do not include `process_report_path` intentionally become `needs_attention` so the extraction evidence is not implied by count fields alone.
+
 To process every ready folder:
 
 ```powershell

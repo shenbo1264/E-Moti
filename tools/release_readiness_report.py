@@ -916,6 +916,20 @@ def _portrait_source_batch_report_check(report_path: Path) -> dict[str, object]:
     errors = _string_list(payload.get("errors"))
     for pack in packs:
         errors.extend(_string_list(pack.get("errors")))
+        set_id = _optional_string(pack.get("set_id")) or "unknown"
+        status = _optional_string(pack.get("status")) or "unknown"
+        if status != "processed":
+            continue
+        output_dir = _optional_string(pack.get("output_dir"))
+        process_report_path = _optional_string(pack.get("process_report_path"))
+        if not output_dir:
+            errors.append(f"{set_id}: processed source batch output_dir is missing")
+        elif not _reported_dir_exists(output_dir):
+            errors.append(f"{set_id}: processed source batch output dir not found: {output_dir}")
+        if not process_report_path:
+            errors.append(f"{set_id}: processed source batch process_report_path is missing")
+        elif not _reported_file_exists(process_report_path):
+            errors.append(f"{set_id}: processed source batch process report not found: {process_report_path}")
     pack_count = _nonnegative_int(payload.get("pack_count"))
     processed_count = _nonnegative_int(payload.get("processed_count"))
     failed_count = _nonnegative_int(payload.get("failed_count"))
