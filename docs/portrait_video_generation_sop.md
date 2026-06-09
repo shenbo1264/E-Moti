@@ -230,6 +230,17 @@ python tools\art\import_portrait_video_to_source_pack.py `
   --fps 12
 ```
 
+To keep that provider-video import visible in release readiness:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-video-import-report artifacts\portrait-video-source\xingxi-vn-neutral-20260608\video_import_report.json `
+  --json artifacts\release-readiness-with-portrait-video-import.json `
+  --markdown artifacts\release-readiness-with-portrait-video-import.md
+```
+
+Release readiness checks that the copied provider video still exists, the extracted frames directory still exists, and the actual PNG frame count matches the import report before frame preflight. It does not call a provider, re-extract frames, approve video quality, create motion candidates, or update runtime manifests.
+
 If FFmpeg is unavailable, export sequential PNG frames into `frames/` manually:
 
 ```text

@@ -52,6 +52,7 @@ FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "portrait_frame_normalization_reports",
     "portrait_source_batch_reports",
     "portrait_video_handoff_reports",
+    "portrait_video_import_reports",
     "portrait_frame_qa_reports",
     "portrait_regeneration_brief_reports",
     "portrait_retry_handoff_reports",
@@ -72,6 +73,7 @@ def build_release_readiness_report(
     portrait_frame_normalization_reports: Iterable[Path | str] = (),
     portrait_source_batch_reports: Iterable[Path | str] = (),
     portrait_video_handoff_reports: Iterable[Path | str] = (),
+    portrait_video_import_reports: Iterable[Path | str] = (),
     portrait_frame_qa_reports: Iterable[Path | str] = (),
     portrait_regeneration_brief_reports: Iterable[Path | str] = (),
     portrait_retry_handoff_reports: Iterable[Path | str] = (),
@@ -91,6 +93,7 @@ def build_release_readiness_report(
     )
     checks.extend(_portrait_source_batch_report_check(Path(report_path)) for report_path in portrait_source_batch_reports)
     checks.extend(_portrait_video_handoff_report_check(Path(report_path)) for report_path in portrait_video_handoff_reports)
+    checks.extend(_portrait_video_import_report_check(Path(report_path)) for report_path in portrait_video_import_reports)
     checks.extend(_portrait_frame_qa_report_check(Path(report_path)) for report_path in portrait_frame_qa_reports)
     checks.extend(
         _portrait_regeneration_brief_report_check(Path(report_path))
@@ -176,6 +179,9 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         provider = _optional_string(check.get("provider"))
         if provider:
             lines.append(f"- Provider: `{provider}`")
+        source_tool = _optional_string(check.get("source_tool"))
+        if source_tool:
+            lines.append(f"- Source tool: `{source_tool}`")
         model = _optional_string(check.get("model"))
         if model:
             lines.append(f"- Model: `{model}`")
@@ -323,6 +329,15 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         output_dir = _optional_string(check.get("output_dir"))
         if output_dir:
             lines.append(f"- Output dir: `{output_dir}`")
+        input_video_path = _optional_string(check.get("input_video_path"))
+        if input_video_path:
+            lines.append(f"- Input video: `{input_video_path}`")
+        copied_video_path = _optional_string(check.get("copied_video_path"))
+        if copied_video_path:
+            lines.append(f"- Copied video: `{copied_video_path}`")
+        frames_dir = _optional_string(check.get("frames_dir"))
+        if frames_dir:
+            lines.append(f"- Frames dir: `{frames_dir}`")
         zip_path = _optional_string(check.get("zip_path"))
         if zip_path:
             lines.append(f"- Retry handoff zip: `{zip_path}`")
@@ -344,6 +359,7 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
             ("normalization_warning_count", "Normalization warnings"),
             ("sampled_frame_count", "Sampled frames"),
             ("size_mismatch_count", "Size mismatches"),
+            ("actual_frame_count", "Actual PNG frames"),
         ):
             value = _optional_int(check.get(key))
             if value is not None:
@@ -990,6 +1006,73 @@ def _portrait_video_handoff_report_check(report_path: Path) -> dict[str, object]
     }
 
 
+def _portrait_video_import_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_video_import",
+            "label": "Portrait Video Import",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "set_id": "",
+            "source_pack_dir": "",
+            "input_video_path": "",
+            "copied_video_path": "",
+            "frames_dir": "",
+            "source_tool": "",
+            "fps": 0,
+            "frame_count": 0,
+            "actual_frame_count": 0,
+            "suggested_commands": [],
+            "errors": ["portrait video import report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["repair portrait AI-video import before frame preflight"],
+        }
+    errors = _string_list(payload.get("errors"))
+    copied_video_path = _optional_string(payload.get("copied_video_path"))
+    frames_dir = _optional_string(payload.get("frames_dir"))
+    frame_count = _nonnegative_int(payload.get("frame_count"))
+    actual_frame_count = 0
+    if not copied_video_path:
+        errors.append("video import copied_video_path is missing")
+    elif not _reported_file_exists(copied_video_path):
+        errors.append(f"video import copied video not found: {copied_video_path}")
+    if not frames_dir:
+        errors.append("video import frames_dir is missing")
+    elif not _reported_dir_exists(frames_dir):
+        errors.append(f"video import frames_dir not found: {frames_dir}")
+    else:
+        actual_frame_count = _reported_png_count(frames_dir)
+        if actual_frame_count <= 0:
+            errors.append(f"video import frames_dir contains no PNG frames: {frames_dir}")
+        elif frame_count != actual_frame_count:
+            errors.append(f"video import frame_count mismatch: report={frame_count}, actual={actual_frame_count}")
+    errors = _dedupe(errors)
+    ok = payload.get("ok") is True and frame_count > 0 and not errors
+    return {
+        "id": "portrait_video_import",
+        "label": "Portrait Video Import",
+        "ok": ok,
+        "status": "ready" if ok else "needs_attention",
+        "path": str(report_path),
+        "set_id": _optional_string(payload.get("set_id")),
+        "source_pack_dir": _optional_string(payload.get("source_pack_dir")),
+        "input_video_path": _optional_string(payload.get("input_video_path")),
+        "copied_video_path": copied_video_path,
+        "frames_dir": frames_dir,
+        "source_tool": _optional_string(payload.get("source_tool")),
+        "fps": _nonnegative_int(payload.get("fps")),
+        "replace_frames": payload.get("replace_frames") is True,
+        "frame_count": frame_count,
+        "actual_frame_count": actual_frame_count,
+        "suggested_commands": _string_list(payload.get("next_commands")),
+        "errors": errors,
+        "warnings": [],
+        "next_actions": [] if ok else ["repair portrait AI-video import before frame preflight"],
+    }
+
+
 def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, object]:
     payload = _load_json_object(report_path)
     if not isinstance(payload, dict):
@@ -1120,6 +1203,10 @@ def _portrait_retry_handoff_report_check(report_path: Path) -> dict[str, object]
 
 def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Path]]:
     root = artifact_root
+    source_root = root / "portrait-video-source"
+    video_import_reports = (
+        sorted(source_root.glob("*/video_import_report.json")) if source_root.is_dir() else []
+    )
     return {
         "llm_reports": [
             root / "llm_smoke" / "deepseek-expression-cue-probe-20260609-rerun.json",
@@ -1135,6 +1222,7 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
         "portrait_frame_normalization_reports": [root / "portrait-video-frame-normalization.json"],
         "portrait_source_batch_reports": [root / "portrait-video-source-batch-report.json"],
         "portrait_video_handoff_reports": [root / "portrait-video-handoff-report.json"],
+        "portrait_video_import_reports": video_import_reports,
         "portrait_frame_qa_reports": [
             root / "portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json"
         ],
@@ -1279,6 +1367,13 @@ def _reported_dir_exists(path_string: str) -> bool:
 def _reported_path(path_string: str) -> Path:
     path = Path(path_string)
     return path if path.is_absolute() else REPO_ROOT / path
+
+
+def _reported_png_count(path_string: str) -> int:
+    directory = _reported_path(path_string)
+    if not directory.is_dir():
+        return 0
+    return sum(1 for path in directory.iterdir() if path.is_file() and path.suffix.lower() == ".png")
 
 
 def _zip_entries(path_string: str, errors: list[str], *, label: str = "retry handoff zip") -> list[str]:
@@ -1434,6 +1529,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional portrait AI-video handoff bundle JSON report to include.",
     )
     parser.add_argument(
+        "--portrait-video-import-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video source-pack video import JSON report to include.",
+    )
+    parser.add_argument(
         "--portrait-frame-qa-report",
         action="append",
         default=[],
@@ -1498,6 +1599,9 @@ def main(argv: list[str] | None = None) -> int:
         portrait_video_handoff_reports=[
             Path(item) for item in args.portrait_video_handoff_report
         ] + snapshot["portrait_video_handoff_reports"],
+        portrait_video_import_reports=[
+            Path(item) for item in args.portrait_video_import_report
+        ] + snapshot["portrait_video_import_reports"],
         portrait_frame_qa_reports=[
             Path(item) for item in args.portrait_frame_qa_report
         ] + snapshot["portrait_frame_qa_reports"],

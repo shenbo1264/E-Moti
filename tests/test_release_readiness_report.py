@@ -512,6 +512,42 @@ def _write_retry_handoff_zip(path: Path, *, omitted_entries: set[str]) -> Path:
     return path
 
 
+def _write_portrait_video_import_report(
+    path: Path,
+    *,
+    frames_exist: bool = True,
+    frame_count: int = 3,
+) -> Path:
+    source_pack_dir = path.parent / "portrait-video-source" / "xingxi-vn-neutral-20260608"
+    video_path = source_pack_dir / "video" / "pika.mp4"
+    frames_dir = source_pack_dir / "frames"
+    video_path.parent.mkdir(parents=True, exist_ok=True)
+    video_path.write_bytes(b"video")
+    if frames_exist:
+        frames_dir.mkdir(parents=True, exist_ok=True)
+        for index in range(1, frame_count + 1):
+            (frames_dir / f"frame_{index:05d}.png").write_bytes(b"png")
+    payload = {
+        "ok": True,
+        "set_id": "xingxi-vn-neutral-20260608",
+        "source_pack_dir": str(source_pack_dir),
+        "input_video_path": str(path.parent / "downloads" / "pika.mp4"),
+        "copied_video_path": str(video_path),
+        "frames_dir": str(frames_dir),
+        "report_path": str(path),
+        "source_tool": "Pika",
+        "fps": 12,
+        "replace_frames": False,
+        "frame_count": frame_count,
+        "next_commands": [
+            "python tools\\art\\inspect_portrait_video_source_frames.py artifacts\\portrait-video-source --report artifacts\\portrait-video-frame-preflight.json",
+        ],
+        "errors": [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_full_local_snapshot_artifacts(root: Path) -> Path:
     (root / "llm_smoke").mkdir(parents=True, exist_ok=True)
     candidate_root = root / "portrait-candidate-xingxi-vn-20260607"
@@ -552,6 +588,7 @@ def _run_tool(
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
     portrait_retry_handoff_reports: list[Path] | None = None,
+    portrait_video_import_reports: list[Path] | None = None,
     full_local_snapshot: bool = False,
     snapshot_artifact_root: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
@@ -589,6 +626,8 @@ def _run_tool(
         args.extend(["--portrait-regeneration-brief-report", str(report)])
     for report in portrait_retry_handoff_reports or []:
         args.extend(["--portrait-retry-handoff-report", str(report)])
+    for report in portrait_video_import_reports or []:
+        args.extend(["--portrait-video-import-report", str(report)])
     if full_local_snapshot:
         args.append("--full-local-snapshot")
     if snapshot_artifact_root is not None:
@@ -806,6 +845,37 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
     assert "- Ready checks: `8`" in markdown
     assert "- Attention checks: `7`" in markdown
     assert "## Attention Checks" in markdown
+
+
+def test_release_readiness_report_full_local_snapshot_includes_existing_video_import_report(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    artifact_root = _write_full_local_snapshot_artifacts(tmp_path / "artifacts")
+    _write_portrait_video_import_report(
+        artifact_root / "portrait-video-source" / "xingxi-vn-neutral-20260608" / "video_import_report.json"
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        full_local_snapshot=True,
+        snapshot_artifact_root=artifact_root,
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["status"] == "needs_attention"
+    assert payload["check_count"] == 16
+    assert payload["ready_check_count"] == 9
+    assert payload["attention_check_count"] == 7
+    assert "portrait_video_import" in [check["id"] for check in payload["checks"]]
+    import_check = next(check for check in payload["checks"] if check["id"] == "portrait_video_import")
+    assert import_check["ok"] is True
+    assert import_check["status"] == "ready"
+    assert import_check["frame_count"] == 3
 
 
 def test_release_readiness_report_surfaces_source_pack_distribution_issue(tmp_path: Path):
@@ -1572,6 +1642,71 @@ def test_release_readiness_report_blocks_portrait_regeneration_brief_missing_pre
     assert regeneration_check["status"] == "needs_attention"
     assert expected_error in regeneration_check["errors"]
     assert "review portrait AI-video regeneration brief before release" in payload["next_actions"]
+
+
+def test_release_readiness_report_surfaces_portrait_video_import(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    import_report = _write_portrait_video_import_report(tmp_path / "video-import-report.json")
+    report_payload = json.loads(import_report.read_text(encoding="utf-8"))
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_video_import_reports=[import_report],
+    )
+
+    payload = json.loads(result.stdout)
+    import_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert import_check["id"] == "portrait_video_import"
+    assert import_check["ok"] is True
+    assert import_check["status"] == "ready"
+    assert import_check["set_id"] == "xingxi-vn-neutral-20260608"
+    assert import_check["source_pack_dir"] == report_payload["source_pack_dir"]
+    assert import_check["copied_video_path"] == report_payload["copied_video_path"]
+    assert import_check["frames_dir"] == report_payload["frames_dir"]
+    assert import_check["frame_count"] == 3
+    assert import_check["source_tool"] == "Pika"
+    assert import_check["next_actions"] == []
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Video Import" in markdown
+    assert f"- Source pack: `{report_payload['source_pack_dir']}`" in markdown
+    assert f"- Copied video: `{report_payload['copied_video_path']}`" in markdown
+    assert f"- Frames dir: `{report_payload['frames_dir']}`" in markdown
+    assert "- Frames: `3`" in markdown
+
+
+def test_release_readiness_report_blocks_portrait_video_import_missing_frames(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    import_report = _write_portrait_video_import_report(
+        tmp_path / "video-import-report.json",
+        frames_exist=False,
+    )
+    report_payload = json.loads(import_report.read_text(encoding="utf-8"))
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_video_import_reports=[import_report],
+    )
+
+    payload = json.loads(result.stdout)
+    import_check = payload["checks"][2]
+    expected_error = f"video import frames_dir not found: {report_payload['frames_dir']}"
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert import_check["id"] == "portrait_video_import"
+    assert import_check["ok"] is False
+    assert import_check["status"] == "needs_attention"
+    assert expected_error in import_check["errors"]
+    assert "repair portrait AI-video import before frame preflight" in payload["next_actions"]
 
 
 def test_release_readiness_report_surfaces_portrait_retry_handoff(tmp_path: Path):
