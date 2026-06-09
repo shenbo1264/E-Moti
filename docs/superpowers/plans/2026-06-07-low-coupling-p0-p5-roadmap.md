@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this release-readiness full-local-preset package: `58f0ef7 feat: summarize release readiness checks`
+- Latest committed checkpoint after the source-create readiness package: `d61c61f feat: include portrait source creation in readiness`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -47,7 +47,7 @@ Latest focused release-readiness/report tests run on 2026-06-09:
 python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `47 passed`.
+Result: `48 passed`.
 
 Latest focused AI-video regeneration brief tests run on 2026-06-09:
 
@@ -63,7 +63,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `728 passed`.
+Result: `729 passed`.
 
 Latest full local release readiness snapshot run on 2026-06-09:
 
