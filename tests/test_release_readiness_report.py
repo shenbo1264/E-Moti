@@ -138,14 +138,22 @@ def _write_portrait_candidate_report(path: Path, *, decision_state: str = "needs
     return path
 
 
-def _write_portrait_source_create_report(path: Path, *, ok: bool = True) -> Path:
+def _write_portrait_source_create_report(
+    path: Path,
+    *,
+    ok: bool = True,
+    omitted_source_pack_paths: set[str] | None = None,
+) -> Path:
     candidate_manifest = path.parent / "portrait_candidate.json"
     source_image = path.parent / "portraits" / "neutral_open.png"
     output_dir = path.parent / "portrait-video-source" / "xingxi-vn-neutral-20260608"
     candidate_manifest.write_text("{}", encoding="utf-8")
     source_image.parent.mkdir(parents=True, exist_ok=True)
     source_image.write_bytes(b"png")
-    output_dir.mkdir(parents=True, exist_ok=True)
+    if ok:
+        _write_portrait_video_source_pack_dir(output_dir, omitted_paths=omitted_source_pack_paths or set())
+    else:
+        output_dir.mkdir(parents=True, exist_ok=True)
     payload = {
         "ok": ok,
         "candidate_manifest_path": str(candidate_manifest),
@@ -168,6 +176,26 @@ def _write_portrait_source_create_report(path: Path, *, ok: bool = True) -> Path
     }
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
     return path
+
+
+def _write_portrait_video_source_pack_dir(output_dir: Path, *, omitted_paths: set[str]) -> None:
+    files = {
+        "source_pack.json": b'{"set_id":"xingxi-vn-neutral-20260608","reference_image":"reference/neutral_open.png"}\n',
+        "gemini_prompt.md": b"# Gemini Portrait Video Prompt\n",
+        "provider_prompts.md": b"# Provider Prompts\n",
+        "reference/neutral_open.png": b"png",
+        "frames/README.md": b"exported frames go here\n",
+        "video/README.md": b"provider video goes here\n",
+    }
+    for relative_path, content in files.items():
+        if relative_path in omitted_paths:
+            continue
+        target = output_dir / relative_path
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_bytes(content)
+    for relative_dir in ("reference", "frames", "video"):
+        if relative_dir not in omitted_paths:
+            (output_dir / relative_dir).mkdir(parents=True, exist_ok=True)
 
 
 def _write_liveportrait_preflight_report(path: Path, *, ok: bool = False) -> Path:
@@ -929,6 +957,9 @@ def test_release_readiness_report_accepts_portrait_source_create(tmp_path: Path)
         "xingxi-vn-neutral-20260608: created, expression=neutral, variant=open, "
         f"output={tmp_path / 'portrait-video-source' / 'xingxi-vn-neutral-20260608'}"
     ]
+    assert create_check["source_pack_content_summaries"] == [
+        "xingxi-vn-neutral-20260608: source_pack.json, gemini_prompt.md, provider_prompts.md, reference/neutral_open.png, frames/, video/"
+    ]
     assert create_check["next_actions"] == []
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "### Portrait Source Create" in markdown
@@ -939,6 +970,39 @@ def test_release_readiness_report_accepts_portrait_source_create(tmp_path: Path)
     assert "- Failed packs: `0`" in markdown
     assert "- Source create packs:" in markdown
     assert "xingxi-vn-neutral-20260608: created, expression=neutral, variant=open" in markdown
+    assert "- Source pack contents:" in markdown
+    assert "provider_prompts.md" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_source_create_content_issue(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    source_create = _write_portrait_source_create_report(
+        tmp_path / "portrait-source-create.json",
+        omitted_source_pack_paths={"provider_prompts.md"},
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_source_create_reports=[source_create],
+    )
+
+    payload = json.loads(result.stdout)
+    create_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert create_check["id"] == "portrait_source_create"
+    assert create_check["ok"] is False
+    assert create_check["status"] == "needs_attention"
+    assert create_check["errors"] == [
+        "xingxi-vn-neutral-20260608: source pack missing required file: provider_prompts.md"
+    ]
+    assert create_check["next_actions"] == [
+        "create or repair portrait AI-video source packs before provider handoff"
+    ]
 
 
 def test_release_readiness_report_surfaces_liveportrait_preflight_issue(tmp_path: Path):

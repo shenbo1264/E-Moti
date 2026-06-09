@@ -22,6 +22,8 @@ from tools.validate_windows_build import DEFAULT_APP_DIR, DEFAULT_INSTALLER, val
 
 DEFAULT_CHARACTER_PACK = REPO_ROOT / "assets" / "companion" / "original_oc"
 DEFAULT_SNAPSHOT_ARTIFACT_ROOT = Path("artifacts")
+REQUIRED_SOURCE_PACK_FILES = ("source_pack.json", "gemini_prompt.md", "provider_prompts.md")
+REQUIRED_SOURCE_PACK_DIRS = ("reference", "frames", "video")
 REQUIRED_VIDEO_HANDOFF_ZIP_ENTRIES = frozenset(
     {
         "AI_VIDEO_HANDOFF_README.md",
@@ -288,6 +290,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if source_create_summaries:
             lines.append("- Source create packs:")
             lines.extend(f"  - `{item}`" for item in source_create_summaries)
+        source_pack_content_summaries = _string_list(check.get("source_pack_content_summaries"))
+        if source_pack_content_summaries:
+            lines.append("- Source pack contents:")
+            lines.extend(f"  - `{item}`" for item in source_pack_content_summaries)
         handoff_bundle_summaries = _string_list(check.get("handoff_bundle_summaries"))
         if handoff_bundle_summaries:
             lines.append("- Handoff bundles:")
@@ -570,12 +576,14 @@ def _portrait_source_create_report_check(report_path: Path) -> dict[str, object]
             "created_count": 0,
             "failed_count": 0,
             "source_create_summaries": [],
+            "source_pack_content_summaries": [],
             "errors": ["portrait source create report must be a JSON object"],
             "warnings": [],
             "next_actions": ["review portrait AI-video source create report before provider handoff"],
         }
     packs = _list_of_mappings(payload.get("packs"))
     errors = _string_list(payload.get("errors"))
+    source_pack_content_summaries: list[str] = []
     candidate_manifest_path = _optional_string(payload.get("candidate_manifest_path"))
     if not candidate_manifest_path:
         errors.append("candidate_manifest_path is missing")
@@ -597,6 +605,11 @@ def _portrait_source_create_report_check(report_path: Path) -> dict[str, object]
             errors.append(f"{set_id}: output_dir is missing")
         elif not _reported_dir_exists(output_dir):
             errors.append(f"{set_id}: source pack output dir not found: {output_dir}")
+        elif status == "created":
+            summary, content_errors = _source_pack_content_summary(set_id=set_id, output_dir=output_dir)
+            if summary:
+                source_pack_content_summaries.append(summary)
+            errors.extend(content_errors)
     requested_count = _nonnegative_int(payload.get("requested_count"))
     created_count = _nonnegative_int(payload.get("created_count"))
     failed_count = _nonnegative_int(payload.get("failed_count"))
@@ -620,6 +633,7 @@ def _portrait_source_create_report_check(report_path: Path) -> dict[str, object]
         "created_count": created_count,
         "failed_count": failed_count,
         "source_create_summaries": _source_create_summaries(packs),
+        "source_pack_content_summaries": source_pack_content_summaries,
         "errors": _dedupe(errors),
         "warnings": [],
         "next_actions": [] if ok else ["create or repair portrait AI-video source packs before provider handoff"],
@@ -1183,6 +1197,32 @@ def _source_create_summaries(packs: list[dict[str, object]]) -> list[str]:
     return summaries
 
 
+def _source_pack_content_summary(*, set_id: str, output_dir: str) -> tuple[str, list[str]]:
+    root = _reported_path(output_dir)
+    errors: list[str] = []
+    present_entries: list[str] = []
+    for relative_path in REQUIRED_SOURCE_PACK_FILES:
+        path = root / relative_path
+        if path.is_file():
+            present_entries.append(relative_path)
+        else:
+            errors.append(f"{set_id}: source pack missing required file: {relative_path}")
+    for relative_dir in REQUIRED_SOURCE_PACK_DIRS:
+        path = root / relative_dir
+        if not path.is_dir():
+            errors.append(f"{set_id}: source pack missing required directory: {relative_dir}")
+            continue
+        if relative_dir == "reference":
+            reference_files = sorted(item for item in path.iterdir() if item.is_file())
+            if not reference_files:
+                errors.append(f"{set_id}: source pack reference directory is empty")
+                continue
+            present_entries.append(f"reference/{reference_files[0].name}")
+        else:
+            present_entries.append(f"{relative_dir}/")
+    return f"{set_id}: {', '.join(present_entries)}", errors
+
+
 def _handoff_bundle_summaries(bundles: list[dict[str, object]]) -> list[str]:
     summaries: list[str] = []
     for bundle in bundles:
@@ -1210,8 +1250,12 @@ def _reported_file_exists(path_string: str) -> bool:
 
 
 def _reported_dir_exists(path_string: str) -> bool:
+    return _reported_path(path_string).is_dir()
+
+
+def _reported_path(path_string: str) -> Path:
     path = Path(path_string)
-    return path.is_dir() if path.is_absolute() else (REPO_ROOT / path).is_dir()
+    return path if path.is_absolute() else REPO_ROOT / path
 
 
 def _zip_entries(path_string: str, errors: list[str], *, label: str = "retry handoff zip") -> list[str]:

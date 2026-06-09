@@ -51,6 +51,8 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-source-create.md
 ```
 
+Release readiness checks that each created source pack still contains `source_pack.json`, `gemini_prompt.md`, `provider_prompts.md`, a `reference/` image, and the `frames/` and `video/` folders before it is treated as ready for provider handoff.
+
 Single-image fallback command:
 
 ```powershell
