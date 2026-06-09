@@ -101,6 +101,9 @@ def test_normalize_portrait_video_source_pack_creates_ready_clone_from_same_aspe
     payload = json.loads((output_pack / "source_pack.json").read_text(encoding="utf-8"))
     assert payload["set_id"] == "xingxi-lowres-20260609-normalized"
     assert payload["frames_dir"] == "frames"
+    assert str(output_pack) in payload["next_command"]
+    assert str(source_pack) not in payload["next_command"]
+    assert "portrait-candidate-xingxi-lowres-20260609-normalized-motion" in payload["next_command"]
     with Image.open(output_pack / "frames" / "frame_0001.png") as image:
         assert image.size == (240, 480)
 

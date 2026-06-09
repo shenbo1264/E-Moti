@@ -301,6 +301,7 @@ def _write_normalized_metadata(
     payload["set_id"] = set_id
     payload["frames_dir"] = "frames"
     payload["reference_image"] = reference_rel
+    payload["next_command"] = _process_next_command(source_pack_dir=output_root, set_id=set_id)
     payload["normalization"] = {
         "source_set_id": source_set_id,
         "source_pack_dir": str(source_root),
@@ -310,6 +311,15 @@ def _write_normalized_metadata(
     }
     output_root.mkdir(parents=True, exist_ok=True)
     (output_root / "source_pack.json").write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
+
+
+def _process_next_command(*, source_pack_dir: Path, set_id: str) -> str:
+    return (
+        "python tools\\art\\process_portrait_video_source_pack.py "
+        f"\"{source_pack_dir}\" "
+        f"--output-dir \"artifacts\\portrait-candidate-{set_id}-motion\" "
+        "--source-tool \"AI video\""
+    )
 
 
 def _write_readme(

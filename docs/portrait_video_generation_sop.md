@@ -154,7 +154,7 @@ python tools\art\normalize_portrait_video_source_frames.py `
   --report artifacts\portrait-video-frame-normalization.json
 ```
 
-This is only a canvas-size repair step. It rejects aspect-ratio mismatches, preserves the original provider frames, and still requires the normalized source pack to pass frame preflight before extraction.
+This is only a canvas-size repair step. It rejects aspect-ratio mismatches, preserves the original provider frames, and rewrites the normalized clone's `next_command` so any later processing points at the normalized source pack and normalized motion output. The normalized source pack must still pass frame preflight before extraction.
 
 To keep that normalization result visible in release readiness without treating it as motion extraction readiness:
 
