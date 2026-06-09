@@ -416,26 +416,45 @@ def _write_video_handoff_zip(path: Path, *, omitted_entries: set[str]) -> Path:
     return path
 
 
-def _write_portrait_regeneration_brief_report(path: Path) -> Path:
+def _write_portrait_regeneration_brief_report(
+    path: Path,
+    *,
+    decision_state: str = "regenerate_ai_video",
+    blockers: list[str] | None = None,
+    reference_exists: bool = True,
+    preview_exists: bool = True,
+) -> Path:
+    source_pack_dir = path.parent / "portrait-video-source" / "xingxi-vn-neutral-20260608-normalized"
+    reference_image_path = source_pack_dir / "reference" / "neutral_open.png"
+    preview_path = path.parent / "portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.png"
+    if reference_exists:
+        reference_image_path.parent.mkdir(parents=True, exist_ok=True)
+        reference_image_path.write_bytes(b"png")
+    if preview_exists:
+        preview_path.parent.mkdir(parents=True, exist_ok=True)
+        preview_path.write_bytes(b"png")
+    issue_blockers = blockers
+    if issue_blockers is None:
+        issue_blockers = [
+            "workflow attention: body_drift_warnings",
+            "frame visual QA status: ready_with_warnings",
+            "max body drift 44.72 exceeds 16.0",
+        ]
     payload = {
         "ok": True,
         "workflow_report_path": "artifacts\\portrait-video-workflow-report.json",
         "frame_qa_report_path": "artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json",
         "set_id": "xingxi-vn-neutral-20260608-normalized",
-        "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized",
-        "reference_image_path": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
-        "decision_state": "regenerate_ai_video",
+        "source_pack_dir": str(source_pack_dir),
+        "reference_image_path": str(reference_image_path),
+        "decision_state": decision_state,
         "frame_status": "ready_with_warnings",
         "frame_count": 60,
         "sampled_frame_count": 12,
         "size_mismatch_count": 0,
         "max_body_drift": 44.72,
-        "preview_path": "artifacts\\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.png",
-        "blockers": [
-            "workflow attention: body_drift_warnings",
-            "frame visual QA status: ready_with_warnings",
-            "max body drift 44.72 exceeds 16.0",
-        ],
+        "preview_path": str(preview_path),
+        "blockers": issue_blockers,
         "retry_prompt": (
             "Previous attempt failed because body drift was too high: max body drift 44.72 exceeded 16.0. "
             "Use a locked static camera with same canvas, same crop, same full-body framing."
@@ -1446,6 +1465,7 @@ def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp
     character_pack = _copy_original_pack(tmp_path / "source")
     app_dir, installer = _write_frozen_build(tmp_path / "build")
     regeneration_brief = _write_portrait_regeneration_brief_report(tmp_path / "portrait-regeneration-brief.json")
+    report_payload = json.loads(regeneration_brief.read_text(encoding="utf-8"))
 
     result = _run_tool(
         character_pack,
@@ -1463,11 +1483,9 @@ def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp
     assert regeneration_check["ok"] is False
     assert regeneration_check["status"] == "regenerate_ai_video"
     assert regeneration_check["set_id"] == "xingxi-vn-neutral-20260608-normalized"
-    assert regeneration_check["source_pack_dir"] == "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized"
-    assert (
-        regeneration_check["reference_image_path"]
-        == "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png"
-    )
+    assert regeneration_check["source_pack_dir"] == report_payload["source_pack_dir"]
+    assert regeneration_check["reference_image_path"] == report_payload["reference_image_path"]
+    assert regeneration_check["preview_path"] == report_payload["preview_path"]
     assert regeneration_check["decision_state"] == "regenerate_ai_video"
     assert regeneration_check["frame_status"] == "ready_with_warnings"
     assert regeneration_check["frame_count"] == 60
@@ -1482,18 +1500,78 @@ def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp
     assert "regenerate portrait AI-video using the brief retry prompts before motion extraction" in payload["next_actions"]
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "### Portrait Video Regeneration Brief" in markdown
-    assert "- Source pack: `artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized`" in markdown
-    assert (
-        "- Reference image: `artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png`"
-        in markdown
-    )
+    assert f"- Source pack: `{report_payload['source_pack_dir']}`" in markdown
+    assert f"- Reference image: `{report_payload['reference_image_path']}`" in markdown
     assert "- Decision state: `regenerate_ai_video`" in markdown
     assert "- Frame status: `ready_with_warnings`" in markdown
+    assert f"- Preview: `{report_payload['preview_path']}`" in markdown
     assert "- Max body drift: `44.72`" in markdown
     assert "- Retry prompt:" in markdown
     assert "Previous attempt failed because body drift was too high" in markdown
     assert "- Negative prompt:" in markdown
     assert "body recomposition" in markdown
+
+
+def test_release_readiness_report_blocks_portrait_regeneration_brief_missing_reference(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    regeneration_brief = _write_portrait_regeneration_brief_report(
+        tmp_path / "portrait-regeneration-brief.json",
+        decision_state="process_frames",
+        blockers=[],
+        reference_exists=False,
+    )
+    report_payload = json.loads(regeneration_brief.read_text(encoding="utf-8"))
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_regeneration_brief_reports=[regeneration_brief],
+    )
+
+    payload = json.loads(result.stdout)
+    regeneration_check = payload["checks"][2]
+    expected_error = f"regeneration reference image not found: {report_payload['reference_image_path']}"
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert regeneration_check["id"] == "portrait_video_regeneration_brief"
+    assert regeneration_check["ok"] is False
+    assert regeneration_check["status"] == "needs_attention"
+    assert expected_error in regeneration_check["errors"]
+    assert "review portrait AI-video regeneration brief before release" in payload["next_actions"]
+
+
+def test_release_readiness_report_blocks_portrait_regeneration_brief_missing_preview(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    regeneration_brief = _write_portrait_regeneration_brief_report(
+        tmp_path / "portrait-regeneration-brief.json",
+        decision_state="process_frames",
+        blockers=[],
+        preview_exists=False,
+    )
+    report_payload = json.loads(regeneration_brief.read_text(encoding="utf-8"))
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_regeneration_brief_reports=[regeneration_brief],
+    )
+
+    payload = json.loads(result.stdout)
+    regeneration_check = payload["checks"][2]
+    expected_error = f"regeneration frame QA preview not found: {report_payload['preview_path']}"
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert regeneration_check["id"] == "portrait_video_regeneration_brief"
+    assert regeneration_check["ok"] is False
+    assert regeneration_check["status"] == "needs_attention"
+    assert expected_error in regeneration_check["errors"]
+    assert "review portrait AI-video regeneration brief before release" in payload["next_actions"]
 
 
 def test_release_readiness_report_surfaces_portrait_retry_handoff(tmp_path: Path):

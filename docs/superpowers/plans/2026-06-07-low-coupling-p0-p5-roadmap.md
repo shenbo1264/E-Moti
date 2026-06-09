@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before the frame visual QA preview package: `e231b1b test: validate source pack contents in readiness`
+- Latest committed checkpoint before the regeneration brief file-reference package: `f5d121a test: validate frame qa preview in readiness`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -47,15 +47,15 @@ Latest focused release-readiness/report tests run on 2026-06-09:
 python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `52 passed`.
+Result: `54 passed`.
 
-Latest focused AI-video regeneration brief tests run on 2026-06-09:
+Latest focused AI-video regeneration brief/readiness tests run on 2026-06-09:
 
 ```powershell
-python -m pytest tests\test_portrait_video_retry_handoff.py tests\test_portrait_video_regeneration_brief.py tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
+python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_regeneration_brief.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `22 passed`.
+Result: `35 passed`.
 
 Full suite run on 2026-06-09:
 
@@ -63,7 +63,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `733 passed`.
+Result: `735 passed`.
 
 Latest full local release readiness snapshot run on 2026-06-09:
 
@@ -328,6 +328,10 @@ Latest non-confirmation packages completed after the original plan:
 - `P3/P5-frame-visual-qa-preview-gate` package:
   - Makes `tools/release_readiness_report.py` verify that a frame visual QA report's preview contact sheet still exists before reporting `portrait_frame_visual_qa` as ready.
   - This keeps JSON drift metrics tied to an actual local preview image for human art/motion review.
+  - This is offline report verification only. It does not create previews, edit frames, create motion candidates, call providers, update runtime manifests, or approve generated assets.
+- `P3/P5-regeneration-brief-file-reference-gate` package:
+  - Makes `tools/release_readiness_report.py` verify that a regeneration brief's source reference image and frame QA preview contact sheet still exist before treating the retry brief as usable.
+  - Missing reference or preview files now make `portrait_video_regeneration_brief` report `needs_attention` with explicit file errors instead of silently passing a process-ready brief.
   - This is offline report verification only. It does not create previews, edit frames, create motion candidates, call providers, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.

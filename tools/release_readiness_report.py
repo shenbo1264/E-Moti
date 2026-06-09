@@ -1021,19 +1021,38 @@ def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, ob
     decision_state = _optional_string(payload.get("decision_state")) or "unknown"
     blockers = _string_list(payload.get("blockers"))
     errors = _string_list(payload.get("errors"))
+    reference_image_path = _optional_string(payload.get("reference_image_path"))
+    preview_path = _optional_string(payload.get("preview_path"))
+    if not reference_image_path:
+        errors.append("regeneration reference_image_path is missing")
+    elif not _reported_file_exists(reference_image_path):
+        errors.append(f"regeneration reference image not found: {reference_image_path}")
+    if not preview_path:
+        errors.append("regeneration preview_path is missing")
+    elif not _reported_file_exists(preview_path):
+        errors.append(f"regeneration frame QA preview not found: {preview_path}")
+    errors = _dedupe(errors)
     ok = payload.get("ok") is True and decision_state == "process_frames" and not blockers and not errors
+    status = "ready" if ok else "needs_attention" if errors else decision_state
+    next_actions: list[str] = []
+    if not ok:
+        next_actions = [
+            "review portrait AI-video regeneration brief before release"
+            if errors
+            else "regenerate portrait AI-video using the brief retry prompts before motion extraction"
+        ]
     return {
         "id": "portrait_video_regeneration_brief",
         "label": "Portrait Video Regeneration Brief",
         "ok": ok,
-        "status": "ready" if ok else decision_state,
+        "status": status,
         "path": str(report_path),
         "set_id": _optional_string(payload.get("set_id")),
         "source_pack_dir": _optional_string(payload.get("source_pack_dir")),
-        "reference_image_path": _optional_string(payload.get("reference_image_path")),
+        "reference_image_path": reference_image_path,
         "decision_state": decision_state,
         "frame_status": _optional_string(payload.get("frame_status")),
-        "preview_path": _optional_string(payload.get("preview_path")),
+        "preview_path": preview_path,
         "frame_count": _nonnegative_int(payload.get("frame_count")),
         "sampled_frame_count": _nonnegative_int(payload.get("sampled_frame_count")),
         "size_mismatch_count": _nonnegative_int(payload.get("size_mismatch_count")),
@@ -1045,9 +1064,7 @@ def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, ob
         "suggested_commands": _string_list(payload.get("suggested_commands")),
         "errors": errors,
         "warnings": [],
-        "next_actions": []
-        if ok
-        else ["regenerate portrait AI-video using the brief retry prompts before motion extraction"],
+        "next_actions": next_actions,
     }
 
 
