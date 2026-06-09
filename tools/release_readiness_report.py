@@ -1563,8 +1563,20 @@ def _attention_reasons(check: dict[str, object]) -> list[str]:
         "errors",
         "validation_errors",
         "warnings",
+        "item_summaries",
+        "source_batch_summaries",
     ):
         reasons.extend(_string_list(check.get(key)))
+    if check.get("id") == "portrait_frame_visual_qa":
+        status = _optional_string(check.get("status"))
+        if status:
+            reasons.append(f"frame visual QA status: {status}")
+        size_mismatch_count = _optional_int(check.get("size_mismatch_count"))
+        if size_mismatch_count:
+            reasons.append(f"size mismatches: {size_mismatch_count}")
+        max_body_drift = _optional_float(check.get("max_body_drift"))
+        if max_body_drift:
+            reasons.append(f"max body drift: {max_body_drift}")
     return _dedupe(reasons)
 
 

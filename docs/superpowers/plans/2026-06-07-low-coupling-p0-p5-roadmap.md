@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before the attention reason summary package: `290f3b5 test: require process reports for processed source batches`
+- Latest committed checkpoint before the attention reason coverage package: `628ac2a feat: summarize readiness attention reasons`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -392,6 +392,10 @@ Latest non-confirmation packages completed after the original plan:
 - `P5-release-readiness-attention-reasons` package:
   - Adds compact `reasons` to top-level `attention_checks` in release readiness JSON and Markdown.
   - Reasons are derived from existing per-check attention reports, attention reasons, blockers, errors, validation errors, and warnings so full-local blockers are readable without opening every detailed check first.
+  - This is report explainability only. It does not change readiness decisions, process frames, call providers, edit manifests, or approve generated assets.
+- `P5-release-readiness-attention-reason-coverage` package:
+  - Extends top-level attention reasons to include source-frame item summaries, source-batch summaries, and frame visual-QA status/drift metrics.
+  - This closes the empty-reason gap for frame preflight, source batch, and frame visual QA attention checks in the full-local snapshot.
   - This is report explainability only. It does not change readiness decisions, process frames, call providers, edit manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.

@@ -909,6 +909,16 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
         "required pretrained weights are missing",
         "driving video or motion template not found",
     ]
+    assert attention_by_id["portrait_frame_preflight"]["reasons"] == [
+        "xingxi-vn-neutral-20260608-normalized: ready_with_warnings, next_action=review_frame_warnings, frames=60"
+    ]
+    assert attention_by_id["portrait_source_batch"]["reasons"] == [
+        "xingxi-vn-neutral-20260608: ready_with_warnings, frames=60"
+    ]
+    assert attention_by_id["portrait_frame_visual_qa"]["reasons"] == [
+        "frame visual QA status: ready_with_warnings",
+        "max body drift: 44.72",
+    ]
     assert [check["id"] for check in payload["checks"]] == [
         "source_character_pack",
         "windows_build",
@@ -936,6 +946,11 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
         "`resolve portrait AI-video workflow blockers before promoting motion assets` Reasons: "
         "`normalizable_size_mismatch; failed_motion_extraction; "
         "motion extraction failed: not enough stable frames after body drift filtering`"
+    ) in markdown
+    assert (
+        "- `Portrait Frame Visual QA` (`ready_with_warnings`): "
+        "`review portrait AI-video frame visual QA before motion extraction` Reasons: "
+        "`frame visual QA status: ready_with_warnings; max body drift: 44.72`"
     ) in markdown
 
 
