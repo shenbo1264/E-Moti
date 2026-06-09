@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before the source-pack content package: `766b783 test: validate source handoff zip contents`
+- Latest committed checkpoint before the frame visual QA preview package: `e231b1b test: validate source pack contents in readiness`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -47,7 +47,7 @@ Latest focused release-readiness/report tests run on 2026-06-09:
 python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `51 passed`.
+Result: `52 passed`.
 
 Latest focused AI-video regeneration brief tests run on 2026-06-09:
 
@@ -63,7 +63,7 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `732 passed`.
+Result: `733 passed`.
 
 Latest full local release readiness snapshot run on 2026-06-09:
 
@@ -325,6 +325,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes `tools/release_readiness_report.py` inspect each created AI-video source pack before reporting `portrait_source_create` as ready.
   - Required source-pack contents are `source_pack.json`, Gemini/provider prompts, a reference image, and the `frames/` and `video/` folders.
   - This is offline report verification only. It does not create source packs, call providers, upload files, edit frames, update runtime manifests, or approve generated assets.
+- `P3/P5-frame-visual-qa-preview-gate` package:
+  - Makes `tools/release_readiness_report.py` verify that a frame visual QA report's preview contact sheet still exists before reporting `portrait_frame_visual_qa` as ready.
+  - This keeps JSON drift metrics tied to an actual local preview image for human art/motion review.
+  - This is offline report verification only. It does not create previews, edit frames, create motion candidates, call providers, update runtime manifests, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

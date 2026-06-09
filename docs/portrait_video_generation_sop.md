@@ -292,6 +292,8 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-frame-qa.md
 ```
 
+Release readiness checks that the reported frame visual QA preview image still exists. This keeps the JSON drift numbers tied to an actual contact sheet for human review.
+
 To keep the retry prompt visible in release readiness:
 
 ```powershell

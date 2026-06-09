@@ -704,22 +704,28 @@ def _portrait_frame_qa_report_check(report_path: Path) -> dict[str, object]:
             "next_actions": ["review portrait AI-video frame visual QA report before release"],
         }
     status = _optional_string(payload.get("status")) or "unknown"
-    ok = payload.get("ok") is True and status == "ready"
+    preview_path = _optional_string(payload.get("preview_path"))
+    errors = _string_list(payload.get("errors"))
+    if not preview_path:
+        errors.append("frame visual QA preview_path is missing")
+    elif not _reported_file_exists(preview_path):
+        errors.append(f"frame visual QA preview not found: {preview_path}")
+    ok = payload.get("ok") is True and status == "ready" and not errors
     return {
         "id": "portrait_frame_visual_qa",
         "label": "Portrait Frame Visual QA",
         "ok": ok,
-        "status": "ready" if ok else status,
+        "status": "ready" if ok else ("needs_attention" if errors else status),
         "path": str(report_path),
         "set_id": _optional_string(payload.get("set_id")),
         "source_pack_dir": _optional_string(payload.get("source_pack_dir")),
-        "preview_path": _optional_string(payload.get("preview_path")),
+        "preview_path": preview_path,
         "reference_size": _int_list(payload.get("reference_size")),
         "frame_count": _nonnegative_int(payload.get("frame_count")),
         "sampled_frame_count": _nonnegative_int(payload.get("sampled_frame_count")),
         "size_mismatch_count": _nonnegative_int(payload.get("size_mismatch_count")),
         "max_body_drift": _nonnegative_float(payload.get("max_body_drift")),
-        "errors": _string_list(payload.get("errors")),
+        "errors": _dedupe(errors),
         "warnings": [],
         "next_actions": [] if ok else ["review portrait AI-video frame visual QA before motion extraction"],
     }
