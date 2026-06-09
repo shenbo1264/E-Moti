@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before this release-readiness summary package: `0d58d08 docs: add full local readiness snapshot`
+- Latest committed checkpoint before this release-readiness full-local-preset package: `58f0ef7 feat: summarize release readiness checks`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -23,7 +23,7 @@ Latest focused AI-video workflow tests run on 2026-06-09:
 python -m pytest tests\test_portrait_video_workflow_status.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_retry_handoff.py tests\test_release_readiness_report.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `42 passed`.
+Result: `43 passed`.
 
 Latest focused LLM/review tests run on 2026-06-09:
 
@@ -47,7 +47,7 @@ Latest focused release-readiness/report tests run on 2026-06-09:
 python -m pytest tests\test_release_readiness_report.py tests\test_portrait_video_frame_preflight.py tests\test_portrait_video_frame_normalization.py tests\test_portrait_video_source_pack_handoff.py tests\test_portrait_video_source_batch.py tests\test_portrait_video_regeneration_brief.py tests\test_portrait_video_retry_handoff.py tests\test_repository_hygiene.py -q
 ```
 
-Result: `46 passed`.
+Result: `47 passed`.
 
 Latest focused AI-video regeneration brief tests run on 2026-06-09:
 
@@ -63,12 +63,12 @@ Full suite run on 2026-06-09:
 python -m pytest
 ```
 
-Result: `727 passed`.
+Result: `728 passed`.
 
 Latest full local release readiness snapshot run on 2026-06-09:
 
 ```powershell
-python tools\release_readiness_report.py --llm-report artifacts\llm_smoke\deepseek-expression-cue-probe-20260609-rerun.json --llm-report artifacts\llm_smoke\deepseek-speech-quality-live-20260609-rerun.json --portrait-candidate-report artifacts\portrait-candidate-xingxi-vn-20260607\portrait-decision-brief.json --portrait-workflow-report artifacts\portrait-video-workflow-report.json --liveportrait-preflight-report artifacts\liveportrait-preflight-xingxi-vn-neutral.json --portrait-video-handoff-report artifacts\portrait-video-handoff-report.json --portrait-frame-preflight-report artifacts\portrait-video-frame-preflight.json --portrait-frame-normalization-report artifacts\portrait-video-frame-normalization.json --portrait-source-batch-report artifacts\portrait-video-source-batch-report.json --portrait-frame-qa-report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json --portrait-regeneration-brief-report artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json --portrait-retry-handoff-report artifacts\portrait-video-retry-handoff-report.json --json artifacts\release-readiness-full-local-snapshot.json --markdown artifacts\release-readiness-full-local-snapshot.md
+python tools\release_readiness_report.py --full-local-snapshot --json artifacts\release-readiness-full-local-snapshot.json --markdown artifacts\release-readiness-full-local-snapshot.md
 ```
 
 Result: exit code `1`, status `needs_attention`, `check_count=14`, `ready_check_count=7`, and `attention_check_count=7`. This is expected while art approval, expression/blink frames, LivePortrait setup, and AI-video frame drift blockers remain unresolved.
@@ -305,6 +305,10 @@ Latest non-confirmation packages completed after the original plan:
   - Adds top-level `check_count`, `ready_check_count`, `attention_check_count`, and `attention_checks` to `tools/release_readiness_report.py`.
   - The Markdown report now shows ready/attention counts and an `Attention Checks` section before the detailed per-check output, so the full local snapshot can be briefed without manually counting every check.
   - This is report shaping only. It does not change pass/fail logic, call providers, upload files, edit frames, update runtime manifests, change packaging, or approve generated assets.
+- `P5-release-readiness-full-local-preset` package:
+  - Adds `--full-local-snapshot` and `--snapshot-artifact-root` to `tools/release_readiness_report.py`.
+  - The preset expands to the current local LLM, portrait candidate, AI-video workflow, LivePortrait, handoff, frame QA, regeneration, and retry handoff artifact paths, preserving the same read-only checks as the explicit long command.
+  - This is CLI ergonomics only. It does not change pass/fail logic, call providers, upload files, edit frames, update runtime manifests, change packaging, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

@@ -20,6 +20,20 @@ from tools.validate_windows_build import DEFAULT_APP_DIR, DEFAULT_INSTALLER, val
 
 
 DEFAULT_CHARACTER_PACK = REPO_ROOT / "assets" / "companion" / "original_oc"
+DEFAULT_SNAPSHOT_ARTIFACT_ROOT = Path("artifacts")
+FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
+    "llm_reports",
+    "portrait_workflow_reports",
+    "portrait_candidate_reports",
+    "liveportrait_preflight_reports",
+    "portrait_frame_preflight_reports",
+    "portrait_frame_normalization_reports",
+    "portrait_source_batch_reports",
+    "portrait_video_handoff_reports",
+    "portrait_frame_qa_reports",
+    "portrait_regeneration_brief_reports",
+    "portrait_retry_handoff_reports",
+)
 
 
 def build_release_readiness_report(
@@ -935,6 +949,42 @@ def _portrait_retry_handoff_report_check(report_path: Path) -> dict[str, object]
     }
 
 
+def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Path]]:
+    root = artifact_root
+    return {
+        "llm_reports": [
+            root / "llm_smoke" / "deepseek-expression-cue-probe-20260609-rerun.json",
+            root / "llm_smoke" / "deepseek-speech-quality-live-20260609-rerun.json",
+        ],
+        "portrait_workflow_reports": [root / "portrait-video-workflow-report.json"],
+        "portrait_candidate_reports": [
+            root / "portrait-candidate-xingxi-vn-20260607" / "portrait-decision-brief.json"
+        ],
+        "liveportrait_preflight_reports": [root / "liveportrait-preflight-xingxi-vn-neutral.json"],
+        "portrait_frame_preflight_reports": [root / "portrait-video-frame-preflight.json"],
+        "portrait_frame_normalization_reports": [root / "portrait-video-frame-normalization.json"],
+        "portrait_source_batch_reports": [root / "portrait-video-source-batch-report.json"],
+        "portrait_video_handoff_reports": [root / "portrait-video-handoff-report.json"],
+        "portrait_frame_qa_reports": [
+            root / "portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json"
+        ],
+        "portrait_regeneration_brief_reports": [
+            root / "portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json"
+        ],
+        "portrait_retry_handoff_reports": [root / "portrait-video-retry-handoff-report.json"],
+    }
+
+
+def _empty_snapshot_report_paths() -> dict[str, list[Path]]:
+    return {key: [] for key in FULL_LOCAL_SNAPSHOT_REPORT_KEYS}
+
+
+def _snapshot_paths(args: argparse.Namespace) -> dict[str, list[Path]]:
+    if not args.full_local_snapshot:
+        return _empty_snapshot_report_paths()
+    return _full_local_snapshot_report_paths(Path(args.snapshot_artifact_root))
+
+
 def _load_json_object(path: Path) -> dict[str, object] | None:
     try:
         payload = json.loads(path.read_text(encoding="utf-8-sig"))
@@ -1153,6 +1203,16 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         default=[],
         help="Optional portrait AI-video retry handoff JSON report to include.",
     )
+    parser.add_argument(
+        "--full-local-snapshot",
+        action="store_true",
+        help="Include the current local release QA artifact set under --snapshot-artifact-root.",
+    )
+    parser.add_argument(
+        "--snapshot-artifact-root",
+        default=str(DEFAULT_SNAPSHOT_ARTIFACT_ROOT),
+        help="Artifact root used by --full-local-snapshot.",
+    )
     parser.add_argument("--json", default="", help="Optional JSON output path.")
     parser.add_argument("--markdown", default="", help="Optional Markdown output path.")
     return parser.parse_args(argv)
@@ -1160,23 +1220,42 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
 
 def main(argv: list[str] | None = None) -> int:
     args = _parse_args(sys.argv[1:] if argv is None else argv)
+    snapshot = _snapshot_paths(args)
     payload = build_release_readiness_report(
         character_pack=Path(args.character_pack),
         app_dir=Path(args.app_dir),
         installer_path=None if args.skip_installer else Path(args.installer),
-        llm_reports=[Path(item) for item in args.llm_report],
-        portrait_workflow_reports=[Path(item) for item in args.portrait_workflow_report],
-        portrait_candidate_reports=[Path(item) for item in args.portrait_candidate_report],
-        liveportrait_preflight_reports=[Path(item) for item in args.liveportrait_preflight_report],
-        portrait_frame_preflight_reports=[Path(item) for item in args.portrait_frame_preflight_report],
+        llm_reports=[Path(item) for item in args.llm_report] + snapshot["llm_reports"],
+        portrait_workflow_reports=[
+            Path(item) for item in args.portrait_workflow_report
+        ] + snapshot["portrait_workflow_reports"],
+        portrait_candidate_reports=[
+            Path(item) for item in args.portrait_candidate_report
+        ] + snapshot["portrait_candidate_reports"],
+        liveportrait_preflight_reports=[
+            Path(item) for item in args.liveportrait_preflight_report
+        ] + snapshot["liveportrait_preflight_reports"],
+        portrait_frame_preflight_reports=[
+            Path(item) for item in args.portrait_frame_preflight_report
+        ] + snapshot["portrait_frame_preflight_reports"],
         portrait_frame_normalization_reports=[
             Path(item) for item in args.portrait_frame_normalization_report
-        ],
-        portrait_source_batch_reports=[Path(item) for item in args.portrait_source_batch_report],
-        portrait_video_handoff_reports=[Path(item) for item in args.portrait_video_handoff_report],
-        portrait_frame_qa_reports=[Path(item) for item in args.portrait_frame_qa_report],
-        portrait_regeneration_brief_reports=[Path(item) for item in args.portrait_regeneration_brief_report],
-        portrait_retry_handoff_reports=[Path(item) for item in args.portrait_retry_handoff_report],
+        ] + snapshot["portrait_frame_normalization_reports"],
+        portrait_source_batch_reports=[
+            Path(item) for item in args.portrait_source_batch_report
+        ] + snapshot["portrait_source_batch_reports"],
+        portrait_video_handoff_reports=[
+            Path(item) for item in args.portrait_video_handoff_report
+        ] + snapshot["portrait_video_handoff_reports"],
+        portrait_frame_qa_reports=[
+            Path(item) for item in args.portrait_frame_qa_report
+        ] + snapshot["portrait_frame_qa_reports"],
+        portrait_regeneration_brief_reports=[
+            Path(item) for item in args.portrait_regeneration_brief_report
+        ] + snapshot["portrait_regeneration_brief_reports"],
+        portrait_retry_handoff_reports=[
+            Path(item) for item in args.portrait_retry_handoff_report
+        ] + snapshot["portrait_retry_handoff_reports"],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")

@@ -373,6 +373,27 @@ def _write_portrait_retry_handoff_report(path: Path, *, ok: bool = True) -> Path
     return path
 
 
+def _write_full_local_snapshot_artifacts(root: Path) -> Path:
+    (root / "llm_smoke").mkdir(parents=True, exist_ok=True)
+    candidate_root = root / "portrait-candidate-xingxi-vn-20260607"
+    candidate_root.mkdir(parents=True, exist_ok=True)
+    _write_llm_report(root / "llm_smoke" / "deepseek-expression-cue-probe-20260609-rerun.json", ok=True)
+    _write_llm_report(root / "llm_smoke" / "deepseek-speech-quality-live-20260609-rerun.json", ok=True)
+    _write_portrait_candidate_report(candidate_root / "portrait-decision-brief.json")
+    _write_portrait_workflow_report(root / "portrait-video-workflow-report.json")
+    _write_liveportrait_preflight_report(root / "liveportrait-preflight-xingxi-vn-neutral.json")
+    _write_portrait_video_handoff_report(root / "portrait-video-handoff-report.json")
+    _write_portrait_frame_preflight_report(root / "portrait-video-frame-preflight.json")
+    _write_portrait_frame_normalization_report(root / "portrait-video-frame-normalization.json")
+    _write_portrait_source_batch_report(root / "portrait-video-source-batch-report.json")
+    _write_portrait_frame_qa_report(root / "portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json")
+    _write_portrait_regeneration_brief_report(
+        root / "portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json"
+    )
+    _write_portrait_retry_handoff_report(root / "portrait-video-retry-handoff-report.json")
+    return root
+
+
 def _run_tool(
     character_pack: Path,
     app_dir: Path,
@@ -390,6 +411,8 @@ def _run_tool(
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
     portrait_retry_handoff_reports: list[Path] | None = None,
+    full_local_snapshot: bool = False,
+    snapshot_artifact_root: Path | None = None,
 ) -> subprocess.CompletedProcess[str]:
     args = [
         sys.executable,
@@ -423,6 +446,10 @@ def _run_tool(
         args.extend(["--portrait-regeneration-brief-report", str(report)])
     for report in portrait_retry_handoff_reports or []:
         args.extend(["--portrait-retry-handoff-report", str(report)])
+    if full_local_snapshot:
+        args.append("--full-local-snapshot")
+    if snapshot_artifact_root is not None:
+        args.extend(["--snapshot-artifact-root", str(snapshot_artifact_root)])
     args.extend(
         [
             "--json",
@@ -582,6 +609,59 @@ def test_release_readiness_report_summarizes_llm_directory_attention_reports(tmp
         "  - `llm-cue-failing.json: needs_attention, issues=2, "
         "reason=cue:sadness:expected_expression:sadness`"
     ) in markdown
+
+
+def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifacts(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    artifact_root = _write_full_local_snapshot_artifacts(tmp_path / "artifacts")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        full_local_snapshot=True,
+        snapshot_artifact_root=artifact_root,
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["status"] == "needs_attention"
+    assert payload["check_count"] == 14
+    assert payload["ready_check_count"] == 7
+    assert payload["attention_check_count"] == 7
+    assert [item["id"] for item in payload["attention_checks"]] == [
+        "portrait_video_workflow",
+        "portrait_candidate_decision",
+        "liveportrait_preflight",
+        "portrait_frame_preflight",
+        "portrait_source_batch",
+        "portrait_frame_visual_qa",
+        "portrait_video_regeneration_brief",
+    ]
+    assert [check["id"] for check in payload["checks"]] == [
+        "source_character_pack",
+        "windows_build",
+        "llm_report",
+        "llm_report",
+        "portrait_video_workflow",
+        "portrait_candidate_decision",
+        "liveportrait_preflight",
+        "portrait_frame_preflight",
+        "portrait_frame_normalization",
+        "portrait_source_batch",
+        "portrait_video_handoff",
+        "portrait_frame_visual_qa",
+        "portrait_video_regeneration_brief",
+        "portrait_video_retry_handoff",
+    ]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "- Checks: `14`" in markdown
+    assert "- Ready checks: `7`" in markdown
+    assert "- Attention checks: `7`" in markdown
+    assert "## Attention Checks" in markdown
 
 
 def test_release_readiness_report_surfaces_source_pack_distribution_issue(tmp_path: Path):
