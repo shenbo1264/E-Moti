@@ -165,6 +165,8 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-frame-normalization.md
 ```
 
+The readiness check also opens the normalized source pack's `source_pack.json` and verifies that `next_command` points at the normalized source pack and normalized motion output. A stale command copied from the original lower-resolution pack is treated as `needs_attention`.
+
 ## Bundle Handoff Zips
 
 To create one zip per source pack for AI video handoff:
@@ -362,7 +364,7 @@ python tools\art\inspect_portrait_video_source_frames.py `
   --report artifacts\portrait-video-frame-preflight.json
 ```
 
-Do not use normalization for cropped, reframed, widened, or recomposed output. Those need regeneration, not resizing. A completed normalization report only proves canvas-size repair finished; the normalized sibling must still pass source-frame preflight before processing.
+Do not use normalization for cropped, reframed, widened, or recomposed output. Those need regeneration, not resizing. A completed normalization report only proves canvas-size repair finished and the normalized metadata is internally consistent; the normalized sibling must still pass source-frame preflight before processing.
 
 ## Extract Blink And Idle Candidates
 

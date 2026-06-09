@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before the normalized next-command package: `2597870 feat: cover readiness attention reason gaps`
+- Latest committed checkpoint before the normalization metadata readiness package: `df467cb fix: rewrite normalized source next command`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -401,6 +401,10 @@ Latest non-confirmation packages completed after the original plan:
   - Rewrites the cloned normalized source pack's `next_command` during frame normalization so it points to the normalized source pack and normalized motion output.
   - This prevents a lower-resolution original source pack command from being copied into the normalized sibling after canvas-size repair.
   - This is local metadata hygiene only. It does not process frames, call providers, edit runtime manifests, approve generated assets, or change release readiness decisions.
+- `P3/P5-normalization-metadata-readiness-gate` package:
+  - Makes release readiness inspect the normalized output pack's `source_pack.json` when a frame normalization report is otherwise successful.
+  - The check blocks stale normalized metadata when `next_command` does not reference the normalized source pack or normalized motion output.
+  - This is offline release evidence only. It does not process frames, call providers, edit runtime manifests, approve generated assets, or change preflight thresholds.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

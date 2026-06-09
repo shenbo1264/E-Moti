@@ -295,13 +295,38 @@ def _write_portrait_frame_preflight_report(path: Path, *, status: str = "ready_w
     return path
 
 
-def _write_portrait_frame_normalization_report(path: Path, *, ok: bool = True) -> Path:
+def _write_portrait_frame_normalization_report(
+    path: Path,
+    *,
+    ok: bool = True,
+    metadata_next_command: str | None = None,
+) -> Path:
+    output_pack_dir = path.parent / "portrait-video-source" / "xingxi-vn-neutral-20260608-normalized"
+    output_pack_dir.mkdir(parents=True, exist_ok=True)
+    next_command = metadata_next_command or (
+        "python tools\\art\\process_portrait_video_source_pack.py "
+        f"\"{output_pack_dir}\" "
+        "--output-dir \"artifacts\\portrait-candidate-xingxi-vn-neutral-20260608-normalized-motion\" "
+        "--source-tool \"AI video\""
+    )
+    (output_pack_dir / "source_pack.json").write_text(
+        json.dumps(
+            {
+                "set_id": "xingxi-vn-neutral-20260608-normalized",
+                "reference_image": "reference/neutral_open.png",
+                "frames_dir": "frames",
+                "next_command": next_command,
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
     payload = {
         "ok": ok,
         "source_set_id": "xingxi-vn-neutral-20260608",
         "set_id": "xingxi-vn-neutral-20260608-normalized",
         "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608",
-        "output_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized",
+        "output_pack_dir": str(output_pack_dir),
         "reference_image": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
         "source_frames_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608\\frames",
         "output_frames_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\frames",
@@ -1487,6 +1512,43 @@ def test_release_readiness_report_accepts_portrait_frame_normalization(tmp_path:
     assert "- Set: `xingxi-vn-neutral-20260608-normalized`" in markdown
     assert "- Normalized frames: `60`" in markdown
     assert "- Resized frames: `60`" in markdown
+
+
+def test_release_readiness_report_blocks_stale_portrait_frame_normalization_next_command(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    normalization = _write_portrait_frame_normalization_report(
+        tmp_path / "portrait-frame-normalization.json",
+        metadata_next_command=(
+            "python tools\\art\\process_portrait_video_source_pack.py "
+            "\"artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608\" "
+            "--output-dir \"artifacts\\portrait-candidate-xingxi-vn-neutral-20260608-motion\" "
+            "--source-tool \"AI video\""
+        ),
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_frame_normalization_reports=[normalization],
+    )
+
+    payload = json.loads(result.stdout)
+    normalization_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert normalization_check["id"] == "portrait_frame_normalization"
+    assert normalization_check["ok"] is False
+    assert normalization_check["status"] == "needs_attention"
+    assert normalization_check["errors"] == [
+        "normalized source next_command does not reference output_pack_dir",
+        "normalized source next_command does not reference normalized motion output",
+    ]
+    assert normalization_check["next_actions"] == [
+        "repair portrait AI-video frame normalization before preflight rerun"
+    ]
 
 
 def test_release_readiness_report_surfaces_portrait_frame_normalization_issue(tmp_path: Path):

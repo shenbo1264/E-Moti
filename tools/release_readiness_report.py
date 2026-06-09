@@ -857,6 +857,13 @@ def _portrait_frame_normalization_report_check(report_path: Path) -> dict[str, o
             "next_actions": ["review portrait AI-video frame normalization report before release"],
         }
     errors = _string_list(payload.get("errors"))
+    if payload.get("ok") is True:
+        errors.extend(
+            _normalization_output_metadata_errors(
+                output_pack_dir=_optional_string(payload.get("output_pack_dir")),
+                set_id=_optional_string(payload.get("set_id")),
+            )
+        )
     input_frame_count = _nonnegative_int(payload.get("input_frame_count"))
     normalized_frame_count = _nonnegative_int(payload.get("normalized_frame_count"))
     invalid_frame_count = _nonnegative_int(payload.get("invalid_frame_count"))
@@ -891,6 +898,33 @@ def _portrait_frame_normalization_report_check(report_path: Path) -> dict[str, o
         "warnings": [],
         "next_actions": [] if ok else ["repair portrait AI-video frame normalization before preflight rerun"],
     }
+
+
+def _normalization_output_metadata_errors(*, output_pack_dir: str, set_id: str) -> list[str]:
+    errors: list[str] = []
+    if not output_pack_dir:
+        return ["normalization output_pack_dir is missing"]
+    metadata_path = _reported_path(output_pack_dir) / "source_pack.json"
+    metadata = _load_json_object(metadata_path)
+    if not isinstance(metadata, dict):
+        return [f"normalized source metadata not found or invalid: {metadata_path}"]
+    metadata_set_id = _optional_string(metadata.get("set_id"))
+    if metadata_set_id != set_id:
+        errors.append(f"normalized source metadata set_id mismatch: {metadata_set_id or 'missing'}")
+    next_command = _optional_string(metadata.get("next_command"))
+    if not next_command:
+        errors.append("normalized source next_command is missing")
+        return errors
+    if not _command_references_path(next_command, output_pack_dir):
+        errors.append("normalized source next_command does not reference output_pack_dir")
+    expected_output = f"portrait-candidate-{set_id}-motion" if set_id else ""
+    if expected_output and expected_output not in next_command:
+        errors.append("normalized source next_command does not reference normalized motion output")
+    return errors
+
+
+def _command_references_path(command: str, path_string: str) -> bool:
+    return path_string in command or str(_reported_path(path_string)) in command
 
 
 def _portrait_source_batch_report_check(report_path: Path) -> dict[str, object]:
