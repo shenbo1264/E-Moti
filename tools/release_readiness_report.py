@@ -109,6 +109,7 @@ def build_release_readiness_report(
         _portrait_retry_handoff_report_check(Path(report_path))
         for report_path in portrait_retry_handoff_reports
     )
+    _apply_normalization_resolutions(checks)
     ok = all(check["ok"] is True for check in checks)
     attention_checks = _attention_checks(checks)
     return {
@@ -264,6 +265,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if attention_reasons:
             lines.append("- Attention reasons:")
             lines.extend(f"  - `{reason}`" for reason in attention_reasons)
+        normalization_resolved = _string_list(check.get("normalization_resolved_summaries"))
+        if normalization_resolved:
+            lines.append("- Normalization resolved:")
+            lines.extend(f"  - `{item}`" for item in normalization_resolved)
         source_root = _optional_string(check.get("source_root"))
         if source_root:
             lines.append(f"- Source root: `{source_root}`")
@@ -531,6 +536,11 @@ def _portrait_workflow_report_check(report_path: Path) -> dict[str, object]:
         for item in items
         for reason in _string_list(item.get("attention_reasons"))
     )
+    normalizable_source_set_ids = _dedupe(
+        _optional_string(item.get("set_id"))
+        for item in items
+        if "normalizable_size_mismatch" in _string_list(item.get("attention_reasons"))
+    )
     suggested_commands = _dedupe(
         command
         for item in items
@@ -546,6 +556,7 @@ def _portrait_workflow_report_check(report_path: Path) -> dict[str, object]:
         "pack_count": _nonnegative_int(payload.get("pack_count")),
         "ready_count": _nonnegative_int(payload.get("ready_count")),
         "attention_reasons": attention_reasons,
+        "normalizable_source_set_ids": normalizable_source_set_ids,
         "suggested_commands": suggested_commands,
         "errors": _dedupe(errors),
         "warnings": [],
@@ -1563,6 +1574,125 @@ def _zip_entries(path_string: str, errors: list[str], *, label: str = "retry han
     except (OSError, zipfile.BadZipFile):
         errors.append(f"{label} is not readable: {path_string}")
         return []
+
+
+def _apply_normalization_resolutions(checks: list[dict[str, object]]) -> None:
+    resolutions = _normalization_resolutions(checks)
+    if not resolutions:
+        return
+    for check in checks:
+        check_id = _optional_string(check.get("id"))
+        if check_id == "portrait_video_workflow":
+            _resolve_workflow_normalization_attention(check, resolutions=resolutions)
+        elif check_id == "portrait_frame_preflight":
+            _resolve_summary_normalization_attention(
+                check,
+                summary_key="item_summaries",
+                count_key="warning_pack_count",
+                resolutions=resolutions,
+                resolved_statuses=("next_action=normalize_frames",),
+            )
+            _mark_check_ready_if_no_unresolved_source_warnings(check)
+        elif check_id == "portrait_source_batch":
+            _resolve_summary_normalization_attention(
+                check,
+                summary_key="source_batch_summaries",
+                count_key="warning_pack_count",
+                resolutions=resolutions,
+                resolved_statuses=("ready_with_warnings",),
+            )
+            _mark_check_ready_if_no_unresolved_source_warnings(check)
+
+
+def _normalization_resolutions(checks: list[dict[str, object]]) -> dict[str, str]:
+    resolutions: dict[str, str] = {}
+    for check in checks:
+        if check.get("id") != "portrait_frame_normalization" or check.get("ok") is not True:
+            continue
+        source_set_id = _optional_string(check.get("source_set_id"))
+        set_id = _optional_string(check.get("set_id"))
+        if source_set_id and set_id:
+            resolutions[source_set_id] = set_id
+    return resolutions
+
+
+def _resolve_workflow_normalization_attention(
+    check: dict[str, object],
+    *,
+    resolutions: dict[str, str],
+) -> None:
+    normalizable_source_ids = _string_list(check.get("normalizable_source_set_ids"))
+    resolved_source_ids = [source_id for source_id in normalizable_source_ids if source_id in resolutions]
+    if not resolved_source_ids:
+        return
+    check["normalization_resolved_summaries"] = _resolution_summaries(resolved_source_ids, resolutions)
+    if set(normalizable_source_ids).issubset(resolutions):
+        check["attention_reasons"] = [
+            reason
+            for reason in _string_list(check.get("attention_reasons"))
+            if reason != "normalizable_size_mismatch"
+        ]
+    check["suggested_commands"] = [
+        command
+        for command in _string_list(check.get("suggested_commands"))
+        if not _resolved_normalization_command(command, resolved_source_ids)
+    ]
+    if not _string_list(check.get("attention_reasons")) and not _string_list(check.get("errors")):
+        check["ok"] = True
+        check["status"] = "ready"
+        check["next_actions"] = []
+
+
+def _resolve_summary_normalization_attention(
+    check: dict[str, object],
+    *,
+    summary_key: str,
+    count_key: str,
+    resolutions: dict[str, str],
+    resolved_statuses: tuple[str, ...],
+) -> None:
+    summaries = _string_list(check.get(summary_key))
+    filtered: list[str] = []
+    resolved_source_ids: list[str] = []
+    for summary in summaries:
+        set_id = summary.split(":", 1)[0].strip()
+        is_resolved = set_id in resolutions and any(marker in summary for marker in resolved_statuses)
+        if is_resolved:
+            resolved_source_ids.append(set_id)
+            continue
+        filtered.append(summary)
+    if not resolved_source_ids:
+        return
+    check[summary_key] = filtered
+    check["normalization_resolved_summaries"] = _resolution_summaries(resolved_source_ids, resolutions)
+    count = _nonnegative_int(check.get(count_key))
+    check[count_key] = max(0, count - len(_dedupe(resolved_source_ids)))
+
+
+def _mark_check_ready_if_no_unresolved_source_warnings(check: dict[str, object]) -> None:
+    if _string_list(check.get("errors")):
+        return
+    if _nonnegative_int(check.get("warning_pack_count")) > 0:
+        return
+    if _nonnegative_int(check.get("waiting_count")) > 0 or _nonnegative_int(check.get("insufficient_count")) > 0:
+        return
+    if _nonnegative_int(check.get("invalid_frame_pack_count")) > 0 or _nonnegative_int(check.get("failed_count")) > 0:
+        return
+    if not _string_list(check.get("normalization_resolved_summaries")):
+        return
+    check["ok"] = True
+    check["status"] = "ready"
+    check["next_actions"] = []
+
+
+def _resolution_summaries(source_set_ids: Iterable[str], resolutions: dict[str, str]) -> list[str]:
+    return [f"{source_id}: normalized as {resolutions[source_id]}" for source_id in _dedupe(source_set_ids)]
+
+
+def _resolved_normalization_command(command: str, resolved_source_ids: Iterable[str]) -> bool:
+    return "normalize_portrait_video_source_frames.py" in command and any(
+        source_id in command for source_id in resolved_source_ids
+    )
 
 
 def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:

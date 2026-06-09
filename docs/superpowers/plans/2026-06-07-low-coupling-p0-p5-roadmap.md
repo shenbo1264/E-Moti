@@ -5,7 +5,7 @@ Date: 2026-06-07
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`
-- Latest committed checkpoint before the normalization metadata readiness package: `df467cb fix: rewrite normalized source next command`
+- Latest committed checkpoint before the normalization resolution readiness package: `566d566 feat: validate normalized source metadata in readiness`
 - Use `git log --oneline --decorate -8` for the absolute current HEAD after any later docs-only sync commits.
 - Original plan baseline: `c0fd88a test: add portrait asset qa guardrails`
 - Dirty workspace expected item: none. `data/companion_save.json` remains ignored and must not be staged if it reappears as local runtime data.
@@ -405,6 +405,10 @@ Latest non-confirmation packages completed after the original plan:
   - Makes release readiness inspect the normalized output pack's `source_pack.json` when a frame normalization report is otherwise successful.
   - The check blocks stale normalized metadata when `next_command` does not reference the normalized source pack or normalized motion output.
   - This is offline release evidence only. It does not process frames, call providers, edit runtime manifests, approve generated assets, or change preflight thresholds.
+- `P3/P5-normalization-resolution-readiness` package:
+  - Uses successful frame normalization reports to mark original lower-resolution source warnings as resolved by their normalized sibling in release readiness.
+  - This removes duplicate top-level blockers for already-normalized source packs while keeping unresolved normalized warnings, such as high body drift, visible.
+  - This is aggregate report hygiene only. It does not change source-frame preflight behavior, edit frames, process candidates, call providers, or approve generated assets.
 - `P3-provider-snapshot-refresh` package:
   - Refreshes `docs/portrait_video_generation_sop.md` with a 2026-06-09 provider snapshot for Gemini-unavailable fallback work.
   - Documents Pika, Runway, Krea, LivePortrait, Wan2.1, and LTX-Video as free/trial/open-source routes with project-specific use judgment.

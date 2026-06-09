@@ -260,35 +260,61 @@ def _write_portrait_frame_qa_report(
     return path
 
 
-def _write_portrait_frame_preflight_report(path: Path, *, status: str = "ready_with_warnings") -> Path:
+def _write_portrait_frame_preflight_report(
+    path: Path,
+    *,
+    status: str = "ready_with_warnings",
+    include_resolved_original: bool = False,
+) -> Path:
     is_ready = status == "ready"
+    items = []
+    if include_resolved_original:
+        items.append(
+            {
+                "set_id": "xingxi-vn-neutral-20260608",
+                "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608",
+                "reference_image": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608\\reference\\neutral_open.png",
+                "frames_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608\\frames",
+                "frame_count": 60,
+                "readable_frame_count": 60,
+                "invalid_frame_count": 0,
+                "size_mismatch_count": 60,
+                "normalizable_size_mismatch_count": 60,
+                "body_drift_warning_count": 0,
+                "status": "ready_with_warnings",
+                "next_action": "normalize_frames",
+                "warnings": ["frame_00001.png size 496x744 differs from reference 1024x1536"],
+                "errors": [],
+            }
+        )
+    items.append(
+        {
+            "set_id": "xingxi-vn-neutral-20260608-normalized",
+            "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized",
+            "reference_image": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
+            "frames_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\frames",
+            "frame_count": 60,
+            "readable_frame_count": 60,
+            "invalid_frame_count": 0,
+            "size_mismatch_count": 0,
+            "normalizable_size_mismatch_count": 0,
+            "body_drift_warning_count": 0 if is_ready else 60,
+            "status": status,
+            "next_action": "process_frames" if is_ready else "review_frame_warnings",
+            "warnings": [] if is_ready else ["frame_00001.png body drift 26.6 exceeds 16.0"],
+            "errors": [],
+        }
+    )
     payload = {
         "ok": True,
         "source_root": "artifacts\\portrait-video-source",
-        "pack_count": 1,
+        "pack_count": len(items),
         "ready_count": 1 if is_ready else 0,
         "waiting_count": 0,
         "insufficient_count": 0,
         "invalid_count": 0,
-        "warning_count": 0 if is_ready else 1,
-        "items": [
-            {
-                "set_id": "xingxi-vn-neutral-20260608-normalized",
-                "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized",
-                "reference_image": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\reference\\neutral_open.png",
-                "frames_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized\\frames",
-                "frame_count": 60,
-                "readable_frame_count": 60,
-                "invalid_frame_count": 0,
-                "size_mismatch_count": 0,
-                "normalizable_size_mismatch_count": 0,
-                "body_drift_warning_count": 0 if is_ready else 60,
-                "status": status,
-                "next_action": "process_frames" if is_ready else "review_frame_warnings",
-                "warnings": [] if is_ready else ["frame_00001.png body drift 26.6 exceeds 16.0"],
-                "errors": [],
-            }
-        ],
+        "warning_count": (0 if is_ready else 1) + (1 if include_resolved_original else 0),
+        "items": items,
         "errors": [],
     }
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
@@ -908,20 +934,18 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
     assert payload["ok"] is False
     assert payload["status"] == "needs_attention"
     assert payload["check_count"] == 15
-    assert payload["ready_check_count"] == 8
-    assert payload["attention_check_count"] == 7
+    assert payload["ready_check_count"] == 9
+    assert payload["attention_check_count"] == 6
     assert [item["id"] for item in payload["attention_checks"]] == [
         "portrait_video_workflow",
         "portrait_candidate_decision",
         "liveportrait_preflight",
         "portrait_frame_preflight",
-        "portrait_source_batch",
         "portrait_frame_visual_qa",
         "portrait_video_regeneration_brief",
     ]
     attention_by_id = {item["id"]: item for item in payload["attention_checks"]}
     assert attention_by_id["portrait_video_workflow"]["reasons"] == [
-        "normalizable_size_mismatch",
         "failed_motion_extraction",
         "motion extraction failed: not enough stable frames after body drift filtering",
     ]
@@ -936,9 +960,6 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
     ]
     assert attention_by_id["portrait_frame_preflight"]["reasons"] == [
         "xingxi-vn-neutral-20260608-normalized: ready_with_warnings, next_action=review_frame_warnings, frames=60"
-    ]
-    assert attention_by_id["portrait_source_batch"]["reasons"] == [
-        "xingxi-vn-neutral-20260608: ready_with_warnings, frames=60"
     ]
     assert attention_by_id["portrait_frame_visual_qa"]["reasons"] == [
         "frame visual QA status: ready_with_warnings",
@@ -963,14 +984,13 @@ def test_release_readiness_report_full_local_snapshot_preset_uses_current_artifa
     ]
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "- Checks: `15`" in markdown
-    assert "- Ready checks: `8`" in markdown
-    assert "- Attention checks: `7`" in markdown
+    assert "- Ready checks: `9`" in markdown
+    assert "- Attention checks: `6`" in markdown
     assert "## Attention Checks" in markdown
     assert (
         "- `Portrait AI Video Workflow` (`needs_attention`): "
         "`resolve portrait AI-video workflow blockers before promoting motion assets` Reasons: "
-        "`normalizable_size_mismatch; failed_motion_extraction; "
-        "motion extraction failed: not enough stable frames after body drift filtering`"
+        "`failed_motion_extraction; motion extraction failed: not enough stable frames after body drift filtering`"
     ) in markdown
     assert (
         "- `Portrait Frame Visual QA` (`ready_with_warnings`): "
@@ -1001,8 +1021,8 @@ def test_release_readiness_report_full_local_snapshot_includes_existing_video_im
     assert payload["ok"] is False
     assert payload["status"] == "needs_attention"
     assert payload["check_count"] == 16
-    assert payload["ready_check_count"] == 9
-    assert payload["attention_check_count"] == 7
+    assert payload["ready_check_count"] == 10
+    assert payload["attention_check_count"] == 6
     assert "portrait_video_import" in [check["id"] for check in payload["checks"]]
     import_check = next(check for check in payload["checks"] if check["id"] == "portrait_video_import")
     assert import_check["ok"] is True
@@ -1032,8 +1052,8 @@ def test_release_readiness_report_full_local_snapshot_includes_existing_source_p
     assert payload["ok"] is False
     assert payload["status"] == "needs_attention"
     assert payload["check_count"] == 16
-    assert payload["ready_check_count"] == 9
-    assert payload["attention_check_count"] == 7
+    assert payload["ready_check_count"] == 10
+    assert payload["attention_check_count"] == 6
     assert "portrait_source_process" in [check["id"] for check in payload["checks"]]
     process_check = next(check for check in payload["checks"] if check["id"] == "portrait_source_process")
     assert process_check["ok"] is True
@@ -1062,7 +1082,7 @@ def test_release_readiness_report_full_local_snapshot_includes_candidate_output_
     assert result.returncode == 1
     assert payload["ok"] is False
     assert payload["check_count"] == 16
-    assert payload["ready_check_count"] == 9
+    assert payload["ready_check_count"] == 10
     process_check = next(check for check in payload["checks"] if check["id"] == "portrait_source_process")
     assert process_check["path"].endswith("source_pack_process_report.json")
     assert process_check["ok"] is True
@@ -1165,6 +1185,37 @@ def test_release_readiness_report_surfaces_portrait_workflow_issue(tmp_path: Pat
         "--output-pack-dir artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608-normalized "
         "--report artifacts\\portrait-video-frame-normalization.json`"
     ) in markdown
+
+
+def test_release_readiness_report_suppresses_workflow_normalizable_reason_after_normalization(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    workflow = _write_portrait_workflow_report(tmp_path / "portrait-workflow.json")
+    normalization = _write_portrait_frame_normalization_report(tmp_path / "portrait-frame-normalization.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_workflow_reports=[workflow],
+        portrait_frame_normalization_reports=[normalization],
+    )
+
+    payload = json.loads(result.stdout)
+    workflow_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert workflow_check["id"] == "portrait_video_workflow"
+    assert workflow_check["attention_reasons"] == ["failed_motion_extraction"]
+    assert workflow_check["normalization_resolved_summaries"] == [
+        "xingxi-vn-neutral-20260608: normalized as xingxi-vn-neutral-20260608-normalized"
+    ]
+    assert all("normalize_portrait_video_source_frames.py" not in command for command in workflow_check["suggested_commands"])
+    attention = next(item for item in payload["attention_checks"] if item["id"] == "portrait_video_workflow")
+    assert attention["reasons"] == [
+        "failed_motion_extraction",
+        "motion extraction failed: not enough stable frames after body drift filtering",
+    ]
 
 
 def test_release_readiness_report_surfaces_portrait_candidate_decision_issue(tmp_path: Path):
@@ -1478,6 +1529,41 @@ def test_release_readiness_report_surfaces_portrait_frame_preflight_warnings(tmp
     assert "ready_with_warnings, next_action=review_frame_warnings" in markdown
 
 
+def test_release_readiness_report_suppresses_resolved_frame_preflight_normalization_item(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    normalization = _write_portrait_frame_normalization_report(tmp_path / "portrait-frame-normalization.json")
+    frame_preflight = _write_portrait_frame_preflight_report(
+        tmp_path / "portrait-frame-preflight.json",
+        include_resolved_original=True,
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_frame_normalization_reports=[normalization],
+        portrait_frame_preflight_reports=[frame_preflight],
+    )
+
+    payload = json.loads(result.stdout)
+    preflight_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert preflight_check["id"] == "portrait_frame_preflight"
+    assert preflight_check["warning_pack_count"] == 1
+    assert preflight_check["item_summaries"] == [
+        "xingxi-vn-neutral-20260608-normalized: ready_with_warnings, next_action=review_frame_warnings, frames=60"
+    ]
+    assert preflight_check["normalization_resolved_summaries"] == [
+        "xingxi-vn-neutral-20260608: normalized as xingxi-vn-neutral-20260608-normalized"
+    ]
+    attention = next(item for item in payload["attention_checks"] if item["id"] == "portrait_frame_preflight")
+    assert attention["reasons"] == [
+        "xingxi-vn-neutral-20260608-normalized: ready_with_warnings, next_action=review_frame_warnings, frames=60"
+    ]
+
+
 def test_release_readiness_report_accepts_portrait_frame_normalization(tmp_path: Path):
     character_pack = _copy_original_pack(tmp_path / "source")
     app_dir, installer = _write_frozen_build(tmp_path / "build")
@@ -1578,6 +1664,35 @@ def test_release_readiness_report_surfaces_portrait_frame_normalization_issue(tm
         "repair portrait AI-video frame normalization before preflight rerun"
     ]
     assert "repair portrait AI-video frame normalization before preflight rerun" in payload["next_actions"]
+
+
+def test_release_readiness_report_treats_source_batch_warning_resolved_by_normalization(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    normalization = _write_portrait_frame_normalization_report(tmp_path / "portrait-frame-normalization.json")
+    source_batch = _write_portrait_source_batch_report(tmp_path / "portrait-source-batch.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_frame_normalization_reports=[normalization],
+        portrait_source_batch_reports=[source_batch],
+    )
+
+    payload = json.loads(result.stdout)
+    batch_check = payload["checks"][3]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert batch_check["id"] == "portrait_source_batch"
+    assert batch_check["ok"] is True
+    assert batch_check["status"] == "ready"
+    assert batch_check["warning_pack_count"] == 0
+    assert batch_check["source_batch_summaries"] == []
+    assert batch_check["normalization_resolved_summaries"] == [
+        "xingxi-vn-neutral-20260608: normalized as xingxi-vn-neutral-20260608-normalized"
+    ]
 
 
 def test_release_readiness_report_accepts_processed_portrait_source_batch(tmp_path: Path):

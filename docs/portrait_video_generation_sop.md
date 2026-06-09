@@ -165,7 +165,7 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-with-portrait-frame-normalization.md
 ```
 
-The readiness check also opens the normalized source pack's `source_pack.json` and verifies that `next_command` points at the normalized source pack and normalized motion output. A stale command copied from the original lower-resolution pack is treated as `needs_attention`.
+The readiness check also opens the normalized source pack's `source_pack.json` and verifies that `next_command` points at the normalized source pack and normalized motion output. A stale command copied from the original lower-resolution pack is treated as `needs_attention`. When the normalization report is ready, the aggregate readiness view treats the original lower-resolution source warnings as resolved by the normalized sibling, but it still blocks on warnings in the normalized source pack itself, such as high body drift.
 
 ## Bundle Handoff Zips
 
@@ -344,7 +344,7 @@ python tools\release_readiness_report.py `
   --markdown artifacts\release-readiness-full-local-snapshot.md
 ```
 
-The current full local snapshot is expected to report `needs_attention` until the art and motion blockers are resolved. A nonzero exit here is useful release evidence, not a tooling failure, when the Markdown lists the remaining blocker categories. Use the top-level `check_count`, `ready_check_count`, `attention_check_count`, and `Attention Checks` section to brief the current state without reading every detailed check first; each attention check includes compact reasons when the source report exposes blockers, errors, warnings, item/source-batch summaries, visual-QA status, or drift metrics. If the artifact directory was copied elsewhere, pass `--snapshot-artifact-root <path>`.
+The current full local snapshot is expected to report `needs_attention` until the art and motion blockers are resolved. A nonzero exit here is useful release evidence, not a tooling failure, when the Markdown lists the remaining blocker categories. Use the top-level `check_count`, `ready_check_count`, `attention_check_count`, and `Attention Checks` section to brief the current state without reading every detailed check first; each attention check includes compact reasons when the source report exposes blockers, errors, warnings, unresolved item/source-batch summaries, visual-QA status, or drift metrics. If a completed normalization report resolves an original lower-resolution source warning, the detailed check records the resolution instead of repeating it as a top-level blocker. If the artifact directory was copied elsewhere, pass `--snapshot-artifact-root <path>`.
 
 If the only blocking issue is lower-resolution same-aspect frames from a free provider, normalize into a sibling source pack and preflight that sibling before processing:
 
