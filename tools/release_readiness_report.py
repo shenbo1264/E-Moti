@@ -1326,6 +1326,9 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
         for report_path in sorted(source_root.glob("*/source_pack_process_report.json")):
             if report_path not in source_process_reports:
                 source_process_reports.append(report_path)
+    for report_path in sorted(root.glob("portrait-candidate-*-motion/source_pack_process_report.json")):
+        if report_path not in source_process_reports:
+            source_process_reports.append(report_path)
     return {
         "llm_reports": [
             root / "llm_smoke" / "deepseek-expression-cue-probe-20260609-rerun.json",

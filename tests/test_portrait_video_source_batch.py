@@ -182,7 +182,11 @@ def test_batch_process_portrait_video_source_packs_processes_ready_only(tmp_path
     assert statuses["xingxi-ready-20260608"] == "processed"
     assert statuses["xingxi-short-20260608"] == "insufficient_frames"
     assert statuses["xingxi-waiting-20260608"] == "waiting_for_frames"
-    assert (output_root / "portrait-candidate-xingxi-ready-20260608-motion" / "portrait_candidate.json").is_file()
+    ready_output = output_root / "portrait-candidate-xingxi-ready-20260608-motion"
+    ready_pack = next(pack for pack in report.packs if pack.set_id == "xingxi-ready-20260608")
+    assert (ready_output / "portrait_candidate.json").is_file()
+    assert ready_pack.process_report_path == str(ready_output / "source_pack_process_report.json")
+    assert Path(ready_pack.process_report_path).is_file()
     assert not (output_root / "portrait-candidate-xingxi-short-20260608-motion").exists()
     assert not (output_root / "portrait-candidate-xingxi-waiting-20260608-motion").exists()
 
@@ -244,4 +248,8 @@ def test_batch_process_portrait_video_source_packs_cli_writes_report(tmp_path: P
     payload = json.loads(result.stdout)
     assert payload["ok"] is True
     assert payload["processed_count"] == 1
+    processed_pack = payload["packs"][0]
+    process_report_path = tmp_path / "candidates" / "portrait-candidate-xingxi-ready-20260608-motion" / "source_pack_process_report.json"
+    assert processed_pack["process_report_path"] == str(process_report_path)
+    assert process_report_path.is_file()
     assert report_path.is_file()

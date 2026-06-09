@@ -32,6 +32,7 @@ class PortraitVideoSourcePackStatus:
     frame_count: int
     status: str
     output_dir: str = ""
+    process_report_path: str = ""
     warnings: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
 
@@ -42,6 +43,7 @@ class PortraitVideoSourcePackStatus:
             "frame_count": self.frame_count,
             "status": self.status,
             "output_dir": self.output_dir,
+            "process_report_path": self.process_report_path,
             "warnings": list(self.warnings),
             "errors": list(self.errors),
         }
@@ -103,7 +105,12 @@ def scan_portrait_video_source_packs(
         status = _source_pack_status(source_pack, preflight=preflight_items.get(source_pack))
         if process_ready and status.status == "ready":
             output = Path(output_root) / f"portrait-candidate-{status.set_id}-motion"
-            processed = process_portrait_video_source_pack(source_pack_dir=source_pack, output_dir=output)
+            process_report_path = output / "source_pack_process_report.json"
+            processed = process_portrait_video_source_pack(
+                source_pack_dir=source_pack,
+                output_dir=output,
+                report_path=process_report_path,
+            )
             if processed.ok:
                 status = PortraitVideoSourcePackStatus(
                     set_id=status.set_id,
@@ -111,6 +118,7 @@ def scan_portrait_video_source_packs(
                     frame_count=status.frame_count,
                     status="processed",
                     output_dir=processed.output_dir,
+                    process_report_path=processed.process_report_path,
                     warnings=status.warnings,
                 )
             else:
@@ -120,6 +128,7 @@ def scan_portrait_video_source_packs(
                     frame_count=status.frame_count,
                     status="failed",
                     output_dir=processed.output_dir,
+                    process_report_path=processed.process_report_path,
                     warnings=status.warnings,
                     errors=processed.errors,
                 )

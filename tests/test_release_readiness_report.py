@@ -962,6 +962,33 @@ def test_release_readiness_report_full_local_snapshot_includes_existing_source_p
     assert process_check["motion_frame_count"] == 4
 
 
+def test_release_readiness_report_full_local_snapshot_includes_candidate_output_process_report(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    artifact_root = _write_full_local_snapshot_artifacts(tmp_path / "artifacts")
+    _write_portrait_source_process_report(
+        artifact_root / "portrait-candidate-xingxi-vn-neutral-20260608-motion" / "source_pack_process_report.json"
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        full_local_snapshot=True,
+        snapshot_artifact_root=artifact_root,
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["check_count"] == 16
+    assert payload["ready_check_count"] == 9
+    process_check = next(check for check in payload["checks"] if check["id"] == "portrait_source_process")
+    assert process_check["path"].endswith("source_pack_process_report.json")
+    assert process_check["ok"] is True
+
+
 def test_release_readiness_report_surfaces_source_pack_distribution_issue(tmp_path: Path):
     character_pack = _copy_original_pack(tmp_path / "source")
     (character_pack / "LICENSE.md").unlink()

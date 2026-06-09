@@ -395,6 +395,8 @@ python tools\art\batch_process_portrait_video_source_packs.py `
 
 `--process-ready` skips `ready_with_warnings`. For size mismatches or obvious pose drift, regenerate the AI video or replace frames first instead of forcing a motion candidate.
 
+For every processed pack, the batch tool writes `source_pack_process_report.json` inside the matching `artifacts\portrait-candidate-<set_id>-motion\` output directory and exposes that path in the batch report. `--full-local-snapshot` picks up those per-pack reports automatically when they exist.
+
 To process one folder after frame preflight reports `ready`, run:
 
 ```powershell
