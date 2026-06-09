@@ -787,8 +787,8 @@ Rationale:
 The next high-value packages are:
 
 ```text
-P3-ai-video-generation: use the ignored handoff zip with Pika/Hailuo/Kling/PixVerse/Runway/Vidu/LivePortrait/Gemini, then place exported PNG frames into the matching frames folder
-P3-frame-intake-QA: after frames exist, run frame preflight, batch processing, visual QA, and decision brief without changing the runtime manifest
+P3-spirit-sequence-base: keep AI-video paused, generate canonical base portraits under ignored artifacts/spirit-sequence-drafts, and validate base-only portrait candidates without changing the runtime manifest
+P3-spirit-sequence-frames: generate one grounded micro-frame strip at a time from the approved canonical base, then run contact-sheet QA before any promotion
 P1-quality-tuning: tune prompt/personality/expression quality after reviewing live smoke output
 P3-visual-QA: approve, reject, or iterate the generated VN portrait candidate
 ```
@@ -835,3 +835,10 @@ Confirmation needed before execution:
 - Regenerating, editing, approving, or rejecting the VN portrait candidate beyond the already approved base cutout.
 - Creating expression variants, blink frames, or final contact sheets from the candidate.
 - Updating default runtime portrait manifests.
+
+Route adjustment after AI-video drift review:
+
+- The AI-video-first route is paused as the near-term default because the current generated frame set showed body drift and failed stable motion extraction.
+- The preferred route is now `docs\spirit_sequence_frame_sop.md`: canonical base portrait first, then state-specific sequence strips, then QA and repair per state.
+- Current local draft folders are ignored under `artifacts\spirit-sequence-drafts\` and are not release assets.
+- Third-party character requests must become original alternatives before open-source distribution.
