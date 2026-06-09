@@ -400,10 +400,11 @@ To process one folder after frame preflight reports `ready`, run:
 ```powershell
 python tools\art\process_portrait_video_source_pack.py `
   artifacts\portrait-video-source\xingxi-vn-neutral-20260608 `
-  --output-dir artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion
+  --output-dir artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion `
+  --report artifacts\portrait-video-source-process-xingxi-vn-neutral-20260608.json
 ```
 
-The processor reads `source_pack.json`, uses `gemini_prompt.md` as provenance text, and calls the lower-level frame extractor.
+The processor reads `source_pack.json`, uses `gemini_prompt.md` as provenance text, calls the lower-level frame extractor, and writes a source-pack process report when `--report` is provided. That report records the preflight status, candidate manifest path, extraction report path, motion frame count, and errors for release evidence. It does not approve the motion candidate or update runtime manifests.
 
 Then run visual QA and the decision brief before any manifest promotion:
 

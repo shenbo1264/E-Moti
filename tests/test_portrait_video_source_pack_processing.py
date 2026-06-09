@@ -99,6 +99,30 @@ def test_process_portrait_video_source_pack_extracts_candidate_from_frames(tmp_p
     assert "VN neutral candidate" in provenance
 
 
+def test_process_portrait_video_source_pack_writes_process_report(tmp_path: Path):
+    from tools.art.process_portrait_video_source_pack import process_portrait_video_source_pack
+
+    source_pack = _write_source_pack(tmp_path)
+    _write_frames(source_pack / "frames")
+    output_dir = tmp_path / "motion-candidate"
+    report_path = tmp_path / "source-pack-process-report.json"
+
+    report = process_portrait_video_source_pack(
+        source_pack_dir=source_pack,
+        output_dir=output_dir,
+        report_path=report_path,
+    )
+
+    assert report.ok is True
+    assert report.process_report_path == str(report_path)
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["ok"] is True
+    assert payload["set_id"] == "xingxi-vn-neutral-20260608"
+    assert payload["process_report_path"] == str(report_path)
+    assert payload["candidate_manifest_path"] == str(output_dir / "portrait_candidate.json")
+    assert payload["extraction_report_path"] == str(output_dir / "candidate-motion-frame-report.json")
+
+
 def test_process_portrait_video_source_pack_reports_missing_frames(tmp_path: Path):
     from tools.art.process_portrait_video_source_pack import process_portrait_video_source_pack
 
@@ -171,3 +195,33 @@ def test_process_portrait_video_source_pack_cli_runs_from_repo_root(tmp_path: Pa
     assert payload["motion_frame_count"] == 4
     assert (output_dir / "portrait_candidate.json").is_file()
     assert "Pika" in (output_dir / "portrait_video_provenance.md").read_text(encoding="utf-8")
+
+
+def test_process_portrait_video_source_pack_cli_writes_report(tmp_path: Path):
+    source_pack = _write_source_pack(tmp_path)
+    _write_frames(source_pack / "frames")
+    output_dir = tmp_path / "motion-candidate"
+    report_path = tmp_path / "source-pack-process-report.json"
+
+    result = subprocess.run(
+        [
+            sys.executable,
+            "tools/art/process_portrait_video_source_pack.py",
+            str(source_pack),
+            "--output-dir",
+            str(output_dir),
+            "--report",
+            str(report_path),
+        ],
+        cwd=Path(__file__).resolve().parents[1],
+        capture_output=True,
+        text=True,
+        timeout=30,
+        check=False,
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert report_path.is_file()
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+    assert payload["ok"] is True
+    assert payload["process_report_path"] == str(report_path)

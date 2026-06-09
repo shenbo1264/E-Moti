@@ -37,6 +37,7 @@ class PortraitVideoSourcePackProcessReport:
     candidate_manifest_path: str
     extraction_report_path: str
     motion_frame_count: int
+    process_report_path: str = ""
     preflight_status: str = ""
     preflight_warnings: tuple[str, ...] = ()
     errors: tuple[str, ...] = ()
@@ -53,6 +54,7 @@ class PortraitVideoSourcePackProcessReport:
             "candidate_manifest_path": self.candidate_manifest_path,
             "extraction_report_path": self.extraction_report_path,
             "motion_frame_count": self.motion_frame_count,
+            "process_report_path": self.process_report_path,
             "preflight_status": self.preflight_status,
             "preflight_warnings": list(self.preflight_warnings),
             "errors": list(self.errors),
@@ -66,12 +68,13 @@ def process_portrait_video_source_pack(
     idle_frame_count: int = DEFAULT_IDLE_FRAME_COUNT,
     max_body_drift: float = DEFAULT_MAX_BODY_DRIFT,
     source_tool: str = "AI video",
+    report_path: Path | str | None = None,
 ) -> PortraitVideoSourcePackProcessReport:
     source_root = Path(source_pack_dir)
     metadata_path = source_root / "source_pack.json"
     metadata, metadata_errors = _read_metadata(metadata_path)
     if metadata_errors:
-        return _empty_report(source_root=source_root, errors=metadata_errors)
+        return _empty_report(source_root=source_root, errors=metadata_errors, report_path=report_path)
 
     set_id = _metadata_string(metadata, "set_id")
     reference_rel = _metadata_string(metadata, "reference_image")
@@ -87,13 +90,13 @@ def process_portrait_video_source_pack(
         }
     )
     if path_errors:
-        return _empty_report(source_root=source_root, errors=path_errors)
+        return _empty_report(source_root=source_root, errors=path_errors, report_path=report_path)
     reference_path = source_root / reference_rel
     frames_dir = source_root / frames_rel
     prompt_path = source_root / prompt_rel
     provider_prompts_path = source_root / provider_prompts_rel if provider_prompts_rel else None
     output = Path(output_dir) if output_dir is not None else DEFAULT_CANDIDATE_ROOT / f"portrait-candidate-{set_id}-motion"
-    report_path = output / "candidate-motion-frame-report.json"
+    extraction_report_path = output / "candidate-motion-frame-report.json"
     preflight_item = _preflight_item_for_source_pack(source_root)
     if preflight_item is None:
         return _blocked_preflight_report(
@@ -106,6 +109,7 @@ def process_portrait_video_source_pack(
             status="missing",
             warnings=(),
             errors=("frame preflight item not found; inspect_manually before extraction",),
+            report_path=report_path,
         )
     if preflight_item.status != "ready":
         return _blocked_preflight_report(
@@ -121,6 +125,7 @@ def process_portrait_video_source_pack(
                 f"frame preflight status {preflight_item.status}; {preflight_item.next_action} before extraction",
                 *preflight_item.errors,
             ),
+            report_path=report_path,
         )
     prompt_text = _read_text(provider_prompts_path) if provider_prompts_path is not None else _read_text(prompt_path)
 
@@ -128,26 +133,30 @@ def process_portrait_video_source_pack(
         reference_image_path=reference_path,
         frames_dir=frames_dir,
         output_dir=output,
-        report_path=report_path,
+        report_path=extraction_report_path,
         idle_frame_count=idle_frame_count,
         max_body_drift=max_body_drift,
         source_tool=source_tool.strip() or "AI video",
         generation_prompt=prompt_text,
     )
-    return PortraitVideoSourcePackProcessReport(
-        ok=extraction.ok,
-        set_id=set_id,
-        source_pack_dir=str(source_root),
-        output_dir=str(output),
-        reference_image=str(reference_path),
-        frames_dir=str(frames_dir),
-        prompt_path=str(prompt_path),
-        candidate_manifest_path=extraction.manifest_path,
-        extraction_report_path=extraction.report_path,
-        motion_frame_count=len(extraction.motion_frames),
-        preflight_status=preflight_item.status,
-        preflight_warnings=preflight_item.warnings,
-        errors=extraction.errors,
+    return _write_process_report(
+        PortraitVideoSourcePackProcessReport(
+            ok=extraction.ok,
+            set_id=set_id,
+            source_pack_dir=str(source_root),
+            output_dir=str(output),
+            reference_image=str(reference_path),
+            frames_dir=str(frames_dir),
+            prompt_path=str(prompt_path),
+            candidate_manifest_path=extraction.manifest_path,
+            extraction_report_path=extraction.report_path,
+            motion_frame_count=len(extraction.motion_frames),
+            process_report_path=str(report_path) if report_path is not None else "",
+            preflight_status=preflight_item.status,
+            preflight_warnings=preflight_item.warnings,
+            errors=extraction.errors,
+        ),
+        report_path=report_path,
     )
 
 
@@ -177,21 +186,26 @@ def _blocked_preflight_report(
     status: str,
     warnings: tuple[str, ...],
     errors: tuple[str, ...],
+    report_path: Path | str | None,
 ) -> PortraitVideoSourcePackProcessReport:
-    return PortraitVideoSourcePackProcessReport(
-        ok=False,
-        set_id=set_id,
-        source_pack_dir=str(source_root),
-        output_dir=str(output),
-        reference_image=str(reference_path),
-        frames_dir=str(frames_dir),
-        prompt_path=str(prompt_path),
-        candidate_manifest_path="",
-        extraction_report_path="",
-        motion_frame_count=0,
-        preflight_status=status,
-        preflight_warnings=warnings,
-        errors=errors,
+    return _write_process_report(
+        PortraitVideoSourcePackProcessReport(
+            ok=False,
+            set_id=set_id,
+            source_pack_dir=str(source_root),
+            output_dir=str(output),
+            reference_image=str(reference_path),
+            frames_dir=str(frames_dir),
+            prompt_path=str(prompt_path),
+            candidate_manifest_path="",
+            extraction_report_path="",
+            motion_frame_count=0,
+            process_report_path=str(report_path) if report_path is not None else "",
+            preflight_status=status,
+            preflight_warnings=warnings,
+            errors=errors,
+        ),
+        report_path=report_path,
     )
 
 
@@ -239,22 +253,40 @@ def _empty_report(
     *,
     source_root: Path,
     errors: tuple[str, ...],
+    report_path: Path | str | None,
 ) -> PortraitVideoSourcePackProcessReport:
-    return PortraitVideoSourcePackProcessReport(
-        ok=False,
-        set_id="",
-        source_pack_dir=str(source_root),
-        output_dir="",
-        reference_image="",
-        frames_dir="",
-        prompt_path="",
-        candidate_manifest_path="",
-        extraction_report_path="",
-        motion_frame_count=0,
-        preflight_status="",
-        preflight_warnings=(),
-        errors=errors,
+    return _write_process_report(
+        PortraitVideoSourcePackProcessReport(
+            ok=False,
+            set_id="",
+            source_pack_dir=str(source_root),
+            output_dir="",
+            reference_image="",
+            frames_dir="",
+            prompt_path="",
+            candidate_manifest_path="",
+            extraction_report_path="",
+            motion_frame_count=0,
+            process_report_path=str(report_path) if report_path is not None else "",
+            preflight_status="",
+            preflight_warnings=(),
+            errors=errors,
+        ),
+        report_path=report_path,
     )
+
+
+def _write_process_report(
+    report: PortraitVideoSourcePackProcessReport,
+    *,
+    report_path: Path | str | None,
+) -> PortraitVideoSourcePackProcessReport:
+    if report_path is None:
+        return report
+    target = Path(report_path)
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_text(json.dumps(report.to_dict(), ensure_ascii=False, indent=2), encoding="utf-8")
+    return report
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
@@ -264,6 +296,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("--idle-frame-count", type=int, default=DEFAULT_IDLE_FRAME_COUNT)
     parser.add_argument("--max-body-drift", type=float, default=DEFAULT_MAX_BODY_DRIFT)
     parser.add_argument("--source-tool", default="AI video")
+    parser.add_argument("--report", default="")
     return parser.parse_args(argv)
 
 
@@ -275,6 +308,7 @@ def main(argv: list[str] | None = None) -> int:
         idle_frame_count=args.idle_frame_count,
         max_body_drift=args.max_body_drift,
         source_tool=args.source_tool,
+        report_path=args.report or None,
     )
     print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
     return 0 if report.ok else 1
