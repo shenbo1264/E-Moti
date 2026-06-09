@@ -306,6 +306,15 @@ python tools\art\batch_process_portrait_video_source_packs.py `
 
 The batch report shows `ready` only when frame preflight passes without warnings, `ready_with_warnings` when exported frames need review before extraction, `insufficient_frames` for folders with 1-2 PNG frames, and `waiting_for_frames` for folders that still need AI video output.
 
+To keep the batch scan or `--process-ready` result visible in release readiness:
+
+```powershell
+python tools\release_readiness_report.py `
+  --portrait-source-batch-report artifacts\portrait-video-source-batch-report.json `
+  --json artifacts\release-readiness-with-portrait-source-batch.json `
+  --markdown artifacts\release-readiness-with-portrait-source-batch.md
+```
+
 To process every ready folder:
 
 ```powershell

@@ -226,6 +226,36 @@ def _write_portrait_frame_preflight_report(path: Path, *, status: str = "ready_w
     return path
 
 
+def _write_portrait_source_batch_report(path: Path, *, status: str = "ready_with_warnings") -> Path:
+    is_processed = status == "processed"
+    payload = {
+        "ok": True,
+        "source_root": "artifacts\\portrait-video-source",
+        "process_ready": True,
+        "pack_count": 1,
+        "ready_count": 0,
+        "warning_count": 0 if is_processed else 1,
+        "waiting_count": 0,
+        "insufficient_count": 0,
+        "processed_count": 1 if is_processed else 0,
+        "failed_count": 0,
+        "packs": [
+            {
+                "set_id": "xingxi-vn-neutral-20260608",
+                "source_pack_dir": "artifacts\\portrait-video-source\\xingxi-vn-neutral-20260608",
+                "frame_count": 60,
+                "status": status,
+                "output_dir": "artifacts\\portrait-candidate-xingxi-vn-neutral-20260608-motion" if is_processed else "",
+                "warnings": [] if is_processed else ["frame_00001.png size 496x744 differs from reference 1024x1536"],
+                "errors": [],
+            }
+        ],
+        "errors": [],
+    }
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_portrait_regeneration_brief_report(path: Path) -> Path:
     payload = {
         "ok": True,
@@ -291,6 +321,7 @@ def _run_tool(
     portrait_candidate_reports: list[Path] | None = None,
     liveportrait_preflight_reports: list[Path] | None = None,
     portrait_frame_preflight_reports: list[Path] | None = None,
+    portrait_source_batch_reports: list[Path] | None = None,
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
     portrait_retry_handoff_reports: list[Path] | None = None,
@@ -315,6 +346,8 @@ def _run_tool(
         args.extend(["--liveportrait-preflight-report", str(report)])
     for report in portrait_frame_preflight_reports or []:
         args.extend(["--portrait-frame-preflight-report", str(report)])
+    for report in portrait_source_batch_reports or []:
+        args.extend(["--portrait-source-batch-report", str(report)])
     for report in portrait_frame_qa_reports or []:
         args.extend(["--portrait-frame-qa-report", str(report)])
     for report in portrait_regeneration_brief_reports or []:
@@ -761,6 +794,76 @@ def test_release_readiness_report_surfaces_portrait_frame_preflight_warnings(tmp
     markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
     assert "- Warning packs: `1`" in markdown
     assert "ready_with_warnings, next_action=review_frame_warnings" in markdown
+
+
+def test_release_readiness_report_accepts_processed_portrait_source_batch(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    source_batch = _write_portrait_source_batch_report(tmp_path / "portrait-source-batch.json", status="processed")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_source_batch_reports=[source_batch],
+    )
+
+    payload = json.loads(result.stdout)
+    batch_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert batch_check["id"] == "portrait_source_batch"
+    assert batch_check["ok"] is True
+    assert batch_check["status"] == "ready"
+    assert batch_check["process_ready"] is True
+    assert batch_check["pack_count"] == 1
+    assert batch_check["processed_count"] == 1
+    assert batch_check["warning_pack_count"] == 0
+    assert batch_check["source_batch_summaries"] == [
+        "xingxi-vn-neutral-20260608: processed, frames=60, output=artifacts\\portrait-candidate-xingxi-vn-neutral-20260608-motion"
+    ]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Portrait Source Batch" in markdown
+    assert "- Process ready requested: `yes`" in markdown
+    assert "- Processed packs: `1`" in markdown
+    assert "- Source batch packs:" in markdown
+    assert "  - `xingxi-vn-neutral-20260608: processed, frames=60" in markdown
+
+
+def test_release_readiness_report_surfaces_portrait_source_batch_warnings(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    source_batch = _write_portrait_source_batch_report(tmp_path / "portrait-source-batch.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        portrait_source_batch_reports=[source_batch],
+    )
+
+    payload = json.loads(result.stdout)
+    batch_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert batch_check["id"] == "portrait_source_batch"
+    assert batch_check["ok"] is False
+    assert batch_check["status"] == "needs_attention"
+    assert batch_check["process_ready"] is True
+    assert batch_check["processed_count"] == 0
+    assert batch_check["warning_pack_count"] == 1
+    assert batch_check["source_batch_summaries"] == [
+        "xingxi-vn-neutral-20260608: ready_with_warnings, frames=60"
+    ]
+    assert batch_check["next_actions"] == [
+        "resolve portrait AI-video source batch warnings before motion extraction"
+    ]
+    assert "resolve portrait AI-video source batch warnings before motion extraction" in payload["next_actions"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "- Warning packs: `1`" in markdown
+    assert "ready_with_warnings, frames=60" in markdown
 
 
 def test_release_readiness_report_surfaces_portrait_regeneration_brief_issue(tmp_path: Path):

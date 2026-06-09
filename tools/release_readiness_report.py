@@ -32,6 +32,7 @@ def build_release_readiness_report(
     portrait_candidate_reports: Iterable[Path | str] = (),
     liveportrait_preflight_reports: Iterable[Path | str] = (),
     portrait_frame_preflight_reports: Iterable[Path | str] = (),
+    portrait_source_batch_reports: Iterable[Path | str] = (),
     portrait_frame_qa_reports: Iterable[Path | str] = (),
     portrait_regeneration_brief_reports: Iterable[Path | str] = (),
     portrait_retry_handoff_reports: Iterable[Path | str] = (),
@@ -44,6 +45,7 @@ def build_release_readiness_report(
     checks.extend(_portrait_candidate_report_check(Path(report_path)) for report_path in portrait_candidate_reports)
     checks.extend(_liveportrait_preflight_report_check(Path(report_path)) for report_path in liveportrait_preflight_reports)
     checks.extend(_portrait_frame_preflight_report_check(Path(report_path)) for report_path in portrait_frame_preflight_reports)
+    checks.extend(_portrait_source_batch_report_check(Path(report_path)) for report_path in portrait_source_batch_reports)
     checks.extend(_portrait_frame_qa_report_check(Path(report_path)) for report_path in portrait_frame_qa_reports)
     checks.extend(
         _portrait_regeneration_brief_report_check(Path(report_path))
@@ -200,6 +202,19 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if item_summaries:
             lines.append("- Frame preflight items:")
             lines.extend(f"  - `{item}`" for item in item_summaries)
+        if isinstance(check.get("process_ready"), bool):
+            lines.append(f"- Process ready requested: `{'yes' if check.get('process_ready') else 'no'}`")
+        for key, label in (
+            ("processed_count", "Processed packs"),
+            ("failed_count", "Failed packs"),
+        ):
+            value = _optional_int(check.get(key))
+            if value is not None:
+                lines.append(f"- {label}: `{value}`")
+        source_batch_summaries = _string_list(check.get("source_batch_summaries"))
+        if source_batch_summaries:
+            lines.append("- Source batch packs:")
+            lines.extend(f"  - `{item}`" for item in source_batch_summaries)
         set_id = _optional_string(check.get("set_id"))
         if set_id:
             lines.append(f"- Set: `{set_id}`")
@@ -588,6 +603,72 @@ def _portrait_frame_preflight_report_check(report_path: Path) -> dict[str, objec
     }
 
 
+def _portrait_source_batch_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "portrait_source_batch",
+            "label": "Portrait Source Batch",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "source_root": "",
+            "process_ready": False,
+            "pack_count": 0,
+            "ready_count": 0,
+            "warning_pack_count": 0,
+            "waiting_count": 0,
+            "insufficient_count": 0,
+            "processed_count": 0,
+            "failed_count": 0,
+            "source_batch_summaries": [],
+            "errors": ["portrait source batch report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review portrait AI-video source batch report before release"],
+        }
+    packs = _list_of_mappings(payload.get("packs"))
+    errors = _string_list(payload.get("errors"))
+    for pack in packs:
+        errors.extend(_string_list(pack.get("errors")))
+    pack_count = _nonnegative_int(payload.get("pack_count"))
+    processed_count = _nonnegative_int(payload.get("processed_count"))
+    failed_count = _nonnegative_int(payload.get("failed_count"))
+    warning_count = _nonnegative_int(payload.get("warning_count"))
+    waiting_count = _nonnegative_int(payload.get("waiting_count"))
+    insufficient_count = _nonnegative_int(payload.get("insufficient_count"))
+    ready_count = _nonnegative_int(payload.get("ready_count"))
+    ok = (
+        payload.get("ok") is True
+        and pack_count > 0
+        and failed_count == 0
+        and warning_count == 0
+        and waiting_count == 0
+        and insufficient_count == 0
+        and not errors
+        and (processed_count > 0 or ready_count == pack_count)
+    )
+    return {
+        "id": "portrait_source_batch",
+        "label": "Portrait Source Batch",
+        "ok": ok,
+        "status": "ready" if ok else "needs_attention",
+        "path": str(report_path),
+        "source_root": _optional_string(payload.get("source_root")),
+        "process_ready": payload.get("process_ready") is True,
+        "pack_count": pack_count,
+        "ready_count": ready_count,
+        "warning_pack_count": warning_count,
+        "waiting_count": waiting_count,
+        "insufficient_count": insufficient_count,
+        "processed_count": processed_count,
+        "failed_count": failed_count,
+        "source_batch_summaries": _source_batch_summaries(packs),
+        "errors": _dedupe(errors),
+        "warnings": [],
+        "next_actions": [] if ok else ["resolve portrait AI-video source batch warnings before motion extraction"],
+    }
+
+
 def _portrait_regeneration_brief_report_check(report_path: Path) -> dict[str, object]:
     payload = _load_json_object(report_path)
     if not isinstance(payload, dict):
@@ -724,6 +805,20 @@ def _frame_preflight_item_summaries(items: list[dict[str, object]]) -> list[str]
     return summaries
 
 
+def _source_batch_summaries(packs: list[dict[str, object]]) -> list[str]:
+    summaries: list[str] = []
+    for pack in packs:
+        set_id = _optional_string(pack.get("set_id")) or "unknown"
+        status = _optional_string(pack.get("status")) or "unknown"
+        frame_count = _nonnegative_int(pack.get("frame_count"))
+        output_dir = _optional_string(pack.get("output_dir"))
+        summary = f"{set_id}: {status}, frames={frame_count}"
+        if output_dir:
+            summary += f", output={output_dir}"
+        summaries.append(summary)
+    return summaries
+
+
 def _next_actions(checks: Iterable[dict[str, object]]) -> list[str]:
     actions: list[str] = []
     for check in checks:
@@ -826,6 +921,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional portrait AI-video frame preflight JSON report to include.",
     )
     parser.add_argument(
+        "--portrait-source-batch-report",
+        action="append",
+        default=[],
+        help="Optional portrait AI-video source batch JSON report to include.",
+    )
+    parser.add_argument(
         "--portrait-frame-qa-report",
         action="append",
         default=[],
@@ -859,6 +960,7 @@ def main(argv: list[str] | None = None) -> int:
         portrait_candidate_reports=[Path(item) for item in args.portrait_candidate_report],
         liveportrait_preflight_reports=[Path(item) for item in args.liveportrait_preflight_report],
         portrait_frame_preflight_reports=[Path(item) for item in args.portrait_frame_preflight_report],
+        portrait_source_batch_reports=[Path(item) for item in args.portrait_source_batch_report],
         portrait_frame_qa_reports=[Path(item) for item in args.portrait_frame_qa_report],
         portrait_regeneration_brief_reports=[Path(item) for item in args.portrait_regeneration_brief_report],
         portrait_retry_handoff_reports=[Path(item) for item in args.portrait_retry_handoff_report],
