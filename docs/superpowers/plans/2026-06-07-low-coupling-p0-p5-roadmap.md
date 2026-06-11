@@ -2,6 +2,8 @@
 
 Date: 2026-06-07
 
+> Status: historical detailed roadmap and evidence log. For current execution, use `docs/current_development_route_2026-06-11.md` first. The active near-term art route is `docs/pixel_pet_sequence_sop.md`, not the older VN portrait / AI-video path.
+
 ## Current Verified Baseline
 
 - Branch: `codex/demo-worktree-cleanup`

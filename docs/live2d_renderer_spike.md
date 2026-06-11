@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: renderer research path only. The current near-term production route is `docs/pixel_pet_sequence_sop.md`; Live2D should consume the same typed presentation actions later, not replace the pixel-pet sequence plan now.
+
 This note evaluates whether E-Moti should move from sprite sheets to a Live2D-style renderer while keeping the current rule: LLM output may control presentation, but it must not own companion state, inventory, relationship, memory, goals, or saves.
 
 ## Current Baseline

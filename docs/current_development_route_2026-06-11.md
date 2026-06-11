@@ -4,13 +4,11 @@
 
 ## 1. 实测基线
 
-- 工作目录：`D:\学工文档\光核\电子宠物\E-Moti_demo`
+- 工作目录：仓库根目录
 - 当前分支：`codex/demo-worktree-cleanup`
 - 当前 HEAD：`ac1822f docs: correct art route to pixel pet sequences`
 - 当前工作区：`git status --short --untracked-files=all` 输出为空，工作区 clean。
-- 远端：
-  - `origin` -> `https://github.com/shenbo1264/E-Moti.git`
-  - `private-origin` -> `https://github.com/shenbo1264/E-Moti_demo.git`
+- 远端：当前本地 checkout 配置了公开仓库远端和私有备份远端；文档不记录私有远端 URL。
 - 测试结果：`python -m pytest` 通过，`754 passed in 117.34s`。
 - JSON/角色包校验：
   - `python -m json.tool assets\companion\original_oc\shop_items.json` 通过。
@@ -307,10 +305,9 @@ git status --short --untracked-files=all
 git log --oneline --decorate -12
 git remote -v
 git branch --show-current
-rg --files -g '!AI不用看.md'
+rg --files
 python -m pytest
 python -m json.tool assets\companion\original_oc\shop_items.json
 python tools\validate_character_pack.py assets\companion\original_oc
 python tools\release_readiness_report.py --full-local-snapshot --json artifacts\roadmap-scan-20260611\release-readiness.json --markdown artifacts\roadmap-scan-20260611\release-readiness.md
 ```
-

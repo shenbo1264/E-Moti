@@ -1,5 +1,7 @@
 # Portrait AI Video Generation SOP
 
+Status: research / historical workflow. The near-term production route is now `docs/pixel_pet_sequence_sop.md`; do not use this AI-video workflow as the default path for new character sequence assets.
+
 This workflow prepares one local AI video task folder for each portrait set. It keeps generated videos, exported frames, and temporary candidates under ignored `artifacts/` paths until human QA approves them.
 
 ## Folder Contract

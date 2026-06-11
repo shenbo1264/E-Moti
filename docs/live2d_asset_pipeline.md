@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: research path only. The near-term production route is `docs/pixel_pet_sequence_sop.md`; Live2D remains a later premium renderer option and must not block pixel-pet sequence work.
+
 This document records the practical Live2D route for E-Moti. It separates three different things that must not be confused:
 
 - Concept art: a bitmap reference for the character.

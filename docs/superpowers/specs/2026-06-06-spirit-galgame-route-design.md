@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: historical route design. This document records the earlier Spirit/GalGame direction; the current near-term route is `docs/pixel_pet_sequence_sop.md` plus `docs/current_development_route_2026-06-11.md`.
+
 ## Goal
 
 Move E-Moti from a small sprite-first demo toward a large portrait, Spirit/GalGame-like desktop companion route while preserving the existing desktop pet baseline.
@@ -158,4 +160,3 @@ git diff --check
 ```
 
 If packaging behavior changes, also run the Windows app and installer build scripts.
-

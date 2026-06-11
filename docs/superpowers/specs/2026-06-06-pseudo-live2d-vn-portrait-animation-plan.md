@@ -2,6 +2,8 @@
 
 Date: 2026-06-06
 
+Status: historical / research plan. The AI-video-first VN portrait path is paused for near-term production because current readiness evidence shows body drift and incomplete promotion gates. Use `docs/pixel_pet_sequence_sop.md` for active sequence-frame work.
+
 ## Context
 
 The first portrait renderer package proved that the code path can select a portrait backend, validate a portrait manifest, and keep LLM visual actions separated from the pet state machine.
@@ -165,4 +167,3 @@ Visual QA:
 - breathing is subtle and does not resize the window;
 - blinking is irregular and not mechanical;
 - expression switching still follows typed LLM actions.
-

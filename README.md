@@ -1,8 +1,8 @@
 # E-Moti
 
-E-Moti is a Windows-first desktop companion pet demo built with Python and PySide6.
+E-Moti is a Windows-first desktop AI companion pet demo built with Python and PySide6.
 
-The current companion is the original character 星汐. She is moving toward a Spirit/GalGame-like desktop companion presentation with large portrait expressions, dialogue staging, local pet state, inventory items, relationship progress, and short-lived contextual expression. Learning, resting, comforting, and playing are action states, not the product identity.
+The bundled companion is the original character Xingxi. The current near-term route is a hatch-pet-style pixel-pet sequence workflow: lock one canonical character base, generate one animation row at a time, review contact sheets, repair only failed rows, and only then promote a validated character pack. Learning, resting, comforting, and playing are action states, not the product identity.
 
 This project is not a productivity coach, course supervisor, mascot skin, or chatbot-only shell.
 
@@ -13,8 +13,9 @@ This project is not a productivity coach, course supervisor, mascot skin, or cha
 - System tray support for hiding, restoring, entering pet mode, and exiting.
 - Character library support for switching bundled or user-imported complete character packs.
 - Local state machine for focus, charge, stability, mood, trust, coins, level, inventory, memories, and relationship unlocks.
-- Spirit/GalGame portrait renderer using bundled original Xingxi expression assets.
-- Sprite atlas renderer kept as the fallback, tray-friendly baseline, and regression-safe renderer.
+- Sprite atlas renderer kept as the tray-friendly baseline and regression-safe renderer.
+- Pixel-pet sequence workflow for future character packs, with draft assets kept outside runtime manifests until QA.
+- Portrait/Spirit renderer using bundled original Xingxi smoke assets, kept as a later presentation path rather than the active art-production route.
 - Live2D Web renderer path for character packs that provide a safe `.model3.json`; sprite remains the fallback.
 - Optional LLM expression adapter that can turn validated local events into character speech, expression cues, motion cues, and read-only interaction intents.
 - Optional screen observation, web search, TTS, and ASR integrations behind explicit settings.
@@ -119,6 +120,15 @@ python tools\import_character_pack.py path\to\complete_pack --target-root "%LOCA
 
 Generated drafts are not import-ready until final art, icons, spritesheet, provenance, and manual QA are complete. Use `--force` only when intentionally replacing an existing local pack with the same `character_id`.
 `review_character_pack_status.py` is a read-only release/import review helper for generated drafts and complete runtime packs. It reports validation status, import readiness, manual QA needs, provenance/license files, local fanwork distribution boundaries, and next actions without copying files or changing runtime manifests.
+
+Current roadmap:
+
+```powershell
+type docs\current_development_route_2026-06-11.md
+type docs\pixel_pet_sequence_sop.md
+```
+
+The older VN portrait, AI-video, LivePortrait, and Live2D notes are retained as research or historical planning material. They are not the near-term art-production route.
 
 Portrait candidate validation before manifest promotion:
 

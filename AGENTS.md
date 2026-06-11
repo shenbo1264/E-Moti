@@ -4,17 +4,18 @@ This repository is the Windows-first desktop AI companion demo for the original 
 
 ## Current Product Route
 
-The main experience route is now a spirit / GalGame-like companion presentation, not a small chibi pet as the primary visual style.
+The near-term experience route is now a hatch-pet-style pixel-pet sequence workflow. The older spirit / GalGame-like portrait route remains a renderer and research path, but it is not the active art-production route.
 
 Priority direction:
 
-1. Keep the existing small sprite desktop pet as a fallback, tray-friendly mode, and regression-safe baseline.
-2. Build a new portrait/spirit presentation path with large half-body or full-body character art, expression variants, bottom-aligned scaling, crossfade transitions, and a dialogue stage.
-3. Make LLM expression central to the perceived character performance: LLM output may choose speech, expression cues, motion cues, and read-only interaction intents through typed events.
-4. Do not let LLM, screen observation, search, ASR, or TTS own growth state, inventory, memory, relationship, goals, or saves.
-5. Live2D remains a later premium rendering path. Do not block the spirit / GalGame route on formal Live2D rigging.
+1. Keep the existing sprite desktop pet as the tray-friendly baseline and regression-safe renderer.
+2. Build small pixel-adjacent character sequence packs first: one canonical base, one grounded animation row at a time, contact-sheet QA, then row repair.
+3. Treat Xingxi as the original distributable candidate after QA; treat Ikaros and Nairong as local UGC workflow representatives only unless rights are cleared.
+4. Make LLM expression central to the perceived character performance: LLM output may choose speech, expression cues, motion cues, and read-only interaction intents through typed events.
+5. Do not let LLM, screen observation, search, ASR, or TTS own growth state, inventory, memory, relationship, goals, or saves.
+6. Keep portrait/spirit, AI-video, LivePortrait, and Live2D as research or later renderer paths. Do not let them block the pixel-pet sequence route.
 
-Reference direction from Shinsekai is allowed only at the product and architecture level: large portrait staging, multiple portrait slots, crossfade between portrait images, background/dialogue layering, and character configuration fields such as sprites, scale, emotion tags, and personality setting. Do not copy Shinsekai source code, assets, prompts, character settings, or UI text.
+Reference direction from Shinsekai is allowed only at the product and architecture level: character configuration, renderer boundaries, expression tags, and dialogue staging ideas. The active art route should follow compact pixel-pet production, not copied Shinsekai code, assets, prompts, character settings, or UI text.
 
 ## Near-Term Roadmap
 
@@ -25,47 +26,54 @@ Reference direction from Shinsekai is allowed only at the product and architectu
 - Keep private ignored local note files untouched.
 - Before changing runtime behavior, run relevant focused tests first and then full `python -m pytest`.
 
-### P1: Portrait/Spirit Character Pack Contract
+### P1: Pixel-Pet Character Pack Contract
 
-Add a renderer backend such as `portrait` or `spirit` without removing `sprite` or `live2d_web`.
+Define a candidate pixel-pet character pack contract without removing `sprite`, `portrait`, or `live2d_web`.
 
 Expected pack shape:
 
 ```text
-assets/companion/<character_id>/
+character_packs_drafts/<character_id>/
   character.json
-  portrait_manifest.json
-  portraits/
-    neutral.png
-    smile.png
-    thinking.png
-    surprised.png
-    sad.png
-    sleepy.png
+  dialogue_style.json
+  motion_manifest.json
+  spritesheet.png
+  preview/contact-sheet.png
+  provenance.md
+  qa_report.json
 ```
 
-The manifest should define safe relative image paths, expression ids, optional default scale, anchor/alignment, and fallback expression. Validation must reject missing files, unsafe paths, unsupported image modes, and oversized assets that would hurt UI performance.
+Validation should reuse existing atlas and character-pack gates where possible. Candidate packs must reject unsafe paths, invalid JSON, missing provenance, non-RGBA spritesheets, wrong frame geometry, and row/frame manifest mismatches.
 
-### P2: Spirit Stage Surface
+### P2: Xingxi Canonical Base
 
-Create a PySide6 presentation surface for large portrait staging:
+Lock one original Xingxi pixel-pet base before generating rows:
 
-- transparent or quiet background suitable for a desktop companion;
-- bottom-aligned portrait scaling;
-- crossfade when expression or pose changes;
-- dialogue/name layer styled for repeated interaction, not a marketing hero;
-- fallback to sprite when a portrait pack is incomplete.
+- use the hatch-pet workflow idea;
+- keep generated candidates under ignored `artifacts/pixel-pet-sequence-drafts/`;
+- record prompts, provenance, rejected variants, and QA notes;
+- do not update `assets/companion/original_oc` until a full pack passes validation and human QA.
 
-Keep this as a focused renderer layer. Do not mix it with state-machine rewrites, ASR, TTS, packaging, or Live2D work.
+Do not regenerate all characters at once. Xingxi is the only track that can become a bundled open-source asset after QA.
 
-### P3: LLM-Driven Performance Mapping
+### P3: One Animation Row At A Time
 
-Map typed `visual_actions.expression` and `visual_actions.motion` to portrait ids.
+Generate one grounded row first, preferably idle breathing plus blink. Do not attempt a full spritesheet until one row survives contact-sheet QA.
+
+Expected loop:
+
+```text
+canonical base -> row prompt -> row candidate -> contact sheet -> QA -> repair failed row only
+```
+
+### P4: LLM-Driven Pixel Emote Mapping
+
+Map typed `visual_actions.expression` and `visual_actions.motion` to pixel-pet expressions or motion families.
 
 Allowed:
 
-- choose `smile`, `thinking`, `surprised`, `sad`, `sleepy`, `neutral`;
-- select a presentational pose or dialogue tone;
+- choose presentational ids such as `neutral`, `happy`, `blink`, `goofy`, `confused`, `sleepy`, or `focused`;
+- select a presentational pose, motion family, or dialogue tone;
 - enrich the read-only expression context.
 
 Forbidden:
@@ -75,23 +83,18 @@ Forbidden:
 - change inventory, coins, goals, or saves;
 - bypass `DialogueRequest`, typed events, snapshot contracts, or existing renderer adapters.
 
-### P4: Formal Art Pipeline
+### P5: User-Pack Local Import And Release Gate
 
-Develop original Xingxi portrait assets using generated or commissioned art. Required checks:
+Build the demo loop around official Xingxi plus local UGC packs:
 
-- transparent PNG output;
-- consistent face, outfit, palette, and proportions across expression variants;
-- no copied third-party/IP character assets;
-- no unlicensed Shinsekai, VPet, Bandori, Vocaloid, Miku, Codex pet, or fanwork source assets;
-- preview sheet for human QA.
-- `python tools\portrait_pack_smoke.py ...` can prove a candidate pack loads at runtime, but it does not approve art for default use.
-- `python tools\portrait_promotion_gate.py ...` must pass before new portrait art is referenced by an official runtime `portrait_manifest.json`.
+- Xingxi can become a bundled candidate after full QA.
+- Ikaros and Nairong remain local UGC workflow representatives unless rights are cleared.
+- Character library UI must keep provenance, license, and distribution boundaries visible.
+- Every character keeps independent art assets, character data, memory/save namespace, and QA notes.
 
-If automated generation is used, preserve prompts and provenance in a dedicated asset note. Do not commit API keys, temporary model outputs, or rejected experiments unless they are intended public assets.
+Every package that changes UI or assets must run the relevant UI smoke tests and then full pytest. If runtime manifests, default assets, or installer behavior change, run the Windows build and installer validators too.
 
-### P5: QA And Packaging
-
-Every package that changes UI or assets must run:
+Common UI/asset acceptance:
 
 ```powershell
 python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py -q
