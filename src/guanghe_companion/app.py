@@ -375,6 +375,7 @@ def _character_pack_distribution_text(pack: CharacterPackSummary) -> str:
         (
             "Distribution",
             f"Source: {pack.source}",
+            f"Distribution: {pack.distribution_boundary}",
             f"Provenance: {_relative_pack_paths(pack, pack.provenance_paths)}",
             f"License: {_relative_pack_paths(pack, pack.license_paths)}",
         )

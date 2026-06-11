@@ -35,6 +35,7 @@ def _write_minimal_pack(
     spritesheet="spritesheet.png",
     sheet_columns=8,
     default_frame_count=1,
+    distribution_boundary="shareable_after_review",
 ):
     pack_dir = root / character_id
     (pack_dir / "item_icons").mkdir(parents=True)
@@ -55,6 +56,7 @@ def _write_minimal_pack(
             "modes": ["Calm"],
             "mode_descriptions": {"Calm": "安静回应。"},
             "motion_labels": {"Default": "待机"},
+            "distribution_boundary": distribution_boundary,
         },
     )
     _write_json(
@@ -170,6 +172,25 @@ def test_character_registry_summary_reports_distribution_metadata_files(tmp_path
     summary = registry.get_available_pack("custom_character")
     assert [path.name for path in summary.provenance_paths] == ["portrait_assets_provenance.md"]
     assert [path.name for path in summary.license_paths] == ["LICENSE.md"]
+    assert summary.distribution_boundary == "shareable_after_review"
+
+
+def test_character_registry_summary_reads_distribution_boundary(tmp_path):
+    _write_minimal_pack(tmp_path, "custom_character", distribution_boundary="local_ugc_only")
+
+    registry = CharacterRegistry(builtin_root=tmp_path)
+
+    summary = registry.get_available_pack("custom_character")
+    assert summary.distribution_boundary == "local_ugc_only"
+
+
+def test_validate_character_pack_rejects_invalid_distribution_boundary(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path, distribution_boundary="public_domain_maybe")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert "character.json.distribution_boundary invalid" in report.errors
 
 
 def test_character_registry_summary_reports_video_provenance_file(tmp_path):

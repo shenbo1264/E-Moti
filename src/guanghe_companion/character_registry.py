@@ -24,6 +24,10 @@ REQUIRED_FILES = (
 ALLOWED_ITEM_CATEGORIES = frozenset({"food", "gift", "tool"})
 ALLOWED_ITEM_EFFECTS = frozenset({"charge", "mood", "stability", "trust", "study_bonus_exp"})
 ALLOWED_RENDERER_BACKENDS = frozenset({"sprite", "live2d_web", "inochi2d", "portrait"})
+ALLOWED_DISTRIBUTION_BOUNDARIES = frozenset(
+    {"shareable_after_review", "local_ugc_only", "private_local_fanwork"}
+)
+DEFAULT_DISTRIBUTION_BOUNDARY = "shareable_after_review"
 RENDERER_MAP_FIELDS = ("motion_map", "expression_map", "intent_map")
 REQUIRED_LIVE2D_EXPRESSIONS = ("calm", "excited", "surprised", "sleepy", "sadness", "focused")
 REQUIRED_LIVE2D_MOTIONS = ("Default", "Play", "Raised", "TouchHead", "Sleep")
@@ -51,6 +55,7 @@ class CharacterPackSummary:
     description: str
     path: Path
     source: str
+    distribution_boundary: str
     preview_path: Path
     provenance_paths: tuple[Path, ...]
     license_paths: tuple[Path, ...]
@@ -210,7 +215,23 @@ def _validate_character_payload(root: Path, payload: dict[str, object], errors: 
         errors.append("character.json.mode_descriptions must be an object")
     if not isinstance(payload.get("motion_labels"), dict):
         errors.append("character.json.motion_labels must be an object")
+    _validate_distribution_boundary(payload, errors)
     _validate_renderer_payload(root, payload.get("renderer"), errors)
+
+
+def _validate_distribution_boundary(payload: dict[str, object], errors: list[str]) -> None:
+    value = payload.get("distribution_boundary")
+    if value is None:
+        return
+    if not isinstance(value, str) or value not in ALLOWED_DISTRIBUTION_BOUNDARIES:
+        errors.append("character.json.distribution_boundary invalid")
+
+
+def _distribution_boundary_from_payload(payload: dict[str, object]) -> str:
+    value = payload.get("distribution_boundary")
+    if isinstance(value, str) and value in ALLOWED_DISTRIBUTION_BOUNDARIES:
+        return value
+    return DEFAULT_DISTRIBUTION_BOUNDARY
 
 
 def _validate_renderer_payload(root: Path, value: object, errors: list[str]) -> None:
@@ -602,6 +623,7 @@ def _summary_from_pack_dir(root: Path, source: str) -> CharacterPackSummary | No
         description=str(payload["description"]),
         path=root,
         source=source,
+        distribution_boundary=_distribution_boundary_from_payload(payload),
         preview_path=preview,
         provenance_paths=_existing_pack_files(root, PROVENANCE_FILENAMES),
         license_paths=_existing_pack_files(root, LICENSE_FILENAMES),

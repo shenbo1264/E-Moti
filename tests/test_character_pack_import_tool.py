@@ -17,7 +17,12 @@ def _write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
 
-def _write_complete_pack(root: Path, character_id: str = "teal_echo") -> Path:
+def _write_complete_pack(
+    root: Path,
+    character_id: str = "teal_echo",
+    *,
+    distribution_boundary: str = "shareable_after_review",
+) -> Path:
     pack_dir = root / character_id
     (pack_dir / "item_icons").mkdir(parents=True)
     (pack_dir / "preview").mkdir()
@@ -37,6 +42,7 @@ def _write_complete_pack(root: Path, character_id: str = "teal_echo") -> Path:
             "modes": ["Calm"],
             "mode_descriptions": {"Calm": "Calm response"},
             "motion_labels": {"Default": "Idle"},
+            "distribution_boundary": distribution_boundary,
         },
     )
     _write_json(
@@ -125,10 +131,28 @@ def test_import_character_pack_tool_copies_valid_pack_to_user_root(tmp_path):
     assert result.returncode == 0
     assert payload["ok"] is True
     assert payload["character_id"] == "teal_echo"
+    assert payload["distribution_boundary"] == "shareable_after_review"
     assert Path(payload["target_path"]) == target_root / "teal_echo"
     assert (target_root / "teal_echo" / "character.json").is_file()
     packs = CharacterRegistry(builtin_root=tmp_path / "empty-builtin", user_root=target_root).list_available_packs()
     assert [pack.character_id for pack in packs] == ["teal_echo"]
+
+
+def test_import_character_pack_tool_reports_local_ugc_distribution_boundary(tmp_path):
+    source = _write_complete_pack(
+        tmp_path / "source",
+        character_id="local_ugc_echo",
+        distribution_boundary="local_ugc_only",
+    )
+    target_root = tmp_path / "user-data" / "character_packs"
+
+    result = _run_tool(source, target_root)
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["ok"] is True
+    assert payload["character_id"] == "local_ugc_echo"
+    assert payload["distribution_boundary"] == "local_ugc_only"
 
 
 def test_import_character_pack_tool_rejects_generated_draft(tmp_path):
@@ -142,6 +166,22 @@ def test_import_character_pack_tool_rejects_generated_draft(tmp_path):
     assert payload["ok"] is False
     assert "spritesheet not found: spritesheet.png" in payload["errors"]
     assert not target_root.exists()
+
+
+def test_import_character_pack_tool_reports_validation_errors_for_incomplete_character_json(tmp_path):
+    source = tmp_path / "source" / "broken_pack"
+    source.mkdir(parents=True)
+    _write_json(source / "character.json", {"character_id": "broken_pack"})
+    target_root = tmp_path / "user-data" / "character_packs"
+
+    result = _run_tool(source, target_root)
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["character_id"] == "broken_pack"
+    assert payload["distribution_boundary"] == "shareable_after_review"
+    assert any("character.json.name" in error for error in payload["errors"])
 
 
 def test_import_character_pack_tool_rejects_complete_draft_until_portrait_candidate_is_import_ready(tmp_path):

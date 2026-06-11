@@ -5,13 +5,18 @@ import shutil
 from dataclasses import dataclass
 from pathlib import Path
 
-from .character_registry import validate_character_pack_dir
+from .character_registry import (
+    DEFAULT_DISTRIBUTION_BOUNDARY,
+    summarize_character_pack_dir,
+    validate_character_pack_dir,
+)
 
 
 @dataclass(frozen=True, slots=True)
 class CharacterPackImportReport:
     ok: bool
     character_id: str
+    distribution_boundary: str
     source_path: Path
     target_path: Path
     errors: tuple[str, ...]
@@ -20,6 +25,7 @@ class CharacterPackImportReport:
         return {
             "ok": self.ok,
             "character_id": self.character_id,
+            "distribution_boundary": self.distribution_boundary,
             "source_path": str(self.source_path),
             "target_path": str(self.target_path),
             "errors": list(self.errors),
@@ -40,16 +46,19 @@ def import_character_pack_dir(
         return CharacterPackImportReport(
             ok=False,
             character_id=validation.character_id,
+            distribution_boundary=DEFAULT_DISTRIBUTION_BOUNDARY,
             source_path=source,
             target_path=target,
             errors=tuple(validation.errors),
         )
+    distribution_boundary = _source_distribution_boundary(source)
 
     draft_gate_errors = _draft_import_gate_errors(source)
     if draft_gate_errors:
         return CharacterPackImportReport(
             ok=False,
             character_id=validation.character_id,
+            distribution_boundary=distribution_boundary,
             source_path=source,
             target_path=target,
             errors=draft_gate_errors,
@@ -60,6 +69,7 @@ def import_character_pack_dir(
         return CharacterPackImportReport(
             ok=False,
             character_id=validation.character_id,
+            distribution_boundary=distribution_boundary,
             source_path=source,
             target_path=target,
             errors=(safety_error,),
@@ -68,6 +78,7 @@ def import_character_pack_dir(
         return CharacterPackImportReport(
             ok=False,
             character_id=validation.character_id,
+            distribution_boundary=distribution_boundary,
             source_path=source,
             target_path=target,
             errors=(f"target character pack already exists: {validation.character_id}",),
@@ -84,6 +95,7 @@ def import_character_pack_dir(
             return CharacterPackImportReport(
                 ok=False,
                 character_id=validation.character_id,
+                distribution_boundary=distribution_boundary,
                 source_path=source,
                 target_path=target,
                 errors=tuple(copied_validation.errors),
@@ -94,6 +106,7 @@ def import_character_pack_dir(
         return CharacterPackImportReport(
             ok=False,
             character_id=validation.character_id,
+            distribution_boundary=distribution_boundary,
             source_path=source,
             target_path=target,
             errors=(f"copy failed: {exc}",),
@@ -102,10 +115,18 @@ def import_character_pack_dir(
     return CharacterPackImportReport(
         ok=True,
         character_id=validation.character_id,
+        distribution_boundary=distribution_boundary,
         source_path=source,
         target_path=target,
         errors=(),
     )
+
+
+def _source_distribution_boundary(source: Path) -> str:
+    summary = summarize_character_pack_dir(source, source="import_source")
+    if summary is None:
+        return DEFAULT_DISTRIBUTION_BOUNDARY
+    return summary.distribution_boundary
 
 
 def _target_safety_error(source: Path, target_base: Path, target: Path) -> str:

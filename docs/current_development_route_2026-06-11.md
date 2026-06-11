@@ -271,6 +271,11 @@ python -m pytest tests\test_character_registry.py tests\test_character_session.p
 python -m pytest
 ```
 
+当前检查点：
+- runtime pack 可在 `character.json.distribution_boundary` 声明 `shareable_after_review`、`local_ugc_only` 或 `private_local_fanwork`；
+- 角色注册表摘要、导入工具 JSON、角色库详情、导入确认弹窗、状态审查工具统一读取并展示该字段；
+- 这只解决“开源候选包”和“本地 UGC / 二创包”的解释边界，不代表伊卡洛斯、奶龙素材可以进入开源默认资产。
+
 ### P6-release-package-check：演示版打包复核
 
 触发条件：只有在运行时 manifest、默认资产或安装器行为改变后才执行。

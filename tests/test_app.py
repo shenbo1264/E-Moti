@@ -27,7 +27,14 @@ def make_controller(tmp_path, ai_expressor=None):
     return CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=ai_expressor)
 
 
-def write_ui_character_pack(root, character_id, *, name, title):
+def write_ui_character_pack(
+    root,
+    character_id,
+    *,
+    name,
+    title,
+    distribution_boundary="shareable_after_review",
+):
     pack_dir = root / character_id
     (pack_dir / "item_icons").mkdir(parents=True)
     (pack_dir / "preview").mkdir()
@@ -41,6 +48,7 @@ def write_ui_character_pack(root, character_id, *, name, title):
                 "name": name,
                 "title": title,
                 "description": f"{name} 是一个原创桌面伴侣。",
+                "distribution_boundary": distribution_boundary,
                 "spritesheet": "spritesheet.png",
                 "motion_manifest": "motion_manifest.json",
                 "default_mode": "Calm",
@@ -528,6 +536,7 @@ def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_pat
 
     details = window.character_detail_label.text()
     assert "Source: builtin" in details
+    assert "Distribution: shareable_after_review" in details
     assert "Provenance: provenance.md" in details
     assert "License: LICENSE" in details
 
@@ -654,6 +663,7 @@ def test_character_library_import_confirmation_shows_distribution_metadata(monke
         "imported_character",
         name="Echo",
         title="Local companion",
+        distribution_boundary="local_ugc_only",
     )
     (source_pack / "provenance.md").write_text("Original generated pack.", encoding="utf-8")
     (source_pack / "LICENSE").write_text("Test license.", encoding="utf-8")
@@ -695,6 +705,7 @@ def test_character_library_import_confirmation_shows_distribution_metadata(monke
     assert len(confirmations) == 1
     assert "imported_character" in confirmations[0][1]
     assert "Source: import_source" in confirmations[0][1]
+    assert "Distribution: local_ugc_only" in confirmations[0][1]
     assert "Provenance: provenance.md" in confirmations[0][1]
     assert "License: LICENSE" in confirmations[0][1]
 

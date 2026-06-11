@@ -132,6 +132,7 @@ python tools\import_character_pack.py path\to\complete_pack --target-root "%LOCA
 ```
 
 Generated drafts are not import-ready until final art, icons, spritesheet, provenance, and manual QA are complete. Use `--force` only when intentionally replacing an existing local pack with the same `character_id`.
+Complete runtime packs can declare `character.json.distribution_boundary` as `shareable_after_review`, `local_ugc_only`, or `private_local_fanwork`. The character registry, import JSON report, character-library UI, import confirmation, and status review tool surface that value so open-source-ready packs and local UGC/fanwork packs do not share the same release assumptions.
 `review_character_pack_status.py` is a read-only release/import review helper for generated drafts and complete runtime packs. It reports validation status, import readiness, manual QA needs, provenance/license files, local fanwork distribution boundaries, and next actions without copying files or changing runtime manifests.
 
 Current roadmap:

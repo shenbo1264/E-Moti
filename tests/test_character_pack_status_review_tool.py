@@ -54,7 +54,12 @@ def _write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
 
 
-def _write_runtime_pack(root: Path, *, metadata: bool = True) -> Path:
+def _write_runtime_pack(
+    root: Path,
+    *,
+    metadata: bool = True,
+    distribution_boundary: str = "shareable_after_review",
+) -> Path:
     pack_dir = root / "runtime_character"
     (pack_dir / "item_icons").mkdir(parents=True)
     (pack_dir / "preview").mkdir()
@@ -68,6 +73,7 @@ def _write_runtime_pack(root: Path, *, metadata: bool = True) -> Path:
             "name": "Runtime Character",
             "title": "Complete companion",
             "description": "A complete local runtime pack.",
+            "distribution_boundary": distribution_boundary,
             "spritesheet": "spritesheet.png",
             "motion_manifest": "motion_manifest.json",
             "default_mode": "Calm",
@@ -157,6 +163,20 @@ def test_review_character_pack_status_accepts_distribution_ready_runtime_pack(tm
     assert payload["warnings"] == []
     assert payload["provenance_files"] == ["provenance.md"]
     assert payload["license_files"] == ["LICENSE.md"]
+
+
+def test_review_character_pack_status_reads_runtime_distribution_boundary(tmp_path):
+    pack_dir = _write_runtime_pack(
+        tmp_path / "packs",
+        metadata=True,
+        distribution_boundary="local_ugc_only",
+    )
+
+    result = _run_tool(pack_dir, tmp_path)
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["distribution_boundary"] == "local_ugc_only"
 
 
 def test_review_character_pack_status_requires_distribution_metadata_for_runtime_pack(tmp_path):

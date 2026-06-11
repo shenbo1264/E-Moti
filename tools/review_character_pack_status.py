@@ -14,7 +14,12 @@ if str(REPO_ROOT) not in sys.path:
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from guanghe_companion.character_registry import summarize_character_pack_dir, validate_character_pack_dir
+from guanghe_companion.character_registry import (
+    ALLOWED_DISTRIBUTION_BOUNDARIES,
+    DEFAULT_DISTRIBUTION_BOUNDARY,
+    summarize_character_pack_dir,
+    validate_character_pack_dir,
+)
 from tools.validate_character_draft import validate_character_draft_dir
 
 
@@ -183,6 +188,9 @@ def _detect_pack_type(root: Path) -> str:
 
 
 def _distribution_boundary(root: Path) -> str:
+    explicit_boundary = _character_json_distribution_boundary(root)
+    if explicit_boundary:
+        return explicit_boundary
     text_parts: list[str] = []
     for filename in ("character_card.md", "provenance.md", "qa_checklist.md", "art_prompts.json"):
         path = root / filename
@@ -195,7 +203,23 @@ def _distribution_boundary(root: Path) -> str:
     joined = "\n".join(text_parts)
     if "local fanwork" in joined or "private local fanwork" in joined:
         return "private_local_fanwork"
-    return "shareable_after_review"
+    return DEFAULT_DISTRIBUTION_BOUNDARY
+
+
+def _character_json_distribution_boundary(root: Path) -> str:
+    path = root / "character.json"
+    if not path.is_file():
+        return ""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    value = payload.get("distribution_boundary")
+    if isinstance(value, str) and value in ALLOWED_DISTRIBUTION_BOUNDARIES:
+        return value
+    return ""
 
 
 def _status(
