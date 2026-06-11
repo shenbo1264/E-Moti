@@ -144,6 +144,8 @@ python -m pytest
 - 不修改运行时代码；
 - 不提交 ignored 草稿素材。
 
+当前检查点：`AGENTS.md` 与 `README.md` 已同步为 hatch-pet 风格像素宠序列帧主线，Spirit/GalGame、AI-video、LivePortrait、Live2D 均降级为研究或后续 renderer 路径。已通过 `git diff --check`、`python -m pytest tests\test_repository_hygiene.py -q` 和全量 `python -m pytest`。
+
 ### P1-pixel-pack-contract：定义像素宠角色包合同
 
 目标：把 hatch-pet 输出从“草稿图”推进到可校验的候选角色包格式。
@@ -175,6 +177,8 @@ python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<characte
 python -m pytest tests\test_pixel_pet_pack_validator_tool.py tests\test_art_tools.py tests\test_character_pack.py tests\test_character_pack_validator_tool.py -q
 python -m pytest
 ```
+
+当前检查点：星汐像素宠候选已组装为 ignored 草稿包 `artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_packs_drafts\xingxi_pixel_pet`，包含 `character.json`、`dialogue_style.json`、`motion_manifest.json`、`spritesheet.png`、`preview\contact-sheet.png`、`provenance.md` 和 `qa_report.json`。已执行 JSON 校验、`python tools\validate_pixel_pet_pack.py ... --report ...\pixel_pack_validation_report.json`，结果 `ok=true`、`distribution_boundary=official_candidate`、`errors=[]`；定向测试 `38 passed`。人工视觉抽查认为整体身份一致、`idle`/`waiting` 有眨眼、左右跑动为独立生成方向；`jumping` 与 `failed` 有个别帧比例更大，推广前仍需人工 QA。默认 runtime manifest 仍未更新。
 
 ### P2-xingxi-canonical-base：星汐默认形体定稿
 
@@ -237,7 +241,7 @@ python -m pytest tests\test_pixel_pet_row_review.py tests\test_art_tools.py test
 python -m pytest
 ```
 
-当前检查点：旧 `idle-current` row 已明确保留为失败证据，因为它只能 slot 抽帧且缺少明确 blink；新的九行 Xingxi pixel-pet 候选已通过 component 抽帧、逐行 row review 和 `finalize_pet_run --skip-videos`。最终候选输出在 ignored `artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\final\spritesheet.webp`，QA contact sheet 在 `...\qa\contact-sheet.png`，`runtime_manifest_updated=false`。`waiting` 曾有 motion delta 偏低的行级警告，但整体 finalize review 无错误/警告，肉眼可读为等待眨眼候选。下一步是将这套候选转成可验证 runtime character pack 草稿并人工 QA；在完整 pack QA 前不更新默认 runtime manifest。
+当前检查点：旧 `idle-current` row 已明确保留为失败证据，因为它只能 slot 抽帧且缺少明确 blink；新的九行 Xingxi pixel-pet 候选已通过 component 抽帧、逐行 row review 和 `finalize_pet_run --skip-videos`。最终候选输出在 ignored `artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\final\spritesheet.webp`，QA contact sheet 在 `...\qa\contact-sheet.png`，`runtime_manifest_updated=false`。`waiting` 曾有 motion delta 偏低的行级警告，但整体 finalize review 无错误/警告，肉眼可读为等待眨眼候选。该候选已进一步转成可验证 P1 草稿包；在完整人工 QA 与 runtime import/smoke 前不更新默认 runtime manifest。
 
 ### P4-llm-to-emote-map：让 LLM 表达映射到像素动作
 
@@ -283,6 +287,10 @@ python -m pytest
 - runtime pack 可在 `character.json.distribution_boundary` 声明 `shareable_after_review`、`local_ugc_only` 或 `private_local_fanwork`；
 - 角色注册表摘要、导入工具 JSON、角色库详情、导入确认弹窗、状态审查工具统一读取并展示该字段；
 - 这只解决“开源候选包”和“本地 UGC / 二创包”的解释边界，不代表伊卡洛斯、奶龙素材可以进入开源默认资产。
+- 星汐 P1 草稿包已补齐 runtime user-pack 所需的非美术元数据、`shop_items.json` 和 item icons，并通过 `python tools\validate_character_pack.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_packs_drafts\xingxi_pixel_pet`。
+- 已执行 `python tools\import_character_pack.py ... --target-root artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\local_user_pack_root --force`，导入报告写入 ignored `...\xingxi_pixel_pet_import_report.json`，结果 `ok=true`、`distribution_boundary=shareable_after_review`。
+- 已用 `CharacterRegistry` 从 ignored local user-pack root 列出 `xingxi_pixel_pet`，来源为 `user`，preview 存在；已用 `load_character_pack_from_dir` 和 `load_motion_catalog_from_dir` 读取 sprite backend、8 列 9 行 atlas、全部动作映射，并确认未知动作回退到 `Default`。
+- 已跑 P5 相关测试 `python -m pytest tests\test_character_registry.py tests\test_character_session.py tests\test_character_pack_import_tool.py tests\test_app.py tests\test_desktop_pet_smoke.py -q`，结果 `132 passed`。
 
 ### P6-release-package-check：演示版打包复核
 
@@ -307,18 +315,14 @@ python -m pytest
 - 不要新增鼠标、键盘、剪贴板、窗口控制。
 - 不要把 Live2D 作为近期阻塞项。
 
-## 8. 推荐立即执行的第一包
+## 8. 推荐立即执行的下一包
 
-建议第一包做 `P0-doc-sync`。
+`P0-doc-sync`、星汐 `P1-pixel-pack-contract` 和星汐 `P5-user-pack-local-import` 最小闭环已完成当前验证。建议下一包做 `P5-manual-qa-and-ugc-branching`：
 
-理由：
-
-- 当前代码与测试基线稳定，直接大改运行时代码收益不高；
-- 当前最大风险是路线口径不统一，新 agent 容易继续回到 Spirit/VN/AI-video 路线；
-- 文档同步可以把后续执行包压到低耦合状态；
-- 不碰素材、不碰 manifest、不碰状态机，风险最低。
-
-完成后再进入 `P1-pixel-pack-contract`，把三角色草稿从“图和 prompt”推进到可验证 pack 合同。
+- 对星汐 contact sheet 做人工 QA 决策，重点看 `jumping` 与 `failed` 的比例跳变是否需要局部重生；
+- 若星汐通过人工 QA，再决定是否创建正式 promotion gate 包，仍先不替换 `assets/companion/original_oc`；
+- 为伊卡洛斯、奶龙分别建立 local UGC 草稿包目录和权利边界说明，但不生成或分发默认资产；
+- 继续保持 AI-video、Live2D、精细 VN portrait 为研究线，不回到无边界迭代。
 
 ## 9. 本文档的证据命令
 
