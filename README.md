@@ -116,10 +116,13 @@ Draft pixel-pet pack validation:
 
 ```powershell
 python tools\art\review_pixel_pet_base.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\decoded\base.png --character-id xingxi_pixel_pet --prompt artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\prompts\base-pet.md --character-definition artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_definition.json --prior-qa artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\first-row-qa.json --decision accepted_for_row_testing --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\base-review-20260611
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-frames --state idle --expected-frames 6 --decision needs_regeneration --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-row-review
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-frames --state running-right --expected-frames 8 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-row-review
 python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<character_id>
 ```
 
 `review_pixel_pet_base.py` is for ignored canonical-base candidates only. It writes JSON/Markdown/preview evidence, reports cleanup risks such as non-flat chroma-key backgrounds, and never updates runtime manifests.
+`review_pixel_pet_row_candidate.py` reviews one extracted row candidate at a time. It is also ignored evidence only; it can reject a weak row without changing decoded images, job manifests, or runtime character manifests.
 
 Import a complete validated character pack into a user pack root:
 

@@ -87,6 +87,7 @@ A candidate is not usable until:
 
 ```powershell
 python tools\art\review_pixel_pet_base.py artifacts\pixel-pet-sequence-drafts\<character_id>\hatch_run\decoded\base.png --character-id <character_id> --prompt artifacts\pixel-pet-sequence-drafts\<character_id>\hatch_run\prompts\base-pet.md --character-definition artifacts\pixel-pet-sequence-drafts\<character_id>\character_definition.json --decision accepted_for_row_testing --output-dir artifacts\pixel-pet-sequence-drafts\<character_id>\review\base-review
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\<character_id>\review\<state>-frames --state <state> --expected-frames <count> --require-components --output-dir artifacts\pixel-pet-sequence-drafts\<character_id>\review\<state>-row-review
 python <hatch-pet>\scripts\finalize_pet_run.py --run-dir artifacts\pixel-pet-sequence-drafts\<character_id>\hatch_run
 python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<character_id>
 ```
@@ -97,6 +98,9 @@ produces:
 review/base-review/base-review.json
 review/base-review/base-review.md
 review/base-review/base-review.png
+review/<state>-row-review/<state>-row-review.json
+review/<state>-row-review/<state>-row-review.md
+review/<state>-row-review/<state>-row-review.png
 final/spritesheet.png
 final/spritesheet.webp
 final/validation.json
@@ -106,6 +110,7 @@ qa/videos/
 ```
 
 The base review is ignored evidence only. A warning about a near but non-flat `#FF00FF` background means the candidate may continue to row testing, but the background must be cleaned before slicing or promotion.
+The row review is also ignored evidence only. It must not edit `decoded/`, `imagegen-jobs.json`, runtime manifests, or character packs. A row that falls back to slot extraction should be repaired or regenerated before full-sheet production unless a human explicitly accepts the risk.
 
 Human QA must reject rows with:
 

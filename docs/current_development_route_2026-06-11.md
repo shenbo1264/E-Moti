@@ -6,8 +6,8 @@
 
 - 工作目录：仓库根目录
 - 当前分支：`codex/demo-worktree-cleanup`
-- 当前 HEAD：`ac1822f docs: correct art route to pixel pet sequences`
-- 当前工作区：`git status --short --untracked-files=all` 输出为空，工作区 clean。
+- 路线初始扫描 HEAD：`ac1822f docs: correct art route to pixel pet sequences`
+- 路线初始扫描工作区：`git status --short --untracked-files=all` 输出为空，工作区 clean。
 - 远端：当前本地 checkout 配置了公开仓库远端和私有备份远端；文档不记录私有远端 URL。
 - 测试结果：`python -m pytest` 通过，`754 passed in 117.34s`。
 - JSON/角色包校验：
@@ -222,10 +222,14 @@ git status --short --untracked-files=all
 验收：
 
 ```powershell
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-frames --state idle --expected-frames 6 --decision needs_regeneration --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-row-review
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-frames --state running-right --expected-frames 8 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-row-review
 python tools\art\validate_companion_atlas.py --atlas <candidate_spritesheet.png> --manifest <candidate_motion_manifest.json>
-python -m pytest tests\test_art_tools.py tests\test_motion.py -q
+python -m pytest tests\test_pixel_pet_row_review.py tests\test_art_tools.py tests\test_motion.py -q
 python -m pytest
 ```
+
+当前检查点：`running-right` row 可作为 gait testing 候选继续；当前 `idle` row 只能 slot 抽帧，且肉眼看缺少明确 `idle_breathe + blink`，所以 P3 的首行目标未完成，下一步应只重新生成/修复 `idle` row。若当前会话没有可用 `$imagegen`，不得用本地脚本伪造替代帧。
 
 ### P4-llm-to-emote-map：让 LLM 表达映射到像素动作
 
