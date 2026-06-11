@@ -225,12 +225,15 @@ git status --short --untracked-files=all
 python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-frames --state idle --expected-frames 6 --decision needs_regeneration --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-row-review
 python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-blink-regenerated-20260611-frames --state idle --expected-frames 6 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-blink-regenerated-20260611-row-review
 python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-frames --state running-right --expected-frames 8 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-row-review
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\waiting-regenerated-20260611-frames --state waiting --expected-frames 6 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\waiting-regenerated-20260611-row-review
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\jumping-regenerated-20260611-frames --state jumping --expected-frames 5 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\jumping-regenerated-20260611-row-review
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\waving-regenerated-20260611-frames --state waving --expected-frames 4 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\waving-regenerated-20260611-row-review
 python tools\art\validate_companion_atlas.py --atlas <candidate_spritesheet.png> --manifest <candidate_motion_manifest.json>
 python -m pytest tests\test_pixel_pet_row_review.py tests\test_art_tools.py tests\test_motion.py -q
 python -m pytest
 ```
 
-当前检查点：旧 `idle-current` row 已明确保留为失败证据，因为它只能 slot 抽帧且缺少明确 blink；新的 `idle-blink-regenerated-20260611` row 已通过 component 抽帧和 row review，决策为 `accepted_for_row_testing`，`runtime_manifest_updated=false`。`running-right` row 仍可作为 gait testing 候选继续。下一步是把通过的 `idle` 与 `running-right` 作为行级候选继续推进后续 row，而不是更新默认 runtime manifest。
+当前检查点：旧 `idle-current` row 已明确保留为失败证据，因为它只能 slot 抽帧且缺少明确 blink；新的 `idle-blink-regenerated-20260611` row 已通过 component 抽帧和 row review，决策为 `accepted_for_row_testing`，`runtime_manifest_updated=false`。`running-right`、`waiting-regenerated-20260611`、`jumping-regenerated-20260611`、`waving-regenerated-20260611` 也已作为行级候选通过 row review。`waiting` 有 motion delta 偏低警告，但肉眼可读为等待眨眼候选。下一步继续补齐 `running-left`、`failed`、`running`、`review` 四行，再拼装候选 spritesheet；在完整 pack QA 前不更新默认 runtime manifest。
 
 ### P4-llm-to-emote-map：让 LLM 表达映射到像素动作
 
