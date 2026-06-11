@@ -115,8 +115,11 @@ python tools\validate_character_draft.py path\to\generated\<character_id>
 Draft pixel-pet pack validation:
 
 ```powershell
+python tools\art\review_pixel_pet_base.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\decoded\base.png --character-id xingxi_pixel_pet --prompt artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\prompts\base-pet.md --character-definition artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_definition.json --prior-qa artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\first-row-qa.json --decision accepted_for_row_testing --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\base-review-20260611
 python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<character_id>
 ```
+
+`review_pixel_pet_base.py` is for ignored canonical-base candidates only. It writes JSON/Markdown/preview evidence, reports cleanup risks such as non-flat chroma-key backgrounds, and never updates runtime manifests.
 
 Import a complete validated character pack into a user pack root:
 

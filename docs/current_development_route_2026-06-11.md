@@ -192,9 +192,13 @@ python -m pytest
 
 ```powershell
 python -m json.tool artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_definition.json
-python -m pytest tests\test_art_tools.py -q
+python tools\art\review_pixel_pet_base.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\decoded\base.png --character-id xingxi_pixel_pet --prompt artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\prompts\base-pet.md --character-definition artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_definition.json --prior-qa artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\first-row-qa.json --decision accepted_for_row_testing --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\base-review-20260611
+python -m json.tool artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\base-review-20260611\base-review.json
+python -m pytest tests\test_pixel_pet_base_review.py tests\test_art_tools.py -q
 git status --short --untracked-files=all
 ```
+
+`review_pixel_pet_base.py` only approves ignored candidate flow. It records prompt/provenance links, confirms `runtime_manifest_updated=false`, and turns near-`#FF00FF` background pollution into a cleanup warning for the later slicing step rather than runtime approval.
 
 人工 QA：
 

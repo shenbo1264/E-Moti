@@ -86,6 +86,7 @@ Row prompts must preserve:
 A candidate is not usable until:
 
 ```powershell
+python tools\art\review_pixel_pet_base.py artifacts\pixel-pet-sequence-drafts\<character_id>\hatch_run\decoded\base.png --character-id <character_id> --prompt artifacts\pixel-pet-sequence-drafts\<character_id>\hatch_run\prompts\base-pet.md --character-definition artifacts\pixel-pet-sequence-drafts\<character_id>\character_definition.json --decision accepted_for_row_testing --output-dir artifacts\pixel-pet-sequence-drafts\<character_id>\review\base-review
 python <hatch-pet>\scripts\finalize_pet_run.py --run-dir artifacts\pixel-pet-sequence-drafts\<character_id>\hatch_run
 python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<character_id>
 ```
@@ -93,6 +94,9 @@ python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<characte
 produces:
 
 ```text
+review/base-review/base-review.json
+review/base-review/base-review.md
+review/base-review/base-review.png
 final/spritesheet.png
 final/spritesheet.webp
 final/validation.json
@@ -100,6 +104,8 @@ qa/contact-sheet.png
 qa/review.json
 qa/videos/
 ```
+
+The base review is ignored evidence only. A warning about a near but non-flat `#FF00FF` background means the candidate may continue to row testing, but the background must be cleaned before slicing or promotion.
 
 Human QA must reject rows with:
 
