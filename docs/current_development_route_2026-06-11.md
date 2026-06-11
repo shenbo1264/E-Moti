@@ -311,7 +311,8 @@ python -m pytest
 - 已运行 `python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\screenshots --pet-seconds 0.5`，报告 `ok=true`、默认仍为 `original_oc`、切换后为 `xingxi_pixel_pet`、桌宠 backend 为 `sprite`、`errors=[]`。截图显示角色库 metadata 完整可见，桌宠 sprite 正常渲染。
 - 已运行 `python -m pytest tests\test_character_library_qa_tool.py tests\test_app.py tests\test_desktop_pet_smoke.py -q`，结果 `98 passed`；`python -m pytest tests\test_character_pack.py tests\test_character_registry.py tests\test_windows_packaging_scripts.py tests\test_windows_build_validator.py -q`，结果 `44 passed`；全量 `python -m pytest`，结果 `787 passed`。
 - 已在非 offscreen 环境运行 `python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa-real-desktop.json --screenshot-dir artifacts\character-library-qa\real-desktop-screenshots --pet-seconds 1.0`，报告 `ok=true`。功能链路可用，但截图仍显示透明背景捕获为黑底，且角色边缘有明显紫色描边/halo；这不阻止候选展示，但阻止默认替换。
-- 已新增并运行 `python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json`，报告 `ok=true` 但 `status=ready_with_warnings`，`edge_pixel_count=37202`，`suspicious_edge_halo_pixel_count=13883`，`suspicious_edge_halo_ratio=0.373179`，warnings 为 `suspicious_edge_halo_risk`。
+- 已新增并运行 `python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --preview artifacts\character-library-qa\xingxi-pixel-pet-visual-qa-preview.png`，报告 `ok=true` 但 `status=ready_with_warnings`，`edge_pixel_count=37202`，`suspicious_edge_halo_pixel_count=13883`，`suspicious_edge_halo_ratio=0.373179`，warnings 为 `suspicious_edge_halo_risk`。
+- 已人工查看 `artifacts\character-library-qa\xingxi-pixel-pet-visual-qa-preview.png` overlay：可疑像素主要集中在头发外轮廓与阴影线稿上，说明不能直接做无脑透明擦边，否则会破坏角色轮廓；该报告用于默认推广门禁和人工美术判断，不是自动清理指令。
 - 已验证 `python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --fail-on-warnings` 会返回失败码 `1`，因此该候选在边缘修复或重生前不能走默认推广包。
 - 当前默认决策：继续保持 `original_oc` 为默认包，`xingxi_pixel_pet` 作为可切换内置候选；是否默认替换留给真实桌面人工美术 QA 后的独立包。
 
@@ -340,9 +341,11 @@ python -m pytest
 
 ## 8. 推荐立即执行的下一包
 
-`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import`、`P5-manual-qa-and-ugc-branching`、`P5-xingxi-row-repair-or-promotion-decision`、`P5-xingxi-promotion-gate-package`、`P5-bundled-asset-promotion-decision`、`P5-character-library-qa-and-default-decision`、以及 `P5-real-desktop-art-qa-edge-gate` 已完成当前验证。建议下一包做 `P5-xingxi-edge-repair-or-candidate-regeneration`：
+`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import`、`P5-manual-qa-and-ugc-branching`、`P5-xingxi-row-repair-or-promotion-decision`、`P5-xingxi-promotion-gate-package`、`P5-bundled-asset-promotion-decision`、`P5-character-library-qa-and-default-decision`、以及 `P5-real-desktop-art-qa-edge-gate` 已完成当前验证。建议下一包做 `P5-xingxi-edge-style-decision`：
 
-- 先决定是对当前 `xingxi_pixel_pet` 做确定性边缘清理，还是用 hatch-pet 工作流重生无紫色 halo 的候选；
+- 不建议直接对当前 `xingxi_pixel_pet` 做确定性透明擦边，因为 overlay 显示该指标命中了头发外轮廓和线稿；
+- 优先做一版新的 hatch-pet 候选或人工重绘候选，要求提示词明确避免红/紫发光边、色边和外圈 halo，同时保留蓝紫发色本体；
+- 也可以人工确认接受当前外轮廓作为风格选择，但这必须是明确美术 QA 结论，而不是因为工具通过；
 - 每个修复候选必须重新跑 `pixel_pet_visual_qa.py --fail-on-warnings`、角色包校验、角色库 QA、UI smoke 和全量测试；
 - 若边缘 QA 与真实桌面人工美术 QA 都通过，再单独决定是否把 `xingxi_pixel_pet` 提升为默认包；当前保持 `original_oc` 默认、像素星汐作为可选候选；
 - 伊卡洛斯、奶龙继续保持 local UGC 分支，等用户确认要生成私有草稿时再走 hatch-pet 单行流程；

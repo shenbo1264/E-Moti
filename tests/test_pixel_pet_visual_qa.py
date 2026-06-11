@@ -96,6 +96,7 @@ def test_pixel_pet_visual_qa_cli_writes_report_and_can_fail_on_warnings(tmp_path
     spritesheet = tmp_path / "spritesheet.png"
     manifest = tmp_path / "motion_manifest.json"
     report_path = tmp_path / "pixel-pet-visual-qa.json"
+    preview_path = tmp_path / "pixel-pet-visual-qa-preview.png"
     write_purple_halo_spritesheet(spritesheet)
     write_manifest(manifest)
 
@@ -108,6 +109,8 @@ def test_pixel_pet_visual_qa_cli_writes_report_and_can_fail_on_warnings(tmp_path
             str(manifest),
             "--report",
             str(report_path),
+            "--preview",
+            str(preview_path),
             "--fail-on-warnings",
         ],
         cwd=REPO_ROOT,
@@ -121,4 +124,10 @@ def test_pixel_pet_visual_qa_cli_writes_report_and_can_fail_on_warnings(tmp_path
     saved = json.loads(report_path.read_text(encoding="utf-8"))
     assert result.returncode == 1
     assert payload["status"] == "ready_with_warnings"
+    assert payload["preview_path"] == str(preview_path)
     assert saved["warnings"] == ["suspicious_edge_halo_risk"]
+    assert preview_path.is_file()
+    with Image.open(preview_path) as preview:
+        assert preview.mode == "RGBA"
+        assert preview.width > 0
+        assert preview.height > 0

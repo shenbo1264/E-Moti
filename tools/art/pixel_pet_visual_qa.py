@@ -6,7 +6,7 @@ import sys
 from dataclasses import dataclass
 from pathlib import Path
 
-from PIL import Image, UnidentifiedImageError
+from PIL import Image, ImageDraw, UnidentifiedImageError
 
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
@@ -35,6 +35,7 @@ class PixelPetVisualQaReport:
     edge_pixel_count: int
     suspicious_edge_halo_pixel_count: int
     suspicious_edge_halo_ratio: float
+    preview_path: str
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
 
@@ -51,6 +52,7 @@ class PixelPetVisualQaReport:
             "edge_pixel_count": self.edge_pixel_count,
             "suspicious_edge_halo_pixel_count": self.suspicious_edge_halo_pixel_count,
             "suspicious_edge_halo_ratio": self.suspicious_edge_halo_ratio,
+            "preview_path": self.preview_path,
             "warnings": list(self.warnings),
             "errors": list(self.errors),
         }
@@ -61,6 +63,7 @@ def inspect_pixel_pet_visual_qa(
     motion_manifest_path: Path | str,
     *,
     report_path: Path | str | None = None,
+    preview_path: Path | str | None = None,
 ) -> PixelPetVisualQaReport:
     spritesheet = Path(spritesheet_path)
     manifest = Path(motion_manifest_path)
@@ -76,6 +79,7 @@ def inspect_pixel_pet_visual_qa(
     visible_pixels = 0
     edge_pixels = 0
     suspicious_pixels = 0
+    preview = Path(preview_path) if preview_path is not None else None
 
     if not errors:
         try:
@@ -87,6 +91,8 @@ def inspect_pixel_pet_visual_qa(
             width, height = rgba.size
             mode = rgba.mode
             visible_pixels, edge_pixels, suspicious_pixels = _edge_halo_metrics(rgba)
+            if preview is not None:
+                _write_preview(rgba, preview)
             suspicious_ratio = suspicious_pixels / edge_pixels if edge_pixels else 0.0
             if (
                 suspicious_pixels >= SUSPICIOUS_EDGE_HALO_PIXEL_WARNING_THRESHOLD
@@ -108,6 +114,7 @@ def inspect_pixel_pet_visual_qa(
         edge_pixel_count=edge_pixels,
         suspicious_edge_halo_pixel_count=suspicious_pixels,
         suspicious_edge_halo_ratio=round(suspicious_ratio, 6),
+        preview_path=str(preview) if preview is not None and not errors else "",
         warnings=tuple(warnings),
         errors=tuple(errors),
     )
@@ -139,6 +146,45 @@ def _edge_halo_metrics(image: Image.Image) -> tuple[int, int, int]:
     return visible_pixels, edge_pixels, suspicious_pixels
 
 
+def _write_preview(image: Image.Image, target: Path) -> None:
+    target.parent.mkdir(parents=True, exist_ok=True)
+    rgba = image.convert("RGBA")
+    preview = _checkerboard(rgba.size)
+    preview.alpha_composite(rgba)
+    overlay = Image.new("RGBA", rgba.size, (0, 0, 0, 0))
+    overlay_pixels = overlay.load()
+    source_pixels = rgba.load()
+    width, height = rgba.size
+    for y in range(height):
+        for x in range(width):
+            red, green, blue, alpha = source_pixels[x, y]
+            if alpha < VISIBLE_ALPHA_THRESHOLD:
+                continue
+            if _touches_transparent_neighbor(source_pixels, x, y, width, height) and _is_suspicious_halo_color(
+                red,
+                green,
+                blue,
+            ):
+                overlay_pixels[x, y] = (255, 32, 24, 220)
+    preview.alpha_composite(overlay)
+    preview.save(target)
+
+
+def _checkerboard(size: tuple[int, int]) -> Image.Image:
+    width, height = size
+    tile = 16
+    image = Image.new("RGBA", size, (255, 255, 255, 255))
+    draw = ImageDraw.Draw(image)
+    for y in range(0, height, tile):
+        for x in range(0, width, tile):
+            if (x // tile + y // tile) % 2:
+                draw.rectangle(
+                    (x, y, min(width, x + tile) - 1, min(height, y + tile) - 1),
+                    fill=(220, 225, 230, 255),
+                )
+    return image
+
+
 def _touches_transparent_neighbor(pixels, x: int, y: int, width: int, height: int) -> bool:
     for neighbor_x, neighbor_y in ((x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)):
         if neighbor_x < 0 or neighbor_y < 0 or neighbor_x >= width or neighbor_y >= height:
@@ -159,6 +205,7 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser.add_argument("spritesheet")
     parser.add_argument("--motion-manifest", required=True)
     parser.add_argument("--report", default="")
+    parser.add_argument("--preview", default="")
     parser.add_argument(
         "--fail-on-warnings",
         action="store_true",
@@ -173,6 +220,7 @@ def main(argv: list[str] | None = None) -> int:
         args.spritesheet,
         args.motion_manifest,
         report_path=args.report or None,
+        preview_path=args.preview or None,
     )
     print(json.dumps(report.to_dict(), ensure_ascii=False, indent=2))
     if not report.ok:
