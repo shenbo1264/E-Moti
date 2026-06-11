@@ -136,3 +136,13 @@ Do not update:
 - packaging scripts.
 
 Promotion is a separate package after a full candidate passes QA.
+
+## Promotion Gate
+
+After a pixel-pet candidate passes row repair, manual QA, pack validation, and local import smoke, run the strict promotion-gate report before any bundled asset change:
+
+```powershell
+python tools\pixel_pet_promotion_gate.py path\to\character_packs_drafts\<character_id> --manual-qa path\to\manual_qa.json --report artifacts\pixel-pet-sequence-drafts\<character_id>\promotion_gate\pixel_pet_promotion_gate_report.json
+```
+
+The gate is still read-only. A passing report means the candidate can enter a separate bundled-asset promotion package; it does not update `assets/companion/`, runtime manifests, saves, packaging scripts, or LLM behavior.
