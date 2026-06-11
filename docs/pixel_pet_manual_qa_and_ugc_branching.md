@@ -22,25 +22,27 @@ Status:
 Manual visual decision:
 
 ```text
-keep_as_local_import_candidate_do_not_promote_default_assets
+promotion_gate_candidate_after_jumping_failed_row_repair
 ```
 
-Rows accepted for local import smoke:
+Rows accepted for promotion-gate candidate review:
 
 - `idle`
 - `running-right`
 - `running-left`
 - `waving`
+- `jumping`
+- `failed`
 - `waiting`
 - `running`
 - `review`
 
-Rows requiring attention before bundled promotion:
+Rows repaired before promotion-gate candidate review:
 
-- `jumping`: frames 0 and 4 have a visible body scale/proportion jump.
-- `failed`: frame 4 changes silhouette and scale more than neighboring frames.
+- `jumping`: regenerated so frames 0 and 4 keep consistent crouch scale/proportions.
+- `failed`: regenerated so the row no longer contains the abrupt oversized seated frame.
 
-Conclusion: the current Xingxi pixel-pet pack is good enough for ignored local import testing, but it is not promotion-ready for `assets/companion/original_oc` or any default runtime manifest.
+Conclusion: the current Xingxi pixel-pet pack can proceed to a promotion-gate package review. It is still not bundled, and `assets/companion/original_oc` plus default runtime manifests remain unchanged.
 
 ## UGC Branch Policy
 
@@ -87,9 +89,9 @@ These records are local evidence only. They must not be required to build or tes
 
 Before any bundled promotion:
 
-1. Repair or explicitly accept the Xingxi `jumping` and `failed` rows.
+1. Build a promotion-gate package from the current Xingxi candidate.
 2. Re-run pixel-pet pack validation.
 3. Re-run runtime character-pack validation.
 4. Re-run local import smoke.
 5. Run UI smoke tests and full `python -m pytest`.
-6. Only then consider a promotion package that updates bundled assets.
+6. Only then consider a separate package that updates bundled assets.

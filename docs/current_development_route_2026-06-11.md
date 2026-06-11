@@ -294,6 +294,8 @@ python -m pytest
 - 已补 `private_local_fanwork` 作为像素宠草稿包 validator 允许的更严格 UGC 边界；`_ugc_` 角色仍会拒绝 `official_candidate`。
 - 已记录星汐人工 QA：当前包可保留为本地导入候选，但 `jumping` 与 `failed` 有比例跳变，不能直接推广到默认资产。
 - 已为伊卡洛斯与奶龙建立 ignored local UGC 分支边界记录，只写权利与 QA 计划，不生成、不提交、不分发资产。
+- 已通过 subagent + `$imagegen` 局部重生星汐 `jumping` 与 `failed` 两行；两个候选均通过 component 抽帧和 row review，重新 `finalize_pet_run --skip-videos` 后整包 validation/review 均 `ok=true`、无 warnings。
+- 已刷新 ignored 草稿包和 local user-pack import smoke；`Play` 指向修复后的 `jumping` row，`SwitchDown` 指向修复后的 `failed` row。默认 runtime manifest 仍未更新。
 
 ### P6-release-package-check：演示版打包复核
 
@@ -320,10 +322,11 @@ python -m pytest
 
 ## 8. 推荐立即执行的下一包
 
-`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import` 最小闭环，以及 `P5-manual-qa-and-ugc-branching` 已完成当前验证。建议下一包做 `P5-xingxi-row-repair-or-promotion-decision`：
+`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import`、`P5-manual-qa-and-ugc-branching`、以及 `P5-xingxi-row-repair-or-promotion-decision` 已完成当前验证。建议下一包做 `P5-xingxi-promotion-gate-package`：
 
-- 只处理星汐 `jumping` 与 `failed` 两行：要么局部重生，要么明确接受为特殊反应；
-- 若修复后通过人工 QA，再创建正式 promotion gate 包，仍先不替换 `assets/companion/original_oc`；
+- 用当前修复后的星汐候选创建 promotion gate 包；
+- 先跑 promotion gate、pack validation、local import smoke、UI smoke 和全量测试；
+- 仍先不替换 `assets/companion/original_oc`，默认资产替换作为后续单独包处理；
 - 伊卡洛斯、奶龙继续保持 local UGC 分支，等用户确认要生成私有草稿时再走 hatch-pet 单行流程；
 - 继续保持 AI-video、Live2D、精细 VN portrait 为研究线，不回到无边界迭代。
 
