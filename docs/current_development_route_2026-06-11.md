@@ -223,13 +223,14 @@ git status --short --untracked-files=all
 
 ```powershell
 python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-frames --state idle --expected-frames 6 --decision needs_regeneration --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-row-review
+python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-blink-regenerated-20260611-frames --state idle --expected-frames 6 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-blink-regenerated-20260611-row-review
 python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-frames --state running-right --expected-frames 8 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-row-review
 python tools\art\validate_companion_atlas.py --atlas <candidate_spritesheet.png> --manifest <candidate_motion_manifest.json>
 python -m pytest tests\test_pixel_pet_row_review.py tests\test_art_tools.py tests\test_motion.py -q
 python -m pytest
 ```
 
-当前检查点：`running-right` row 可作为 gait testing 候选继续；当前 `idle` row 只能 slot 抽帧，且肉眼看缺少明确 `idle_breathe + blink`，所以 P3 的首行目标未完成，下一步应只重新生成/修复 `idle` row。若当前会话没有可用 `$imagegen`，不得用本地脚本伪造替代帧。
+当前检查点：旧 `idle-current` row 已明确保留为失败证据，因为它只能 slot 抽帧且缺少明确 blink；新的 `idle-blink-regenerated-20260611` row 已通过 component 抽帧和 row review，决策为 `accepted_for_row_testing`，`runtime_manifest_updated=false`。`running-right` row 仍可作为 gait testing 候选继续。下一步是把通过的 `idle` 与 `running-right` 作为行级候选继续推进后续 row，而不是更新默认 runtime manifest。
 
 ### P4-llm-to-emote-map：让 LLM 表达映射到像素动作
 
