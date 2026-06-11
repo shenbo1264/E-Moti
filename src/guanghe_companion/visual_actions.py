@@ -39,6 +39,30 @@ TAG_ALIASES: dict[str, tuple[str, str]] = {
     "study": ("focused", "Study"),
     "surprised": ("surprised", "Raised"),
     "calm": ("calm", "Default"),
+    "goofy": ("goofy", "Play"),
+    "confused": ("confused", "Study"),
+    "blink": ("blink", "Default"),
+}
+
+PIXEL_EXPRESSION_MOTION_IDS: dict[str, str] = {
+    "joy": "TouchHead",
+    "happy": "TouchHead",
+    "smile": "TouchHead",
+    "sadness": "SwitchDown",
+    "sad": "SwitchDown",
+    "sleepy": "Sleep",
+    "tired": "Sleep",
+    "excited": "Play",
+    "play": "Play",
+    "focused": "Study",
+    "focus": "Study",
+    "study": "Study",
+    "surprised": "Raised",
+    "calm": "Default",
+    "neutral": "Default",
+    "blink": "Default",
+    "goofy": "Play",
+    "confused": "Study",
 }
 
 _TAG_PATTERN = re.compile(r"\[([A-Za-z0-9_-]{1,32})\]")
@@ -153,6 +177,20 @@ def sprite_motion_override(actions: object) -> str | None:
     for action in normalized:
         if action.action_type == "motion" and action.action_id in SPRITE_MOTION_IDS:
             return action.action_id
+    return None
+
+
+def pixel_motion_override(actions: object) -> str | None:
+    normalized = actions if isinstance(actions, tuple) else visual_actions_from_dicts(actions)
+    explicit_motion = sprite_motion_override(normalized)
+    if explicit_motion:
+        return explicit_motion
+    for action in normalized:
+        if action.action_type != "expression":
+            continue
+        motion = PIXEL_EXPRESSION_MOTION_IDS.get(action.action_id)
+        if motion in SPRITE_MOTION_IDS:
+            return motion
     return None
 
 

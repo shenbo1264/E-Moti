@@ -250,6 +250,8 @@ python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py -q
 python -m pytest
 ```
 
+当前检查点：sprite fallback 已能把 `visual_actions.expression` 中的 `joy`、`focused`、`sleepy`、`surprised`、`goofy`、`confused` 等安全表演标签映射到现有 motion family；显式 `visual_actions.motion` 仍优先。这只发生在 renderer adapter 层，不写 state、coins、inventory、relationship、memory、goals 或 save。
+
 ### P5-user-pack-local-import：三角色本地切换演示
 
 目标：形成“官方星汐 + 本地 UGC 包”的演示闭环。

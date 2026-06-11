@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Literal, Protocol
 
-from .visual_actions import VisualAction, sprite_motion_override, visual_actions_from_dicts
+from .visual_actions import VisualAction, pixel_motion_override, sprite_motion_override, visual_actions_from_dicts
 
 RendererBackend = Literal["sprite", "live2d_web", "portrait"]
 
@@ -37,7 +37,7 @@ class SpritePresentationAdapter:
 
     def frame_from_snapshot(self, snapshot: Mapping[str, object]) -> PresentationFrame:
         visual_actions = _visual_actions(snapshot.get("visual_actions"))
-        visual_motion = sprite_motion_override(visual_actions)
+        visual_motion = pixel_motion_override(visual_actions)
         motion = self.motion_map.get(visual_motion, visual_motion) if visual_motion else _snapshot_motion(snapshot)
         return PresentationFrame(
             backend=self.backend,

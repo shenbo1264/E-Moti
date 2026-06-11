@@ -24,13 +24,13 @@ def test_sprite_presentation_adapter_uses_llm_visual_motion_without_mutating_sna
     assert snapshot["motion"] == "Default"
 
 
-def test_sprite_presentation_adapter_falls_back_to_snapshot_motion_when_no_motion_action():
+def test_sprite_presentation_adapter_falls_back_to_snapshot_motion_when_expression_is_unknown():
     snapshot = {
         "motion": "Study",
         "visual_actions": [
             {
                 "type": "expression",
-                "id": "joy",
+                "id": "unknown",
                 "ttl_ms": 3000,
                 "priority": 70,
                 "source": "llm",
@@ -41,6 +41,52 @@ def test_sprite_presentation_adapter_falls_back_to_snapshot_motion_when_no_motio
     frame = SpritePresentationAdapter().frame_from_snapshot(snapshot)
 
     assert frame.motion == "Study"
+
+
+def test_sprite_presentation_adapter_maps_expression_to_pixel_motion_without_mutating_snapshot():
+    snapshot = {
+        "motion": "Default",
+        "visual_actions": [
+            {
+                "type": "expression",
+                "id": "focused",
+                "ttl_ms": 3000,
+                "priority": 70,
+                "source": "llm",
+            }
+        ],
+    }
+
+    frame = SpritePresentationAdapter().frame_from_snapshot(snapshot)
+
+    assert frame.motion == "Study"
+    assert snapshot["motion"] == "Default"
+
+
+def test_sprite_presentation_adapter_prefers_explicit_motion_over_expression():
+    snapshot = {
+        "motion": "Default",
+        "visual_actions": [
+            {
+                "type": "expression",
+                "id": "sleepy",
+                "ttl_ms": 3000,
+                "priority": 70,
+                "source": "llm",
+            },
+            {
+                "type": "motion",
+                "id": "Raised",
+                "ttl_ms": 1800,
+                "priority": 60,
+                "source": "llm",
+            },
+        ],
+    }
+
+    frame = SpritePresentationAdapter().frame_from_snapshot(snapshot)
+
+    assert frame.motion == "Raised"
 
 
 def test_sprite_presentation_adapter_uses_character_motion_map():

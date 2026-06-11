@@ -27,6 +27,7 @@ E-Moti keeps pet growth and AI expression separate.
 
 - The local controller owns state, inventory, relationship, memory, goals, and saves.
 - LLM output is parsed through typed events before it reaches the UI.
+- Sprite presentation can map validated `visual_actions.expression` cues such as `joy`, `focused`, `sleepy`, `goofy`, and `confused` to safe pixel-pet motion families; explicit motion cues still take priority.
 - Screen observation and web search only enter read-only expression context.
 - ASR only becomes player text input.
 - TTS only speaks already validated companion speech.
