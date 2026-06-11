@@ -310,6 +310,7 @@ python -m pytest
 - 角色库 QA 首轮截图发现详情文本会被按钮区域截断；已将角色详情文本放入可滚动区域并补 `test_character_library_detail_metadata_is_scrollable` 回归。
 - 已运行 `python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\screenshots --pet-seconds 0.5`，报告 `ok=true`、默认仍为 `original_oc`、切换后为 `xingxi_pixel_pet`、桌宠 backend 为 `sprite`、`errors=[]`。截图显示角色库 metadata 完整可见，桌宠 sprite 正常渲染。
 - 已运行 `python -m pytest tests\test_character_library_qa_tool.py tests\test_app.py tests\test_desktop_pet_smoke.py -q`，结果 `98 passed`；`python -m pytest tests\test_character_pack.py tests\test_character_registry.py tests\test_windows_packaging_scripts.py tests\test_windows_build_validator.py -q`，结果 `44 passed`；全量 `python -m pytest`，结果 `787 passed`。
+- 已在非 offscreen 环境运行 `python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa-real-desktop.json --screenshot-dir artifacts\character-library-qa\real-desktop-screenshots --pet-seconds 1.0`，报告 `ok=true`。功能链路可用，但截图仍显示透明背景捕获为黑底，且角色边缘有明显紫色描边/halo；这不阻止候选展示，但阻止默认替换。
 - 当前默认决策：继续保持 `original_oc` 为默认包，`xingxi_pixel_pet` 作为可切换内置候选；是否默认替换留给真实桌面人工美术 QA 后的独立包。
 
 ### P6-release-package-check：演示版打包复核
