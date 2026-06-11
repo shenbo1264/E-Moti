@@ -87,6 +87,7 @@ A candidate is not usable until:
 
 ```powershell
 python <hatch-pet>\scripts\finalize_pet_run.py --run-dir artifacts\pixel-pet-sequence-drafts\<character_id>\hatch_run
+python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<character_id>
 ```
 
 produces:
@@ -124,4 +125,3 @@ Do not update:
 - packaging scripts.
 
 Promotion is a separate package after a full candidate passes QA.
-

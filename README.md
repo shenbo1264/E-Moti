@@ -112,6 +112,12 @@ python tools\create_character_draft.py --brief path\to\brief.json --output-root 
 python tools\validate_character_draft.py path\to\generated\<character_id>
 ```
 
+Draft pixel-pet pack validation:
+
+```powershell
+python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<character_id>
+```
+
 Import a complete validated character pack into a user pack root:
 
 ```powershell

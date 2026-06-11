@@ -171,7 +171,8 @@ character_packs_drafts/<character_id>/
 验收：
 
 ```powershell
-python -m pytest tests\test_art_tools.py tests\test_character_pack.py tests\test_character_pack_validator_tool.py -q
+python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<character_id>
+python -m pytest tests\test_pixel_pet_pack_validator_tool.py tests\test_art_tools.py tests\test_character_pack.py tests\test_character_pack_validator_tool.py -q
 python -m pytest
 ```
 
