@@ -130,9 +130,12 @@ Bundled character-library QA:
 
 ```powershell
 python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\screenshots
+python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json
+python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --fail-on-warnings
 ```
 
 This opens the real control panel with temporary user data, selects `xingxi_pixel_pet`, verifies the distribution/provenance/license detail, switches to the pack, opens desktop pet mode, saves screenshots, and writes a JSON report. It does not change the default `original_oc` pack.
+`pixel_pet_visual_qa.py` is a read-only spritesheet gate for pixel-pet candidates. It reuses the atlas contract and counts suspicious purple/red edge pixels adjacent to transparency; warnings do not change runtime behavior, but `--fail-on-warnings` can block default-promotion packages.
 
 Import a complete validated character pack into a user pack root:
 
