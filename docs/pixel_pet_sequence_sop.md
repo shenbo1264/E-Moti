@@ -44,7 +44,7 @@ Track policy:
 - `ikaros_ugc_pixel_pet`: local UGC fanwork representative for Ikaros from Heaven's Lost Property. Not distributable without rights.
 - `nairong_ugc_pixel_pet`: local UGC pet-style representative for Nairong. Not distributable without rights.
 
-UGC tracks are for local workflow validation only. Do not commit their generated images, final packs, official names in release assets, copied visual signatures, official lines, logos, screenshots, or source art.
+UGC tracks are for local workflow validation only. Their pixel-pet draft boundary may be `local_ugc_only` or the stricter `private_local_fanwork`. Do not commit their generated images, final packs, official names in release assets, copied visual signatures, official lines, logos, screenshots, or source art.
 
 ## Workflow
 

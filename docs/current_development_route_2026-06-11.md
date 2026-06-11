@@ -291,6 +291,9 @@ python -m pytest
 - 已执行 `python tools\import_character_pack.py ... --target-root artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\local_user_pack_root --force`，导入报告写入 ignored `...\xingxi_pixel_pet_import_report.json`，结果 `ok=true`、`distribution_boundary=shareable_after_review`。
 - 已用 `CharacterRegistry` 从 ignored local user-pack root 列出 `xingxi_pixel_pet`，来源为 `user`，preview 存在；已用 `load_character_pack_from_dir` 和 `load_motion_catalog_from_dir` 读取 sprite backend、8 列 9 行 atlas、全部动作映射，并确认未知动作回退到 `Default`。
 - 已跑 P5 相关测试 `python -m pytest tests\test_character_registry.py tests\test_character_session.py tests\test_character_pack_import_tool.py tests\test_app.py tests\test_desktop_pet_smoke.py -q`，结果 `132 passed`。
+- 已补 `private_local_fanwork` 作为像素宠草稿包 validator 允许的更严格 UGC 边界；`_ugc_` 角色仍会拒绝 `official_candidate`。
+- 已记录星汐人工 QA：当前包可保留为本地导入候选，但 `jumping` 与 `failed` 有比例跳变，不能直接推广到默认资产。
+- 已为伊卡洛斯与奶龙建立 ignored local UGC 分支边界记录，只写权利与 QA 计划，不生成、不提交、不分发资产。
 
 ### P6-release-package-check：演示版打包复核
 
@@ -317,11 +320,11 @@ python -m pytest
 
 ## 8. 推荐立即执行的下一包
 
-`P0-doc-sync`、星汐 `P1-pixel-pack-contract` 和星汐 `P5-user-pack-local-import` 最小闭环已完成当前验证。建议下一包做 `P5-manual-qa-and-ugc-branching`：
+`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import` 最小闭环，以及 `P5-manual-qa-and-ugc-branching` 已完成当前验证。建议下一包做 `P5-xingxi-row-repair-or-promotion-decision`：
 
-- 对星汐 contact sheet 做人工 QA 决策，重点看 `jumping` 与 `failed` 的比例跳变是否需要局部重生；
-- 若星汐通过人工 QA，再决定是否创建正式 promotion gate 包，仍先不替换 `assets/companion/original_oc`；
-- 为伊卡洛斯、奶龙分别建立 local UGC 草稿包目录和权利边界说明，但不生成或分发默认资产；
+- 只处理星汐 `jumping` 与 `failed` 两行：要么局部重生，要么明确接受为特殊反应；
+- 若修复后通过人工 QA，再创建正式 promotion gate 包，仍先不替换 `assets/companion/original_oc`；
+- 伊卡洛斯、奶龙继续保持 local UGC 分支，等用户确认要生成私有草稿时再走 hatch-pet 单行流程；
 - 继续保持 AI-video、Live2D、精细 VN portrait 为研究线，不回到无边界迭代。
 
 ## 9. 本文档的证据命令

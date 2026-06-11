@@ -134,7 +134,25 @@ def test_validate_pixel_pet_pack_requires_local_boundary_for_ugc(tmp_path: Path)
     report = validate_pixel_pet_pack_dir(pack)
 
     assert report.ok is False
-    assert "UGC pixel-pet packs must use local_ugc_only distribution_boundary" in report.errors
+    assert (
+        "UGC pixel-pet packs must use local_ugc_only or private_local_fanwork distribution_boundary"
+        in report.errors
+    )
+
+
+def test_validate_pixel_pet_pack_accepts_private_fanwork_boundary_for_ugc(tmp_path: Path) -> None:
+    pack = tmp_path / "ikaros_ugc_pixel_pet"
+    write_valid_pixel_pet_pack(
+        pack,
+        character_id="ikaros_ugc_pixel_pet",
+        distribution_boundary="private_local_fanwork",
+    )
+
+    report = validate_pixel_pet_pack_dir(pack)
+
+    assert report.ok is True
+    assert report.distribution_boundary == "private_local_fanwork"
+    assert report.errors == ()
 
 
 def test_validate_pixel_pet_pack_tool_outputs_json(tmp_path: Path) -> None:

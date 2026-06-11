@@ -14,7 +14,12 @@ if __package__ in {None, ""}:
 from tools.art.validate_companion_atlas import validate_atlas
 
 
-ALLOWED_DISTRIBUTION_BOUNDARIES = {"official_candidate", "local_ugc_only"}
+ALLOWED_DISTRIBUTION_BOUNDARIES = {
+    "official_candidate",
+    "local_ugc_only",
+    "private_local_fanwork",
+}
+UGC_DISTRIBUTION_BOUNDARIES = {"local_ugc_only", "private_local_fanwork"}
 REQUIRED_FILES = (
     "character.json",
     "dialogue_style.json",
@@ -142,8 +147,10 @@ def _validate_qa_payload(character_id: str, payload: dict[str, object], errors: 
     if boundary not in ALLOWED_DISTRIBUTION_BOUNDARIES:
         errors.append("qa_report.json.distribution_boundary invalid")
         return
-    if "_ugc_" in character_id and boundary != "local_ugc_only":
-        errors.append("UGC pixel-pet packs must use local_ugc_only distribution_boundary")
+    if "_ugc_" in character_id and boundary not in UGC_DISTRIBUTION_BOUNDARIES:
+        errors.append(
+            "UGC pixel-pet packs must use local_ugc_only or private_local_fanwork distribution_boundary"
+        )
 
 
 def _validate_provenance(path: Path, errors: list[str]) -> None:
