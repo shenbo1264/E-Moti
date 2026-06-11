@@ -75,7 +75,7 @@
 
 - 定位：项目原创 OC，未来可成为默认开源角色包。
 - 路线：基于现有星汐人设与已形成的角色生成 SOP，重制为 hatch-pet 风格像素宠序列帧。
-- 分发：通过 QA、provenance、LICENSE、角色包校验后，可以考虑进入 `assets/companion/`。
+- 分发：通过 QA、provenance、LICENSE、角色包校验后，可以作为可切换的内置候选进入 `assets/companion/`；是否替换默认 `original_oc` 是另一个独立决策。
 
 ### 伊卡洛斯
 
@@ -298,6 +298,14 @@ python -m pytest
 - 已刷新 ignored 草稿包和 local user-pack import smoke；`Play` 指向修复后的 `jumping` row，`SwitchDown` 指向修复后的 `failed` row。默认 runtime manifest 仍未更新。
 - 已新增并执行 `tools\pixel_pet_promotion_gate.py`；当前星汐候选的 promotion gate 报告写入 ignored `artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\promotion_gate\pixel_pet_promotion_gate_report.json`，结果 `ok=true`、`errors=[]`、`warnings=[]`。
 - 已按 promotion gate 下一包要求重跑 pixel pack validation、runtime character pack validation、local import smoke、UI smoke 和全量测试；默认资产仍未替换。
+- 已新增 `assets\companion\xingxi_pixel_pet` 作为可切换的内置 sprite 候选包，包含 curated `spritesheet.png`、`motion_manifest.json`、角色 metadata、shop items、item icons、contact sheet、provenance、license 和 manual QA summary。
+- 当前默认包仍是 `assets\companion\original_oc`；`load_default_character_pack()` 返回 `original_oc`，`CharacterRegistry` 同时列出 `original_oc` 与 `xingxi_pixel_pet`。
+- 新内置候选包已通过 `python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet`、`python tools\validate_pixel_pet_pack.py assets\companion\xingxi_pixel_pet --report ...\bundled_pixel_pack_validation_report.json` 和 `python tools\pixel_pet_promotion_gate.py assets\companion\xingxi_pixel_pet --manual-qa assets\companion\xingxi_pixel_pet\manual_qa.json --report ...\bundled_pixel_pet_promotion_gate_report.json`，结果均为 `ok=true` 且 promotion gate `warnings=[]`。
+- 已通过 `python -m pytest tests\test_character_pack.py -q`（`7 passed`）、角色包/注册表/导入/promotion 定向测试（`53 passed`）以及 UI / 桌宠 smoke（`95 passed`）。
+- 已刷新全量 `python -m pytest`，结果 `784 passed`。
+- 打包过程中发现并修复了一个真实阻断：`tools\build_windows_app.ps1` 原先只 staging `assets\companion\original_oc`，导致新增内置包不会进入 frozen app；现改为 staging 整个 `assets\companion`。
+- `tools\validate_windows_build.py` 已按 renderer 类型检查 frozen 角色资产：portrait 包检查 portrait 资产，sprite 包检查 spritesheet、motion manifest、provenance、preview、item icons 和 license。
+- 已重新执行 `powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1`、`powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild`、`python tools\validate_windows_build.py --report artifacts\windows-build-validation.json`、`python tools\validate_windows_build.py --character-id xingxi_pixel_pet --report artifacts\windows-build-validation-xingxi-pixel-pet.json`，结果均通过；frozen 控制面板和 `--pet-mode` 5 秒 smoke 均保持运行并被手动结束。
 
 ### P6-release-package-check：演示版打包复核
 
@@ -324,11 +332,10 @@ python -m pytest
 
 ## 8. 推荐立即执行的下一包
 
-`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import`、`P5-manual-qa-and-ugc-branching`、`P5-xingxi-row-repair-or-promotion-decision`、以及 `P5-xingxi-promotion-gate-package` 已完成当前验证。建议下一包做 `P5-bundled-asset-promotion-decision`：
+`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import`、`P5-manual-qa-and-ugc-branching`、`P5-xingxi-row-repair-or-promotion-decision`、`P5-xingxi-promotion-gate-package`、以及 `P5-bundled-asset-promotion-decision` 已完成当前验证。建议下一包做 `P5-character-library-qa-and-default-decision`：
 
-- 明确是否把修复后的星汐 pixel-pet 候选提升为 bundled 默认候选；
-- 如果提升，作为单独包替换或新增 tracked bundled asset，并跑 UI smoke、全量测试和必要打包验证；
-- 如果暂不提升，则保留 ignored promotion gate 报告并转向 UGC 私有草稿生成；
+- 在真实 UI 中人工检查 `xingxi_pixel_pet` 的角色库预览、切换体验、桌宠透明边界、动作比例和眨眼/跳跃/低状态节奏；
+- 若 UI QA 通过，再单独决定是否把 `xingxi_pixel_pet` 提升为默认包，或继续保持 `original_oc` 默认、像素星汐作为可选候选；
 - 伊卡洛斯、奶龙继续保持 local UGC 分支，等用户确认要生成私有草稿时再走 hatch-pet 单行流程；
 - 继续保持 AI-video、Live2D、精细 VN portrait 为研究线，不回到无边界迭代。
 

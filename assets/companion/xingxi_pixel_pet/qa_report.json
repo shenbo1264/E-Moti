@@ -1,0 +1,27 @@
+{
+  "status": "candidate",
+  "manual_qa_required": true,
+  "distribution_boundary": "official_candidate",
+  "runtime_manifest_updated": false,
+  "deterministic_checks": {
+    "finalize_validation_ok": true,
+    "contact_sheet_review_ok": true,
+    "pixel_pack_contract_ok": true,
+    "runtime_import_smoke_ok": true,
+    "promotion_gate_ok": true
+  },
+  "notes": [
+    "Bundled as an optional Xingxi pixel-pet candidate after row repair and promotion-gate validation.",
+    "This pack does not replace assets/companion/original_oc and does not change the default runtime character.",
+    "The source generation run and raw candidate history remain in ignored local artifacts; this public pack keeps only curated runtime assets and release notes."
+  ],
+  "row_repair_decision": {
+    "repaired_rows": [
+      "jumping",
+      "failed"
+    ],
+    "jumping": "accepted_for_promotion_gate_candidate_after_regeneration",
+    "failed": "accepted_for_promotion_gate_candidate_after_regeneration",
+    "runtime_manifest_updated": false
+  }
+}

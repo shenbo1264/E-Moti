@@ -10,7 +10,7 @@ Priority direction:
 
 1. Keep the existing sprite desktop pet as the tray-friendly baseline and regression-safe renderer.
 2. Build small pixel-adjacent character sequence packs first: one canonical base, one grounded animation row at a time, contact-sheet QA, then row repair.
-3. Treat Xingxi as the original distributable candidate after QA; treat Ikaros and Nairong as local UGC workflow representatives only unless rights are cleared.
+3. Treat Xingxi as the original distributable candidate after QA; `xingxi_pixel_pet` may exist as an optional bundled candidate, but do not replace `original_oc` as the default pack without a separate default-promotion package. Treat Ikaros and Nairong as local UGC workflow representatives only unless rights are cleared.
 4. Make LLM expression central to the perceived character performance: LLM output may choose speech, expression cues, motion cues, and read-only interaction intents through typed events.
 5. Do not let LLM, screen observation, search, ASR, or TTS own growth state, inventory, memory, relationship, goals, or saves.
 6. Keep portrait/spirit, AI-video, LivePortrait, and Live2D as research or later renderer paths. Do not let them block the pixel-pet sequence route.
@@ -87,7 +87,7 @@ Forbidden:
 
 Build the demo loop around official Xingxi plus local UGC packs:
 
-- Xingxi can become a bundled candidate after full QA.
+- Xingxi can become a bundled candidate after full QA. A bundled candidate is still not a default replacement unless a separate package updates the default route and passes UI, full test, and packaging gates.
 - Ikaros and Nairong remain local UGC workflow representatives unless rights are cleared.
 - Character library UI must keep provenance, license, and distribution boundaries visible.
 - Every character keeps independent art assets, character data, memory/save namespace, and QA notes.

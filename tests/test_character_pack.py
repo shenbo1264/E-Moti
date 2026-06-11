@@ -1,9 +1,14 @@
 import json
+from pathlib import Path
 
 from PIL import Image
 
 from guanghe_companion.character_pack import load_character_pack_from_dir, load_default_character_pack, resolve_motion_caption
+from guanghe_companion.character_registry import validate_character_pack_dir
 from guanghe_companion.engine import BUYABLE_ITEMS
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_load_default_character_pack_reads_original_oc_manifest():
@@ -25,6 +30,18 @@ def test_load_default_character_pack_reads_spritesheet_filename():
     assert pack.renderer.motion_map["Play"] == "Play"
     assert pack.renderer.expression_map["joy"] == "smile"
     assert pack.renderer.intent_map["offer_rest"] == "offer_rest"
+
+
+def test_bundled_xingxi_pixel_pet_pack_is_valid_sprite_candidate():
+    pack_dir = REPO_ROOT / "assets" / "companion" / "xingxi_pixel_pet"
+
+    report = validate_character_pack_dir(pack_dir)
+    pack = load_character_pack_from_dir(pack_dir)
+
+    assert report.ok is True
+    assert pack.character_id == "xingxi_pixel_pet"
+    assert pack.renderer.backend == "sprite"
+    assert pack.renderer.expression_map["goofy"] == "Play"
 
 
 def test_load_character_pack_reads_live2d_renderer_model_path(tmp_path):

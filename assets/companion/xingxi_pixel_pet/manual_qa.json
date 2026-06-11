@@ -1,0 +1,31 @@
+{
+  "character_id": "xingxi_pixel_pet",
+  "reviewed_at": "2026-06-11",
+  "contact_sheet": "preview/contact-sheet.png",
+  "deterministic_checks": {
+    "final_validation_ok": true,
+    "hatch_review_ok": true,
+    "pixel_pack_validation_ok": true,
+    "runtime_import_smoke_ok": true,
+    "jumping_row_review_ok": true,
+    "failed_row_review_ok": true,
+    "promotion_gate_ok": true
+  },
+  "manual_decision": "promotion_gate_candidate_bundled_optional_after_jumping_failed_row_repair",
+  "repaired_rows": [
+    {
+      "row": "jumping",
+      "decision": "accepted_for_promotion_gate_candidate"
+    },
+    {
+      "row": "failed",
+      "decision": "accepted_for_promotion_gate_candidate"
+    }
+  ],
+  "remaining_notes": [
+    "Current candidate is suitable as an optional bundled character-library pack.",
+    "Default original_oc runtime assets and manifests remain unchanged.",
+    "A later package can decide whether this candidate should replace the default role after UI and art QA."
+  ],
+  "runtime_manifest_updated": false
+}

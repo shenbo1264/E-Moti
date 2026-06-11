@@ -2,7 +2,7 @@
 
 E-Moti is a Windows-first desktop AI companion pet demo built with Python and PySide6.
 
-The bundled companion is the original character Xingxi. The current near-term route is a hatch-pet-style pixel-pet sequence workflow: lock one canonical character base, generate one animation row at a time, review contact sheets, repair only failed rows, and only then promote a validated character pack. Learning, resting, comforting, and playing are action states, not the product identity.
+The bundled companion is the original character Xingxi. The current near-term route is a hatch-pet-style pixel-pet sequence workflow: lock one canonical character base, generate one animation row at a time, review contact sheets, repair only failed rows, and only then promote a validated character pack. The repo now also includes `xingxi_pixel_pet` as an optional bundled sprite candidate; `original_oc` remains the default companion pack. Learning, resting, comforting, and playing are action states, not the product identity.
 
 This project is not a productivity coach, course supervisor, mascot skin, or chatbot-only shell.
 
@@ -14,7 +14,7 @@ This project is not a productivity coach, course supervisor, mascot skin, or cha
 - Character library support for switching bundled or user-imported complete character packs.
 - Local state machine for focus, charge, stability, mood, trust, coins, level, inventory, memories, and relationship unlocks.
 - Sprite atlas renderer kept as the tray-friendly baseline and regression-safe renderer.
-- Pixel-pet sequence workflow for future character packs, with draft assets kept outside runtime manifests until QA.
+- Pixel-pet sequence workflow for future character packs, with a QA-gated Xingxi pixel-pet sprite candidate available as a separate bundled pack.
 - Portrait/Spirit renderer using bundled original Xingxi smoke assets, kept as a later presentation path rather than the active art-production route.
 - Live2D Web renderer path for character packs that provide a safe `.model3.json`; sprite remains the fallback.
 - Optional LLM expression adapter that can turn validated local events into character speech, expression cues, motion cues, and read-only interaction intents.
@@ -103,6 +103,7 @@ Character pack validation:
 
 ```powershell
 python tools\validate_character_pack.py assets\companion\original_oc
+python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
 python tools\review_character_pack_status.py assets\companion\original_oc --json artifacts\character-pack-status-original-oc.json --markdown artifacts\character-pack-status-original-oc.md
 ```
 
@@ -258,6 +259,7 @@ Validate the frozen app bundle and installer artifacts:
 
 ```powershell
 python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
+python tools\validate_windows_build.py --character-id xingxi_pixel_pet --report artifacts\windows-build-validation-xingxi-pixel-pet.json
 python tools\release_readiness_report.py --json artifacts\release-readiness.json --markdown artifacts\release-readiness.md
 python tools\release_readiness_report.py --llm-report artifacts\llm_smoke\deepseek-expression-cue-probe-20260609-rerun.json --llm-report artifacts\llm_smoke\deepseek-speech-quality-live-20260609-rerun.json --json artifacts\release-readiness-with-llm.json --markdown artifacts\release-readiness-with-llm.md
 python tools\release_readiness_report.py --llm-report artifacts\llm_smoke --json artifacts\release-readiness-with-llm-directory.json --markdown artifacts\release-readiness-with-llm-directory.md
@@ -279,7 +281,7 @@ python tools\release_readiness_report.py --portrait-retry-handoff-report artifac
 python tools\release_readiness_report.py --full-local-snapshot --json artifacts\release-readiness-full-local-snapshot.json --markdown artifacts\release-readiness-full-local-snapshot.md
 ```
 
-The build validator also checks that the frozen bundled `original_oc` character pack includes its manifest, portraits, preview, item icons, provenance note, and pack-level `LICENSE.md`.
+The build validator also checks that a selected frozen bundled character pack includes renderer-appropriate assets: portrait packs require portrait manifests and portraits; sprite packs require spritesheets, motion manifests, provenance, preview, item icons, and pack-level `LICENSE.md`.
 `release_readiness_report.py` is a read-only aggregate report that combines the source character-pack status review with frozen Windows build validation. Pass one or more `--llm-report` paths to include existing dialogue smoke or expression cue probe JSON reports without calling a provider. `--llm-report` also accepts an ignored smoke artifact directory and summarizes the batch review, including per-file attention summaries; old-format or failing reports in that directory intentionally make release readiness need attention. Pass `--portrait-candidate-report` to include an existing portrait candidate decision brief so candidate blockers, warnings, and next human decisions are visible before manifest promotion. Pass `--portrait-source-create-report` to include an existing source-pack creation report and verify the referenced source images, output directories, `source_pack.json`, prompts, reference image directory, frames directory, and video directory still exist before provider handoff. Pass `--portrait-workflow-report` to include an existing AI-video workflow JSON report so unresolved motion-frame blockers and suggested local follow-up commands stay visible in release notes. Pass `--portrait-frame-preflight-report` to include an existing source-frame preflight report and treat `ready_with_warnings` as not ready for motion extraction. Pass `--portrait-frame-normalization-report` to include an existing same-aspect frame normalization report so source/output pack paths, frame counts, resize warning count, normalized `source_pack.json`, and normalized `next_command` target remain visible before the normalized pack is preflighted again; when the normalization report is ready, release readiness marks the original lower-resolution source warnings as resolved by the normalized sibling while keeping normalized body-drift warnings as blockers. Pass `--portrait-video-handoff-report` to include an existing provider-neutral handoff zip report and verify every bundled zip still contains its reference image, Gemini prompt, provider prompts, source-pack metadata, and handoff README before manual upload. Pass `--portrait-video-import-report` to include an existing source-pack video import report and verify the copied provider video plus extracted PNG frame directory still exist before frame preflight. Pass `--portrait-source-batch-report` to include an existing source-pack batch scan or `--process-ready` result and keep skipped warning packs visible; processed packs must include an existing output directory and `process_report_path` file. Pass `--portrait-source-process-report` to include an existing single source-pack processing report and verify the referenced output directory, candidate manifest, extraction report, source prompt, preflight status, and motion frame count before candidate QA. Pass `--portrait-frame-qa-report` to include an existing frame visual QA JSON report so sampled frame count, size mismatches, preview path, preview file existence, and max body drift stay visible before motion extraction. Pass `--portrait-regeneration-brief-report` to include an existing regeneration brief so the current retry decision, paste-ready provider prompts, source reference image file, and frame QA preview file remain visible in release readiness. Pass `--portrait-retry-handoff-report` to include an existing retry handoff zip report and verify the manual provider upload bundle still contains its required reference image, retry prompt, negative prompt, regeneration brief, source-pack reference, and README entries. Pass `--liveportrait-preflight-report` to include an existing local LivePortrait setup preflight JSON, including missing weights, driving input status, and suggested manual follow-up commands, without cloning, installing, downloading weights, or running inference.
 Use `--full-local-snapshot` to include the current project QA artifact set under `artifacts`; pass `--snapshot-artifact-root` for a copied artifact root. The aggregate JSON includes `check_count`, `ready_check_count`, `attention_check_count`, and `attention_checks` with compact `reasons`; the Markdown repeats those numbers and adds an `Attention Checks` section with next actions and reason summaries before the detailed per-check output. Those top-level reasons include source-frame summaries, source-batch summaries, and frame visual-QA status/drift metrics when available.
 
@@ -328,6 +330,7 @@ See `docs/live2d_asset_pipeline.md` for the PSD layer checklist, Cubism export c
 
 - `src/guanghe_companion/` contains the application code.
 - `assets/companion/original_oc/` contains the bundled original character runtime assets, including portrait expressions and sprite fallback assets.
+- `assets/companion/xingxi_pixel_pet/` contains an optional bundled Xingxi pixel-pet sprite candidate; it is not the default pack.
 - `tests/` contains the regression and smoke tests.
 - `packaging/` and `tools/` contain Windows build entry points and scripts.
 - `data/` contains local runtime saves and is intentionally ignored by git.

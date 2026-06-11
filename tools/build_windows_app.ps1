@@ -11,10 +11,10 @@ $DistDir = Join-Path $RepoRoot "dist"
 $AppDir = Join-Path $DistDir "E-Moti"
 $BuildDir = Join-Path $RepoRoot "build\pyinstaller"
 $RuntimeAssetsRoot = Join-Path $BuildDir "runtime_assets\assets"
-$RuntimeCharacterDir = Join-Path $RuntimeAssetsRoot "companion\original_oc"
+$RuntimeCompanionDir = Join-Path $RuntimeAssetsRoot "companion"
 $EntryPath = Join-Path $RepoRoot "packaging\launch_control_panel.py"
 $AssetsPath = Join-Path $RepoRoot "assets"
-$SourceCharacterDir = Join-Path $AssetsPath "companion\original_oc"
+$SourceCompanionDir = Join-Path $AssetsPath "companion"
 $SrcPath = Join-Path $RepoRoot "src"
 $ExePath = Join-Path $AppDir "E-Moti.exe"
 
@@ -94,6 +94,9 @@ if (-not (Test-Path -LiteralPath $EntryPath)) {
 if (-not (Test-Path -LiteralPath $AssetsPath)) {
     throw "Missing assets directory: $AssetsPath"
 }
+if (-not (Test-Path -LiteralPath $SourceCompanionDir)) {
+    throw "Missing companion assets directory: $SourceCompanionDir"
+}
 
 $ResolvedPython = Resolve-PythonInvocation -RequestedPath $PythonPath
 Write-Host "Using Python: $($ResolvedPython.Command) $($ResolvedPython.Arguments -join ' ')"
@@ -105,12 +108,12 @@ if (-not $SkipClean) {
 
 New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
 New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
-New-Item -ItemType Directory -Force -Path $RuntimeCharacterDir | Out-Null
+New-Item -ItemType Directory -Force -Path $RuntimeCompanionDir | Out-Null
 
-# Keep the frozen pack equivalent to the validated source character pack.
-# Required examples: item_icons, portrait_manifest.json, portraits, preview, portrait_assets_provenance.md, LICENSE.md.
-Get-ChildItem -Force -LiteralPath $SourceCharacterDir | ForEach-Object {
-    Copy-Item -LiteralPath $_.FullName -Destination $RuntimeCharacterDir -Recurse -Force
+# Keep frozen companion packs equivalent to the validated source packs.
+# Required examples: original_oc item_icons, portrait_manifest.json, portraits, preview, portrait_assets_provenance.md, LICENSE.md, and additional bundled sprite packs.
+Get-ChildItem -Force -LiteralPath $SourceCompanionDir | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $RuntimeCompanionDir -Recurse -Force
 }
 
 $AddData = "$RuntimeAssetsRoot;assets"

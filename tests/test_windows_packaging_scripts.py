@@ -25,10 +25,14 @@ def test_pyinstaller_build_script_uses_onedir_windowed_app_bundle():
     assert "dist\\E-Moti\\E-Moti.exe" in script
 
 
-def test_pyinstaller_build_script_copies_complete_character_assets():
+def test_pyinstaller_build_script_copies_all_bundled_companion_packs():
     script = read_text("tools/build_windows_app.ps1")
 
-    assert "Get-ChildItem -Force -LiteralPath $SourceCharacterDir" in script
+    assert "$RuntimeCompanionDir" in script
+    assert "$SourceCompanionDir" in script
+    assert "Get-ChildItem -Force -LiteralPath $SourceCompanionDir" in script
+    assert "$RuntimeCharacterDir" not in script
+    assert "$SourceCharacterDir" not in script
     assert "portrait_manifest.json" in script
     assert "portraits" in script
     assert "portrait_assets_provenance.md" in script

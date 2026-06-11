@@ -17,6 +17,11 @@ from guanghe_companion.character_registry import validate_character_pack_dir
 DEFAULT_APP_DIR = REPO_ROOT / "dist" / "E-Moti"
 DEFAULT_INSTALLER = REPO_ROOT / "dist" / "installer" / "E-Moti_Setup_0.1.0.exe"
 DEFAULT_CHARACTER_ID = "original_oc"
+COMMON_REQUIRED_BUNDLED_ASSETS = ("LICENSE.md", "preview", "item_icons")
+RENDERER_REQUIRED_BUNDLED_ASSETS = {
+    "portrait": ("portrait_manifest.json", "portrait_assets_provenance.md", "portraits"),
+    "sprite": ("provenance.md", "spritesheet.png", "motion_manifest.json"),
+}
 
 
 @dataclass(frozen=True, slots=True)
@@ -62,14 +67,7 @@ def validate_windows_build(
     if not pack_report.ok:
         errors.extend(f"frozen character pack: {error}" for error in pack_report.errors)
 
-    for required in (
-        "portrait_manifest.json",
-        "portrait_assets_provenance.md",
-        "LICENSE.md",
-        "portraits",
-        "preview",
-        "item_icons",
-    ):
+    for required in _required_bundled_assets(character_dir):
         if not (character_dir / required).exists():
             errors.append(f"frozen character pack missing required bundled asset: {required}")
 
@@ -99,6 +97,26 @@ def _resolve_frozen_character_dir(app_dir: Path, character_id: str) -> Path:
         if candidate.exists():
             return candidate
     return candidates[0]
+
+
+def _required_bundled_assets(character_dir: Path) -> tuple[str, ...]:
+    return COMMON_REQUIRED_BUNDLED_ASSETS + RENDERER_REQUIRED_BUNDLED_ASSETS.get(
+        _renderer_backend(character_dir),
+        (),
+    )
+
+
+def _renderer_backend(character_dir: Path) -> str:
+    try:
+        payload = json.loads((character_dir / "character.json").read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return ""
+    if not isinstance(payload, dict):
+        return ""
+    renderer = payload.get("renderer")
+    if isinstance(renderer, dict) and isinstance(renderer.get("backend"), str):
+        return str(renderer["backend"])
+    return "sprite"
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
