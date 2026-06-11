@@ -126,6 +126,14 @@ python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<characte
 `review_pixel_pet_base.py` is for ignored canonical-base candidates only. It writes JSON/Markdown/preview evidence, reports cleanup risks such as non-flat chroma-key backgrounds, and never updates runtime manifests.
 `review_pixel_pet_row_candidate.py` reviews one extracted row candidate at a time. It is also ignored evidence only; it can reject a weak row without changing decoded images, job manifests, or runtime character manifests.
 
+Bundled character-library QA:
+
+```powershell
+python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\screenshots
+```
+
+This opens the real control panel with temporary user data, selects `xingxi_pixel_pet`, verifies the distribution/provenance/license detail, switches to the pack, opens desktop pet mode, saves screenshots, and writes a JSON report. It does not change the default `original_oc` pack.
+
 Import a complete validated character pack into a user pack root:
 
 ```powershell

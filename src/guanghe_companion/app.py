@@ -28,6 +28,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QProgressBar,
+    QScrollArea,
     QSpinBox,
     QStackedWidget,
     QTextEdit,
@@ -822,7 +823,15 @@ class CompanionWindow(QMainWindow):
         )
         self.character_detail_label = QLabel("选择一个角色包。")
         self.character_detail_label.setWordWrap(True)
+        self.character_detail_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
         self.character_detail_label.setObjectName("CharacterDetailLabel")
+        self.character_detail_scroll_area = QScrollArea()
+        self.character_detail_scroll_area.setWidgetResizable(True)
+        self.character_detail_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.character_detail_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.character_detail_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.character_detail_scroll_area.setMinimumHeight(220)
+        self.character_detail_scroll_area.setWidget(self.character_detail_label)
         self.character_switch_button = QPushButton("切换到此角色")
         self.character_switch_button.clicked.connect(self._handle_character_switch)
         self.character_import_button = QPushButton("导入角色包")
@@ -832,7 +841,7 @@ class CompanionWindow(QMainWindow):
         self.character_generate_button.setEnabled(False)
         self.character_generate_button.setToolTip("P5：AI 生成工作流输出到临时目录，人工 QA 后导入。")
         detail_layout.addWidget(self.character_preview_label)
-        detail_layout.addWidget(self.character_detail_label)
+        detail_layout.addWidget(self.character_detail_scroll_area, stretch=1)
         detail_layout.addWidget(self.character_switch_button)
         controls = QHBoxLayout()
         controls.addWidget(self.character_import_button)

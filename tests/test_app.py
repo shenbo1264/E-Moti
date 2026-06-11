@@ -544,6 +544,44 @@ def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_pat
     app.processEvents()
 
 
+def test_character_library_detail_metadata_is_scrollable(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    (pack_dir / "provenance.md").write_text("Original generated pack.", encoding="utf-8")
+    (pack_dir / "LICENSE.md").write_text("Test license.", encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.resize(720, 520)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    assert window.character_detail_scroll_area.widget() is window.character_detail_label
+    assert window.character_detail_label.wordWrap()
+    assert window.character_detail_label.alignment() & Qt.AlignmentFlag.AlignTop
+    assert "Distribution: shareable_after_review" in window.character_detail_label.text()
+    assert "Provenance: provenance.md" in window.character_detail_label.text()
+    assert "License: LICENSE.md" in window.character_detail_label.text()
+
+    window.close()
+    app.processEvents()
+
+
 def test_character_library_switches_user_character_pack(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     monkeypatch.setenv("E_MOTI_USER_DATA_DIR", str(tmp_path / "user-data"))

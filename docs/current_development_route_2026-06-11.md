@@ -306,6 +306,11 @@ python -m pytest
 - 打包过程中发现并修复了一个真实阻断：`tools\build_windows_app.ps1` 原先只 staging `assets\companion\original_oc`，导致新增内置包不会进入 frozen app；现改为 staging 整个 `assets\companion`。
 - `tools\validate_windows_build.py` 已按 renderer 类型检查 frozen 角色资产：portrait 包检查 portrait 资产，sprite 包检查 spritesheet、motion manifest、provenance、preview、item icons 和 license。
 - 已重新执行 `powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1`、`powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild`、`python tools\validate_windows_build.py --report artifacts\windows-build-validation.json`、`python tools\validate_windows_build.py --character-id xingxi_pixel_pet --report artifacts\windows-build-validation-xingxi-pixel-pet.json`，结果均通过；frozen 控制面板和 `--pet-mode` 5 秒 smoke 均保持运行并被手动结束。
+- 已新增 `tools\character_library_qa.py`，可用临时用户数据打开真实控制面板，选择 `xingxi_pixel_pet`，验证 distribution/provenance/license 详情，切换角色，打开桌宠模式，保存角色库与桌宠截图，并输出 JSON 报告。
+- 角色库 QA 首轮截图发现详情文本会被按钮区域截断；已将角色详情文本放入可滚动区域并补 `test_character_library_detail_metadata_is_scrollable` 回归。
+- 已运行 `python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\screenshots --pet-seconds 0.5`，报告 `ok=true`、默认仍为 `original_oc`、切换后为 `xingxi_pixel_pet`、桌宠 backend 为 `sprite`、`errors=[]`。截图显示角色库 metadata 完整可见，桌宠 sprite 正常渲染。
+- 已运行 `python -m pytest tests\test_character_library_qa_tool.py tests\test_app.py tests\test_desktop_pet_smoke.py -q`，结果 `98 passed`；`python -m pytest tests\test_character_pack.py tests\test_character_registry.py tests\test_windows_packaging_scripts.py tests\test_windows_build_validator.py -q`，结果 `44 passed`；全量 `python -m pytest`，结果 `787 passed`。
+- 当前默认决策：继续保持 `original_oc` 为默认包，`xingxi_pixel_pet` 作为可切换内置候选；是否默认替换留给真实桌面人工美术 QA 后的独立包。
 
 ### P6-release-package-check：演示版打包复核
 
@@ -332,10 +337,10 @@ python -m pytest
 
 ## 8. 推荐立即执行的下一包
 
-`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import`、`P5-manual-qa-and-ugc-branching`、`P5-xingxi-row-repair-or-promotion-decision`、`P5-xingxi-promotion-gate-package`、以及 `P5-bundled-asset-promotion-decision` 已完成当前验证。建议下一包做 `P5-character-library-qa-and-default-decision`：
+`P0-doc-sync`、星汐 `P1-pixel-pack-contract`、星汐 `P5-user-pack-local-import`、`P5-manual-qa-and-ugc-branching`、`P5-xingxi-row-repair-or-promotion-decision`、`P5-xingxi-promotion-gate-package`、`P5-bundled-asset-promotion-decision`、以及 `P5-character-library-qa-and-default-decision` 已完成当前验证。建议下一包做 `P5-real-desktop-art-qa-or-ugc-private-drafts`：
 
-- 在真实 UI 中人工检查 `xingxi_pixel_pet` 的角色库预览、切换体验、桌宠透明边界、动作比例和眨眼/跳跃/低状态节奏；
-- 若 UI QA 通过，再单独决定是否把 `xingxi_pixel_pet` 提升为默认包，或继续保持 `original_oc` 默认、像素星汐作为可选候选；
+- 在真实桌面而非 offscreen 截图中人工检查 `xingxi_pixel_pet` 的透明边界、动作比例和眨眼/跳跃/低状态节奏；
+- 若人工美术 QA 通过，再单独决定是否把 `xingxi_pixel_pet` 提升为默认包；当前保持 `original_oc` 默认、像素星汐作为可选候选；
 - 伊卡洛斯、奶龙继续保持 local UGC 分支，等用户确认要生成私有草稿时再走 hatch-pet 单行流程；
 - 继续保持 AI-video、Live2D、精细 VN portrait 为研究线，不回到无边界迭代。
 
