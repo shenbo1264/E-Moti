@@ -630,6 +630,39 @@ def _write_hatch_pet_base_intake_report(path: Path, *, ok: bool = False) -> Path
     return path
 
 
+def _write_pixel_pet_emote_mapping_report(path: Path, *, ok: bool = True) -> Path:
+    payload = {
+        "ok": ok,
+        "status": "ready" if ok else "missing_motion_families",
+        "character_pack_path": "assets\\companion\\xingxi_pixel_pet",
+        "motion_manifest_path": "assets\\companion\\xingxi_pixel_pet\\motion_manifest.json",
+        "available_motion_ids": ["Default", "Play", "Sleep", "SwitchDown", "TouchHead"]
+        if not ok
+        else ["Default", "Play", "Raised", "Sleep", "Study", "SwitchDown", "TouchHead"],
+        "required_motion_ids": ["Default", "Play", "Raised", "Sleep", "Study", "SwitchDown", "TouchHead"],
+        "missing_motion_ids": [] if ok else ["Raised", "Study"],
+        "supported_expression_ids": ["blink", "goofy", "happy", "sleepy"]
+        if ok
+        else ["blink", "goofy", "happy", "sleepy"],
+        "unsupported_expression_ids": [] if ok else ["confused", "focused", "surprised"],
+        "expression_motion_map": {
+            "blink": "Default",
+            "confused": "Study",
+            "focused": "Study",
+            "goofy": "Play",
+            "happy": "TouchHead",
+            "sleepy": "Sleep",
+            "surprised": "Raised",
+        },
+        "errors": [],
+        "warnings": [],
+        "next_actions": [] if ok else ["add motion_manifest entries for: Raised, Study"],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_portrait_retry_handoff_report(
     path: Path,
     *,
@@ -799,6 +832,7 @@ def _run_tool(
     hatch_pet_imagegen_readiness_reports: list[Path] | None = None,
     hatch_pet_imagegen_route_preflight_reports: list[Path] | None = None,
     hatch_pet_base_intake_reports: list[Path] | None = None,
+    pixel_pet_emote_mapping_reports: list[Path] | None = None,
     portrait_video_import_reports: list[Path] | None = None,
     full_local_snapshot: bool = False,
     snapshot_artifact_root: Path | None = None,
@@ -845,6 +879,8 @@ def _run_tool(
         args.extend(["--hatch-pet-imagegen-route-preflight-report", str(report)])
     for report in hatch_pet_base_intake_reports or []:
         args.extend(["--hatch-pet-base-intake-report", str(report)])
+    for report in pixel_pet_emote_mapping_reports or []:
+        args.extend(["--pixel-pet-emote-mapping-report", str(report)])
     for report in portrait_video_import_reports or []:
         args.extend(["--portrait-video-import-report", str(report)])
     if full_local_snapshot:
@@ -2449,6 +2485,68 @@ def test_release_readiness_report_full_local_snapshot_includes_hatch_pet_base_in
     intake_check = next(check for check in payload["checks"] if check["id"] == "hatch_pet_base_intake_preflight")
     assert intake_check["status"] == "candidate_review_failed"
     assert intake_check["source_provenance"] == "built-in-imagegen"
+
+
+def test_release_readiness_report_accepts_pixel_pet_emote_mapping(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    emote_report = _write_pixel_pet_emote_mapping_report(tmp_path / "xingxi-pixel-pet-emote-mapping.json")
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        pixel_pet_emote_mapping_reports=[emote_report],
+    )
+
+    payload = json.loads(result.stdout)
+    emote_check = payload["checks"][2]
+    assert result.returncode == 0, result.stderr
+    assert payload["ok"] is True
+    assert emote_check["id"] == "pixel_pet_emote_mapping"
+    assert emote_check["ok"] is True
+    assert emote_check["status"] == "ready"
+    assert emote_check["missing_motion_ids"] == []
+    assert emote_check["unsupported_expression_ids"] == []
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Pixel Pet Emote Mapping" in markdown
+    assert "- Required motions: `Default, Play, Raised, Sleep, Study, SwitchDown, TouchHead`" in markdown
+    assert "- Unsupported expressions: `[]`" in markdown
+
+
+def test_release_readiness_report_full_local_snapshot_includes_pixel_pet_emote_mapping(
+    tmp_path: Path,
+):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    artifact_root = _write_full_local_snapshot_artifacts(tmp_path / "artifacts")
+    _write_pixel_pet_emote_mapping_report(
+        artifact_root / "route-scan-20260612" / "xingxi-pixel-pet-emote-mapping.json",
+        ok=False,
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        full_local_snapshot=True,
+        snapshot_artifact_root=artifact_root,
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert "pixel_pet_emote_mapping" in [item["id"] for item in payload["attention_checks"]]
+    emote_check = next(check for check in payload["checks"] if check["id"] == "pixel_pet_emote_mapping")
+    assert emote_check["status"] == "missing_motion_families"
+    assert emote_check["missing_motion_ids"] == ["Raised", "Study"]
+    assert emote_check["unsupported_expression_ids"] == ["confused", "focused", "surprised"]
+    attention = next(item for item in payload["attention_checks"] if item["id"] == "pixel_pet_emote_mapping")
+    assert attention["reasons"] == [
+        "missing motions: Raised, Study",
+        "unsupported expressions: confused, focused, surprised",
+    ]
 
 
 def test_release_readiness_report_surfaces_portrait_video_import(tmp_path: Path):

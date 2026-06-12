@@ -60,6 +60,7 @@ FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "hatch_pet_imagegen_readiness_reports",
     "hatch_pet_imagegen_route_preflight_reports",
     "hatch_pet_base_intake_reports",
+    "pixel_pet_emote_mapping_reports",
 )
 
 
@@ -85,6 +86,7 @@ def build_release_readiness_report(
     hatch_pet_imagegen_readiness_reports: Iterable[Path | str] = (),
     hatch_pet_imagegen_route_preflight_reports: Iterable[Path | str] = (),
     hatch_pet_base_intake_reports: Iterable[Path | str] = (),
+    pixel_pet_emote_mapping_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -126,6 +128,10 @@ def build_release_readiness_report(
     checks.extend(
         _hatch_pet_base_intake_report_check(Path(report_path))
         for report_path in hatch_pet_base_intake_reports
+    )
+    checks.extend(
+        _pixel_pet_emote_mapping_report_check(Path(report_path))
+        for report_path in pixel_pet_emote_mapping_reports
     )
     _apply_normalization_resolutions(checks)
     ok = all(check["ok"] is True for check in checks)
@@ -249,6 +255,21 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         model = _optional_string(check.get("model"))
         if model:
             lines.append(f"- Model: `{model}`")
+        character_pack_path = _optional_string(check.get("character_pack_path"))
+        if character_pack_path:
+            lines.append(f"- Character pack: `{character_pack_path}`")
+        motion_manifest_path = _optional_string(check.get("motion_manifest_path"))
+        if motion_manifest_path:
+            lines.append(f"- Motion manifest: `{motion_manifest_path}`")
+        for key, label in (
+            ("required_motion_ids", "Required motions"),
+            ("available_motion_ids", "Available motions"),
+            ("missing_motion_ids", "Missing motions"),
+            ("supported_expression_ids", "Supported expressions"),
+            ("unsupported_expression_ids", "Unsupported expressions"),
+        ):
+            if key in check:
+                lines.append(f"- {label}: `{_inline_code_list(check.get(key))}`")
         for key, label in (
             ("report_count", "Reports"),
             ("passed_count", "Passed reports"),
@@ -1616,6 +1637,60 @@ def _hatch_pet_base_intake_report_check(report_path: Path) -> dict[str, object]:
     }
 
 
+def _pixel_pet_emote_mapping_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "pixel_pet_emote_mapping",
+            "label": "Pixel Pet Emote Mapping",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "character_pack_path": "",
+            "motion_manifest_path": "",
+            "available_motion_ids": [],
+            "required_motion_ids": [],
+            "missing_motion_ids": [],
+            "supported_expression_ids": [],
+            "unsupported_expression_ids": [],
+            "errors": ["pixel-pet emote mapping report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review pixel-pet emote mapping before promoting LLM expression coverage"],
+        }
+    status = _optional_string(payload.get("status")) or "unknown"
+    errors = _string_list(payload.get("errors"))
+    warnings = _string_list(payload.get("warnings"))
+    missing_motion_ids = _string_list(payload.get("missing_motion_ids"))
+    unsupported_expression_ids = _string_list(payload.get("unsupported_expression_ids"))
+    ok = (
+        payload.get("ok") is True
+        and status == "ready"
+        and not missing_motion_ids
+        and not unsupported_expression_ids
+        and not errors
+    )
+    next_actions = _string_list(payload.get("next_actions"))
+    if not ok and not next_actions:
+        next_actions = ["review pixel-pet emote mapping before promoting LLM expression coverage"]
+    return {
+        "id": "pixel_pet_emote_mapping",
+        "label": "Pixel Pet Emote Mapping",
+        "ok": ok,
+        "status": status,
+        "path": str(report_path),
+        "character_pack_path": _optional_string(payload.get("character_pack_path")),
+        "motion_manifest_path": _optional_string(payload.get("motion_manifest_path")),
+        "available_motion_ids": _string_list(payload.get("available_motion_ids")),
+        "required_motion_ids": _string_list(payload.get("required_motion_ids")),
+        "missing_motion_ids": missing_motion_ids,
+        "supported_expression_ids": _string_list(payload.get("supported_expression_ids")),
+        "unsupported_expression_ids": unsupported_expression_ids,
+        "errors": errors,
+        "warnings": warnings,
+        "next_actions": next_actions,
+    }
+
+
 def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Path]]:
     root = artifact_root
     source_root = root / "portrait-video-source"
@@ -1669,6 +1744,7 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
         )
         if (root / "pixel-pet-sequence-drafts").is_dir()
         else [],
+        "pixel_pet_emote_mapping_reports": sorted(root.glob("route-scan-*/*emote-mapping.json")),
     }
 
 
@@ -2011,6 +2087,17 @@ def _attention_reasons(check: dict[str, object]) -> list[str]:
         if check.get("output_exists") is True:
             reasons.append("output already exists")
         return _dedupe(reasons)
+    if check.get("id") == "pixel_pet_emote_mapping":
+        reasons: list[str] = []
+        reasons.extend(_string_list(check.get("errors")))
+        reasons.extend(_string_list(check.get("warnings")))
+        missing_motion_ids = _string_list(check.get("missing_motion_ids"))
+        if missing_motion_ids:
+            reasons.append("missing motions: " + ", ".join(missing_motion_ids))
+        unsupported_expression_ids = _string_list(check.get("unsupported_expression_ids"))
+        if unsupported_expression_ids:
+            reasons.append("unsupported expressions: " + ", ".join(unsupported_expression_ids))
+        return _dedupe(reasons)
     reasons: list[str] = []
     for key in (
         "attention_reports",
@@ -2054,6 +2141,11 @@ def _string_list(value: object) -> list[str]:
     if not isinstance(value, list):
         return []
     return [item for item in value if isinstance(item, str) and item]
+
+
+def _inline_code_list(value: object) -> str:
+    items = _string_list(value)
+    return ", ".join(items) if items else "[]"
 
 
 def _optional_string(value: object) -> str:
@@ -2201,6 +2293,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional hatch-pet base intake preflight JSON report to include.",
     )
     parser.add_argument(
+        "--pixel-pet-emote-mapping-report",
+        action="append",
+        default=[],
+        help="Optional pixel-pet LLM expression-to-motion mapping JSON report to include.",
+    )
+    parser.add_argument(
         "--full-local-snapshot",
         action="store_true",
         help="Include the current local release QA artifact set under --snapshot-artifact-root.",
@@ -2271,6 +2369,9 @@ def main(argv: list[str] | None = None) -> int:
         hatch_pet_base_intake_reports=[
             Path(item) for item in args.hatch_pet_base_intake_report
         ] + snapshot["hatch_pet_base_intake_reports"],
+        pixel_pet_emote_mapping_reports=[
+            Path(item) for item in args.pixel_pet_emote_mapping_report
+        ] + snapshot["pixel_pet_emote_mapping_reports"],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")

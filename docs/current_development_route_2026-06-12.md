@@ -216,10 +216,12 @@ python -m pytest
 - 已新增只读 P5 闸口 `tools\pixel_pet_emote_mapping_check.py`。
 - 它以 `src\guanghe_companion\visual_actions.py` 中的 `PIXEL_EXPRESSION_MOTION_IDS` 为唯一事实源，检查角色包 `motion_manifest.json` 是否覆盖所有 LLM 表情 cue 需要的像素宠动作族。
 - 当前 `assets\companion\xingxi_pixel_pet` 实测为 `ready`：必需 motions 为 `Default`、`Play`、`Raised`、`Sleep`、`Study`、`SwitchDown`、`TouchHead`，无 unsupported expression。
+- `tools\release_readiness_report.py` 已接入 `--pixel-pet-emote-mapping-report`，`--full-local-snapshot` 会自动发现 `artifacts\route-scan-*\*emote-mapping.json`，从而把 P5 LLM 表情到像素宠动作族的覆盖情况纳入聚合 readiness。
 - 实测命令：
 
 ```powershell
 python tools\pixel_pet_emote_mapping_check.py assets\companion\xingxi_pixel_pet --json artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.json --markdown artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.md
+python tools\release_readiness_report.py --pixel-pet-emote-mapping-report artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.json --json artifacts\release-readiness-pixel-pet-emote-mapping.json --markdown artifacts\release-readiness-pixel-pet-emote-mapping.md
 ```
 
 ### P6: 默认替换和发布复核
