@@ -24,6 +24,17 @@ def write_base_candidate(path: Path, *, background: tuple[int, int, int] = (255,
     image.save(path)
 
 
+def write_row_strip_candidate(path: Path) -> None:
+    image = Image.new("RGB", (1536, 208), (255, 0, 255))
+    draw = ImageDraw.Draw(image)
+    for index in range(6):
+        x = 64 + index * 192
+        draw.ellipse((x, 38, x + 92, 132), fill=(80, 120, 180))
+        draw.rectangle((x + 20, 118, x + 74, 184), fill=(20, 30, 50))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path)
+
+
 def write_prompt(path: Path) -> None:
     path.write_text(
         "Create a compact pixel-adjacent digital pet sprite on #FF00FF background.",
@@ -116,6 +127,26 @@ def test_review_pixel_pet_base_rejects_missing_prompt_and_wrong_background(tmp_p
     assert report.ok is False
     assert "prompt file not found" in report.errors
     assert "candidate background corners should be flat #FF00FF chroma key" in report.errors
+
+
+def test_review_pixel_pet_base_rejects_row_strip_shaped_candidate(tmp_path: Path) -> None:
+    candidate = tmp_path / "base.png"
+    prompt = tmp_path / "base-pet.md"
+    definition = tmp_path / "character_definition.json"
+    write_row_strip_candidate(candidate)
+    write_prompt(prompt)
+    write_character_definition(definition)
+
+    report = review_pixel_pet_base_candidate(
+        candidate_image=candidate,
+        character_id="xingxi_pixel_pet",
+        prompt_path=prompt,
+        character_definition_path=definition,
+        decision="accepted_for_row_testing",
+    )
+
+    assert report.ok is False
+    assert "candidate image aspect ratio suggests a row strip or atlas, not a single base pet" in report.errors
 
 
 def test_review_pixel_pet_base_accepts_near_magenta_candidate_with_cleanup_warning(tmp_path: Path) -> None:

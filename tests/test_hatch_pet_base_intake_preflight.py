@@ -56,6 +56,17 @@ def write_base_candidate(path: Path, *, background: tuple[int, int, int] = (255,
     image.save(path)
 
 
+def write_row_strip_candidate(path: Path) -> None:
+    image = Image.new("RGB", (1536, 208), (255, 0, 255))
+    draw = ImageDraw.Draw(image)
+    for index in range(6):
+        x = 64 + index * 192
+        draw.ellipse((x, 38, x + 92, 132), fill=(98, 132, 214))
+        draw.rectangle((x + 20, 118, x + 74, 184), fill=(88, 62, 142))
+    path.parent.mkdir(parents=True, exist_ok=True)
+    image.save(path)
+
+
 def write_character_definition(path: Path) -> None:
     path.write_text(
         json.dumps(
@@ -180,6 +191,31 @@ def test_base_intake_preflight_blocks_existing_output(tmp_path: Path) -> None:
     assert report.ok is False
     assert report.status == "recording_would_overwrite"
     assert "decoded/base.png already exists; recording would overwrite it" in report.errors
+
+
+def test_base_intake_preflight_rejects_row_strip_shaped_builtin_source(tmp_path: Path) -> None:
+    from tools.art.hatch_pet_base_intake_preflight import inspect_hatch_pet_base_intake_preflight
+
+    run_dir = tmp_path / "run"
+    definition = tmp_path / "character_definition.json"
+    generated_root = tmp_path / "codex-home" / "generated_images"
+    source = generated_root / "session-1" / "ig_row_strip.png"
+    write_run(run_dir)
+    write_character_definition(definition)
+    write_row_strip_candidate(source)
+
+    report = inspect_hatch_pet_base_intake_preflight(
+        run_dir=run_dir,
+        job_id="base",
+        source=source,
+        character_id="xingxi_pixel_pet",
+        character_definition_path=definition,
+        generated_images_root=generated_root,
+    )
+
+    assert report.ok is False
+    assert report.status == "candidate_review_failed"
+    assert "base review: candidate image aspect ratio suggests a row strip or atlas, not a single base pet" in report.errors
 
 
 def test_base_intake_preflight_cli_writes_report_and_markdown(tmp_path: Path) -> None:

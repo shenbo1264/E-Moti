@@ -125,6 +125,9 @@ python -m pytest
 - 工具本身已完成 TDD 红绿：新增测试先因模块不存在失败，随后 `tests\test_hatch_pet_base_intake_preflight.py` 通过，结果为 `5 passed`。
 - 工具只做 intake 预检，不生成图片、不复制图片、不写 `decoded/base.png`、不修改 `imagegen-jobs.json`。
 - P1 工具加入后，全量 `python -m pytest` 通过，结果为 `806 passed in 122.04s`。
+- P2 安全门已补强：`review_pixel_pet_base.py` 会拒绝宽高比像 row strip 或 atlas 的 source，防止旧 row 图被当作 v2 `base` 记录。
+- 已用 `$CODEX_HOME/generated_images` 下的旧 row strip 做只读 intake 实测，结果为 `candidate_review_failed`，且 `decoded/base.png` 仍不存在。
+- P2 安全门补强后，全量 `python -m pytest` 通过，结果为 `808 passed in 86.18s`。
 - 下一步仍需要真实 `$imagegen` 或有效 provider 产生 v2 `base` 图后，再用该工具检查并调用 `record_imagegen_result.py`。
 
 ### P2: 只生成并审查 v2 Xingxi base

@@ -14,6 +14,7 @@ ALLOWED_DECISIONS = {"candidate", "accepted_for_row_testing", "rejected"}
 BACKGROUND_TOLERANCE = 32
 BACKGROUND_FLAT_TOLERANCE = 8
 BACKGROUND_CANDIDATE_TOLERANCE = 48
+MAX_BASE_ASPECT_RATIO = 1.8
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +137,9 @@ def _inspect_candidate_image(path: Path, errors: list[str], warnings: list[str])
         errors.append("candidate image is too small for base review")
     if width > 2048 or height > 2048:
         errors.append("candidate image is too large for ignored base review")
+    aspect_ratio = max(width / max(1, height), height / max(1, width))
+    if aspect_ratio > MAX_BASE_ASPECT_RATIO:
+        errors.append("candidate image aspect ratio suggests a row strip or atlas, not a single base pet")
     if any(not _near_rgb(pixel, MAGENTA, BACKGROUND_CANDIDATE_TOLERANCE) for pixel in corners):
         errors.append("candidate background corners should be flat #FF00FF chroma key")
     elif any(not _near_rgb(pixel, MAGENTA, BACKGROUND_TOLERANCE) for pixel in corners) or any(
@@ -153,6 +157,7 @@ def _inspect_candidate_image(path: Path, errors: list[str], warnings: list[str])
         "mode": mode,
         "width": width,
         "height": height,
+        "aspect_ratio": round(aspect_ratio, 4),
         "background_rgb": list(corners[0]) if corners else [],
         "subject_bbox": list(subject_bbox) if subject_bbox else [],
         "subject_coverage": round(coverage, 4),
