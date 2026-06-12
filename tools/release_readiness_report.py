@@ -58,6 +58,7 @@ FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "portrait_regeneration_brief_reports",
     "portrait_retry_handoff_reports",
     "hatch_pet_imagegen_readiness_reports",
+    "hatch_pet_imagegen_route_preflight_reports",
 )
 
 
@@ -81,6 +82,7 @@ def build_release_readiness_report(
     portrait_regeneration_brief_reports: Iterable[Path | str] = (),
     portrait_retry_handoff_reports: Iterable[Path | str] = (),
     hatch_pet_imagegen_readiness_reports: Iterable[Path | str] = (),
+    hatch_pet_imagegen_route_preflight_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -114,6 +116,10 @@ def build_release_readiness_report(
     checks.extend(
         _hatch_pet_imagegen_readiness_report_check(Path(report_path))
         for report_path in hatch_pet_imagegen_readiness_reports
+    )
+    checks.extend(
+        _hatch_pet_imagegen_route_preflight_report_check(Path(report_path))
+        for report_path in hatch_pet_imagegen_route_preflight_reports
     )
     _apply_normalization_resolutions(checks)
     ok = all(check["ok"] is True for check in checks)
@@ -202,6 +208,18 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         run_dir = _optional_string(check.get("run_dir"))
         if run_dir:
             lines.append(f"- Run dir: `{run_dir}`")
+        secondary_fallback_status = _optional_string(check.get("secondary_fallback_status"))
+        if secondary_fallback_status:
+            lines.append(f"- Secondary fallback status: `{secondary_fallback_status}`")
+        codex_exec_status = _optional_string(check.get("codex_exec_status"))
+        if codex_exec_status:
+            lines.append(f"- Codex exec status: `{codex_exec_status}`")
+        codex_bin = _optional_string(check.get("codex_bin"))
+        if codex_bin:
+            lines.append(f"- Codex bin: `{codex_bin}`")
+        codex_exec_error = _optional_string(check.get("codex_exec_error"))
+        if codex_exec_error:
+            lines.append(f"- Codex exec error: `{codex_exec_error}`")
         model = _optional_string(check.get("model"))
         if model:
             lines.append(f"- Model: `{model}`")
@@ -1456,6 +1474,57 @@ def _hatch_pet_imagegen_readiness_report_check(report_path: Path) -> dict[str, o
     }
 
 
+def _hatch_pet_imagegen_route_preflight_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "hatch_pet_imagegen_route_preflight",
+            "label": "Hatch Pet Imagegen Route Preflight",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "run_dir": "",
+            "ready_job_ids": [],
+            "blocked_job_ids": [],
+            "secondary_fallback_status": "",
+            "codex_exec_status": "",
+            "codex_bin": "",
+            "codex_exec_error": "",
+            "raw_error_codes": [],
+            "blockers": [],
+            "errors": ["hatch-pet imagegen route preflight report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review hatch-pet imagegen route preflight before retrying generation"],
+        }
+    status = _optional_string(payload.get("status")) or "unknown"
+    blockers = _string_list(payload.get("blockers"))
+    errors = _string_list(payload.get("errors"))
+    raw_error_codes = _string_list(payload.get("raw_error_codes"))
+    ok = payload.get("ok") is True and status == "ready_for_base_generation" and not blockers and not errors
+    next_actions = _string_list(payload.get("next_actions"))
+    if not ok and not next_actions:
+        next_actions = ["review hatch-pet imagegen route preflight before retrying generation"]
+    return {
+        "id": "hatch_pet_imagegen_route_preflight",
+        "label": "Hatch Pet Imagegen Route Preflight",
+        "ok": ok,
+        "status": status,
+        "path": str(report_path),
+        "run_dir": _optional_string(payload.get("run_dir")),
+        "ready_job_ids": _string_list(payload.get("ready_job_ids")),
+        "blocked_job_ids": _string_list(payload.get("blocked_job_ids")),
+        "secondary_fallback_status": _optional_string(payload.get("secondary_fallback_status")),
+        "codex_exec_status": _optional_string(payload.get("codex_exec_status")),
+        "codex_bin": _optional_string(payload.get("codex_bin")),
+        "codex_exec_error": _optional_string(payload.get("codex_exec_error")),
+        "raw_error_codes": raw_error_codes,
+        "blockers": blockers,
+        "errors": errors,
+        "warnings": _string_list(payload.get("warnings")),
+        "next_actions": next_actions,
+    }
+
+
 def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Path]]:
     root = artifact_root
     source_root = root / "portrait-video-source"
@@ -1496,6 +1565,11 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
         "portrait_retry_handoff_reports": [root / "portrait-video-retry-handoff-report.json"],
         "hatch_pet_imagegen_readiness_reports": sorted(
             (root / "pixel-pet-sequence-drafts").glob("*/imagegen-readiness.json")
+        )
+        if (root / "pixel-pet-sequence-drafts").is_dir()
+        else [],
+        "hatch_pet_imagegen_route_preflight_reports": sorted(
+            (root / "pixel-pet-sequence-drafts").glob("*/imagegen-route-preflight.json")
         )
         if (root / "pixel-pet-sequence-drafts").is_dir()
         else [],
@@ -1802,6 +1876,21 @@ def _attention_checks(checks: Iterable[dict[str, object]]) -> list[dict[str, obj
 
 
 def _attention_reasons(check: dict[str, object]) -> list[str]:
+    if check.get("id") == "hatch_pet_imagegen_route_preflight":
+        reasons: list[str] = []
+        reasons.extend(_string_list(check.get("blockers")))
+        reasons.extend(_string_list(check.get("errors")))
+        reasons.extend(f"raw error code: {code}" for code in _string_list(check.get("raw_error_codes")))
+        secondary_status = _optional_string(check.get("secondary_fallback_status"))
+        if secondary_status:
+            reasons.append(f"secondary fallback: {secondary_status}")
+        codex_status = _optional_string(check.get("codex_exec_status"))
+        if codex_status:
+            reasons.append(f"codex exec: {codex_status}")
+        ready_job_ids = _string_list(check.get("ready_job_ids"))
+        if ready_job_ids:
+            reasons.append("ready jobs: " + ", ".join(ready_job_ids))
+        return _dedupe(reasons)
     if check.get("id") == "hatch_pet_imagegen_readiness":
         reasons: list[str] = []
         reasons.extend(_string_list(check.get("blockers")))
@@ -1992,6 +2081,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional hatch-pet imagegen readiness JSON report to include.",
     )
     parser.add_argument(
+        "--hatch-pet-imagegen-route-preflight-report",
+        action="append",
+        default=[],
+        help="Optional hatch-pet imagegen route preflight JSON report to include.",
+    )
+    parser.add_argument(
         "--full-local-snapshot",
         action="store_true",
         help="Include the current local release QA artifact set under --snapshot-artifact-root.",
@@ -2056,6 +2151,9 @@ def main(argv: list[str] | None = None) -> int:
         hatch_pet_imagegen_readiness_reports=[
             Path(item) for item in args.hatch_pet_imagegen_readiness_report
         ] + snapshot["hatch_pet_imagegen_readiness_reports"],
+        hatch_pet_imagegen_route_preflight_reports=[
+            Path(item) for item in args.hatch_pet_imagegen_route_preflight_report
+        ] + snapshot["hatch_pet_imagegen_route_preflight_reports"],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")

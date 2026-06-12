@@ -562,6 +562,37 @@ def _write_hatch_pet_imagegen_readiness_report(path: Path, *, ok: bool = False) 
     return path
 
 
+def _write_hatch_pet_imagegen_route_preflight_report(path: Path, *, ok: bool = False) -> Path:
+    payload = {
+        "ok": ok,
+        "status": "ready_for_base_generation" if ok else "blocked_generation_route",
+        "run_dir": str(path.parent),
+        "ready_job_ids": ["base"],
+        "blocked_job_ids": ["idle"],
+        "secondary_fallback_status": "ready_for_base_generation" if ok else "blocked_invalid_openai_api_key",
+        "codex_exec_status": "available" if ok else "access_denied",
+        "codex_bin": "codex",
+        "codex_exec_error": "" if ok else "Access is denied",
+        "raw_error_codes": [] if ok else ["invalid_api_key"],
+        "blockers": []
+        if ok
+        else [
+            "raw response reports invalid OpenAI API key",
+            "codex exec is not launchable: access denied",
+        ],
+        "next_actions": []
+        if ok
+        else [
+            "fix OPENAI_API_KEY for secondary fallback or make native codex exec imagegen launchable",
+            "generate and inspect only the ready base job before row generation",
+        ],
+        "errors": [],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_portrait_retry_handoff_report(
     path: Path,
     *,
@@ -729,6 +760,7 @@ def _run_tool(
     portrait_regeneration_brief_reports: list[Path] | None = None,
     portrait_retry_handoff_reports: list[Path] | None = None,
     hatch_pet_imagegen_readiness_reports: list[Path] | None = None,
+    hatch_pet_imagegen_route_preflight_reports: list[Path] | None = None,
     portrait_video_import_reports: list[Path] | None = None,
     full_local_snapshot: bool = False,
     snapshot_artifact_root: Path | None = None,
@@ -771,6 +803,8 @@ def _run_tool(
         args.extend(["--portrait-retry-handoff-report", str(report)])
     for report in hatch_pet_imagegen_readiness_reports or []:
         args.extend(["--hatch-pet-imagegen-readiness-report", str(report)])
+    for report in hatch_pet_imagegen_route_preflight_reports or []:
+        args.extend(["--hatch-pet-imagegen-route-preflight-report", str(report)])
     for report in portrait_video_import_reports or []:
         args.extend(["--portrait-video-import-report", str(report)])
     if full_local_snapshot:
@@ -2245,6 +2279,57 @@ def test_release_readiness_report_surfaces_hatch_pet_imagegen_readiness_blocker(
     assert "- Blocked jobs: `9`" in markdown
     assert "- Raw error codes:" in markdown
     assert "  - `invalid_api_key`" in markdown
+
+
+def test_release_readiness_report_surfaces_hatch_pet_imagegen_route_preflight_blocker(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    route_preflight = _write_hatch_pet_imagegen_route_preflight_report(
+        tmp_path / "pixel-pet-sequence-drafts" / "xingxi_pixel_pet_edge_style_v2" / "imagegen-route-preflight.json"
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        hatch_pet_imagegen_route_preflight_reports=[route_preflight],
+    )
+
+    payload = json.loads(result.stdout)
+    preflight_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["attention_checks"] == [
+        {
+            "id": "hatch_pet_imagegen_route_preflight",
+            "label": "Hatch Pet Imagegen Route Preflight",
+            "status": "blocked_generation_route",
+            "reasons": [
+                "raw response reports invalid OpenAI API key",
+                "codex exec is not launchable: access denied",
+                "raw error code: invalid_api_key",
+                "secondary fallback: blocked_invalid_openai_api_key",
+                "codex exec: access_denied",
+                "ready jobs: base",
+            ],
+            "next_actions": [
+                "fix OPENAI_API_KEY for secondary fallback or make native codex exec imagegen launchable",
+                "generate and inspect only the ready base job before row generation",
+            ],
+        }
+    ]
+    assert preflight_check["id"] == "hatch_pet_imagegen_route_preflight"
+    assert preflight_check["ok"] is False
+    assert preflight_check["status"] == "blocked_generation_route"
+    assert preflight_check["secondary_fallback_status"] == "blocked_invalid_openai_api_key"
+    assert preflight_check["codex_exec_status"] == "access_denied"
+    assert preflight_check["ready_job_ids"] == ["base"]
+    assert preflight_check["raw_error_codes"] == ["invalid_api_key"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Hatch Pet Imagegen Route Preflight" in markdown
+    assert "- Secondary fallback status: `blocked_invalid_openai_api_key`" in markdown
+    assert "- Codex exec status: `access_denied`" in markdown
 
 
 def test_release_readiness_report_surfaces_portrait_video_import(tmp_path: Path):

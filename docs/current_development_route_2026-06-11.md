@@ -13,7 +13,7 @@
 - JSON/角色包校验：
   - `python -m json.tool assets\companion\original_oc\shop_items.json` 通过。
   - `python tools\validate_character_pack.py assets\companion\original_oc` 通过，`ok=true`。
-- Release readiness 聚合：`python tools\release_readiness_report.py --full-local-snapshot ...` 返回 `needs_attention`，当前 `16` 项检查中 `8` 项 ready、`8` 项 attention；新增 attention 包括 hatch-pet imagegen readiness 的 `blocked_invalid_openai_api_key`。
+- Release readiness 聚合：`python tools\release_readiness_report.py --full-local-snapshot ...` 返回 `needs_attention`，当前 `17` 项检查中 `8` 项 ready、`9` 项 attention；新增 attention 包括 hatch-pet imagegen readiness 的 `blocked_invalid_openai_api_key` 和 hatch-pet imagegen route preflight 的 `blocked_generation_route`。
 
 ## 2. 当前阶段判断
 
@@ -320,6 +320,7 @@ python -m pytest
 - 已新增并运行 `python tools\art\hatch_pet_imagegen_readiness.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.md`，报告 `status=blocked_invalid_openai_api_key`、`openai_api_key_present=true`、`raw_error_codes=["invalid_api_key"]`、`ready_job_ids=["base"]`，并且不输出任何 API key 内容。
 - 已将 hatch-pet imagegen readiness 接入 `tools\release_readiness_report.py`；真实运行 `python tools\release_readiness_report.py --hatch-pet-imagegen-readiness-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.json --json artifacts\release-readiness-hatch-pet-imagegen.json --markdown artifacts\release-readiness-hatch-pet-imagegen.md` 后，聚合报告为 `needs_attention`，并在 top-level `attention_checks` 中显示 `blocked_invalid_openai_api_key`、`raw error code: invalid_api_key`、`ready jobs: base`、`blocked jobs: 9`。这些输出仍为 ignored evidence，不修改 runtime manifest 或默认资产。
 - 已尝试用本机 Creative Production `codex_exec_image_batch.py` runner 走 native `image_gen.imagegen`，输入写入 ignored `artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\codex-exec-base\jobs.jsonl`；第一次运行只暴露 JSONL BOM 问题，修正后 runner 在 preflight 启动 `codex` 子进程时失败，`codex.exe --version` 同样返回 `Access is denied`。因此当前无法从本会话经 `codex exec` 调 native imagegen，仍未生成 v2 `base` 候选，也未改 `imagegen-jobs.json`。
+- 已新增并运行 `python tools\art\hatch_pet_imagegen_route_preflight.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --codex-bin "C:\Program Files\WindowsApps\OpenAI.Codex_26.608.1337.0_x64__2p2nqsd0c76g0\app\resources\codex.exe" --check-codex-exec --openai-api-key-present --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-route-preflight.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-route-preflight.md`；报告 `status=blocked_generation_route`、`secondary_fallback_status=blocked_invalid_openai_api_key`、`codex_exec_status=access_denied`、`ready_job_ids=["base"]`，并已接入 `release_readiness_report.py --hatch-pet-imagegen-route-preflight-report ...` 和 `--full-local-snapshot`。
 - 当前默认决策：继续保持 `original_oc` 为默认包，`xingxi_pixel_pet` 作为可切换内置候选；是否默认替换留给真实桌面人工美术 QA 后的独立包。
 
 ### P6-release-package-check：演示版打包复核
@@ -352,7 +353,7 @@ python -m pytest
 - 不建议直接对当前 `xingxi_pixel_pet` 做确定性透明擦边，因为 overlay 显示该指标命中了头发外轮廓和线稿；
 - 优先用 `artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.md` 做一版新的 hatch-pet 候选或人工重绘候选，要求提示词明确避免红/紫发光边、色边和外圈 halo，同时保留蓝紫发色本体；
 - 当前 v2 run 已准备好，下一步只生成并人工审查 `base`；不要一次性生成九行 row；
-- 生成前先跑 `hatch_pet_imagegen_readiness.py`，并用 `release_readiness_report.py --hatch-pet-imagegen-readiness-report ...` 把阻断或通过状态上卷到 release readiness；当前 secondary fallback 被 `OPENAI_API_KEY invalid_api_key` 阻断，当前本会话的 `codex exec` native imagegen runner 被 WindowsApps `codex.exe Access is denied` 阻断，当前工具面板也没有可直接调用的 `image_gen` 工具；
+- 生成前先跑 `hatch_pet_imagegen_readiness.py` 和 `hatch_pet_imagegen_route_preflight.py`，并用 `release_readiness_report.py --hatch-pet-imagegen-readiness-report ... --hatch-pet-imagegen-route-preflight-report ...` 把阻断或通过状态上卷到 release readiness；当前 secondary fallback 被 `OPENAI_API_KEY invalid_api_key` 阻断，当前本会话的 `codex exec` native imagegen runner 被 WindowsApps `codex.exe Access is denied` 阻断，当前工具面板也没有可直接调用的 `image_gen` 工具；
 - 若继续使用 secondary fallback，必须先修复 `OPENAI_API_KEY` 并重新跑 readiness；若使用本机 native runner，必须先解决 `codex.exe` 可执行权限；如果使用内置 `$imagegen` 成功生成，必须用 `record_imagegen_result.py` 记录 `$CODEX_HOME\generated_images\...\ig_*.png`，不得手改 `imagegen-jobs.json`；
 - 也可以人工确认接受当前外轮廓作为风格选择，但这必须是明确美术 QA 结论，而不是因为工具通过；
 - 每个修复候选必须重新跑 `pixel_pet_visual_qa.py --fail-on-warnings`、角色包校验、角色库 QA、UI smoke 和全量测试；
