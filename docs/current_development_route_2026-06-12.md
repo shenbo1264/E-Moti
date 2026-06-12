@@ -211,6 +211,17 @@ python tools\llm_expression_cue_probe.py --provider deepseek --timeout-seconds 4
 python -m pytest
 ```
 
+当前检查点：
+
+- 已新增只读 P5 闸口 `tools\pixel_pet_emote_mapping_check.py`。
+- 它以 `src\guanghe_companion\visual_actions.py` 中的 `PIXEL_EXPRESSION_MOTION_IDS` 为唯一事实源，检查角色包 `motion_manifest.json` 是否覆盖所有 LLM 表情 cue 需要的像素宠动作族。
+- 当前 `assets\companion\xingxi_pixel_pet` 实测为 `ready`：必需 motions 为 `Default`、`Play`、`Raised`、`Sleep`、`Study`、`SwitchDown`、`TouchHead`，无 unsupported expression。
+- 实测命令：
+
+```powershell
+python tools\pixel_pet_emote_mapping_check.py assets\companion\xingxi_pixel_pet --json artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.json --markdown artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.md
+```
+
 ### P6: 默认替换和发布复核
 
 触发条件：只有 v2 美术、角色包、角色库、桌宠、LLM 表演映射全部过关后才进入。
