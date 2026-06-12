@@ -61,6 +61,8 @@ FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "hatch_pet_imagegen_route_preflight_reports",
     "hatch_pet_base_intake_reports",
     "pixel_pet_emote_mapping_reports",
+    "pixel_pet_visual_qa_reports",
+    "pixel_pet_edge_style_brief_reports",
 )
 
 
@@ -87,6 +89,8 @@ def build_release_readiness_report(
     hatch_pet_imagegen_route_preflight_reports: Iterable[Path | str] = (),
     hatch_pet_base_intake_reports: Iterable[Path | str] = (),
     pixel_pet_emote_mapping_reports: Iterable[Path | str] = (),
+    pixel_pet_visual_qa_reports: Iterable[Path | str] = (),
+    pixel_pet_edge_style_brief_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -132,6 +136,14 @@ def build_release_readiness_report(
     checks.extend(
         _pixel_pet_emote_mapping_report_check(Path(report_path))
         for report_path in pixel_pet_emote_mapping_reports
+    )
+    checks.extend(
+        _pixel_pet_visual_qa_report_check(Path(report_path))
+        for report_path in pixel_pet_visual_qa_reports
+    )
+    checks.extend(
+        _pixel_pet_edge_style_brief_report_check(Path(report_path))
+        for report_path in pixel_pet_edge_style_brief_reports
     )
     _apply_normalization_resolutions(checks)
     ok = all(check["ok"] is True for check in checks)
@@ -261,6 +273,16 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         motion_manifest_path = _optional_string(check.get("motion_manifest_path"))
         if motion_manifest_path:
             lines.append(f"- Motion manifest: `{motion_manifest_path}`")
+        spritesheet_path = _optional_string(check.get("spritesheet_path"))
+        if spritesheet_path:
+            lines.append(f"- Spritesheet: `{spritesheet_path}`")
+        visual_qa_report_path = _optional_string(check.get("visual_qa_report_path"))
+        if visual_qa_report_path:
+            lines.append(f"- Visual QA report: `{visual_qa_report_path}`")
+        if isinstance(check.get("default_promotion_allowed"), bool):
+            lines.append(
+                f"- Default promotion allowed: `{'yes' if check.get('default_promotion_allowed') else 'no'}`"
+            )
         for key, label in (
             ("required_motion_ids", "Required motions"),
             ("available_motion_ids", "Available motions"),
@@ -270,6 +292,17 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         ):
             if key in check:
                 lines.append(f"- {label}: `{_inline_code_list(check.get(key))}`")
+        for key, label in (
+            ("visible_pixel_count", "Visible pixels"),
+            ("edge_pixel_count", "Edge pixels"),
+            ("suspicious_edge_halo_pixel_count", "Suspicious edge halo pixels"),
+        ):
+            value = _optional_int(check.get(key))
+            if value is not None:
+                lines.append(f"- {label}: `{value}`")
+        suspicious_edge_halo_ratio = _optional_float(check.get("suspicious_edge_halo_ratio"))
+        if suspicious_edge_halo_ratio is not None:
+            lines.append(f"- Suspicious edge halo ratio: `{suspicious_edge_halo_ratio}`")
         for key, label in (
             ("report_count", "Reports"),
             ("passed_count", "Passed reports"),
@@ -1691,6 +1724,117 @@ def _pixel_pet_emote_mapping_report_check(report_path: Path) -> dict[str, object
     }
 
 
+def _pixel_pet_visual_qa_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "pixel_pet_visual_qa",
+            "label": "Pixel Pet Visual QA",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "spritesheet_path": "",
+            "motion_manifest_path": "",
+            "preview_path": "",
+            "visible_pixel_count": 0,
+            "edge_pixel_count": 0,
+            "suspicious_edge_halo_pixel_count": 0,
+            "suspicious_edge_halo_ratio": 0.0,
+            "errors": ["pixel-pet visual QA report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review pixel-pet visual QA before default promotion"],
+        }
+    status = _optional_string(payload.get("status")) or "unknown"
+    errors = _string_list(payload.get("errors"))
+    warnings = _string_list(payload.get("warnings"))
+    preview_path = _optional_string(payload.get("preview_path"))
+    ok = payload.get("ok") is True and status == "ready" and not warnings and not errors
+    next_actions = _string_list(payload.get("next_actions"))
+    if not ok and not next_actions:
+        next_actions = ["resolve pixel-pet visual QA warnings before default promotion"]
+    return {
+        "id": "pixel_pet_visual_qa",
+        "label": "Pixel Pet Visual QA",
+        "ok": ok,
+        "status": status,
+        "path": str(report_path),
+        "spritesheet_path": _optional_string(payload.get("spritesheet_path")),
+        "motion_manifest_path": _optional_string(payload.get("motion_manifest_path")),
+        "preview_path": preview_path,
+        "width": _nonnegative_int(payload.get("width")),
+        "height": _nonnegative_int(payload.get("height")),
+        "mode": _optional_string(payload.get("mode")),
+        "visible_pixel_count": _nonnegative_int(payload.get("visible_pixel_count")),
+        "edge_pixel_count": _nonnegative_int(payload.get("edge_pixel_count")),
+        "suspicious_edge_halo_pixel_count": _nonnegative_int(payload.get("suspicious_edge_halo_pixel_count")),
+        "suspicious_edge_halo_ratio": _nonnegative_float(payload.get("suspicious_edge_halo_ratio")),
+        "errors": errors,
+        "warnings": warnings,
+        "next_actions": next_actions,
+    }
+
+
+def _pixel_pet_edge_style_brief_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "pixel_pet_edge_style_brief",
+            "label": "Pixel Pet Edge Style Brief",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "character_id": "",
+            "visual_qa_report_path": "",
+            "spritesheet_path": "",
+            "motion_manifest_path": "",
+            "preview_path": "",
+            "decision_state": "",
+            "default_promotion_allowed": False,
+            "blockers": [],
+            "errors": ["pixel-pet edge style brief report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review pixel-pet edge style brief before default promotion"],
+        }
+    decision_state = _optional_string(payload.get("decision_state")) or "unknown"
+    blockers = _string_list(payload.get("blockers"))
+    errors = _string_list(payload.get("errors"))
+    default_promotion_allowed = payload.get("default_promotion_allowed") is True
+    ok = (
+        payload.get("ok") is True
+        and decision_state == "eligible_for_manual_default_review"
+        and default_promotion_allowed
+        and not blockers
+        and not errors
+    )
+    next_actions = _string_list(payload.get("next_actions"))
+    if not ok and not next_actions:
+        next_actions = ["review pixel-pet edge style brief before default promotion"]
+    return {
+        "id": "pixel_pet_edge_style_brief",
+        "label": "Pixel Pet Edge Style Brief",
+        "ok": ok,
+        "status": "ready" if ok else decision_state,
+        "path": str(report_path),
+        "character_id": _optional_string(payload.get("character_id")),
+        "visual_qa_report_path": _optional_string(payload.get("visual_qa_report_path")),
+        "spritesheet_path": _optional_string(payload.get("spritesheet_path")),
+        "motion_manifest_path": _optional_string(payload.get("motion_manifest_path")),
+        "preview_path": _optional_string(payload.get("preview_path")),
+        "decision_state": decision_state,
+        "default_promotion_allowed": default_promotion_allowed,
+        "edge_pixel_count": _nonnegative_int(payload.get("edge_pixel_count")),
+        "suspicious_edge_halo_pixel_count": _nonnegative_int(payload.get("suspicious_edge_halo_pixel_count")),
+        "suspicious_edge_halo_ratio": _nonnegative_float(payload.get("suspicious_edge_halo_ratio")),
+        "blockers": blockers,
+        "prompt_locks": _string_list(payload.get("prompt_locks")),
+        "suggested_commands": _string_list(payload.get("suggested_commands")),
+        "acceptance_gates": _string_list(payload.get("acceptance_gates")),
+        "errors": errors,
+        "warnings": _string_list(payload.get("warnings")),
+        "next_actions": next_actions,
+    }
+
+
 def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Path]]:
     root = artifact_root
     source_root = root / "portrait-video-source"
@@ -1745,6 +1889,16 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
         if (root / "pixel-pet-sequence-drafts").is_dir()
         else [],
         "pixel_pet_emote_mapping_reports": sorted(root.glob("route-scan-*/*emote-mapping.json")),
+        "pixel_pet_visual_qa_reports": sorted(
+            (root / "character-library-qa").glob("*pixel-pet-visual-qa*.json")
+        )
+        if (root / "character-library-qa").is_dir()
+        else [],
+        "pixel_pet_edge_style_brief_reports": sorted(
+            (root / "character-library-qa").glob("*pixel-pet-edge-style-brief*.json")
+        )
+        if (root / "character-library-qa").is_dir()
+        else [],
     }
 
 
@@ -2098,6 +2252,28 @@ def _attention_reasons(check: dict[str, object]) -> list[str]:
         if unsupported_expression_ids:
             reasons.append("unsupported expressions: " + ", ".join(unsupported_expression_ids))
         return _dedupe(reasons)
+    if check.get("id") == "pixel_pet_visual_qa":
+        reasons: list[str] = []
+        reasons.extend(_string_list(check.get("errors")))
+        reasons.extend(_string_list(check.get("warnings")))
+        suspicious_pixels = _optional_int(check.get("suspicious_edge_halo_pixel_count"))
+        if suspicious_pixels:
+            reasons.append(f"suspicious edge halo pixels: {suspicious_pixels}")
+        suspicious_ratio = _optional_float(check.get("suspicious_edge_halo_ratio"))
+        if suspicious_ratio:
+            reasons.append(f"suspicious edge halo ratio: {suspicious_ratio}")
+        return _dedupe(reasons)
+    if check.get("id") == "pixel_pet_edge_style_brief":
+        reasons: list[str] = []
+        reasons.extend(_string_list(check.get("errors")))
+        reasons.extend(_string_list(check.get("warnings")))
+        reasons.extend(_string_list(check.get("blockers")))
+        if isinstance(check.get("default_promotion_allowed"), bool):
+            reasons.append(f"default promotion allowed: {'yes' if check.get('default_promotion_allowed') else 'no'}")
+        suspicious_ratio = _optional_float(check.get("suspicious_edge_halo_ratio"))
+        if suspicious_ratio:
+            reasons.append(f"suspicious edge halo ratio: {suspicious_ratio}")
+        return _dedupe(reasons)
     reasons: list[str] = []
     for key in (
         "attention_reports",
@@ -2299,6 +2475,18 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional pixel-pet LLM expression-to-motion mapping JSON report to include.",
     )
     parser.add_argument(
+        "--pixel-pet-visual-qa-report",
+        action="append",
+        default=[],
+        help="Optional pixel-pet visual QA JSON report to include.",
+    )
+    parser.add_argument(
+        "--pixel-pet-edge-style-brief-report",
+        action="append",
+        default=[],
+        help="Optional pixel-pet edge-style decision brief JSON report to include.",
+    )
+    parser.add_argument(
         "--full-local-snapshot",
         action="store_true",
         help="Include the current local release QA artifact set under --snapshot-artifact-root.",
@@ -2372,6 +2560,12 @@ def main(argv: list[str] | None = None) -> int:
         pixel_pet_emote_mapping_reports=[
             Path(item) for item in args.pixel_pet_emote_mapping_report
         ] + snapshot["pixel_pet_emote_mapping_reports"],
+        pixel_pet_visual_qa_reports=[
+            Path(item) for item in args.pixel_pet_visual_qa_report
+        ] + snapshot["pixel_pet_visual_qa_reports"],
+        pixel_pet_edge_style_brief_reports=[
+            Path(item) for item in args.pixel_pet_edge_style_brief_report
+        ] + snapshot["pixel_pet_edge_style_brief_reports"],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")

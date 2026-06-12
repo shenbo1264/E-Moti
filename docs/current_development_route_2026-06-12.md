@@ -13,8 +13,9 @@
 - JSON 校验：`python -m json.tool assets\companion\original_oc\shop_items.json` 通过。
 - 默认角色包：`python tools\validate_character_pack.py assets\companion\original_oc` 通过，`ok=true`。
 - 可选像素星汐包：`python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet` 通过，`ok=true`。
-- 当前 release readiness：`python tools\release_readiness_report.py --full-local-snapshot ...` 返回 `needs_attention`，共 `17` 项检查，`8` 项 ready，`9` 项 attention。
+- 当前 release readiness：`python tools\release_readiness_report.py --full-local-snapshot ...` 返回 `needs_attention`，补入 pixel-pet art gates 后共 `21` 项检查，`9` 项 ready，`12` 项 attention。
 - 像素星汐视觉 QA：`pixel_pet_visual_qa.py` 返回 `ok=true` 但 `status=ready_with_warnings`，警告为 `suspicious_edge_halo_risk`，`suspicious_edge_halo_pixel_count=13883`，`suspicious_edge_halo_ratio=0.373179`。
+- 像素星汐边缘风格 brief：`pixel_pet_edge_style_brief.py` 返回 `decision_state=regenerate_or_redraw_edge_style`，`default_promotion_allowed=false`，blocker 为 `suspicious_edge_halo_risk`。
 
 ## 2. 当前项目真实状态
 
@@ -33,6 +34,7 @@
 当前不应被误判为 ready 的部分：
 
 - `xingxi_pixel_pet` 虽然已作为内置候选包存在，但视觉 QA 有明显边缘 halo 风险，不能替换默认 `original_oc`。
+- release readiness 已把 `pixel_pet_visual_qa` 和 `pixel_pet_edge_style_brief` 纳入 full-local snapshot；当前两项均为 attention，因此 `xingxi_pixel_pet` 只能保持可选候选，不能默认提升。
 - hatch-pet v2 edge-style 路线目前只有 `base` job ready；9 个 row job 仍因 base 未生成而 blocked。
 - 当前 secondary fallback 的 OpenAI Image API 路径被 `invalid_api_key` 阻断。
 - 当前 native `codex exec` imagegen 路径被 WindowsApps `codex.exe Access is denied` 阻断。
@@ -222,6 +224,7 @@ python -m pytest
 ```powershell
 python tools\pixel_pet_emote_mapping_check.py assets\companion\xingxi_pixel_pet --json artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.json --markdown artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.md
 python tools\release_readiness_report.py --pixel-pet-emote-mapping-report artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.json --json artifacts\release-readiness-pixel-pet-emote-mapping.json --markdown artifacts\release-readiness-pixel-pet-emote-mapping.md
+python tools\release_readiness_report.py --pixel-pet-visual-qa-report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --pixel-pet-edge-style-brief-report artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.json --json artifacts\release-readiness-pixel-pet-art-gates.json --markdown artifacts\release-readiness-pixel-pet-art-gates.md
 ```
 
 ### P6: 默认替换和发布复核
@@ -232,6 +235,8 @@ python tools\release_readiness_report.py --pixel-pet-emote-mapping-report artifa
 
 ```powershell
 python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --fail-on-warnings
+python tools\art\pixel_pet_edge_style_brief.py --visual-qa-report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --character-id xingxi_pixel_pet --character-name Xingxi --report artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.json --markdown artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.md
+python tools\release_readiness_report.py --pixel-pet-visual-qa-report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --pixel-pet-edge-style-brief-report artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.json --json artifacts\release-readiness-pixel-pet-art-gates.json --markdown artifacts\release-readiness-pixel-pet-art-gates.md
 powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1
 powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild
 python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
@@ -262,4 +267,5 @@ python tools\validate_character_pack.py assets\companion\original_oc
 python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
 python tools\release_readiness_report.py --full-local-snapshot --json artifacts\route-scan-20260612\release-readiness-full-local-snapshot.json --markdown artifacts\route-scan-20260612\release-readiness-full-local-snapshot.md
 python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --report artifacts\route-scan-20260612\xingxi-pixel-pet-visual-qa.json --preview artifacts\route-scan-20260612\xingxi-pixel-pet-visual-qa-preview.png
+python tools\release_readiness_report.py --pixel-pet-visual-qa-report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --pixel-pet-edge-style-brief-report artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.json --json artifacts\release-readiness-pixel-pet-art-gates.json --markdown artifacts\release-readiness-pixel-pet-art-gates.md
 ```

@@ -33,7 +33,7 @@ def _write_frozen_build(root: Path, *, include_license: bool = True) -> tuple[Pa
 
 def _write_llm_report(path: Path, *, ok: bool = True) -> Path:
     payload: dict[str, object] = {
-        "ok": ok,
+        "ok": True,
         "reason": "" if ok else "cue:sadness:expected_expression:sadness",
         "diagnostic": {
             "ok": True,
@@ -663,6 +663,62 @@ def _write_pixel_pet_emote_mapping_report(path: Path, *, ok: bool = True) -> Pat
     return path
 
 
+def _write_pixel_pet_visual_qa_report(path: Path, *, ok: bool = True) -> Path:
+    payload = {
+        "ok": ok,
+        "status": "ready" if ok else "ready_with_warnings",
+        "spritesheet_path": "assets\\companion\\xingxi_pixel_pet\\spritesheet.png",
+        "motion_manifest_path": "assets\\companion\\xingxi_pixel_pet\\motion_manifest.json",
+        "width": 1536,
+        "height": 1872,
+        "mode": "RGBA",
+        "visible_pixel_count": 916167,
+        "edge_pixel_count": 37202,
+        "suspicious_edge_halo_pixel_count": 0 if ok else 13883,
+        "suspicious_edge_halo_ratio": 0.0 if ok else 0.373179,
+        "preview_path": str(path.parent / "xingxi-pixel-pet-visual-qa-preview.png"),
+        "warnings": [] if ok else ["suspicious_edge_halo_risk"],
+        "errors": [],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    (path.parent / "xingxi-pixel-pet-visual-qa-preview.png").write_bytes(b"fake preview")
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
+def _write_pixel_pet_edge_style_brief(path: Path, *, ok: bool = False) -> Path:
+    payload = {
+        "ok": True,
+        "visual_qa_report_path": str(path.parent / "xingxi-pixel-pet-visual-qa.json"),
+        "character_id": "xingxi_pixel_pet",
+        "character_name": "Xingxi",
+        "spritesheet_path": "assets\\companion\\xingxi_pixel_pet\\spritesheet.png",
+        "motion_manifest_path": "assets\\companion\\xingxi_pixel_pet\\motion_manifest.json",
+        "preview_path": str(path.parent / "xingxi-pixel-pet-visual-qa-preview.png"),
+        "decision_state": "eligible_for_manual_default_review" if ok else "regenerate_or_redraw_edge_style",
+        "default_promotion_allowed": ok,
+        "edge_pixel_count": 37202,
+        "suspicious_edge_halo_pixel_count": 0 if ok else 13883,
+        "suspicious_edge_halo_ratio": 0.0 if ok else 0.373179,
+        "blockers": [] if ok else ["suspicious_edge_halo_risk"],
+        "next_actions": []
+        if ok
+        else [
+            "use hatch-pet image generation or manual redraw to create an edge-style candidate with no red/purple outer halo",
+            "keep the current bundled spritesheet unchanged until the replacement passes visual QA",
+        ],
+        "prompt_locks": ["Do not update runtime manifests or replace the default pack until all acceptance gates pass."],
+        "regeneration_prompt": "Create a clean edge-style Xingxi pixel-pet candidate.",
+        "negative_prompt": "No red edge halo or purple outer glow.",
+        "suggested_commands": ["python tools\\art\\pixel_pet_visual_qa.py assets\\companion\\xingxi_pixel_pet\\spritesheet.png --motion-manifest assets\\companion\\xingxi_pixel_pet\\motion_manifest.json --fail-on-warnings"],
+        "acceptance_gates": ["python -m pytest"],
+        "errors": [],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_portrait_retry_handoff_report(
     path: Path,
     *,
@@ -833,6 +889,8 @@ def _run_tool(
     hatch_pet_imagegen_route_preflight_reports: list[Path] | None = None,
     hatch_pet_base_intake_reports: list[Path] | None = None,
     pixel_pet_emote_mapping_reports: list[Path] | None = None,
+    pixel_pet_visual_qa_reports: list[Path] | None = None,
+    pixel_pet_edge_style_brief_reports: list[Path] | None = None,
     portrait_video_import_reports: list[Path] | None = None,
     full_local_snapshot: bool = False,
     snapshot_artifact_root: Path | None = None,
@@ -881,6 +939,10 @@ def _run_tool(
         args.extend(["--hatch-pet-base-intake-report", str(report)])
     for report in pixel_pet_emote_mapping_reports or []:
         args.extend(["--pixel-pet-emote-mapping-report", str(report)])
+    for report in pixel_pet_visual_qa_reports or []:
+        args.extend(["--pixel-pet-visual-qa-report", str(report)])
+    for report in pixel_pet_edge_style_brief_reports or []:
+        args.extend(["--pixel-pet-edge-style-brief-report", str(report)])
     for report in portrait_video_import_reports or []:
         args.extend(["--portrait-video-import-report", str(report)])
     if full_local_snapshot:
@@ -2547,6 +2609,128 @@ def test_release_readiness_report_full_local_snapshot_includes_pixel_pet_emote_m
         "missing motions: Raised, Study",
         "unsupported expressions: confused, focused, surprised",
     ]
+
+
+def test_release_readiness_report_surfaces_pixel_pet_visual_qa_warning(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    visual_qa = _write_pixel_pet_visual_qa_report(
+        tmp_path / "character-library-qa" / "xingxi-pixel-pet-visual-qa.json",
+        ok=False,
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        pixel_pet_visual_qa_reports=[visual_qa],
+    )
+
+    payload = json.loads(result.stdout)
+    visual_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["attention_checks"] == [
+        {
+            "id": "pixel_pet_visual_qa",
+            "label": "Pixel Pet Visual QA",
+            "status": "ready_with_warnings",
+            "reasons": [
+                "suspicious_edge_halo_risk",
+                "suspicious edge halo pixels: 13883",
+                "suspicious edge halo ratio: 0.373179",
+            ],
+            "next_actions": ["resolve pixel-pet visual QA warnings before default promotion"],
+        }
+    ]
+    assert visual_check["id"] == "pixel_pet_visual_qa"
+    assert visual_check["ok"] is False
+    assert visual_check["status"] == "ready_with_warnings"
+    assert visual_check["suspicious_edge_halo_pixel_count"] == 13883
+    assert visual_check["suspicious_edge_halo_ratio"] == 0.373179
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Pixel Pet Visual QA" in markdown
+    assert "- Suspicious edge halo pixels: `13883`" in markdown
+    assert "- Suspicious edge halo ratio: `0.373179`" in markdown
+
+
+def test_release_readiness_report_surfaces_pixel_pet_edge_style_brief_blocker(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    edge_brief = _write_pixel_pet_edge_style_brief(
+        tmp_path / "character-library-qa" / "xingxi-pixel-pet-edge-style-brief.json",
+        ok=False,
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        pixel_pet_edge_style_brief_reports=[edge_brief],
+    )
+
+    payload = json.loads(result.stdout)
+    edge_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["attention_checks"] == [
+        {
+            "id": "pixel_pet_edge_style_brief",
+            "label": "Pixel Pet Edge Style Brief",
+            "status": "regenerate_or_redraw_edge_style",
+            "reasons": [
+                "suspicious_edge_halo_risk",
+                "default promotion allowed: no",
+                "suspicious edge halo ratio: 0.373179",
+            ],
+            "next_actions": [
+                "use hatch-pet image generation or manual redraw to create an edge-style candidate with no red/purple outer halo",
+                "keep the current bundled spritesheet unchanged until the replacement passes visual QA",
+            ],
+        }
+    ]
+    assert edge_check["id"] == "pixel_pet_edge_style_brief"
+    assert edge_check["ok"] is False
+    assert edge_check["default_promotion_allowed"] is False
+    assert edge_check["blockers"] == ["suspicious_edge_halo_risk"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Pixel Pet Edge Style Brief" in markdown
+    assert "- Default promotion allowed: `no`" in markdown
+
+
+def test_release_readiness_report_full_local_snapshot_includes_pixel_pet_art_gates(
+    tmp_path: Path,
+):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    artifact_root = _write_full_local_snapshot_artifacts(tmp_path / "artifacts")
+    _write_pixel_pet_visual_qa_report(
+        artifact_root / "character-library-qa" / "xingxi-pixel-pet-visual-qa.json",
+        ok=False,
+    )
+    _write_pixel_pet_edge_style_brief(
+        artifact_root / "character-library-qa" / "xingxi-pixel-pet-edge-style-brief.json",
+        ok=False,
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        full_local_snapshot=True,
+        snapshot_artifact_root=artifact_root,
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    attention_ids = [item["id"] for item in payload["attention_checks"]]
+    assert "pixel_pet_visual_qa" in attention_ids
+    assert "pixel_pet_edge_style_brief" in attention_ids
+    visual_check = next(check for check in payload["checks"] if check["id"] == "pixel_pet_visual_qa")
+    edge_check = next(check for check in payload["checks"] if check["id"] == "pixel_pet_edge_style_brief")
+    assert visual_check["status"] == "ready_with_warnings"
+    assert edge_check["status"] == "regenerate_or_redraw_edge_style"
 
 
 def test_release_readiness_report_surfaces_portrait_video_import(tmp_path: Path):
