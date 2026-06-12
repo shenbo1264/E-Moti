@@ -116,6 +116,7 @@ python -m pytest tests\test_repository_hygiene.py -q
 
 ```powershell
 python tools\art\hatch_pet_base_intake_preflight.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --job-id base --source "$env:CODEX_HOME\generated_images\<session>\ig_<image>.png" --character-id xingxi_pixel_pet --character-definition artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_definition.json --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.md
+python tools\release_readiness_report.py --hatch-pet-base-intake-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.json --json artifacts\release-readiness-hatch-pet-base-intake.json --markdown artifacts\release-readiness-hatch-pet-base-intake.md
 python -m pytest tests\test_hatch_pet_base_intake_preflight.py tests\test_pixel_pet_base_review.py -q
 python -m pytest
 ```
@@ -128,6 +129,9 @@ python -m pytest
 - P2 安全门已补强：`review_pixel_pet_base.py` 会拒绝宽高比像 row strip 或 atlas 的 source，防止旧 row 图被当作 v2 `base` 记录。
 - 已用 `$CODEX_HOME/generated_images` 下的旧 row strip 做只读 intake 实测，结果为 `candidate_review_failed`，且 `decoded/base.png` 仍不存在。
 - P2 安全门补强后，全量 `python -m pytest` 通过，结果为 `808 passed in 86.18s`。
+- `release_readiness_report.py` 已接入 `--hatch-pet-base-intake-report`，`--full-local-snapshot` 会自动发现 `artifacts\pixel-pet-sequence-drafts\*\base-intake-preflight.json`。
+- 已生成 ignored `artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.json` 作为 row-strip 拒绝证据；full-local snapshot 当前为 `needs_attention`，`18` 项检查中 `8` 项 ready、`10` 项 attention，其中新增 attention 为 `hatch_pet_base_intake_preflight/candidate_review_failed`。
+- base-intake release readiness 接入后，全量 `python -m pytest` 通过，结果为 `810 passed in 82.95s`。
 - 下一步仍需要真实 `$imagegen` 或有效 provider 产生 v2 `base` 图后，再用该工具检查并调用 `record_imagegen_result.py`。
 
 ### P2: 只生成并审查 v2 Xingxi base

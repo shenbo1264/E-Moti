@@ -59,6 +59,7 @@ FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "portrait_retry_handoff_reports",
     "hatch_pet_imagegen_readiness_reports",
     "hatch_pet_imagegen_route_preflight_reports",
+    "hatch_pet_base_intake_reports",
 )
 
 
@@ -83,6 +84,7 @@ def build_release_readiness_report(
     portrait_retry_handoff_reports: Iterable[Path | str] = (),
     hatch_pet_imagegen_readiness_reports: Iterable[Path | str] = (),
     hatch_pet_imagegen_route_preflight_reports: Iterable[Path | str] = (),
+    hatch_pet_base_intake_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -120,6 +122,10 @@ def build_release_readiness_report(
     checks.extend(
         _hatch_pet_imagegen_route_preflight_report_check(Path(report_path))
         for report_path in hatch_pet_imagegen_route_preflight_reports
+    )
+    checks.extend(
+        _hatch_pet_base_intake_report_check(Path(report_path))
+        for report_path in hatch_pet_base_intake_reports
     )
     _apply_normalization_resolutions(checks)
     ok = all(check["ok"] is True for check in checks)
@@ -208,6 +214,26 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         run_dir = _optional_string(check.get("run_dir"))
         if run_dir:
             lines.append(f"- Run dir: `{run_dir}`")
+        job_id = _optional_string(check.get("job_id"))
+        if job_id:
+            lines.append(f"- Job id: `{job_id}`")
+        source_provenance = _optional_string(check.get("source_provenance"))
+        if source_provenance:
+            lines.append(f"- Source provenance: `{source_provenance}`")
+        source_path = _optional_string(check.get("source_path"))
+        if source_path:
+            lines.append(f"- Source: `{source_path}`")
+        if isinstance(check.get("job_ready"), bool):
+            lines.append(f"- Job ready: `{'yes' if check.get('job_ready') else 'no'}`")
+        output_path = _optional_string(check.get("output_path"))
+        if output_path:
+            lines.append(f"- Output path: `{output_path}`")
+        if isinstance(check.get("output_exists"), bool):
+            lines.append(f"- Output exists: `{'yes' if check.get('output_exists') else 'no'}`")
+        record_command = _optional_string(check.get("record_command"))
+        if record_command:
+            lines.append("- Record command:")
+            lines.append(f"  - `{record_command}`")
         secondary_fallback_status = _optional_string(check.get("secondary_fallback_status"))
         if secondary_fallback_status:
             lines.append(f"- Secondary fallback status: `{secondary_fallback_status}`")
@@ -1525,6 +1551,71 @@ def _hatch_pet_imagegen_route_preflight_report_check(report_path: Path) -> dict[
     }
 
 
+def _hatch_pet_base_intake_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "hatch_pet_base_intake_preflight",
+            "label": "Hatch Pet Base Intake Preflight",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "run_dir": "",
+            "job_id": "",
+            "source_path": "",
+            "source_provenance": "",
+            "job_ready": False,
+            "output_path": "",
+            "output_exists": False,
+            "prompt_path": "",
+            "character_definition_path": "",
+            "record_command": "",
+            "errors": ["hatch-pet base intake report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review hatch-pet base intake before recording a base image"],
+        }
+    status = _optional_string(payload.get("status")) or "unknown"
+    errors = _string_list(payload.get("errors"))
+    warnings = _string_list(payload.get("warnings"))
+    source_provenance = _optional_string(payload.get("source_provenance"))
+    record_command = _optional_string(payload.get("record_command"))
+    job_ready = payload.get("job_ready") is True
+    output_exists = payload.get("output_exists") is True
+    ok = (
+        payload.get("ok") is True
+        and status == "ready_to_record"
+        and source_provenance == "built-in-imagegen"
+        and job_ready
+        and not output_exists
+        and bool(record_command)
+        and not errors
+    )
+    next_actions = _string_list(payload.get("next_actions"))
+    if not ok and not next_actions:
+        next_actions = ["review hatch-pet base intake before recording a base image"]
+    return {
+        "id": "hatch_pet_base_intake_preflight",
+        "label": "Hatch Pet Base Intake Preflight",
+        "ok": ok,
+        "status": status,
+        "path": str(report_path),
+        "run_dir": _optional_string(payload.get("run_dir")),
+        "job_id": _optional_string(payload.get("job_id")),
+        "source_path": _optional_string(payload.get("source_path")),
+        "source_provenance": source_provenance,
+        "generated_images_root": _optional_string(payload.get("generated_images_root")),
+        "job_ready": job_ready,
+        "output_path": _optional_string(payload.get("output_path")),
+        "output_exists": output_exists,
+        "prompt_path": _optional_string(payload.get("prompt_path")),
+        "character_definition_path": _optional_string(payload.get("character_definition_path")),
+        "record_command": record_command,
+        "errors": errors,
+        "warnings": warnings,
+        "next_actions": next_actions,
+    }
+
+
 def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Path]]:
     root = artifact_root
     source_root = root / "portrait-video-source"
@@ -1570,6 +1661,11 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
         else [],
         "hatch_pet_imagegen_route_preflight_reports": sorted(
             (root / "pixel-pet-sequence-drafts").glob("*/imagegen-route-preflight.json")
+        )
+        if (root / "pixel-pet-sequence-drafts").is_dir()
+        else [],
+        "hatch_pet_base_intake_reports": sorted(
+            (root / "pixel-pet-sequence-drafts").glob("*/base-intake-preflight.json")
         )
         if (root / "pixel-pet-sequence-drafts").is_dir()
         else [],
@@ -1903,6 +1999,18 @@ def _attention_reasons(check: dict[str, object]) -> list[str]:
         if blocked_job_count:
             reasons.append(f"blocked jobs: {blocked_job_count}")
         return _dedupe(reasons)
+    if check.get("id") == "hatch_pet_base_intake_preflight":
+        reasons: list[str] = []
+        reasons.extend(_string_list(check.get("errors")))
+        reasons.extend(_string_list(check.get("warnings")))
+        source_provenance = _optional_string(check.get("source_provenance"))
+        if source_provenance:
+            reasons.append(f"source provenance: {source_provenance}")
+        if isinstance(check.get("job_ready"), bool):
+            reasons.append(f"job ready: {'yes' if check.get('job_ready') else 'no'}")
+        if check.get("output_exists") is True:
+            reasons.append("output already exists")
+        return _dedupe(reasons)
     reasons: list[str] = []
     for key in (
         "attention_reports",
@@ -2087,6 +2195,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional hatch-pet imagegen route preflight JSON report to include.",
     )
     parser.add_argument(
+        "--hatch-pet-base-intake-report",
+        action="append",
+        default=[],
+        help="Optional hatch-pet base intake preflight JSON report to include.",
+    )
+    parser.add_argument(
         "--full-local-snapshot",
         action="store_true",
         help="Include the current local release QA artifact set under --snapshot-artifact-root.",
@@ -2154,6 +2268,9 @@ def main(argv: list[str] | None = None) -> int:
         hatch_pet_imagegen_route_preflight_reports=[
             Path(item) for item in args.hatch_pet_imagegen_route_preflight_report
         ] + snapshot["hatch_pet_imagegen_route_preflight_reports"],
+        hatch_pet_base_intake_reports=[
+            Path(item) for item in args.hatch_pet_base_intake_report
+        ] + snapshot["hatch_pet_base_intake_reports"],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")
