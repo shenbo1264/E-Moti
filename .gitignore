@@ -41,6 +41,7 @@ data/dialogue_history.json
 
 # PySide smoke screenshots and local preview diagnostics
 artifacts/simulation/
+artifacts/route-scan-*/
 artifacts/llm_smoke/
 artifacts/character-library-qa/
 artifacts/character-pack-status*.json
