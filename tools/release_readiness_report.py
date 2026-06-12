@@ -57,6 +57,7 @@ FULL_LOCAL_SNAPSHOT_REPORT_KEYS = (
     "portrait_frame_qa_reports",
     "portrait_regeneration_brief_reports",
     "portrait_retry_handoff_reports",
+    "hatch_pet_imagegen_readiness_reports",
 )
 
 
@@ -79,6 +80,7 @@ def build_release_readiness_report(
     portrait_frame_qa_reports: Iterable[Path | str] = (),
     portrait_regeneration_brief_reports: Iterable[Path | str] = (),
     portrait_retry_handoff_reports: Iterable[Path | str] = (),
+    hatch_pet_imagegen_readiness_reports: Iterable[Path | str] = (),
 ) -> dict[str, object]:
     source_check = _source_character_pack_check(Path(character_pack))
     build_check = _windows_build_check(Path(app_dir), Path(installer_path) if installer_path is not None else None)
@@ -108,6 +110,10 @@ def build_release_readiness_report(
     checks.extend(
         _portrait_retry_handoff_report_check(Path(report_path))
         for report_path in portrait_retry_handoff_reports
+    )
+    checks.extend(
+        _hatch_pet_imagegen_readiness_report_check(Path(report_path))
+        for report_path in hatch_pet_imagegen_readiness_reports
     )
     _apply_normalization_resolutions(checks)
     ok = all(check["ok"] is True for check in checks)
@@ -193,6 +199,9 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         source_tool = _optional_string(check.get("source_tool"))
         if source_tool:
             lines.append(f"- Source tool: `{source_tool}`")
+        run_dir = _optional_string(check.get("run_dir"))
+        if run_dir:
+            lines.append(f"- Run dir: `{run_dir}`")
         model = _optional_string(check.get("model"))
         if model:
             lines.append(f"- Model: `{model}`")
@@ -207,6 +216,10 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
             ("fallback_count", "Fallback turns"),
             ("issue_count", "Issues"),
             ("speech_quality_violation_count", "Speech quality violations"),
+            ("total_job_count", "Total jobs"),
+            ("complete_job_count", "Complete jobs"),
+            ("ready_job_count", "Ready jobs"),
+            ("blocked_job_count", "Blocked jobs"),
         ):
             value = _optional_int(check.get(key))
             if value is not None:
@@ -265,6 +278,18 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
         if attention_reasons:
             lines.append("- Attention reasons:")
             lines.extend(f"  - `{reason}`" for reason in attention_reasons)
+        raw_error_codes = _string_list(check.get("raw_error_codes"))
+        if raw_error_codes:
+            lines.append("- Raw error codes:")
+            lines.extend(f"  - `{code}`" for code in raw_error_codes)
+        ready_job_ids = _string_list(check.get("ready_job_ids"))
+        if ready_job_ids:
+            lines.append("- Ready job ids:")
+            lines.extend(f"  - `{job_id}`" for job_id in ready_job_ids)
+        blocked_job_ids = _string_list(check.get("blocked_job_ids"))
+        if blocked_job_ids:
+            lines.append("- Blocked job ids:")
+            lines.extend(f"  - `{job_id}`" for job_id in blocked_job_ids)
         normalization_resolved = _string_list(check.get("normalization_resolved_summaries"))
         if normalization_resolved:
             lines.append("- Normalization resolved:")
@@ -1378,6 +1403,59 @@ def _portrait_retry_handoff_report_check(report_path: Path) -> dict[str, object]
     }
 
 
+def _hatch_pet_imagegen_readiness_report_check(report_path: Path) -> dict[str, object]:
+    payload = _load_json_object(report_path)
+    if not isinstance(payload, dict):
+        return {
+            "id": "hatch_pet_imagegen_readiness",
+            "label": "Hatch Pet Imagegen Readiness",
+            "ok": False,
+            "status": "invalid_report",
+            "path": str(report_path),
+            "run_dir": "",
+            "total_job_count": 0,
+            "complete_job_count": 0,
+            "ready_job_count": 0,
+            "blocked_job_count": 0,
+            "ready_job_ids": [],
+            "blocked_job_ids": [],
+            "openai_api_key_present": False,
+            "raw_error_codes": [],
+            "blockers": [],
+            "errors": ["hatch-pet imagegen readiness report must be a JSON object"],
+            "warnings": [],
+            "next_actions": ["review hatch-pet imagegen readiness before retrying image generation"],
+        }
+    status = _optional_string(payload.get("status")) or "unknown"
+    blockers = _string_list(payload.get("blockers"))
+    errors = _string_list(payload.get("errors"))
+    raw_error_codes = _string_list(payload.get("raw_error_codes"))
+    ok = payload.get("ok") is True and status == "ready" and not blockers and not errors and not raw_error_codes
+    next_actions = _string_list(payload.get("next_actions"))
+    if not ok and not next_actions:
+        next_actions = ["review hatch-pet imagegen readiness before retrying image generation"]
+    return {
+        "id": "hatch_pet_imagegen_readiness",
+        "label": "Hatch Pet Imagegen Readiness",
+        "ok": ok,
+        "status": "ready" if ok else status,
+        "path": str(report_path),
+        "run_dir": _optional_string(payload.get("run_dir")),
+        "total_job_count": _nonnegative_int(payload.get("total_job_count")),
+        "complete_job_count": _nonnegative_int(payload.get("complete_job_count")),
+        "ready_job_count": _nonnegative_int(payload.get("ready_job_count")),
+        "blocked_job_count": _nonnegative_int(payload.get("blocked_job_count")),
+        "ready_job_ids": _string_list(payload.get("ready_job_ids")),
+        "blocked_job_ids": _string_list(payload.get("blocked_job_ids")),
+        "openai_api_key_present": payload.get("openai_api_key_present") is True,
+        "raw_error_codes": raw_error_codes,
+        "blockers": blockers,
+        "errors": errors,
+        "warnings": _string_list(payload.get("warnings")),
+        "next_actions": next_actions,
+    }
+
+
 def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Path]]:
     root = artifact_root
     source_root = root / "portrait-video-source"
@@ -1416,6 +1494,11 @@ def _full_local_snapshot_report_paths(artifact_root: Path) -> dict[str, list[Pat
             root / "portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json"
         ],
         "portrait_retry_handoff_reports": [root / "portrait-video-retry-handoff-report.json"],
+        "hatch_pet_imagegen_readiness_reports": sorted(
+            (root / "pixel-pet-sequence-drafts").glob("*/imagegen-readiness.json")
+        )
+        if (root / "pixel-pet-sequence-drafts").is_dir()
+        else [],
     }
 
 
@@ -1719,6 +1802,18 @@ def _attention_checks(checks: Iterable[dict[str, object]]) -> list[dict[str, obj
 
 
 def _attention_reasons(check: dict[str, object]) -> list[str]:
+    if check.get("id") == "hatch_pet_imagegen_readiness":
+        reasons: list[str] = []
+        reasons.extend(_string_list(check.get("blockers")))
+        reasons.extend(_string_list(check.get("errors")))
+        reasons.extend(f"raw error code: {code}" for code in _string_list(check.get("raw_error_codes")))
+        ready_job_ids = _string_list(check.get("ready_job_ids"))
+        if ready_job_ids:
+            reasons.append("ready jobs: " + ", ".join(ready_job_ids))
+        blocked_job_count = _optional_int(check.get("blocked_job_count"))
+        if blocked_job_count:
+            reasons.append(f"blocked jobs: {blocked_job_count}")
+        return _dedupe(reasons)
     reasons: list[str] = []
     for key in (
         "attention_reports",
@@ -1891,6 +1986,12 @@ def _parse_args(argv: list[str]) -> argparse.Namespace:
         help="Optional portrait AI-video retry handoff JSON report to include.",
     )
     parser.add_argument(
+        "--hatch-pet-imagegen-readiness-report",
+        action="append",
+        default=[],
+        help="Optional hatch-pet imagegen readiness JSON report to include.",
+    )
+    parser.add_argument(
         "--full-local-snapshot",
         action="store_true",
         help="Include the current local release QA artifact set under --snapshot-artifact-root.",
@@ -1952,6 +2053,9 @@ def main(argv: list[str] | None = None) -> int:
         portrait_retry_handoff_reports=[
             Path(item) for item in args.portrait_retry_handoff_report
         ] + snapshot["portrait_retry_handoff_reports"],
+        hatch_pet_imagegen_readiness_reports=[
+            Path(item) for item in args.hatch_pet_imagegen_readiness_report
+        ] + snapshot["hatch_pet_imagegen_readiness_reports"],
     )
     text = json.dumps(payload, ensure_ascii=False, indent=2)
     _write_text(args.json, text + "\n")

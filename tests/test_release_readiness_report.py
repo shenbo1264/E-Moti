@@ -538,6 +538,30 @@ def _write_portrait_regeneration_brief_report(
     return path
 
 
+def _write_hatch_pet_imagegen_readiness_report(path: Path, *, ok: bool = False) -> Path:
+    payload = {
+        "ok": ok,
+        "status": "ready" if ok else "blocked_invalid_openai_api_key",
+        "run_dir": str(path.parent),
+        "total_job_count": 10,
+        "complete_job_count": 0,
+        "ready_job_count": 1,
+        "blocked_job_count": 9,
+        "ready_job_ids": ["base"],
+        "blocked_job_ids": ["idle", "running-right"],
+        "openai_api_key_present": True,
+        "raw_error_codes": [] if ok else ["invalid_api_key"],
+        "blockers": [] if ok else ["raw response reports invalid OpenAI API key"],
+        "next_actions": []
+        if ok
+        else ["set a valid OPENAI_API_KEY or use the built-in $imagegen path before retrying base generation"],
+        "errors": [],
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    return path
+
+
 def _write_portrait_retry_handoff_report(
     path: Path,
     *,
@@ -704,6 +728,7 @@ def _run_tool(
     portrait_frame_qa_reports: list[Path] | None = None,
     portrait_regeneration_brief_reports: list[Path] | None = None,
     portrait_retry_handoff_reports: list[Path] | None = None,
+    hatch_pet_imagegen_readiness_reports: list[Path] | None = None,
     portrait_video_import_reports: list[Path] | None = None,
     full_local_snapshot: bool = False,
     snapshot_artifact_root: Path | None = None,
@@ -744,6 +769,8 @@ def _run_tool(
         args.extend(["--portrait-regeneration-brief-report", str(report)])
     for report in portrait_retry_handoff_reports or []:
         args.extend(["--portrait-retry-handoff-report", str(report)])
+    for report in hatch_pet_imagegen_readiness_reports or []:
+        args.extend(["--hatch-pet-imagegen-readiness-report", str(report)])
     for report in portrait_video_import_reports or []:
         args.extend(["--portrait-video-import-report", str(report)])
     if full_local_snapshot:
@@ -1028,6 +1055,41 @@ def test_release_readiness_report_full_local_snapshot_includes_existing_video_im
     assert import_check["ok"] is True
     assert import_check["status"] == "ready"
     assert import_check["frame_count"] == 3
+
+
+def test_release_readiness_report_full_local_snapshot_includes_hatch_pet_imagegen_readiness(
+    tmp_path: Path,
+):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    artifact_root = _write_full_local_snapshot_artifacts(tmp_path / "artifacts")
+    _write_hatch_pet_imagegen_readiness_report(
+        artifact_root / "pixel-pet-sequence-drafts" / "xingxi_pixel_pet_edge_style_v2" / "imagegen-readiness.json"
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        full_local_snapshot=True,
+        snapshot_artifact_root=artifact_root,
+    )
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["check_count"] == 16
+    assert payload["ready_check_count"] == 9
+    assert payload["attention_check_count"] == 7
+    assert "hatch_pet_imagegen_readiness" in [item["id"] for item in payload["attention_checks"]]
+    imagegen_check = next(check for check in payload["checks"] if check["id"] == "hatch_pet_imagegen_readiness")
+    assert imagegen_check["status"] == "blocked_invalid_openai_api_key"
+    assert imagegen_check["ready_job_ids"] == ["base"]
+    assert imagegen_check["raw_error_codes"] == ["invalid_api_key"]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Hatch Pet Imagegen Readiness" in markdown
+    assert "- Raw error codes:" in markdown
 
 
 def test_release_readiness_report_full_local_snapshot_includes_existing_source_process_report(tmp_path: Path):
@@ -2124,6 +2186,65 @@ def test_release_readiness_report_blocks_portrait_regeneration_brief_missing_pre
     assert regeneration_check["status"] == "needs_attention"
     assert expected_error in regeneration_check["errors"]
     assert "review portrait AI-video regeneration brief before release" in payload["next_actions"]
+
+
+def test_release_readiness_report_surfaces_hatch_pet_imagegen_readiness_blocker(tmp_path: Path):
+    character_pack = _copy_original_pack(tmp_path / "source")
+    app_dir, installer = _write_frozen_build(tmp_path / "build")
+    readiness = _write_hatch_pet_imagegen_readiness_report(
+        tmp_path / "pixel-pet-sequence-drafts" / "xingxi_pixel_pet_edge_style_v2" / "imagegen-readiness.json"
+    )
+
+    result = _run_tool(
+        character_pack,
+        app_dir,
+        installer,
+        tmp_path,
+        hatch_pet_imagegen_readiness_reports=[readiness],
+    )
+
+    payload = json.loads(result.stdout)
+    readiness_check = payload["checks"][2]
+    assert result.returncode == 1
+    assert payload["ok"] is False
+    assert payload["attention_checks"] == [
+        {
+            "id": "hatch_pet_imagegen_readiness",
+            "label": "Hatch Pet Imagegen Readiness",
+            "status": "blocked_invalid_openai_api_key",
+            "reasons": [
+                "raw response reports invalid OpenAI API key",
+                "raw error code: invalid_api_key",
+                "ready jobs: base",
+                "blocked jobs: 9",
+            ],
+            "next_actions": [
+                "set a valid OPENAI_API_KEY or use the built-in $imagegen path before retrying base generation"
+            ],
+        }
+    ]
+    assert readiness_check["id"] == "hatch_pet_imagegen_readiness"
+    assert readiness_check["ok"] is False
+    assert readiness_check["status"] == "blocked_invalid_openai_api_key"
+    assert readiness_check["run_dir"] == str(readiness.parent)
+    assert readiness_check["total_job_count"] == 10
+    assert readiness_check["complete_job_count"] == 0
+    assert readiness_check["ready_job_count"] == 1
+    assert readiness_check["blocked_job_count"] == 9
+    assert readiness_check["ready_job_ids"] == ["base"]
+    assert readiness_check["raw_error_codes"] == ["invalid_api_key"]
+    assert readiness_check["blockers"] == ["raw response reports invalid OpenAI API key"]
+    assert readiness_check["next_actions"] == [
+        "set a valid OPENAI_API_KEY or use the built-in $imagegen path before retrying base generation"
+    ]
+    markdown = (tmp_path / "readiness.md").read_text(encoding="utf-8")
+    assert "### Hatch Pet Imagegen Readiness" in markdown
+    assert "- Status: `blocked_invalid_openai_api_key`" in markdown
+    assert f"- Run dir: `{readiness.parent}`" in markdown
+    assert "- Ready jobs: `1`" in markdown
+    assert "- Blocked jobs: `9`" in markdown
+    assert "- Raw error codes:" in markdown
+    assert "  - `invalid_api_key`" in markdown
 
 
 def test_release_readiness_report_surfaces_portrait_video_import(tmp_path: Path):

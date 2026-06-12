@@ -13,7 +13,7 @@
 - JSON/角色包校验：
   - `python -m json.tool assets\companion\original_oc\shop_items.json` 通过。
   - `python tools\validate_character_pack.py assets\companion\original_oc` 通过，`ok=true`。
-- Release readiness 聚合：`python tools\release_readiness_report.py --full-local-snapshot ...` 返回 `needs_attention`，`15` 项检查中 `8` 项 ready、`7` 项 attention。
+- Release readiness 聚合：`python tools\release_readiness_report.py --full-local-snapshot ...` 返回 `needs_attention`，当前 `16` 项检查中 `8` 项 ready、`8` 项 attention；新增 attention 包括 hatch-pet imagegen readiness 的 `blocked_invalid_openai_api_key`。
 
 ## 2. 当前阶段判断
 
@@ -318,6 +318,7 @@ python -m pytest
 - 已执行 `python %CODEX_HOME%\skills\hatch-pet\scripts\prepare_pet_run.py ... --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --force`，创建 ignored v2 hatch-pet run；`pet_job_status.py` 显示 `total=10`、`complete=0`、`ready=1`、`blocked=9`，当前 ready job 只有 prompt-only `base`，base prompt 在 `artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\prompts\base-pet.md`。
 - 已尝试 `generate_pet_images.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --job-id base` 作为 secondary fallback；OpenAI Image API 返回 `invalid_api_key`，因此没有生成 `decoded\base.png`，没有 canonical base，没有解锁 row jobs，也没有修改 runtime manifest 或默认资产。下一次继续需要可用的内置 `$imagegen` 或有效 OpenAI Image API key；不能用本地脚本伪造视觉输出。
 - 已新增并运行 `python tools\art\hatch_pet_imagegen_readiness.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.md`，报告 `status=blocked_invalid_openai_api_key`、`openai_api_key_present=true`、`raw_error_codes=["invalid_api_key"]`、`ready_job_ids=["base"]`，并且不输出任何 API key 内容。
+- 已将 hatch-pet imagegen readiness 接入 `tools\release_readiness_report.py`；真实运行 `python tools\release_readiness_report.py --hatch-pet-imagegen-readiness-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.json --json artifacts\release-readiness-hatch-pet-imagegen.json --markdown artifacts\release-readiness-hatch-pet-imagegen.md` 后，聚合报告为 `needs_attention`，并在 top-level `attention_checks` 中显示 `blocked_invalid_openai_api_key`、`raw error code: invalid_api_key`、`ready jobs: base`、`blocked jobs: 9`。这些输出仍为 ignored evidence，不修改 runtime manifest 或默认资产。
 - 当前默认决策：继续保持 `original_oc` 为默认包，`xingxi_pixel_pet` 作为可切换内置候选；是否默认替换留给真实桌面人工美术 QA 后的独立包。
 
 ### P6-release-package-check：演示版打包复核
@@ -350,7 +351,7 @@ python -m pytest
 - 不建议直接对当前 `xingxi_pixel_pet` 做确定性透明擦边，因为 overlay 显示该指标命中了头发外轮廓和线稿；
 - 优先用 `artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.md` 做一版新的 hatch-pet 候选或人工重绘候选，要求提示词明确避免红/紫发光边、色边和外圈 halo，同时保留蓝紫发色本体；
 - 当前 v2 run 已准备好，下一步只生成并人工审查 `base`；不要一次性生成九行 row；
-- 生成前先跑 `hatch_pet_imagegen_readiness.py`；当前 readiness 明确阻断 secondary fallback，因为已有 raw response 证明 `OPENAI_API_KEY` 无效；
+- 生成前先跑 `hatch_pet_imagegen_readiness.py`，并用 `release_readiness_report.py --hatch-pet-imagegen-readiness-report ...` 把阻断或通过状态上卷到 release readiness；当前 readiness 明确阻断 secondary fallback，因为已有 raw response 证明 `OPENAI_API_KEY` 无效；
 - 若继续使用 secondary fallback，必须先修复 `OPENAI_API_KEY` 并重新跑 readiness；如果使用内置 `$imagegen`，生成后必须用 `record_imagegen_result.py` 记录 `$CODEX_HOME\generated_images\...\ig_*.png`，不得手改 `imagegen-jobs.json`；
 - 也可以人工确认接受当前外轮廓作为风格选择，但这必须是明确美术 QA 结论，而不是因为工具通过；
 - 每个修复候选必须重新跑 `pixel_pet_visual_qa.py --fail-on-warnings`、角色包校验、角色库 QA、UI smoke 和全量测试；
