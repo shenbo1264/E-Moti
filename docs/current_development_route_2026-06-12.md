@@ -4,9 +4,9 @@
 
 ## 1. 本次实测基线
 
-- 工作目录：`D:\学工文档\光核\电子宠物\E-Moti_demo`
+- 工作目录：仓库根目录
 - 当前分支：`codex/demo-worktree-cleanup`
-- 当前 HEAD：`474ea1c test: add hatch pet imagegen route preflight`
+- 路线扫描起点 HEAD：`474ea1c test: add hatch pet imagegen route preflight`
 - 工作区：`git status --short --untracked-files=all` 初始为空；本次扫描生成的 `artifacts/route-scan-20260612/` 是忽略证据产物，不应提交。
 - 远端：当前本地 checkout 配置了 `origin` 和 `private-origin`；本文档不记录远端 URL。
 - 全量测试：第一次 124 秒超时无结论；延长超时后 `python -m pytest` 通过，结果为 `801 passed in 129.03s`。
@@ -103,9 +103,9 @@ python -m pytest tests\test_repository_hygiene.py -q
 
 目标：在真正生成 v2 base 前先解决“图从哪里来、能不能被记录、是否对应当前 job”的问题，防止旧图、错图、手改 manifest 污染路线。
 
-建议实现：
+当前已实现：
 
-- 新增只读预检工具，例如 `tools\art\hatch_pet_base_intake_preflight.py`；
+- 新增只读预检工具 `tools\art\hatch_pet_base_intake_preflight.py`；
 - 输入 `--run-dir`、`--job-id base`、`--source <image>`；
 - 默认只接受 `$CODEX_HOME\generated_images\...\ig_*.png` 这类内置 imagegen 产物；
 - 校验 `imagegen-jobs.json` 中 `base` job 存在、ready、未完成、不会覆盖；
@@ -115,9 +115,17 @@ python -m pytest tests\test_repository_hygiene.py -q
 验收：
 
 ```powershell
+python tools\art\hatch_pet_base_intake_preflight.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --job-id base --source "$env:CODEX_HOME\generated_images\<session>\ig_<image>.png" --character-id xingxi_pixel_pet --character-definition artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_definition.json --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.md
 python -m pytest tests\test_hatch_pet_base_intake_preflight.py tests\test_pixel_pet_base_review.py -q
 python -m pytest
 ```
+
+当前检查点：
+
+- 工具本身已完成 TDD 红绿：新增测试先因模块不存在失败，随后 `tests\test_hatch_pet_base_intake_preflight.py` 通过，结果为 `5 passed`。
+- 工具只做 intake 预检，不生成图片、不复制图片、不写 `decoded/base.png`、不修改 `imagegen-jobs.json`。
+- P1 工具加入后，全量 `python -m pytest` 通过，结果为 `806 passed in 122.04s`。
+- 下一步仍需要真实 `$imagegen` 或有效 provider 产生 v2 `base` 图后，再用该工具检查并调用 `record_imagegen_result.py`。
 
 ### P2: 只生成并审查 v2 Xingxi base
 
