@@ -6,7 +6,7 @@ from json import JSONDecodeError
 
 from .events import ALLOWED_EFFECTS, CompanionEvent
 
-ALLOWED_DIALOGUE_FIELDS = frozenset({"type", "speech", "effect", "motion_hint"})
+ALLOWED_DIALOGUE_FIELDS = frozenset({"type", "speech", "effect", "motion_hint", "intent_hint"})
 MAX_DIALOGUE_SPEECH_LENGTH = 80
 MAX_DIALOGUE_MOTION_HINT_LENGTH = 40
 MAX_DIALOGUE_EFFECT_LENGTH = 20
@@ -125,4 +125,3 @@ def _has_balanced_json_prefix(text: str) -> bool:
             if depth <= 0:
                 return True
     return depth == 0
-

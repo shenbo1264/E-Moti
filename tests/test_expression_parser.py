@@ -33,20 +33,22 @@ def test_expression_parser_rejects_state_overreach_fields():
     assert normalized is None
 
 
-def test_expression_parser_converts_shinsekai_object_stream_to_legacy_events():
+def test_expression_parser_preserves_speech_schema_from_shinsekai_object_stream():
     state = make_state()
 
     events = expression_parser_module.parse_shinsekai_object_stream(
-        '{"type":"speech","speech":"我在这里。","effect":"ATTENTION"}',
+        '{"type":"speech","speech":"[sleepy] 我在这里。","effect":"ATTENTION",'
+        '"motion_hint":"Sleep","intent_hint":"stay_quiet"}',
         state,
     )
 
     assert events == [
         {
-            "character_name": "星汐",
-            "speech": "我在这里。",
-            "sprite": "1",
+            "type": "speech",
+            "speech": "[sleepy] 我在这里。",
             "effect": "ATTENTION",
+            "motion_hint": "Sleep",
+            "intent_hint": "stay_quiet",
         }
     ]
 

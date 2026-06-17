@@ -715,6 +715,65 @@ def test_expressor_accepts_adjacent_shinsekai_style_speech_objects():
     assert snapshot["motion"] == "TouchHead"
 
 
+def test_expressor_accepts_adjacent_speech_objects_with_readonly_intent_hint():
+    snapshot = make_snapshot()
+    payload = (
+        '{"type":"speech","speech":"[sleepy] 晚安，我会把声音放轻。",'
+        '"effect":"ATTENTION","motion_hint":"Sleep","intent_hint":"offer_rest"}'
+        '{"type":"speech","speech":"窗边安静下来了。","effect":"ATTENTION","intent_hint":"stay_quiet"}'
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "晚安，我会把声音放轻。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        },
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "窗边安静下来了。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        },
+    ]
+    assert [action.to_dict() for action in expressor.last_visual_actions] == [
+        {
+            "type": "expression",
+            "id": "sleepy",
+            "ttl_ms": 3000,
+            "priority": 70,
+            "source": "llm",
+        },
+        {
+            "type": "motion",
+            "id": "Sleep",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        },
+    ]
+    assert [intent.to_dict() for intent in expressor.last_interaction_intents] == [
+        {
+            "id": "offer_rest",
+            "ttl_ms": 5000,
+            "priority": 50,
+            "source": "llm",
+        },
+        {
+            "id": "stay_quiet",
+            "ttl_ms": 5000,
+            "priority": 50,
+            "source": "llm",
+        },
+    ]
+    assert expressor.last_fallback_reason is None
+    assert snapshot["motion"] == "TouchHead"
+
+
 def test_expressor_rejects_overlong_motion_hint_without_changing_motion():
     snapshot = make_snapshot()
     payload = (

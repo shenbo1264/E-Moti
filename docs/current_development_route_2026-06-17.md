@@ -904,3 +904,150 @@ git diff --check
 targeted tests=107 passed
 full pytest=828 passed in 138.29s
 ```
+
+## 14. 2026-06-18 P4 LLM motion mapping 复核结果
+
+本节记录 P4-llm-motion-map 的当前真实结果。结论：clean-edge ignored candidate pack 的 motion family 可承接当前 LLM visual actions；DeepSeek live expression cue probe 在修复连续 JSON 对象解析合同后通过，且没有写入成长、背包、关系、记忆、目标或存档。
+
+### clean-edge candidate 映射复核
+
+复核对象：
+
+```text
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/edge-repair-tool-cleaned-outline-rgb-alpha-20260618/xingxi_pixel_pet
+```
+
+已执行：
+
+```powershell
+<PYTHON311> tools\pixel_pet_emote_mapping_check.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\xingxi_pixel_pet --json artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-emote-mapping.json --markdown artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-emote-mapping.md
+```
+
+结果：
+
+```text
+status=ready
+missing_motion_ids=[]
+unsupported_expression_ids=[]
+required_motion_ids=Default, Play, Raised, Sleep, Study, SwitchDown, TouchHead
+supported_expression_ids=blink, calm, confused, excited, focus, focused, goofy, happy, joy, neutral, play, sad, sadness, sleepy, smile, study, surprised, tired
+```
+
+当前 expression -> motion family 结论：
+
+```text
+blink/calm/neutral -> Default
+confused/focus/focused/study -> Study
+excited/goofy/play -> Play
+happy/joy/smile -> TouchHead
+sad/sadness -> SwitchDown
+sleepy/tired -> Sleep
+surprised -> Raised
+```
+
+### DeepSeek live probe 问题与修复
+
+首次 live probe 写入：
+
+```text
+artifacts/llm_smoke/deepseek-expression-cue-probe-clean-edge-live-20260618.json
+```
+
+结果：
+
+```text
+ok=false
+reason=cue:sleepy:fallback:unsafe_event
+passed_count=4
+failed_count=1
+failed_case=sleepy
+state_mutation_check.ok=true
+state_mutation_check.changed_fields=[]
+```
+
+失败不是状态越权，状态守卫正常；问题是 LLM 在 `sleepy/晚安` 场景下可能输出带 `intent_hint` 的连续 JSON speech 对象，而旧 object-stream parser 的允许字段没有与当前 speech schema 对齐，导致安全回退并丢失表演 cue。
+
+本包按 TDD 修复：
+
+```text
+src/guanghe_companion/dialogue_parser.py
+src/guanghe_companion/expression_parser.py
+src/guanghe_companion/expression_expressor.py
+tests/test_ai_expressor.py
+tests/test_expression_parser.py
+```
+
+修复边界：
+
+- `intent_hint` 仍是只读互动意图，不是状态写入；
+- 连续 JSON 对象路径保留 speech schema，后续统一抽取 expression/motion/intent；
+- state mutation 字段仍被拒绝；
+- overlong/control-character motion 或 intent hint 仍被拒绝；
+- 不改养成状态机、背包、关系、记忆、目标或存档。
+
+TDD 验证：
+
+```powershell
+<PYTHON311> -m pytest tests\test_ai_expressor.py tests\test_expression_parser.py tests\test_dialogue.py -q
+```
+
+结果：
+
+```text
+137 passed
+```
+
+### DeepSeek live rerun
+
+已执行：
+
+```powershell
+<PYTHON311> tools\llm_expression_cue_probe.py --provider deepseek --timeout-seconds 45 --min-speech-chars 8 --max-speech-chars 80 --report artifacts\llm_smoke\deepseek-expression-cue-probe-clean-edge-live-rerun-20260618.json
+```
+
+结果：
+
+```text
+ok=true
+reason=
+probe_count=5
+passed_count=5
+failed_count=0
+fallback_reason for all cases=
+speech_quality.violations=[]
+state_mutation_check.ok=true
+state_mutation_check.changed_fields=[]
+```
+
+case 覆盖：
+
+```text
+joy -> expression joy, motion TouchHead/Raised, intent celebrate
+sadness -> expression sadness, motion SwitchDown/TouchHead, intent ask_comfort
+sleepy -> expression sleepy, motion Sleep, intent offer_rest
+focused -> expression focused, motion Study, intent stay_quiet
+surprised -> expression surprised, motion Raised
+```
+
+本包最终验证：
+
+```powershell
+git diff --check
+<PYTHON311> -m pytest tests\test_pixel_pet_emote_mapping.py tests\test_visual_actions.py tests\test_presentation_renderer.py tests\test_expression_event_pipeline.py tests\test_llm_smoke.py tests\test_ai_expressor.py tests\test_expression_parser.py tests\test_dialogue.py tests\test_companion_dialogue_policy.py -q
+<PYTHON311> -m pytest
+```
+
+结果：
+
+```text
+P4 targeted tests=179 passed
+full pytest=829 passed in 121.77s
+```
+
+P4 当前结论：
+
+- LLM 可以作为表现力核心驱动 speech、expression、motion 和只读 interaction intent；
+- 当前证据不支持让 LLM 接管成长状态机；
+- clean-edge candidate 可以继续进入 P5 optional bundled candidate promotion 评估；
+- 进入 P5 前仍不得替换默认 `original_oc`，不得把 ignored candidate 直接提交为默认资产；
+- P5 需要单独跑 UI、full pytest、visual QA、release readiness；若涉及冻结包或安装器，再跑 Windows app/installer gates。

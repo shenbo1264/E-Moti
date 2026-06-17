@@ -53,7 +53,7 @@ def build_expression_prompt_preview(character_name: str = "星汐") -> str:
         [
             f"角色：{safe_name}",
             "AI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。",
-            "输出必须是 JSON 数组或连续 JSON 对象；每个对象只允许 type、speech、effect、motion_hint。",
+            "输出必须是 JSON 数组或连续 JSON 对象；每个对象只允许 type、speech、effect、motion_hint、intent_hint。",
             "type 固定为 speech；speech 是星汐说出的短句；effect 和 motion_hint 只是演出提示。",
             f"允许 speech 前缀表情标签：{_PROMPT_VISUAL_TAGS}；标签会在播报前移除，只作为当前表情/动作提示。",
             f"允许 motion_hint：{_PROMPT_MOTION_HINTS}；提示只影响当前呈现，不改变本地 motion 或状态机。",

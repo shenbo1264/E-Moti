@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+import json
+from json import JSONDecodeError
 from typing import Any
 
-from .dialogue_parser import DialogueStreamParser
 from .events import ALLOWED_EFFECTS
 from .visual_actions import clean_speech_and_visual_actions
 
@@ -31,17 +32,17 @@ def normalize_expression_event(state, event: dict[Any, Any]) -> dict[str, str] |
 def parse_shinsekai_object_stream(raw: str, state) -> list[dict[str, str]] | None:
     if not raw.lstrip().startswith("{"):
         return None
-    parser = DialogueStreamParser(character_name=state.character_name)
-    events = list(parser.feed(raw))
-    if parser.has_pending_text():
+    rows = _parse_adjacent_speech_schema_rows(raw)
+    if rows is None:
         raise ExpressionPayloadError("invalid_json")
-    if parser.last_error is not None:
-        raise ExpressionPayloadError(_dialogue_parser_fallback_reason(parser.last_error))
-    if not events:
+    if not rows:
         raise ExpressionPayloadError("invalid_payload")
-    if len(events) > 4:
+    if len(rows) > 4:
         raise ExpressionPayloadError("too_many_events")
-    return [event.to_legacy_dict() for event in events]
+    normalized_rows = [_validated_speech_schema_row(row) for row in rows]
+    if any(row is None for row in normalized_rows):
+        raise ExpressionPayloadError("unsafe_event")
+    return [row for row in normalized_rows if row is not None]
 
 
 def _dialogue_parser_fallback_reason(reason: str) -> str:
@@ -124,6 +125,66 @@ def _normalize_speech_schema_event(state, event: dict[Any, Any]) -> dict[str, st
         "sprite": "1",
         "effect": normalized_effect,
     }
+
+
+def _parse_adjacent_speech_schema_rows(raw: str) -> list[object] | None:
+    decoder = json.JSONDecoder()
+    text = raw.strip()
+    rows: list[object] = []
+    while text:
+        try:
+            payload, end_index = decoder.raw_decode(text)
+        except JSONDecodeError:
+            return None
+        if isinstance(payload, list):
+            rows.extend(payload)
+        else:
+            rows.append(payload)
+        text = text[end_index:].strip()
+    return rows
+
+
+def _validated_speech_schema_row(row: object) -> dict[str, str] | None:
+    if not isinstance(row, dict):
+        return None
+    allowed_keys = {"type", "speech", "effect", "motion_hint", "intent_hint"}
+    if not set(row.keys()).issubset(allowed_keys):
+        return None
+    if row.get("type") != "speech":
+        return None
+    speech = row.get("speech")
+    if not isinstance(speech, str):
+        return None
+    normalized_speech = speech.strip()
+    speech_without_tags, _ = clean_speech_and_visual_actions(normalized_speech, "")
+    if _has_control_character(speech_without_tags):
+        return None
+    if not speech_without_tags or len(speech_without_tags) > MAX_SPEECH_LENGTH:
+        return None
+    effect = row.get("effect", "")
+    if not isinstance(effect, str):
+        return None
+    normalized_effect = effect.strip()
+    if len(normalized_effect) > MAX_EFFECT_LENGTH:
+        return None
+    if normalized_effect not in ALLOWED_EFFECTS:
+        normalized_effect = "ATTENTION"
+    normalized_row = {
+        "type": "speech",
+        "speech": normalized_speech,
+        "effect": normalized_effect,
+    }
+    for key, max_length in (("motion_hint", MAX_MOTION_HINT_LENGTH), ("intent_hint", MAX_INTENT_HINT_LENGTH)):
+        value = row.get(key, "")
+        if value != "" and not isinstance(value, str):
+            return None
+        if isinstance(value, str):
+            text = value.strip()
+            if _has_control_character(text) or len(text) > max_length:
+                return None
+            if text:
+                normalized_row[key] = text
+    return normalized_row
 
 
 def _has_control_character(value: str) -> bool:
