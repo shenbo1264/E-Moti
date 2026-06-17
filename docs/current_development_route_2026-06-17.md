@@ -645,3 +645,118 @@ P6-default-promotion：
 - 只在用户明确要求时进入；
 - 需要单独评估开源资产质量、边缘 halo、角色表现力、包装体积和回滚方案；
 - 必须运行 full pytest、UI smoke、Windows app build、installer build、frozen exe smoke。
+
+## 12. 2026-06-18 P3 local user-pack smoke 结果
+
+本节记录 P3-smoke-and-art-gate 的当前真实结果。结论：本地用户包 UI/桌宠路径可用，但美术门禁不通过，不能进入 bundled promotion。
+
+### QA 工具修正
+
+执行 P3 时发现 `tools\character_library_qa.py` 原本只能使用临时 user-data 下的默认 `character_packs`，不能按路线文档指定 `--character-root character_packs`。更重要的是，当本地包与 bundled 包同为 `xingxi_pixel_pet` 时，旧 QA 会优先测到 bundled 包，形成假阳性。
+
+本包已按 TDD 修正：
+
+- `run_character_library_qa(..., character_root=...)` 支持显式本地用户包根目录；
+- CLI 新增 `--character-root`；
+- 报告新增 `candidate_source` 和 `candidate_pack_path`；
+- 当指定 `character_root` 时，QA 要求被测候选来自 `Source: user`，且路径必须在该 root 内；
+- 该变更只影响 QA 工具，不改变生产应用的角色包优先级或默认角色。
+
+已验证：
+
+```powershell
+<PYTHON311> -m pytest tests\test_character_library_qa_tool.py -q
+```
+
+结果：`5 passed`。
+
+### v2 本地用户包 smoke
+
+已执行：
+
+```powershell
+$env:QT_QPA_PLATFORM='offscreen'
+<PYTHON311> tools\character_library_qa.py --character-id xingxi_pixel_pet --character-root character_packs --report artifacts\character-library-qa\xingxi-pixel-pet-v2-local-user-pack-qa.json --screenshot-dir artifacts\character-library-qa\xingxi-pixel-pet-v2-local-user-pack-screenshots --pet-seconds 0.5
+```
+
+结果：
+
+```text
+ok=true
+default_character_id=original_oc
+selected_character_id=xingxi_pixel_pet
+after_switch_character_id=xingxi_pixel_pet
+candidate_source=user
+candidate_pack_path=character_packs\xingxi_pixel_pet
+candidate_backend=sprite
+desktop_backend=sprite
+errors=[]
+```
+
+截图证据：
+
+```text
+artifacts/character-library-qa/xingxi-pixel-pet-v2-local-user-pack-screenshots/xingxi_pixel_pet-character-library.png
+artifacts/character-library-qa/xingxi-pixel-pet-v2-local-user-pack-screenshots/xingxi_pixel_pet-desktop-pet.png
+```
+
+UI 结论：
+
+- 角色库能找到本地 `xingxi_pixel_pet`；
+- 角色详情明确显示 `Source: user`；
+- 切换后控制面板和桌宠窗口均能使用 sprite backend；
+- 默认角色仍是 `original_oc`；
+- 没有修改 bundled assets、default pack 或 runtime manifest。
+
+### art gate 结论
+
+人工查看桌宠截图后，紫/洋红外边缘在透明桌宠窗口中明显可见。该问题已经不是纯检测噪声，而是真实可见的美术 blocker。
+
+保留结论：
+
+```text
+candidate visual QA=ok=true, status=ready_with_warnings
+candidate visual warning=suspicious_edge_halo_risk
+suspicious_edge_halo_pixel_count=13790
+suspicious_edge_halo_ratio=0.401047
+default promotion allowed=false
+```
+
+已生成修边 brief：
+
+```text
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/edge-style-brief-v2-local-smoke-20260618.json
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/edge-style-brief-v2-local-smoke-20260618.md
+```
+
+本包最终验证：
+
+```powershell
+git diff --check
+<PYTHON311> -m pytest tests\test_character_library_qa_tool.py tests\test_app.py tests\test_desktop_pet_smoke.py -q
+<PYTHON311> -m pytest tests\test_character_pack_import_tool.py tests\test_pixel_pet_pack_validator_tool.py tests\test_pixel_pet_visual_qa.py tests\test_pixel_pet_edge_style_brief.py -q
+<PYTHON311> -m pytest
+```
+
+结果：
+
+```text
+character library/app/desktop targeted tests=101 passed
+art gate/import targeted tests=19 passed
+full pytest=825 passed in 157.38s
+```
+
+下一步不应进入 optional bundled promotion。建议下一包改为：
+
+```text
+P3b-edge-style-repair
+```
+
+目标：
+
+- 不重做产品架构；
+- 不改默认角色；
+- 不手工擦 runtime bundled spritesheet；
+- 基于修边 brief 对 v2 candidate 做 edge-style repair 或重新生成 clean-edge candidate；
+- 用真实桌宠截图和 `pixel_pet_visual_qa --fail-on-warnings` 共同验收；
+- 只有修边通过后才继续 P4 LLM motion mapping 和 P5 optional bundled candidate promotion。

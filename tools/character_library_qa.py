@@ -19,6 +19,7 @@ if str(SRC_ROOT) not in sys.path:
 from PySide6.QtWidgets import QApplication  # noqa: E402
 
 from guanghe_companion.app import CompanionWindow  # noqa: E402
+from guanghe_companion.character_registry import CharacterRegistry  # noqa: E402
 from guanghe_companion.controller import CompanionController  # noqa: E402
 from tools.desktop_pet_smoke import _pump_events_for, validate_desktop_pet_window  # noqa: E402
 
@@ -30,6 +31,8 @@ class CharacterLibraryQAReport:
     default_character_id: str
     selected_character_id: str
     after_switch_character_id: str
+    candidate_source: str
+    candidate_pack_path: str
     candidate_backend: str
     desktop_backend: str
     available_character_ids: tuple[str, ...]
@@ -44,6 +47,8 @@ class CharacterLibraryQAReport:
             "default_character_id": self.default_character_id,
             "selected_character_id": self.selected_character_id,
             "after_switch_character_id": self.after_switch_character_id,
+            "candidate_source": self.candidate_source,
+            "candidate_pack_path": self.candidate_pack_path,
             "candidate_backend": self.candidate_backend,
             "desktop_backend": self.desktop_backend,
             "available_character_ids": list(self.available_character_ids),
@@ -58,6 +63,7 @@ def run_character_library_qa(
     character_id: str,
     report_path: Path | str,
     screenshot_dir: Path | str,
+    character_root: Path | str | None = None,
     pet_seconds: float = 0.5,
 ) -> CharacterLibraryQAReport:
     app = QApplication.instance() or QApplication(sys.argv)
@@ -74,6 +80,14 @@ def run_character_library_qa(
         user_data_root = Path(tmp) / "user-data"
         controller = CompanionController(user_data_root=user_data_root, auto_load=False)
         window = CompanionWindow(controller=controller)
+        if character_root is not None:
+            empty_builtin_root = Path(tmp) / "empty-builtin-character-packs"
+            empty_builtin_root.mkdir(parents=True, exist_ok=True)
+            window.character_registry = CharacterRegistry(
+                builtin_root=empty_builtin_root,
+                user_root=Path(character_root),
+            )
+            window._refresh_character_library()
         window.resize(1080, 760)
         window.show()
         app.processEvents()
@@ -85,6 +99,13 @@ def run_character_library_qa(
             selected_character_id = window._selected_character_id()
             candidate_summary = window._character_pack_summaries.get(character_id)
             candidate_backend = _renderer_backend(candidate_summary.path if candidate_summary else None)
+            candidate_source = candidate_summary.source if candidate_summary else ""
+            candidate_pack_path = str(candidate_summary.path) if candidate_summary else ""
+            if character_root is not None:
+                if candidate_source != "user":
+                    errors.append(f"character root QA did not select user pack source: {candidate_source}")
+                elif not _path_stays_inside(candidate_summary.path, Path(character_root)):
+                    errors.append(f"character root QA selected pack outside character root: {candidate_summary.path}")
             _validate_character_detail(window, character_id, errors)
             _save_widget_screenshot(window, library_screenshot, errors)
 
@@ -113,6 +134,8 @@ def run_character_library_qa(
                 default_character_id=default_character_id,
                 selected_character_id=selected_character_id,
                 after_switch_character_id=after_switch_character_id,
+                candidate_source=candidate_source,
+                candidate_pack_path=candidate_pack_path,
                 candidate_backend=candidate_backend,
                 desktop_backend=desktop_backend,
                 available_character_ids=tuple(window._character_pack_summaries),
@@ -170,6 +193,14 @@ def _renderer_backend(pack_dir: Path | None) -> str:
     return "sprite"
 
 
+def _path_stays_inside(path: Path, root: Path) -> bool:
+    try:
+        path.resolve().relative_to(root.resolve())
+    except (OSError, ValueError):
+        return False
+    return True
+
+
 def _save_widget_screenshot(widget, path: Path, errors: list[str]) -> None:
     pixmap = widget.grab()
     if pixmap.isNull():
@@ -185,6 +216,11 @@ def _save_widget_screenshot(widget, path: Path, errors: list[str]) -> None:
 def _parse_args(argv: list[str]) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run character-library QA for a bundled character pack.")
     parser.add_argument("--character-id", default="xingxi_pixel_pet")
+    parser.add_argument(
+        "--character-root",
+        default=None,
+        help="Optional local character_packs root to use as the user-pack source for QA.",
+    )
     parser.add_argument("--report", required=True)
     parser.add_argument("--screenshot-dir", required=True)
     parser.add_argument("--pet-seconds", type=float, default=0.5)
@@ -198,6 +234,7 @@ def main(argv: list[str] | None = None) -> int:
         character_id=args.character_id,
         report_path=args.report,
         screenshot_dir=args.screenshot_dir,
+        character_root=args.character_root,
         pet_seconds=max(0.05, args.pet_seconds),
     )
     elapsed = round(time.monotonic() - started, 2)
