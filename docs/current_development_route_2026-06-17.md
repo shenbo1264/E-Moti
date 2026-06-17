@@ -301,3 +301,105 @@ rg --files src tests tools packaging assets\companion docs
 rg -n "original_oc|xingxi_pixel_pet|load_default_character_pack|DEFAULT" src\guanghe_companion assets\companion tools\validate_character_pack.py tests\test_character_pack.py
 rg -n "PIXEL_EXPRESSION_MOTION_IDS|visual_actions|motion_hint|expression" src\guanghe_companion\visual_actions.py src\guanghe_companion\presentation_renderer.py src\guanghe_companion\expression_event_pipeline.py tests\test_pixel_pet_emote_mapping.py
 ```
+
+## 9. 2026-06-17 P2 row intake 增量记录
+
+本节记录在本路线文档创建后继续推进的真实状态。它只描述 ignored hatch-pet v2 run 的候选资产进展，不代表 runtime assets、默认角色或 release manifest 已更新。
+
+### session imagegen 提取工具
+
+为了解决 subagent 调用内置 `$imagegen` 后只留下会话内联 PNG、没有稳定落盘 `ig_*.png` 的问题，新增了一个可测试工具：
+
+```text
+tools/art/extract_session_imagegen_result.py
+tests/test_session_imagegen_result_extractor.py
+```
+
+工具边界：
+
+- 只从 Codex session JSONL 提取真实 `image_generation_end` 结果；
+- 只接受 `ig_` 开头的安全 call id；
+- 校验 base64 和 PNG signature；
+- 输出到 `<CODEX_HOME>/generated_images/.../ig_*.png` 这类原始生成图目录；
+- 可写 JSON report，便于 provenance 复核；
+- 不改 `imagegen-jobs.json`，不复制到 `decoded/`，不伪造 visual job 完成状态。
+
+已验证：
+
+```powershell
+<PYTHON311> -m pytest tests\test_session_imagegen_result_extractor.py -q
+```
+
+结果：`4 passed`。
+
+### subagent row 候选提取与录入
+
+已从两个 subagent 会话中提取真实内置 `$imagegen` 输出，并用 hatch-pet 官方 `record_imagegen_result.py` 录入 ignored v2 run：
+
+```text
+idle -> decoded/idle.png
+running-right -> decoded/running-right.png
+```
+
+录入后 `pet_job_status.py` 的真实状态：
+
+```text
+total=10
+complete=3
+ready=7
+blocked=0
+```
+
+含义：
+
+- `base`、`idle`、`running-right` 已完成；
+- `running-left` 已解锁；
+- 其余 row 仍是待生成候选；
+- 正式 `assets/companion/xingxi_pixel_pet` 没有更新。
+
+### 部分抽帧 QA
+
+因为 `finalize_pet_run.py` 要求全部 imagegen jobs 完成，当前只用底层抽帧脚本做了部分候选 QA：
+
+```powershell
+<PYTHON311> <hatch-pet>/scripts/extract_strip_frames.py --decoded-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\decoded --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\frames-partial-20260617 --states idle,running-right --method auto
+<PYTHON311> tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\frames-partial-20260617 --state idle --expected-frames 6 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\review\idle-row-review-20260617
+<PYTHON311> tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\frames-partial-20260617 --state running-right --expected-frames 8 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\review\running-right-row-review-20260617
+```
+
+结果：
+
+```text
+idle:
+  ok=true
+  frames=6/6
+  extraction_method=components
+  average_frame_delta=8.534
+  warnings=0
+
+running-right:
+  ok=true
+  frames=8/8
+  extraction_method=components
+  average_frame_delta=24.6695
+  warnings=0
+```
+
+人工视觉复核：
+
+- `idle` 是 6 帧横排，眨眼帧明确，体型稳定；动作幅度偏保守但适合作为桌宠 idle。
+- `running-right` 是 8 帧横排，跑动方向清楚，身份和比例保持得住。
+- 两条 row 的原始大图背景肉眼有轻微非纯色风险，但 component extraction 已能正确抽出角色；仍需要在完整 pack QA 时继续看边缘残留和透明背景质量。
+
+### 下一步调整
+
+P2 的下一步不应直接全量生成所有 row。建议顺序：
+
+1. 先处理 `running-left`。
+2. 因为星汐有单侧星星发饰，直接镜像 `running-right` 可能翻转身份特征；默认不把镜像视为安全。
+3. 优先按正常 grounded row 通过 subagent 生成 `running-left`。
+4. 只有人工明确接受“发饰侧翻转在左行动画中可接受”时，才使用 `derive_running_left_from_running_right.py`。
+5. `running-left` 通过后，再分批生成 `waiting` / `waving` / `jumping` 等低风险 row。
+6. 每一批都先做 contact-sheet 或 partial row QA，失败只修失败 row。
+
+本增量仍然遵守：不更新 runtime manifest，不替换默认角色，不提交 ignored artifacts，不让 LLM 或美术流程影响养成状态机。
