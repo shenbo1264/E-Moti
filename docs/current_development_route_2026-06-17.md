@@ -760,3 +760,147 @@ P3b-edge-style-repair
 - 基于修边 brief 对 v2 candidate 做 edge-style repair 或重新生成 clean-edge candidate；
 - 用真实桌宠截图和 `pixel_pet_visual_qa --fail-on-warnings` 共同验收；
 - 只有修边通过后才继续 P4 LLM motion mapping 和 P5 optional bundled candidate promotion。
+
+## 13. 2026-06-18 P3b edge-style repair 结果
+
+本节记录 P3b 修边包的当前结果。结论：已得到一个可复现的 ignored clean-edge 候选包，通过自动门禁和桌宠 smoke；但它仍未进入 bundled assets，promotion 前仍需人工美术确认。
+
+### 工具化修边
+
+新增受测工具：
+
+```text
+tools/art/clean_pixel_pet_edge_halo.py
+tests/test_pixel_pet_edge_halo_cleanup.py
+```
+
+工具边界：
+
+- 只克隆一个完整 pixel-pet candidate pack 到新的 output 目录；
+- 只处理 `spritesheet.png` 的透明边缘 halo；
+- 高饱和红/洋红/紫色边缘像素删除为 `(0,0,0,0)`；
+- 贴透明的近黑紫外轮廓重映射为深海军蓝；
+- `alpha < 16` 的近透明像素归零，避免 Qt 平滑缩放时从透明 RGB 溢出紫边；
+- 更新 output pack 的 `qa_report.json.edge_halo_cleanup`；
+- 不修改源 candidate pack；
+- 不修改 `assets\companion\xingxi_pixel_pet`；
+- 不修改 `original_oc` 默认包或 runtime manifest。
+
+TDD 验证：
+
+```powershell
+<PYTHON311> -m pytest tests\test_pixel_pet_edge_halo_cleanup.py -q
+```
+
+结果：`3 passed`。
+
+### 当前 clean-edge 候选
+
+已执行：
+
+```powershell
+<PYTHON311> tools\art\clean_pixel_pet_edge_halo.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet --output artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\xingxi_pixel_pet --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\edge-cleanup-report.json
+```
+
+结果摘要：
+
+```text
+ok=true
+changed_pixel_count=86106
+pass_changed_pixel_counts=[33319, 14887, 2503, 106, 43, 23, 8, 4, 35213]
+visual_qa_before.status=ready_with_warnings
+visual_qa_before.suspicious_edge_halo_pixel_count=13790
+visual_qa_before.suspicious_edge_halo_ratio=0.401047
+visual_qa_after.status=ready
+visual_qa_after.suspicious_edge_halo_pixel_count=372
+visual_qa_after.suspicious_edge_halo_ratio=0.008811
+visual_qa_after.warnings=[]
+```
+
+输出路径：
+
+```text
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/edge-repair-tool-cleaned-outline-rgb-alpha-20260618/xingxi_pixel_pet
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/edge-repair-tool-cleaned-outline-rgb-alpha-20260618/edge-cleanup-report.json
+```
+
+### 自动验证
+
+已验证：
+
+```powershell
+<PYTHON311> tools\validate_pixel_pet_pack.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\xingxi_pixel_pet --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\candidate-pack-validation.json
+<PYTHON311> tools\validate_character_pack.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\xingxi_pixel_pet
+<PYTHON311> tools\art\pixel_pet_visual_qa.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\xingxi_pixel_pet\spritesheet.png --motion-manifest artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\xingxi_pixel_pet\motion_manifest.json --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\candidate-pack-visual-qa.json --preview artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\candidate-pack-visual-qa-preview.png --fail-on-warnings
+```
+
+结果：
+
+```text
+validate_pixel_pet_pack: ok=true
+validate_character_pack: ok=true
+pixel_pet_visual_qa: ok=true, status=ready, warnings=[]
+```
+
+### UI / desktop smoke
+
+已执行：
+
+```powershell
+$env:QT_QPA_PLATFORM='offscreen'
+<PYTHON311> tools\character_library_qa.py --character-id xingxi_pixel_pet --character-root artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618 --report artifacts\character-library-qa\xingxi-pixel-pet-v2-edge-repair-outline-rgb-alpha-qa.json --screenshot-dir artifacts\character-library-qa\xingxi-pixel-pet-v2-edge-repair-outline-rgb-alpha-screenshots --pet-seconds 0.5
+```
+
+结果：
+
+```text
+ok=true
+candidate_source=user
+candidate_pack_path=artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\xingxi_pixel_pet
+candidate_backend=sprite
+desktop_backend=sprite
+errors=[]
+```
+
+截图证据：
+
+```text
+artifacts/character-library-qa/xingxi-pixel-pet-v2-edge-repair-outline-rgb-alpha-screenshots/xingxi_pixel_pet-character-library.png
+artifacts/character-library-qa/xingxi-pixel-pet-v2-edge-repair-outline-rgb-alpha-screenshots/xingxi_pixel_pet-desktop-pet.png
+```
+
+人工视觉结论：
+
+- 原先亮洋红外边基本消失；
+- 剩余主要是深色像素轮廓和少量发色边缘；
+- 该候选可进入 P4 LLM motion mapping 复核；
+- 仍不能直接默认推广；
+- 若要替换 optional bundled `assets\companion\xingxi_pixel_pet`，需要先由人工确认这版轮廓是否可接受，并重新生成或同步 preview/contact-sheet。
+
+下一步建议：
+
+```text
+P4-llm-motion-map
+```
+
+前置条件：
+
+- 使用 clean-edge ignored candidate pack 的 `motion_manifest.json` 做 mapping 复核；
+- 不修改默认角色；
+- 不把 ignored candidate 直接提交到 bundled assets；
+- 如果 P4 通过，再单独做 P5 optional bundled candidate promotion 包。
+
+本包最终验证：
+
+```powershell
+git diff --check
+<PYTHON311> -m pytest tests\test_pixel_pet_edge_halo_cleanup.py tests\test_pixel_pet_visual_qa.py tests\test_character_library_qa_tool.py tests\test_app.py tests\test_desktop_pet_smoke.py -q
+<PYTHON311> -m pytest
+```
+
+结果：
+
+```text
+targeted tests=107 passed
+full pytest=828 passed in 138.29s
+```
