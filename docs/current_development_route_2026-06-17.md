@@ -6,17 +6,17 @@
 
 - 工作目录：`<repo-root>`
 - 当前分支：`codex/demo-worktree-cleanup`
-- 当前 HEAD：`255be72 test: carry base-only constraints into pet run setup`
-- 工作区：`git status --short --untracked-files=all` 只显示 ` M AGENTS.md`。这是外部/用户说明文件变更，本包不覆盖、不提交。
+- 当前 HEAD：`d8d1057 test: add session imagegen extraction helper`
+- 工作区：`git status --short --untracked-files=all` 显示 ` M AGENTS.md` 和 ` M docs/current_development_route_2026-06-17.md`。`AGENTS.md` 是外部/用户说明文件变更，本包不覆盖、不提交；路线文档是本次工作对象。
 - 远端：本地 checkout 配置了 `origin` 和 `private-origin` 两个 remote。本文档不记录远端 URL。
 - PATH 注意事项：直接运行 `python -m pytest` 时，当前 PATH 指向失效的 `.agent-reach-venv` Python，无法启动；本次验证改用本机 Python 3.11 绝对路径。
-- 全量测试：`<PYTHON311> -m pytest` 通过，`818 passed in 136.45s`。
+- 全量测试：本次追加当前扫描后重新运行 `<PYTHON311> -m pytest`，结果 `822 passed in 110.57s`。
 - JSON 校验：`assets\companion\original_oc\shop_items.json` 可被 `python -m json.tool` 解析。
 - 默认角色包校验：`tools\validate_character_pack.py assets\companion\original_oc` 返回 `ok=true`。
 - 可选像素星汐角色包校验：`tools\validate_character_pack.py assets\companion\xingxi_pixel_pet` 返回 `ok=true`。
 - full-local release readiness：`status=needs_attention`，`check_count=21`，`ready_check_count=9`，`attention_check_count=12`。
 - 新提取的内置 `$imagegen` 单体 base 候选先由 `hatch_pet_base_intake_preflight.py` 验证为 `status=ready_to_record`，随后已通过 `record_imagegen_result.py` 记录到 ignored hatch-pet v2 run。
-- v2 hatch-pet job 状态：`total=10`，`complete=1`，`ready=8`，`blocked=1`；`running-left` 仍等待 `running-right` 后再决定镜像或生成。
+- v2 hatch-pet job 状态已重新验证：`total=10`，`complete=10`，`ready=0`，`blocked=0`。完整 ignored candidate pack 已生成，并通过 pixel-pet pack validator 与 character-pack validator。
 
 本次新增 ignored 证据：
 
@@ -51,8 +51,9 @@ artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/base-intake-p
 - `assets\companion\xingxi_pixel_pet` 虽然是可选内置候选，但 pixel visual QA 仍报告 `suspicious_edge_halo_risk`。
 - 当前 edge halo 指标：`suspicious_edge_halo_pixel_count=13883`，`suspicious_edge_halo_ratio=0.373179`。
 - `pixel_pet_edge_style_brief` 结论为 `regenerate_or_redraw_edge_style`，`default_promotion_allowed=false`。
-- hatch-pet v2 修边路线尚未完成，但 base 阶段已经推进：`total=10`，`complete=1`，`ready=8`，`blocked=1`。
-- 新提取的单体 base 候选已经通过 intake，并已执行 `record_imagegen_result.py`；`decoded\base.png` 和 `references\canonical-base.png` 已生成。下一步不是全量生成，而是先做 `idle_breathe + blink` 第一行。
+- hatch-pet v2 修边路线已从 base/row 阶段推进到完整 ignored candidate pack 阶段：`total=10`，`complete=10`，`ready=0`，`blocked=0`。
+- 完整 v2 candidate pack 已通过结构验证和运行时角色包验证，并已成功导入 ignored `character_packs\xingxi_pixel_pet` 做本地用户包 smoke 基础。
+- 下一步不是继续生成 row，而是做角色库/UI smoke、LLM motion mapping 复核、人工美术 QA 和默认推广门禁。
 - 旧 VN portrait / AI-video / LivePortrait 研究线仍有 body drift、缺表情、缺 blink、缺权重等 blocker，不应回到近期主线。
 
 ## 3. 架构现状
@@ -75,17 +76,17 @@ artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/base-intake-p
 
 ## 4. 产品路线结论
 
-近期主线保持 hatch-pet-style pixel-pet sequence：
+近期主线保持 hatch-pet-style pixel-pet sequence，但当前阶段已经从“生成第一行动作”推进到“完整 v2 候选包草稿复核”：
 
 ```text
 original_oc 保持默认
 -> xingxi_pixel_pet 保持可选内置候选
--> 已记录通过 intake 的 v2 base 候选
--> 已复核 decoded/base.png 和 canonical-base.png
--> 只生成 idle_breathe + blink 第一行
--> contact-sheet QA
--> 只修失败 row
--> 完整 pack validation
+-> 已完成 v2 hatch-pet run 的 9 行动作序列
+-> 已完成 contact-sheet QA
+-> 已生成 ignored complete candidate pack
+-> 已通过 pixel-pet pack validation
+-> 已通过 character-pack validation
+-> 已完成 ignored local user-pack import validation
 -> character library / desktop pet smoke
 -> LLM expression 到 pixel motion family 的表现映射复核
 -> 再单独决定是否默认替换
@@ -125,7 +126,7 @@ git diff --check
 
 目标：把已经通过 intake 的内置 `$imagegen` 单体 base 正式记录到 ignored hatch-pet v2 run，解锁 row jobs。
 
-当前状态：已完成。`record_imagegen_result.py` 返回 `ok=true`，`decoded\base.png` 与 `references\canonical-base.png` 已存在；记录后 `pet_job_status.py` 返回 `complete=1`、`ready=8`、`blocked=1`。
+当前状态：已完成并已被后续完整 row set 继承。`record_imagegen_result.py` 返回 `ok=true`，`decoded\base.png` 与 `references\canonical-base.png` 已存在；最新 `pet_job_status.py` 返回 `complete=10`、`ready=0`、`blocked=0`。
 
 当前可用输入：
 
@@ -177,6 +178,8 @@ artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/review/base-r
 
 目标：只做 `idle_breathe + blink`，验证 v2 base 在序列帧中是否稳定。
 
+当前状态：已完成，并已继续推进到完整 row set。保留本段作为历史门禁说明，后续不应再回到“先做第一行”的阶段。
+
 范围：
 
 - 只生成 `idle` row。
@@ -206,6 +209,8 @@ artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/review/base-r
 触发条件：P2 第一行通过后，再逐行动作生成和修复。
 
 目标：完成 v2 Xingxi pack，但仍作为候选，不默认替换。
+
+当前状态：完整 ignored candidate pack 已生成并通过结构验证；剩余工作是角色库/UI smoke、人工美术 QA、LLM motion mapping 复核和是否替换 optional bundled candidate 的独立决策。
 
 验收：
 
@@ -403,3 +408,240 @@ P2 的下一步不应直接全量生成所有 row。建议顺序：
 6. 每一批都先做 contact-sheet 或 partial row QA，失败只修失败 row。
 
 本增量仍然遵守：不更新 runtime manifest，不替换默认角色，不提交 ignored artifacts，不让 LLM 或美术流程影响养成状态机。
+
+## 10. 2026-06-17 P3 v2 complete candidate pack 增量记录
+
+本节记录 v2 hatch-pet run 从 row 候选推进到完整候选包草稿的真实状态。所有输出仍位于 ignored artifact 路径；正式 `assets/companion/original_oc`、`assets/companion/xingxi_pixel_pet`、默认角色和 runtime manifest 均未更新。
+
+### row 生成与 subagent 分工
+
+按 hatch-pet 规则，row-strip visual generation 使用 subagent，父进程只负责提取、录入、抽帧、QA 和 finalize。
+
+已委派并完成的 row：
+
+```text
+idle -> subagent, extracted from session imagegen payload
+running-right -> subagent, extracted from session imagegen payload
+running-left -> subagent, normal grounded generation; no mirror shortcut
+waving -> subagent, extracted from session imagegen payload
+jumping -> subagent, extracted from session imagegen payload
+failed -> subagent, extracted from session imagegen payload
+waiting -> subagent, extracted from session imagegen payload
+running -> subagent, extracted from session imagegen payload
+review -> subagent, first inline attempt had wrong count; subagent regenerated 6-frame candidate, then parent extracted final payload
+```
+
+父进程使用 `tools/art/extract_session_imagegen_result.py` 从 Codex session JSONL 提取真实内置 `$imagegen` PNG，再用 `<hatch-pet>/scripts/record_imagegen_result.py` 录入 `imagegen-jobs.json`。未手改 manifest，未复制本地伪造 row，未用 Pillow/脚本生成视觉内容。
+
+录入后的真实 job 状态：
+
+```text
+total=10
+complete=10
+ready=0
+blocked=0
+```
+
+### 完整 finalize
+
+已运行：
+
+```powershell
+<PYTHON311> <hatch-pet>/scripts/finalize_pet_run.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --skip-videos --skip-package
+```
+
+结果：
+
+```text
+ok=true
+frames_root=artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/frames
+final/spritesheet.png written
+final/spritesheet.webp written
+final/validation.json ok=true
+qa/review.json ok=true
+qa/contact-sheet.png written
+spritesheet size=1536x1872
+spritesheet mode=RGBA
+errors=0
+warnings=0
+```
+
+人工 contact-sheet 复核：
+
+- 9 个 animation rows 全部存在；
+- 每行帧数与 motion manifest 一致；
+- unused cells 透明；
+- `idle` 有眨眼；
+- `running-right`、`running-left`、`running` 运动方向清楚；
+- `waving` 可读但幅度保守；
+- `waiting` 与 `idle` 区分度有限但仍可用；
+- `jumping`、`failed`、`review` 表意清楚；
+- 未发现 guide marks、文字、阴影、速度线、尘土、漂浮装饰或 slot crossing。
+
+### ignored candidate pack
+
+已创建 ignored 草稿包：
+
+```text
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/candidate-pack/xingxi_pixel_pet/
+  character.json
+  dialogue_style.json
+  motion_manifest.json
+  spritesheet.png
+  preview/contact-sheet.png
+  provenance.md
+  qa_report.json
+  shop_items.json
+  LICENSE.md
+  item_icons/
+```
+
+已验证：
+
+```powershell
+<PYTHON311> tools\validate_pixel_pet_pack.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack-validation.json
+<PYTHON311> tools\validate_character_pack.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet
+<PYTHON311> tools\art\pixel_pet_visual_qa.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet\spritesheet.png --motion-manifest artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet\motion_manifest.json --preview artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack-visual-qa-preview.png
+```
+
+结果：
+
+```text
+validate_pixel_pet_pack: ok=true
+validate_character_pack: ok=true
+pixel_pet_visual_qa: ok=true, status=ready_with_warnings
+visual warning: suspicious_edge_halo_risk
+suspicious_edge_halo_pixel_count=13790
+suspicious_edge_halo_ratio=0.401047
+```
+
+### 当前决策
+
+v2 已经从“row 测试”推进到“完整候选包草稿”。它可以用于下一步本地导入、角色库 smoke、LLM motion mapping 复核和人工美术 QA。
+
+但它仍不能直接推广为默认或正式 bundled replacement，原因是：
+
+- visual QA 仍报 `suspicious_edge_halo_risk`；
+- `waving` 和 `waiting` 动作幅度偏保守，需要人工确认是否足够灵动；
+- ignored candidate pack 还没有进入正式 `assets/companion/xingxi_pixel_pet`；
+- 未运行 UI character-library smoke、full app smoke、Windows packaging gate。
+
+下一步建议：
+
+1. 用该 ignored candidate pack 跑本地导入或角色库 QA，不更新默认角色。
+2. 如果 UI smoke 通过，再由人工决定是否把 v2 作为新的 optional bundled candidate 替换现有 `assets/companion/xingxi_pixel_pet`。
+3. 若要默认推广，必须先解决或接受 edge halo warning，并运行 UI、full pytest、Windows app/installer gates。
+
+## 11. 2026-06-17 current rescan 后的开发计划
+
+本节是当前轮重新扫描后的最新计划，优先级高于前面保留的历史 P1/P2 阶段说明。
+
+### 本轮重新验证的事实
+
+已重新执行：
+
+```powershell
+git status --short --untracked-files=all
+git log --oneline --decorate -12
+git branch --show-current
+<PYTHON311> <hatch-pet>\scripts\pet_job_status.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2
+<PYTHON311> tools\validate_pixel_pet_pack.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack-validation-rescan-20260617.json
+<PYTHON311> tools\validate_character_pack.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet
+<PYTHON311> tools\art\pixel_pet_visual_qa.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet\spritesheet.png --motion-manifest artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack\xingxi_pixel_pet\motion_manifest.json --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack-visual-qa-rescan-20260617.json --preview artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\candidate-pack-visual-qa-preview-rescan-20260617.png
+<PYTHON311> tools\validate_character_pack.py character_packs\xingxi_pixel_pet
+<PYTHON311> tools\validate_pixel_pet_pack.py character_packs\xingxi_pixel_pet --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imported-pack-validation-rescan-20260617.json
+git diff --check
+<PYTHON311> -m pytest tests\test_repository_hygiene.py tests\test_session_imagegen_result_extractor.py tests\test_pixel_pet_pack_validator_tool.py tests\test_character_pack_import_tool.py tests\test_pixel_pet_visual_qa.py -q
+<PYTHON311> -m pytest
+```
+
+结果：
+
+```text
+branch=codex/demo-worktree-cleanup
+HEAD=d8d1057 test: add session imagegen extraction helper
+working tree tracked changes=AGENTS.md, docs/current_development_route_2026-06-17.md
+v2 hatch-pet jobs=10 total, 10 complete, 0 ready, 0 blocked
+candidate pixel-pet pack validation=ok=true
+candidate runtime character-pack validation=ok=true
+imported local user-pack validation=ok=true
+candidate visual QA=ok=true, status=ready_with_warnings
+candidate visual warning=suspicious_edge_halo_risk
+suspicious_edge_halo_pixel_count=13790
+suspicious_edge_halo_ratio=0.401047
+focused regression tests=22 passed
+full pytest=822 passed in 110.57s
+```
+
+### 当前阶段结论
+
+v2 Xingxi pixel-pet 已经不是“缺 row 的制作中状态”，而是“完整 ignored 候选包待体验和推广门禁”的状态。
+
+可以继续做：
+
+- 本地用户包导入 smoke；
+- 角色库 UI 和桌宠模式 smoke；
+- LLM expression 到 pixel motion family 的映射复核；
+- 对 `waving`、`waiting` 和边缘 halo 的人工美术 QA；
+- 在通过 UI/LLM/美术门禁后，单独开包决定是否替换 `assets\companion\xingxi_pixel_pet`。
+
+不能直接做：
+
+- 不直接替换默认 `original_oc`；
+- 不把 ignored candidate pack 直接提交为 release 资产；
+- 不跳过 `suspicious_edge_halo_risk`；
+- 不把 Ikaros、Nairong 作为开源默认资产；
+- 不把 LLM 接管成长状态机。
+
+### 建议下一包：P3-smoke-and-art-gate
+
+目标：确认 v2 ignored candidate pack 在真实 UI/桌宠路径里是否可用，并把人工美术风险转成明确决策。
+
+范围：
+
+- 使用已经导入到 ignored `character_packs\xingxi_pixel_pet` 的本地用户包；
+- 跑角色库 QA，确认 provenance、license、distribution boundary、切换入口、桌宠入口可见；
+- 跑 `tests\test_app.py` 和 `tests\test_desktop_pet_smoke.py`；
+- 复看 visual QA preview 和 contact sheet，明确 `waving`/`waiting` 是否需要重生；
+- 不更新 `assets\companion\xingxi_pixel_pet`；
+- 不更新默认角色；
+- 不改安装器。
+
+验收：
+
+```powershell
+<PYTHON311> tools\character_library_qa.py --character-id xingxi_pixel_pet --character-root character_packs --report artifacts\character-library-qa\xingxi-pixel-pet-v2-local-user-pack-qa.json --screenshot-dir artifacts\character-library-qa\xingxi-pixel-pet-v2-local-user-pack-screenshots
+<PYTHON311> -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py -q
+<PYTHON311> -m pytest tests\test_character_library_qa_tool.py tests\test_character_pack_import_tool.py tests\test_pixel_pet_pack_validator_tool.py tests\test_pixel_pet_visual_qa.py -q
+<PYTHON311> -m pytest
+```
+
+人工验收：
+
+- 角色库能找到本地 `xingxi_pixel_pet`；
+- 分发边界和来源信息没有把候选包误写成已发布默认资产；
+- 切换角色后控制面板和桌宠模式都能显示 v2；
+- 桌宠小尺寸下眨眼、跑动、失败、审阅动作可读；
+- `waving` 和 `waiting` 的幅度是否足够灵动有明确结论；
+- 若边缘 halo 在实际桌面透明窗口里明显，先修边，不进入 bundled promotion。
+
+### 后续包拆分
+
+P4-llm-motion-map：
+
+- 将 v2 candidate pack 的 `motion_manifest.json` 与 `PIXEL_EXPRESSION_MOTION_IDS` 做映射复核；
+- 使用 DeepSeek 做 expression cue probe；
+- 验证 LLM 输出只影响 speech/expression/motion/interaction intent，不写成长、背包、关系、记忆、目标或存档。
+
+P5-optional-bundled-candidate-promotion：
+
+- 只在 P3 和 P4 通过后考虑；
+- 替换或更新 `assets\companion\xingxi_pixel_pet`，仍保持 `original_oc` 默认；
+- 必须跑 UI tests、full pytest、pixel visual QA、release readiness；
+- 如果涉及冻结包或安装器行为，再跑 Windows app/installer gates。
+
+P6-default-promotion：
+
+- 只在用户明确要求时进入；
+- 需要单独评估开源资产质量、边缘 halo、角色表现力、包装体积和回滚方案；
+- 必须运行 full pytest、UI smoke、Windows app build、installer build、frozen exe smoke。
