@@ -241,7 +241,7 @@ def _negative_prompt() -> str:
 def _suggested_commands(character_id: str) -> tuple[str, ...]:
     character = character_id or "xingxi_pixel_pet"
     return (
-        "python %CODEX_HOME%\\skills\\hatch-pet\\scripts\\prepare_pet_run.py --pet-name Xingxi --description \"Original Xingxi pixel-pet edge-style repair candidate\" --output-dir artifacts\\pixel-pet-sequence-drafts\\xingxi_pixel_pet_edge_style_v2 --pet-notes \"original Xingxi desktop companion\" --style-notes \"no red or purple outer halo; clean dark pixel outline; preserve blue-purple hair inside the sprite\" --force",
+        "python %CODEX_HOME%\\skills\\hatch-pet\\scripts\\prepare_pet_run.py --pet-name Xingxi --description \"Original Xingxi pixel-pet edge-style repair candidate\" --output-dir artifacts\\pixel-pet-sequence-drafts\\xingxi_pixel_pet_edge_style_v2 --pet-notes \"original Xingxi desktop companion\" --style-notes \"base job must create exactly one standalone base reference sprite; no sprite sheet; no row strip; no atlas; no repeated copies; no red or purple outer halo; clean dark pixel outline; preserve blue-purple hair inside the sprite\" --force",
         f"python tools\\art\\pixel_pet_visual_qa.py assets\\companion\\{character}\\spritesheet.png --motion-manifest assets\\companion\\{character}\\motion_manifest.json --report artifacts\\character-library-qa\\{character}-visual-qa-after-edge-style.json --preview artifacts\\character-library-qa\\{character}-visual-qa-after-edge-style-preview.png",
         f"python tools\\art\\pixel_pet_visual_qa.py assets\\companion\\{character}\\spritesheet.png --motion-manifest assets\\companion\\{character}\\motion_manifest.json --fail-on-warnings",
     )

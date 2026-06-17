@@ -136,6 +136,8 @@ python -m pytest
 - base-intake release readiness 接入后，全量 `python -m pytest` 通过，结果为 `810 passed in 82.95s`。
 - 2026-06-17 已尝试内置 `$imagegen` 生成 v2 `base` 候选；真实输出为 `2172x724` 的 8 帧 row strip，`hatch_pet_base_intake_preflight.py` 正确拒绝，状态仍为 `candidate_review_failed`，且 `decoded\base.png` 仍不存在。
 - `pixel_pet_edge_style_brief.py` 已补强 base-only prompt guard：第一张 canonical base 必须是 exactly one standalone base reference sprite，并显式禁止 sprite sheet、row strip、atlas、重复角色和 animation frames。
+- `pixel_pet_edge_style_brief.py` 的 suggested `prepare_pet_run.py` 命令也已带上同一组 base-only style notes；已用该命令重建 ignored `xingxi_pixel_pet_edge_style_v2` run，当前 `prompts\base-pet.md` 明确包含 `exactly one standalone base reference sprite`、`no sprite sheet`、`no row strip`、`no atlas`。
+- 重建后 `pet_job_status.py` 仍显示 `total=10`、`ready=1`、`blocked=9`；刷新 `hatch_pet_imagegen_readiness.py` 仍为 `blocked_invalid_openai_api_key`，刷新 `hatch_pet_imagegen_route_preflight.py` 仍为 `blocked_generation_route`、`codex_exec_status=access_denied`、`secondary_fallback_status=blocked_invalid_openai_api_key`。
 - 下一步仍需要真实 `$imagegen` 或有效 provider 产生可通过 base review 的单体 v2 `base` 图后，再用该工具检查并调用 `record_imagegen_result.py`。
 
 ### P2: 只生成并审查 v2 Xingxi base

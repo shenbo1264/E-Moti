@@ -63,6 +63,11 @@ def test_pixel_pet_edge_style_brief_blocks_default_promotion_for_halo_warning(tm
     assert "red edge halo" in brief.negative_prompt
     assert any("pixel_pet_visual_qa.py" in command for command in brief.suggested_commands)
     assert any("--fail-on-warnings" in command for command in brief.suggested_commands)
+    prepare_command = next(command for command in brief.suggested_commands if "prepare_pet_run.py" in command)
+    assert "exactly one standalone base reference sprite" in prepare_command
+    assert "no sprite sheet" in prepare_command
+    assert "no row strip" in prepare_command
+    assert "no atlas" in prepare_command
     assert any("tests\\test_app.py" in command for command in brief.acceptance_gates)
     markdown = render_pixel_pet_edge_style_markdown(brief)
     assert "# Pixel Pet Edge Style Decision Brief" in markdown
