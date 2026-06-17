@@ -160,7 +160,7 @@ Complete runtime packs can declare `character.json.distribution_boundary` as `sh
 Current roadmap:
 
 ```powershell
-type docs\current_development_route_2026-06-12.md
+type docs\current_development_route_2026-06-17.md
 type docs\pixel_pet_sequence_sop.md
 ```
 
