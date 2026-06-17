@@ -134,7 +134,9 @@ python -m pytest
 - `release_readiness_report.py` 已接入 `--hatch-pet-base-intake-report`，`--full-local-snapshot` 会自动发现 `artifacts\pixel-pet-sequence-drafts\*\base-intake-preflight.json`。
 - 已生成 ignored `artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.json` 作为 row-strip 拒绝证据；full-local snapshot 当前为 `needs_attention`，`18` 项检查中 `8` 项 ready、`10` 项 attention，其中新增 attention 为 `hatch_pet_base_intake_preflight/candidate_review_failed`。
 - base-intake release readiness 接入后，全量 `python -m pytest` 通过，结果为 `810 passed in 82.95s`。
-- 下一步仍需要真实 `$imagegen` 或有效 provider 产生 v2 `base` 图后，再用该工具检查并调用 `record_imagegen_result.py`。
+- 2026-06-17 已尝试内置 `$imagegen` 生成 v2 `base` 候选；真实输出为 `2172x724` 的 8 帧 row strip，`hatch_pet_base_intake_preflight.py` 正确拒绝，状态仍为 `candidate_review_failed`，且 `decoded\base.png` 仍不存在。
+- `pixel_pet_edge_style_brief.py` 已补强 base-only prompt guard：第一张 canonical base 必须是 exactly one standalone base reference sprite，并显式禁止 sprite sheet、row strip、atlas、重复角色和 animation frames。
+- 下一步仍需要真实 `$imagegen` 或有效 provider 产生可通过 base review 的单体 v2 `base` 图后，再用该工具检查并调用 `record_imagegen_result.py`。
 
 ### P2: 只生成并审查 v2 Xingxi base
 

@@ -54,6 +54,12 @@ def test_pixel_pet_edge_style_brief_blocks_default_promotion_for_halo_warning(tm
     assert "Do not run automatic transparent edge erasing on the current bundled spritesheet." in brief.prompt_locks
     assert "Preserve Xingxi's blue-purple hair mass" in brief.regeneration_prompt
     assert "no red or purple outer halo" in brief.regeneration_prompt
+    assert "exactly ONE standalone base reference sprite" in brief.regeneration_prompt
+    assert "NOT a sprite sheet" in brief.regeneration_prompt
+    assert "NOT a row strip" in brief.regeneration_prompt
+    assert "NOT an atlas" in brief.regeneration_prompt
+    assert "Do not repeat the character" in brief.regeneration_prompt
+    assert "sprite sheet, row strip, atlas" in brief.negative_prompt
     assert "red edge halo" in brief.negative_prompt
     assert any("pixel_pet_visual_qa.py" in command for command in brief.suggested_commands)
     assert any("--fail-on-warnings" in command for command in brief.suggested_commands)

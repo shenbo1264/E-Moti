@@ -353,7 +353,9 @@ python -m pytest
 - 不建议直接对当前 `xingxi_pixel_pet` 做确定性透明擦边，因为 overlay 显示该指标命中了头发外轮廓和线稿；
 - 优先用 `artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.md` 做一版新的 hatch-pet 候选或人工重绘候选，要求提示词明确避免红/紫发光边、色边和外圈 halo，同时保留蓝紫发色本体；
 - 当前 v2 run 已准备好，下一步只生成并人工审查 `base`；不要一次性生成九行 row；
-- 生成前先跑 `hatch_pet_imagegen_readiness.py` 和 `hatch_pet_imagegen_route_preflight.py`，并用 `release_readiness_report.py --hatch-pet-imagegen-readiness-report ... --hatch-pet-imagegen-route-preflight-report ...` 把阻断或通过状态上卷到 release readiness；当前 secondary fallback 被 `OPENAI_API_KEY invalid_api_key` 阻断，当前本会话的 `codex exec` native imagegen runner 被 WindowsApps `codex.exe Access is denied` 阻断，当前工具面板也没有可直接调用的 `image_gen` 工具；
+- 生成前先跑 `hatch_pet_imagegen_readiness.py` 和 `hatch_pet_imagegen_route_preflight.py`，并用 `release_readiness_report.py --hatch-pet-imagegen-readiness-report ... --hatch-pet-imagegen-route-preflight-report ...` 把阻断或通过状态上卷到 release readiness；secondary fallback 被 `OPENAI_API_KEY invalid_api_key` 阻断，`codex exec` native imagegen runner 被 WindowsApps `codex.exe Access is denied` 阻断；当前本会话可调用内置 `$imagegen`，但仍必须通过 base intake 预检，不能直接记录；
+- 2026-06-17 已用当前可用的内置 `$imagegen` 路径尝试生成 v2 `base`；真实输出为 `2172x724` 的 8 帧 row strip，`hatch_pet_base_intake_preflight.py` 已拒绝为 `candidate_review_failed`，`decoded\base.png` 仍不存在，说明后续提示词必须先锁定“单体 base，不是 sprite sheet / row strip / atlas”；
+- `pixel_pet_edge_style_brief.py` 已补强下一轮 regeneration prompt 和 negative prompt：第一张 canonical base 必须是 exactly one standalone base reference sprite，显式禁止 sprite sheet、row strip、atlas、重复角色和 animation frames；
 - 若继续使用 secondary fallback，必须先修复 `OPENAI_API_KEY` 并重新跑 readiness；若使用本机 native runner，必须先解决 `codex.exe` 可执行权限；如果使用内置 `$imagegen` 成功生成，必须用 `record_imagegen_result.py` 记录 `$CODEX_HOME\generated_images\...\ig_*.png`，不得手改 `imagegen-jobs.json`；
 - 也可以人工确认接受当前外轮廓作为风格选择，但这必须是明确美术 QA 结论，而不是因为工具通过；
 - 每个修复候选必须重新跑 `pixel_pet_visual_qa.py --fail-on-warnings`、角色包校验、角色库 QA、UI smoke 和全量测试；

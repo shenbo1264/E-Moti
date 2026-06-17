@@ -16,6 +16,7 @@ PROMPT_LOCKS = (
     "Do not run automatic transparent edge erasing on the current bundled spritesheet.",
     "Use the visual QA overlay to decide whether the marked pixels are outline style or unwanted halo.",
     "Keep the active route hatch-pet-style pixel-pet sequences, not VN portrait, AI-video, or Live2D.",
+    "For the base job, generate exactly one standalone base reference sprite; do not generate a sprite sheet, row strip, atlas, repeated copies, or animation frames.",
     "Keep Xingxi as the only open-source distributable candidate unless rights are separately cleared.",
     "Do not update runtime manifests or replace the default pack until all acceptance gates pass.",
 )
@@ -217,7 +218,9 @@ def _regeneration_prompt(*, character_name: str, character_id: str) -> str:
     display_name = character_name or character_id
     return " ".join(
         [
-            f"Create a hatch-pet-style pixel-pet sequence candidate for {display_name}.",
+            f"Create exactly ONE standalone base reference sprite for a hatch-pet-style pixel-pet sequence candidate for {display_name}.",
+            "This first output is NOT a sprite sheet, NOT a row strip, NOT an atlas, NOT an animation, and NOT multiple frames.",
+            "Draw one single full-body character only, centered on a flat chroma-key canvas with generous empty margin. Do not repeat the character.",
             "Preserve Xingxi's blue-purple hair mass, tiny chibi proportions, face, outfit silhouette, star hair accessory, white-and-blue jacket, and compact desktop-pet readability.",
             "Use chunky pixel-adjacent shapes, hard 1-2 px dark navy outlines, flat cel shading, clean transparent or removable chroma-key background, and stable 192x208 frame-safe composition.",
             "The important edge-style repair is no red or purple outer halo, no magenta glow, no bright rim light, no soft aura, no color fringing outside the sprite, and no detached outline pixels.",
@@ -230,7 +233,7 @@ def _regeneration_prompt(*, character_name: str, character_id: str) -> str:
 def _negative_prompt() -> str:
     return " ".join(
         [
-            "No red edge halo, purple outer glow, magenta rim light, chromatic aberration, soft aura, drop shadow, cast shadow, blur, antialias haze, glossy illustration rendering, VN portrait proportions, Live2D rig sheet, AI-video motion smear, floating effects, detached particles, text, UI marks, watermarks, checkerboard background, or white/black opaque background.",
+            "No sprite sheet, row strip, atlas, repeated character copies, animation frames, red edge halo, purple outer glow, magenta rim light, chromatic aberration, soft aura, drop shadow, cast shadow, blur, antialias haze, glossy illustration rendering, VN portrait proportions, Live2D rig sheet, AI-video motion smear, floating effects, detached particles, text, UI marks, watermarks, checkerboard background, or white/black opaque background.",
         ]
     )
 
