@@ -1051,3 +1051,77 @@ P4 当前结论：
 - clean-edge candidate 可以继续进入 P5 optional bundled candidate promotion 评估；
 - 进入 P5 前仍不得替换默认 `original_oc`，不得把 ignored candidate 直接提交为默认资产；
 - P5 需要单独跑 UI、full pytest、visual QA、release readiness；若涉及冻结包或安装器，再跑 Windows app/installer gates。
+
+## 15. 2026-06-18 P5 promotion preflight 结果
+
+本节记录 P5-optional-bundled-candidate-promotion 的预检进展。结论：clean-edge ignored candidate 的自动门禁已经足以进入人工美术决策，但缺少明确 `manual_qa.json`，因此当前状态是 `needs_manual_qa`，不是可直接替换 bundled assets。
+
+### 新增 preflight 工具
+
+新增受测工具：
+
+```text
+tools/pixel_pet_promotion_preflight.py
+tests/test_pixel_pet_promotion_preflight.py
+```
+
+工具边界：
+
+- 复用现有 `validate_pixel_pet_pack.py`、runtime character-pack validator、`pixel_pet_visual_qa.py` 和 `pixel_pet_emote_mapping_check.py`；
+- 将 deterministic checks 与人工 QA 决策分开报告；
+- 不复制、不移动、不替换任何 `assets/companion` 文件；
+- 不修改 runtime manifest；
+- 不把缺人工批准伪装成可推广，只输出 `needs_manual_qa`。
+
+### clean-edge candidate preflight
+
+复核对象：
+
+```text
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/edge-repair-tool-cleaned-outline-rgb-alpha-20260618/xingxi_pixel_pet
+```
+
+已执行：
+
+```powershell
+<PYTHON311> tools\pixel_pet_promotion_preflight.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\edge-repair-tool-cleaned-outline-rgb-alpha-20260618\xingxi_pixel_pet --report artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-promotion-preflight.json
+```
+
+结果：
+
+```text
+ok=false
+status=needs_manual_qa
+deterministic_ok=true
+manual_qa_status=missing
+character_id=xingxi_pixel_pet
+pixel_pack_validation=ready
+runtime_character_pack_validation=ready
+pixel_visual_qa=ready
+llm_emote_mapping=ready
+manual_qa_decision=missing
+next_action=manual QA decision is required before bundled promotion
+```
+
+本包最终验证：
+
+```powershell
+<PYTHON311> -m pytest tests\test_pixel_pet_promotion_preflight.py tests\test_pixel_pet_promotion_gate.py tests\test_pixel_pet_pack_validator_tool.py tests\test_pixel_pet_visual_qa.py tests\test_pixel_pet_emote_mapping.py -q
+<PYTHON311> -m pytest
+```
+
+结果：
+
+```text
+P5 promotion/preflight targeted tests=19 passed
+full pytest=832 passed in 104.16s
+```
+
+P5 当前结论：
+
+- clean-edge candidate 已通过自动 promotion preflight；
+- 仍未进入 `assets/companion/xingxi_pixel_pet`；
+- 仍未替换默认 `original_oc`；
+- 下一步必须先产生明确人工美术 QA 结论和 `manual_qa.json`；
+- 只有 `manual_qa.manual_decision` 以 `promotion_gate_candidate` 开头，并且 deterministic checks 全部为 true 后，才可运行 `tools/pixel_pet_promotion_gate.py`；
+- promotion gate 通过后仍需要单独执行 bundled asset copy/update、UI smoke、full pytest、release readiness；若涉及冻结包或安装器，再跑 Windows app/installer gates。
