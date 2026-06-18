@@ -92,3 +92,11 @@ def test_gitignore_covers_local_secrets_and_generation_artifacts() -> None:
     missing = [pattern for pattern in REQUIRED_GITIGNORE_PATTERNS if pattern not in patterns]
 
     assert missing == []
+
+
+def test_readme_names_pixel_pet_as_current_art_route() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8-sig")
+
+    assert "hatch-pet-style pixel-pet sequence workflow" in readme
+    assert "`xingxi_pixel_pet` as an optional bundled sprite candidate" in readme
+    assert "`original_oc` remains the default companion pack" in readme
