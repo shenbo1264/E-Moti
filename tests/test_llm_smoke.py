@@ -6,9 +6,12 @@ from guanghe_companion.controller import CompanionController
 from guanghe_companion.expression_settings import normalize_expression_settings
 from guanghe_companion.interaction_intents import InteractionIntent
 from guanghe_companion.llm_smoke import (
+    DEFAULT_LLM_CONVERSATION_SCENARIO_VERSION,
+    DEFAULT_LLM_CONVERSATION_SCENARIOS,
     DEFAULT_EXPRESSION_CUE_PROBES,
     DEFAULT_LLM_SMOKE_PROMPTS,
     LLMExpressionCueProbeCase,
+    load_llm_conversation_scenarios,
     run_configured_llm_dialogue_smoke,
     run_configured_llm_expression_cue_probes,
 )
@@ -16,6 +19,7 @@ from guanghe_companion.visual_actions import VisualAction
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SCENARIO_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "llm_conversation_scenarios.json"
 
 
 def _load_tool(path: Path):
@@ -28,7 +32,7 @@ def _load_tool(path: Path):
 
 
 def test_default_llm_smoke_prompts_use_player_like_scenarios():
-    assert len(DEFAULT_LLM_SMOKE_PROMPTS) == 10
+    assert len(DEFAULT_LLM_SMOKE_PROMPTS) == 9
     assert all(any("\u4e00" <= char <= "\u9fff" for char in prompt) for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
     assert not any(prompt.startswith("Player scenario") for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
     assert not any("Please reply" in prompt for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
@@ -37,14 +41,46 @@ def test_default_llm_smoke_prompts_use_player_like_scenarios():
     assert not any(prompt.startswith("Smoke turn") for prompt in DEFAULT_LLM_SMOKE_PROMPTS)
 
 
+def test_default_llm_conversation_scenarios_load_from_versioned_fixture():
+    scenario_set = load_llm_conversation_scenarios(SCENARIO_FIXTURE)
+
+    assert scenario_set.version == DEFAULT_LLM_CONVERSATION_SCENARIO_VERSION
+    assert [scenario.scenario_id for scenario in scenario_set.scenarios] == [
+        "comfort_low_mood",
+        "celebration_small_win",
+        "boredom_idle",
+        "focus_companion",
+        "tired_late_night",
+        "gift_reaction",
+        "shop_browse",
+        "character_switch",
+        "confused_input",
+    ]
+    assert [scenario.category for scenario in scenario_set.scenarios] == [
+        "comfort",
+        "celebration",
+        "boredom",
+        "focus",
+        "tiredness",
+        "gift",
+        "shop",
+        "character_switch",
+        "confused_input",
+    ]
+    assert all(scenario.expected_expression_ids for scenario in scenario_set.scenarios)
+    assert all(scenario.expected_motion_ids for scenario in scenario_set.scenarios)
+    assert DEFAULT_LLM_CONVERSATION_SCENARIOS == scenario_set
+    assert DEFAULT_LLM_SMOKE_PROMPTS == tuple(scenario.prompt for scenario in scenario_set.scenarios)
+
+
 def test_default_llm_smoke_prompts_cover_quality_gate_emotional_cues():
     joined = "\n".join(DEFAULT_LLM_SMOKE_PROMPTS)
 
     assert "\u5b89\u9759" in joined
     assert "\u5f00\u5fc3" in joined
-    assert "\u60ca\u8bb6" in joined
-    assert "\u96be\u8fc7" in joined
-    assert "\u56f0\u5026" in joined
+    assert "\u4f4e\u843d" in joined
+    assert "\u56f0" in joined
+    assert "\u72b9\u8c6b" in joined
 
 
 def test_default_expression_cue_probes_cover_core_emotion_tags():
@@ -124,6 +160,65 @@ def test_configured_llm_dialogue_smoke_uses_llm_path_without_growth_mutation(tmp
         }
     ]
     assert "api_key" not in str(public)
+    assert "sk-secret" not in str(public)
+
+
+def test_configured_llm_dialogue_smoke_reports_default_scenario_metadata(tmp_path):
+    class FakeExpressor:
+        enabled = True
+        last_fallback_reason = ""
+        last_interaction_intents = ()
+
+        def express(self, request, effect=None):
+            self.last_visual_actions = (
+                VisualAction(action_type="expression", action_id="calm", ttl_ms=3000, priority=70),
+                VisualAction(action_type="motion", action_id="Default", ttl_ms=1800, priority=60),
+            )
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "星汐在这里，轻轻陪你一下。",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=FakeExpressor(),
+    )
+    controller.expression_settings = normalize_expression_settings({"enabled": True, "api_key": "sk-secret"})
+
+    report = run_configured_llm_dialogue_smoke(controller)
+    public = report.to_public_dict()
+
+    assert report.ok is True
+    assert public["scenario_version"] == 1
+    assert public["scenario_count"] == 9
+    assert public["scenario_ids"][0] == "comfort_low_mood"
+    assert public["scenario_categories"] == [
+        "comfort",
+        "celebration",
+        "boredom",
+        "focus",
+        "tiredness",
+        "gift",
+        "shop",
+        "character_switch",
+        "confused_input",
+    ]
+    assert public["turns"][0]["scenario_id"] == "comfort_low_mood"
+    assert public["turns"][0]["scenario_category"] == "comfort"
+    assert public["turns"][0]["expected_expression_ids"] == ["sadness", "calm"]
+    assert public["smoke_review"] == {
+        "expression_coverage_count": 1,
+        "motion_coverage_count": 1,
+        "fallback_count": 0,
+        "unsafe_event_count": 0,
+        "speech_length_violation_count": 0,
+    }
     assert "sk-secret" not in str(public)
 
 
@@ -479,18 +574,19 @@ def test_llm_dialogue_smoke_dry_run_reports_sanitized_deepseek_settings_without_
     assert module.main(["--provider", "deepseek", "--dry-run"]) == 0
 
     payload = json.loads(capsys.readouterr().out)
-    assert payload == {
-        "ok": True,
-        "reason": "",
-        "dry_run": True,
-        "would_call_api": False,
-        "provider": "deepseek",
-        "model": "deepseek-v4-flash",
-        "base_url": "https://api.deepseek.com",
-        "api_style": "chat_completions",
-        "api_key_set": True,
-        "timeout_seconds": 30.0,
-    }
+    assert payload["ok"] is True
+    assert payload["reason"] == ""
+    assert payload["dry_run"] is True
+    assert payload["would_call_api"] is False
+    assert payload["provider"] == "deepseek"
+    assert payload["model"] == "deepseek-v4-flash"
+    assert payload["base_url"] == "https://api.deepseek.com"
+    assert payload["api_style"] == "chat_completions"
+    assert payload["api_key_set"] is True
+    assert payload["timeout_seconds"] == 30.0
+    assert payload["scenario_version"] == 1
+    assert payload["scenario_count"] == 9
+    assert payload["scenario_ids"][0] == "comfort_low_mood"
     assert "sk-secret" not in str(payload)
 
 

@@ -1,0 +1,68 @@
+{
+  "version": 1,
+  "scenarios": [
+    {
+      "id": "comfort_low_mood",
+      "category": "comfort",
+      "prompt": "我今天有点低落，不想被说教，只想让星汐安静陪我一会儿。",
+      "expected_expression_ids": ["sadness", "calm"],
+      "expected_motion_ids": ["SwitchDown", "Breathe"]
+    },
+    {
+      "id": "celebration_small_win",
+      "category": "celebration",
+      "prompt": "我刚完成了一件小事，想让你知道，也想听你开心一点地回应。",
+      "expected_expression_ids": ["joy", "happy"],
+      "expected_motion_ids": ["Raised", "Jump"]
+    },
+    {
+      "id": "boredom_idle",
+      "category": "boredom",
+      "prompt": "现在有点无聊，桌面也安静得发呆，你可以逗我一下吗？",
+      "expected_expression_ids": ["curious", "happy"],
+      "expected_motion_ids": ["Default", "TouchHead"]
+    },
+    {
+      "id": "focus_companion",
+      "category": "focus",
+      "prompt": "我准备专注一会儿，不要监督我，只在旁边轻轻陪着就好。",
+      "expected_expression_ids": ["focused", "calm"],
+      "expected_motion_ids": ["Default", "Breathe"]
+    },
+    {
+      "id": "tired_late_night",
+      "category": "tiredness",
+      "prompt": "已经很晚了，我有点困，想听你软一点地说句晚安。",
+      "expected_expression_ids": ["sleepy", "calm"],
+      "expected_motion_ids": ["SwitchDown", "Sleep"]
+    },
+    {
+      "id": "gift_reaction",
+      "category": "gift",
+      "prompt": "我把小贝壳送给你了，看看星汐会不会有一点珍惜的反应。",
+      "expected_expression_ids": ["surprised", "joy"],
+      "expected_motion_ids": ["Raised", "TouchHead"]
+    },
+    {
+      "id": "shop_browse",
+      "category": "shop",
+      "prompt": "我在商店里犹豫要买什么，你用陪伴的语气帮我拿个主意。",
+      "expected_expression_ids": ["curious", "focused"],
+      "expected_motion_ids": ["Default", "Breathe"]
+    },
+    {
+      "id": "character_switch",
+      "category": "character_switch",
+      "prompt": "我刚切换到新的角色包，想确认你还是用自己的性格回应我。",
+      "expected_expression_ids": ["neutral", "curious"],
+      "expected_motion_ids": ["Default", "Wave"]
+    },
+    {
+      "id": "confused_input",
+      "category": "confused_input",
+      "prompt": "呃……刚才那个按钮是干嘛的？我有点没看懂，你能自然一点解释吗？",
+      "expected_expression_ids": ["confused", "calm"],
+      "expected_motion_ids": ["Default", "Tilt"]
+    }
+  ]
+}

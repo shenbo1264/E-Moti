@@ -17,7 +17,7 @@ from guanghe_companion.expression_settings import (
     provider_api_key_required,
     provider_api_style,
 )
-from guanghe_companion.llm_smoke import DEFAULT_LLM_SMOKE_PROMPTS, run_llm_dialogue_smoke
+from guanghe_companion.llm_smoke import DEFAULT_LLM_CONVERSATION_SCENARIOS, run_llm_dialogue_smoke
 
 
 def _parse_args(argv: list[str]) -> argparse.Namespace:
@@ -78,10 +78,15 @@ def main(argv: list[str] | None = None) -> int:
             "api_style": provider_api_style(provider),
             "api_key_set": bool(settings["api_key"]),
             "timeout_seconds": settings["timeout_seconds"],
+            "scenario_version": DEFAULT_LLM_CONVERSATION_SCENARIOS.version,
+            "scenario_count": len(DEFAULT_LLM_CONVERSATION_SCENARIOS.scenarios),
+            "scenario_ids": [
+                scenario.scenario_id for scenario in DEFAULT_LLM_CONVERSATION_SCENARIOS.scenarios
+            ],
         }
         _emit_payload(payload, args.report)
         return 1 if missing_key else 0
-    prompts = tuple(args.prompt) if args.prompt else DEFAULT_LLM_SMOKE_PROMPTS
+    prompts = tuple(args.prompt) if args.prompt else None
     report = run_llm_dialogue_smoke(
         settings,
         prompts=prompts,

@@ -30,9 +30,12 @@ class LLMSmokeReview:
     reason: str
     turn_count: int
     case_count: int
+    scenario_count: int
+    scenario_ids: tuple[str, ...]
     cue_passed_count: int
     cue_failed_count: int
     fallback_count: int
+    unsafe_event_count: int
     issue_count: int
     speech_quality: dict[str, object]
     visual_action_coverage: dict[str, object]
@@ -49,9 +52,12 @@ class LLMSmokeReview:
             "reason": self.reason,
             "turn_count": self.turn_count,
             "case_count": self.case_count,
+            "scenario_count": self.scenario_count,
+            "scenario_ids": list(self.scenario_ids),
             "cue_passed_count": self.cue_passed_count,
             "cue_failed_count": self.cue_failed_count,
             "fallback_count": self.fallback_count,
+            "unsafe_event_count": self.unsafe_event_count,
             "issue_count": self.issue_count,
             "speech_quality": dict(self.speech_quality),
             "visual_action_coverage": dict(self.visual_action_coverage),
@@ -69,6 +75,8 @@ def review_llm_smoke_report(report: Mapping[str, object]) -> LLMSmokeReview:
     visual_action_coverage = _mapping(report.get("visual_action_coverage")) or _cue_visual_action_coverage(cases)
     state_mutation_check = _mapping(report.get("state_mutation_check")) or {"ok": True, "changed_fields": []}
     reason = _string(report.get("reason"))
+    scenario_ids = _scenario_ids(report, turns)
+    unsafe_event_count = _unsafe_event_count(diagnostic=diagnostic, turns=turns, cases=cases, reason=reason)
 
     issues: list[LLMSmokeReviewIssue] = []
     if report.get("ok") is not True or reason:
@@ -110,9 +118,12 @@ def review_llm_smoke_report(report: Mapping[str, object]) -> LLMSmokeReview:
         reason=reason,
         turn_count=len(turns),
         case_count=len(cases),
+        scenario_count=_int(report.get("scenario_count")) or len(scenario_ids),
+        scenario_ids=tuple(scenario_ids),
         cue_passed_count=sum(1 for case in cases if case.get("ok") is True),
         cue_failed_count=sum(1 for case in cases if case.get("ok") is not True),
         fallback_count=len(fallback_issues) + _cue_fallback_count(cases),
+        unsafe_event_count=unsafe_event_count,
         issue_count=len(issues),
         speech_quality=speech_quality,
         visual_action_coverage=dict(visual_action_coverage),
@@ -131,9 +142,11 @@ def render_llm_smoke_review_markdown(review: LLMSmokeReview) -> str:
         f"- Model: `{review.model or 'unknown'}`",
         f"- Reason: `{review.reason or ''}`",
         f"- Turns: `{review.turn_count}`",
+        f"- Scenario count: `{review.scenario_count}`",
         f"- Cue cases: `{review.case_count}`",
         f"- Cue failures: `{review.cue_failed_count}`",
         f"- Fallback turns: `{review.fallback_count}`",
+        f"- Unsafe event count: `{review.unsafe_event_count}`",
         f"- Speech quality violations: `{review.speech_quality['violation_count']}`",
         f"- State guard: `{'passed' if review.state_mutation_check.get('ok') is not False else 'failed'}`",
         "",
@@ -274,7 +287,10 @@ def _invalid_review(errors: tuple[str, ...]) -> LLMSmokeReview:
         case_count=0,
         cue_passed_count=0,
         cue_failed_count=0,
+        scenario_count=0,
+        scenario_ids=(),
         fallback_count=0,
+        unsafe_event_count=0,
         issue_count=len(errors) or 1,
         speech_quality=_speech_quality_summary({}),
         visual_action_coverage={},
@@ -340,6 +356,37 @@ def _cue_case_issues(cases: tuple[Mapping[str, object], ...]) -> list[LLMSmokeRe
 
 def _cue_fallback_count(cases: tuple[Mapping[str, object], ...]) -> int:
     return sum(1 for case in cases if _string(case.get("fallback_reason")))
+
+
+def _scenario_ids(report: Mapping[str, object], turns: tuple[Mapping[str, object], ...]) -> list[str]:
+    explicit = _string_list(report.get("scenario_ids"))
+    if explicit:
+        return explicit
+    seen: set[str] = set()
+    ids: list[str] = []
+    for turn in turns:
+        scenario_id = _string(turn.get("scenario_id"))
+        if scenario_id and scenario_id not in seen:
+            seen.add(scenario_id)
+            ids.append(scenario_id)
+    return ids
+
+
+def _unsafe_event_count(
+    *,
+    diagnostic: Mapping[str, object],
+    turns: tuple[Mapping[str, object], ...],
+    cases: tuple[Mapping[str, object], ...],
+    reason: str,
+) -> int:
+    count = 0
+    if _string(diagnostic.get("reason")) == "unsafe_event":
+        count += 1
+    count += sum(1 for turn in turns if _string(turn.get("fallback_reason")) == "unsafe_event")
+    count += sum(1 for case in cases if _string(case.get("fallback_reason")) == "unsafe_event")
+    if count == 0 and "unsafe_event" in reason:
+        return 1
+    return count
 
 
 def _cue_visual_action_coverage(cases: tuple[Mapping[str, object], ...]) -> dict[str, object]:

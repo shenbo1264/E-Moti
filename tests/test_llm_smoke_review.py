@@ -116,11 +116,14 @@ def test_review_llm_smoke_report_marks_clean_report_passed():
     assert review.turn_count == 2
     assert review.issue_count == 0
     assert review.fallback_count == 0
+    assert review.unsafe_event_count == 0
+    assert review.scenario_count == 0
     assert review.to_dict()["speech_quality"]["violation_count"] == 0
     markdown = render_llm_smoke_review_markdown(review)
     assert "# LLM Smoke Review" in markdown
     assert "- Status: `passed`" in markdown
     assert "- Speech quality violations: `0`" in markdown
+    assert "- Unsafe event count: `0`" in markdown
     assert "- State guard: `passed`" in markdown
 
 
@@ -203,6 +206,36 @@ def test_review_llm_smoke_report_surfaces_speech_quality_failures():
     assert "speech_quality:empty=0,short=1,long=1" in markdown
     assert "turn 1: short speech_len=1" in markdown
     assert "turn 2: long speech_len=101" in markdown
+
+
+def test_review_llm_smoke_report_counts_scenarios_and_unsafe_events():
+    from tools.review_llm_smoke_report import review_llm_smoke_report, render_llm_smoke_review_markdown
+
+    payload = _passing_report()
+    payload["ok"] = False
+    payload["reason"] = "turn:2:unsafe_event"
+    payload["scenario_count"] = 2
+    payload["scenario_ids"] = ["comfort_low_mood", "confused_input"]
+    payload["turns"][0]["scenario_id"] = "comfort_low_mood"
+    payload["turns"][0]["scenario_category"] = "comfort"
+    payload["turns"][1]["scenario_id"] = "confused_input"
+    payload["turns"][1]["scenario_category"] = "confused_input"
+    payload["turns"][1]["fallback_reason"] = "unsafe_event"
+
+    review = review_llm_smoke_report(payload)
+    public = review.to_dict()
+
+    assert review.ok is False
+    assert review.status == "needs_attention"
+    assert review.scenario_count == 2
+    assert review.unsafe_event_count == 1
+    assert review.fallback_count == 1
+    assert public["scenario_ids"] == ["comfort_low_mood", "confused_input"]
+    assert public["unsafe_event_count"] == 1
+    markdown = render_llm_smoke_review_markdown(review)
+    assert "- Scenario count: `2`" in markdown
+    assert "- Unsafe event count: `1`" in markdown
+    assert "turn 2: unsafe_event" in markdown
 
 
 def test_review_llm_smoke_report_flags_legacy_report_without_speech_quality():

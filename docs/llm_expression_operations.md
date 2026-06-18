@@ -41,6 +41,20 @@ python tools\llm_provider_matrix.py --timeout-seconds 5 --report artifacts\llm_s
 python tools\llm_dialogue_smoke.py --provider deepseek --dry-run
 ```
 
+The dialogue smoke default prompts come from
+`tests\fixtures\llm_conversation_scenarios.json`. The fixture is versioned and
+covers comfort, celebration, boredom, focus, tiredness, gift, shop, character
+switch, and confused user input. The generated report includes
+`scenario_version`, `scenario_ids`, per-turn `scenario_id`, visual action
+coverage, fallback count, unsafe event count, speech length violations, and the
+state mutation guard.
+
+Review an existing dialogue smoke or cue probe report:
+
+```powershell
+python tools\review_llm_smoke_report.py artifacts\llm_smoke\dialogue-smoke-dry-run.json --json artifacts\llm_smoke\dialogue-smoke-review.json --markdown artifacts\llm_smoke\dialogue-smoke-review.md
+```
+
 ## Live Cue Probe
 
 ```powershell
