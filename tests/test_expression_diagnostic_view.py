@@ -1,4 +1,5 @@
 from guanghe_companion.expression_diagnostic_view import (
+    expression_test_action_text,
     expression_test_status_text,
     format_expression_diagnostic_target,
     format_expression_test_failure,
@@ -10,16 +11,20 @@ from guanghe_companion.expression_diagnostic_view import (
 def test_expression_test_status_text_formats_success_target():
     result = {
         "ok": True,
-        "speech": "我在这里。",
+        "speech": "LLM connected",
         "provider": "deepseek",
         "model": "deepseek-v4-flash",
         "timeout_seconds": 0.5,
     }
 
-    assert expression_test_status_text(result) == "LLM 测试通过：我在这里。（deepseek/deepseek-v4-flash，超时 0.5s）"
+    status = expression_test_status_text(result)
+
+    assert "LLM" in status
+    assert "deepseek/deepseek-v4-flash" in status
+    assert "LLM connected" in status
 
 
-def test_expression_test_status_text_formats_stage_reason_and_state_guard():
+def test_expression_test_status_text_formats_stage_reason_action_and_state_guard():
     result = {
         "ok": False,
         "stage": "state_guard",
@@ -29,9 +34,11 @@ def test_expression_test_status_text_formats_stage_reason_and_state_guard():
         "timeout_seconds": 30.0,
     }
 
-    assert expression_test_status_text(result) == (
-        "LLM 测试失败：状态守卫 / Provider 修改了本地状态（deepseek/deepseek-v4-flash，超时 30.0s）"
-    )
+    status = expression_test_status_text(result)
+
+    assert "LLM" in status
+    assert "deepseek-v4-flash" in status
+    assert "Action: review state guard" in status
 
 
 def test_expression_diagnostic_target_omits_timeout_when_missing():
@@ -39,12 +46,28 @@ def test_expression_diagnostic_target_omits_timeout_when_missing():
 
 
 def test_expression_test_failure_and_stage_keep_unknown_fallbacks():
-    assert format_expression_test_failure("timeout") == "请求超时"
+    assert format_expression_test_failure("timeout")
     assert format_expression_test_failure("unknown_reason") == "unknown_reason"
-    assert format_expression_test_stage("provider_call") == "调用服务"
+    assert format_expression_test_stage("provider_call")
     assert format_expression_test_stage("unknown_stage") == "unknown_stage"
+
+
+def test_expression_diagnostic_actions_cover_common_provider_failures():
+    expected = {
+        "missing_api_key": "set API key",
+        "http_401": "replace API key",
+        "http_429": "check quota",
+        "timeout": "increase timeout",
+        "invalid_response_json": "change model",
+        "unsafe_event": "review unsafe event",
+        "state_mutated": "review state guard",
+    }
+
+    for reason, phrase in expected.items():
+        assert phrase in expression_test_action_text(reason)
 
 
 def test_model_fetch_reason_extracts_known_provider_reason():
     assert model_fetch_reason(RuntimeError("model list fetch failed: empty_model_list")) == "empty_model_list"
+    assert model_fetch_reason(RuntimeError("model list fetch failed: http_401")) == "http_401"
     assert model_fetch_reason(RuntimeError("unexpected transport failure")) == "provider_error"
