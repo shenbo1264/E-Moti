@@ -138,6 +138,7 @@ class CompanionSnapshot:
     session_goal: dict[str, object] = field(default_factory=dict)
     next_suggested_action: dict[str, object] | None = None
     session_goal_reward: dict[str, object] | None = None
+    recent_moment: dict[str, object] | None = None
 
     def to_compatible_dict(self) -> dict[str, object]:
         return SnapshotCompatibleSerializer(self).to_dict()
@@ -188,6 +189,7 @@ class SnapshotCompatibleSerializer:
             "interaction_intents": deepcopy(interaction_intents),
             "item_feedback_icon": self.snapshot.item_feedback_icon,
             "proactive_feedback": deepcopy(self.snapshot.proactive_feedback),
+            "recent_moment": deepcopy(self.snapshot.recent_moment),
             "session_goal": deepcopy(self.snapshot.session_goal),
             "next_suggested_action": deepcopy(self.snapshot.next_suggested_action),
             "session_goal_reward": deepcopy(self.snapshot.session_goal_reward),
@@ -227,6 +229,7 @@ class SnapshotBuilderInput:
     session_goal: dict[str, object] = field(default_factory=dict)
     next_suggested_action: dict[str, object] | None = None
     session_goal_reward: dict[str, object] | None = None
+    recent_moment: dict[str, object] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -252,6 +255,7 @@ class SnapshotContextFactory:
     session_goal: dict[str, object] = field(default_factory=dict)
     next_suggested_action: dict[str, object] | None = None
     session_goal_reward: dict[str, object] | None = None
+    recent_moment: dict[str, object] | None = None
 
     def build_input(self) -> SnapshotBuilderInput:
         relationship = RelationshipService(self.state)
@@ -280,6 +284,7 @@ class SnapshotContextFactory:
             session_goal=deepcopy(self.session_goal),
             next_suggested_action=deepcopy(self.next_suggested_action),
             session_goal_reward=deepcopy(self.session_goal_reward),
+            recent_moment=deepcopy(self.recent_moment),
         )
 
 
@@ -325,4 +330,5 @@ class SnapshotBuilder:
             session_goal=deepcopy(source.session_goal),
             next_suggested_action=deepcopy(source.next_suggested_action),
             session_goal_reward=deepcopy(source.session_goal_reward),
+            recent_moment=deepcopy(source.recent_moment),
         )

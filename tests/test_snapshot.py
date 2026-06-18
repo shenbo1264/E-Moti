@@ -43,6 +43,7 @@ def test_controller_exposes_typed_snapshot_with_required_stage_one_fields(tmp_pa
     assert all(isinstance(event, CompanionEvent) for event in typed_snapshot.events)
     assert [event.event_type for event in typed_snapshot.events] == ["speech", "stat", "choice"]
     assert typed_snapshot.proactive_feedback is None
+    assert typed_snapshot.recent_moment is None
     assert typed_snapshot.session_goal["goal_id"] == "interact_twice"
     assert typed_snapshot.next_suggested_action["action_id"] == "touch"
     assert typed_snapshot.session_goal_reward is None
@@ -76,6 +77,7 @@ def test_typed_snapshot_exports_controller_compatible_dict_without_ui_shape_chan
     assert compatible["actions"] == snapshot["actions"]
     assert compatible["long_term_memory"] == snapshot["long_term_memory"]
     assert compatible["relationship_presentation"] == typed_snapshot.relationship_presentation.to_dict()
+    assert compatible["recent_moment"] is None
     assert compatible["session_goal"]["goal_id"] == "interact_twice"
     assert compatible["next_suggested_action"]["action_id"] == "touch"
     assert compatible["session_goal_reward"] is None

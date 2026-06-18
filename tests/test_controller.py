@@ -1219,6 +1219,9 @@ def test_demo_trigger_surfaces_daily_moment_scenarios_immediately():
         proactive_event = next(event for event in controller.last_events if event.event_type == "proactive")
 
         assert snapshot["proactive_feedback"]["kind"] == expected_kind
+        assert snapshot["recent_moment"]["moment_id"] == expected_kind
+        assert snapshot["recent_moment"]["source"] == "deterministic_proactive"
+        assert snapshot["recent_moment"]["motion"] == snapshot["motion"]
         assert proactive_event.payload["kind"] == expected_kind
         assert any(entry["kind"] == "主动陪伴" for entry in snapshot["memory_log"])
         assert snapshot["tick_count"] == 1

@@ -323,6 +323,7 @@ class CompanionController:
             session_goal=self.session_goals.snapshot(),
             next_suggested_action=self._next_session_goal_action(),
             session_goal_reward=self.last_session_goal_reward,
+            recent_moment=self._recent_moment_snapshot(),
         ).build_input()
         return SnapshotBuilder(builder_input).build()
 
@@ -941,6 +942,21 @@ class CompanionController:
             if action.get("action_id") == suggested["action_id"]:
                 return dict(action)
         return suggested
+
+    def _recent_moment_snapshot(self) -> dict[str, object] | None:
+        feedback = self.last_proactive_feedback
+        if not feedback:
+            return None
+        moment_id = str(feedback.get("kind", ""))
+        if not moment_id:
+            return None
+        return {
+            "moment_id": moment_id,
+            "source": "deterministic_proactive",
+            "motion": self.last_motion,
+            "speech": str(feedback.get("speech", "")),
+            "summary": str(feedback.get("summary", "")),
+        }
 
     def _settle_session_goal_event(self, event_type: str, *, action_id: str) -> SessionGoalResult:
         result = self.session_goals.record_event(event_type, action_id=action_id)

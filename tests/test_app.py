@@ -409,6 +409,23 @@ def test_control_panel_uses_readable_chinese_status_labels(monkeypatch, tmp_path
     app.processEvents()
 
 
+def test_control_panel_surfaces_session_goal_and_recent_moment(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert "interact_twice" in window.session_goal_label.text()
+    assert "touch" in window.session_goal_label.text()
+    assert "recent_moment:none" in window.recent_moment_label.text()
+
+    snapshot = window.controller.trigger_demo_proactive("return_idle", include_ai_expression=False)
+    window._apply_snapshot(snapshot)
+
+    assert "return_after_idle" in window.recent_moment_label.text()
+    assert "deterministic_proactive" in window.recent_moment_label.text()
+
+    window.close()
+    app.processEvents()
+
+
 def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 

@@ -1093,9 +1093,19 @@ class CompanionWindow(QMainWindow):
         self.mode_label = QLabel()
         self.resources_label = QLabel()
         self.goal_label = QLabel()
+        self.session_goal_label = QLabel()
+        self.recent_moment_label = QLabel()
         self.relationship_label = QLabel()
         self.tick_label = QLabel()
-        for widget in (self.mode_label, self.resources_label, self.goal_label, self.relationship_label, self.tick_label):
+        for widget in (
+            self.mode_label,
+            self.resources_label,
+            self.goal_label,
+            self.session_goal_label,
+            self.recent_moment_label,
+            self.relationship_label,
+            self.tick_label,
+        ):
             widget.setWordWrap(True)
             layout.addWidget(widget)
         alias_row = QHBoxLayout()
@@ -1789,6 +1799,25 @@ class CompanionWindow(QMainWindow):
             f"金币 {snapshot['coins']} / 等级 {snapshot['level']} / 经验 {snapshot['exp']}"
         )
         self.goal_label.setText(str(snapshot["goal"]))
+        session_goal = snapshot.get("session_goal")
+        next_action = snapshot.get("next_suggested_action")
+        if isinstance(session_goal, dict) and session_goal:
+            goal_id = str(session_goal.get("goal_id", ""))
+            progress = session_goal.get("progress", 0)
+            target = session_goal.get("target", 0)
+            action_id = ""
+            if isinstance(next_action, dict):
+                action_id = str(next_action.get("action_id", ""))
+            self.session_goal_label.setText(f"会话目标：{goal_id} {progress}/{target}；建议：{action_id}")
+        else:
+            self.session_goal_label.setText("会话目标：无")
+        recent_moment = snapshot.get("recent_moment")
+        if isinstance(recent_moment, dict) and recent_moment:
+            moment_id = str(recent_moment.get("moment_id", ""))
+            source = str(recent_moment.get("source", ""))
+            self.recent_moment_label.setText(f"最近片段 recent_moment:{moment_id} source:{source}")
+        else:
+            self.recent_moment_label.setText("最近片段 recent_moment:none")
         self.relationship_label.setText(self.snapshot_renderer.format_relationship_presentation(snapshot))
         if not self.player_alias_input.hasFocus():
             self.player_alias_input.setText(str(snapshot.get("player_alias") or ""))
