@@ -4,6 +4,7 @@
 
 - `git status --short --untracked-files=all` reviewed.
 - `python -m pytest` passes.
+- `docs\demo_operator_quickstart.md` describes the current demo flow and limitations.
 - `git grep -n "sk-" -- . ":!artifacts" ":!dist"` contains only test placeholders or public documentation examples.
 - `data/companion_save.json`, `data/companion_demo_save.json`, and `data/dialogue_history.json` are not tracked.
 - `assets/companion/original_oc` remains the default pack unless a default-promotion package says otherwise.

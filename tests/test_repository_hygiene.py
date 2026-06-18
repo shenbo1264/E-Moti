@@ -102,6 +102,14 @@ def test_readme_names_pixel_pet_as_current_art_route() -> None:
     assert "`original_oc` remains the default companion pack" in readme
 
 
+def test_readme_links_demo_operator_quickstart() -> None:
+    readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8-sig")
+    quickstart = REPO_ROOT / "docs" / "demo_operator_quickstart.md"
+
+    assert "docs\\demo_operator_quickstart.md" in readme
+    assert quickstart.is_file()
+
+
 def test_final_release_gate_2026_07_records_boundaries_and_p16_candidate() -> None:
     final_gate = (REPO_ROOT / "docs" / "final_release_gate_2026-07.md").read_text(encoding="utf-8-sig")
 
