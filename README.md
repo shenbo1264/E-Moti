@@ -165,6 +165,7 @@ Current roadmap:
 ```powershell
 type docs\current_development_route_2026-06-17.md
 type docs\pixel_pet_sequence_sop.md
+type docs\superpowers\plans\2026-06-18-p18-p23-optimization-roadmap.md
 ```
 
 The older VN portrait, AI-video, LivePortrait, and Live2D notes are retained as research or historical planning material. They are not the near-term art-production route.
