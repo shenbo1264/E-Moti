@@ -15,7 +15,7 @@ if str(REPO_ROOT) not in sys.path:
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
-from tools.review_character_pack_status import review_character_pack_status
+from tools.readiness_checks import build_source_character_pack_check
 from tools.review_llm_smoke_report import review_llm_smoke_report, review_llm_smoke_reports_in_directory
 from tools.validate_windows_build import DEFAULT_APP_DIR, DEFAULT_INSTALLER, validate_windows_build
 
@@ -537,22 +537,7 @@ def render_release_readiness_markdown(payload: dict[str, object]) -> str:
 
 
 def _source_character_pack_check(character_pack: Path) -> dict[str, object]:
-    report = review_character_pack_status(character_pack)
-    return {
-        "id": "source_character_pack",
-        "label": "Source Character Pack",
-        "ok": report.get("ok") is True,
-        "status": str(report.get("status") or "unknown"),
-        "path": str(character_pack),
-        "character_id": str(report.get("character_id") or ""),
-        "manual_qa_required": report.get("manual_qa_required") is True,
-        "distribution_boundary": str(report.get("distribution_boundary") or "unknown"),
-        "provenance_files": _string_list(report.get("provenance_files")),
-        "license_files": _string_list(report.get("license_files")),
-        "errors": _string_list(report.get("errors")),
-        "warnings": _string_list(report.get("warnings")),
-        "next_actions": _string_list(report.get("next_actions")),
-    }
+    return build_source_character_pack_check(character_pack)
 
 
 def _windows_build_check(app_dir: Path, installer_path: Path | None) -> dict[str, object]:

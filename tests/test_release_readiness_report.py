@@ -17,6 +17,17 @@ def _copy_original_pack(target: Path) -> Path:
     return destination
 
 
+def test_source_character_pack_check_reports_ready_for_original_oc() -> None:
+    from tools.readiness_checks import build_source_character_pack_check
+
+    check = build_source_character_pack_check(REPO_ROOT / "assets" / "companion" / "original_oc")
+
+    assert check["id"] == "source_character_pack"
+    assert check["ok"] is True
+    assert check["status"] == "ready"
+    assert check["character_id"] == "original_oc"
+
+
 def _write_frozen_build(root: Path, *, include_license: bool = True) -> tuple[Path, Path]:
     app_dir = root / "dist" / "E-Moti"
     character_dir = app_dir / "_internal" / "assets" / "companion"
