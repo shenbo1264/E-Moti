@@ -42,6 +42,10 @@ from .ai_expressor import build_expression_prompt_preview
 from .capability_runtime import CapabilityRuntime
 from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
 from .capability_settings import CapabilitySettings
+from .character_library_view_model import (
+    character_pack_distribution_text,
+    character_pack_import_review_text,
+)
 from .character_pack_import import import_character_pack_dir
 from .character_registry import (
     CharacterPackSummary,
@@ -369,41 +373,6 @@ def _presentation_renderer_from_profile(renderer_profile, asset_dir):
             expression_map=renderer_profile.expression_map,
         )
     return SpritePresentationAdapter(motion_map=renderer_profile.motion_map)
-
-
-def _character_pack_distribution_text(pack: CharacterPackSummary) -> str:
-    return "\n".join(
-        (
-            "Distribution",
-            f"Source: {pack.source}",
-            f"Distribution: {pack.distribution_boundary}",
-            f"Provenance: {_relative_pack_paths(pack, pack.provenance_paths)}",
-            f"License: {_relative_pack_paths(pack, pack.license_paths)}",
-        )
-    )
-
-
-def _relative_pack_paths(pack: CharacterPackSummary, paths: tuple[Path, ...]) -> str:
-    if not paths:
-        return "missing"
-    labels: list[str] = []
-    for path in paths:
-        try:
-            labels.append(path.relative_to(pack.path).as_posix())
-        except ValueError:
-            labels.append(path.name)
-    return ", ".join(labels)
-
-
-def _character_pack_import_review_text(pack: CharacterPackSummary) -> str:
-    return "\n\n".join(
-        (
-            f"Import character pack: {pack.character_id}",
-            f"{pack.name}\n{pack.title}",
-            _character_pack_distribution_text(pack),
-            "Only import packs you have rights to use and distribute.",
-        )
-    )
 
 
 class CompanionWindow(QMainWindow):
@@ -898,7 +867,7 @@ class CompanionWindow(QMainWindow):
         self.character_detail_label.setText(
             f"{pack.name}\n{pack.title}\n\n{pack.description}\n\n"
             "切换角色会切换外观、语气、商店主题和独立记忆，不改写其他角色会话。\n\n"
-            f"{_character_pack_distribution_text(pack)}"
+            f"{character_pack_distribution_text(pack)}"
         )
         if pack.preview_path.is_file():
             preview = QPixmap(str(pack.preview_path))
@@ -961,7 +930,7 @@ class CompanionWindow(QMainWindow):
         result = QMessageBox.question(
             self,
             "Import character pack",
-            _character_pack_import_review_text(pack),
+            character_pack_import_review_text(pack),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
             QMessageBox.StandardButton.Cancel,
         )
