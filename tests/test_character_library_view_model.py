@@ -7,6 +7,7 @@ from guanghe_companion.character_library_view_model import (
     character_pack_readiness_text,
     character_pack_role_label,
     character_pack_distribution_text,
+    character_pack_distribution_warning,
     character_pack_import_review_text,
 )
 from guanghe_companion.character_registry import CharacterPackSummary
@@ -131,6 +132,21 @@ def test_character_pack_list_item_text_includes_role_label() -> None:
     text = character_pack_list_item_text(_summary())
 
     assert text == "Xingxi Pixel Pet | Optional official candidate | Pixel desktop companion candidate"
+
+
+def test_character_pack_distribution_warning_marks_private_fanwork_not_for_distribution() -> None:
+    pack = _summary_with(
+        character_id="fanwork_pet",
+        source="user",
+        distribution_boundary="private_local_fanwork",
+    )
+
+    warning = character_pack_distribution_warning(pack)
+    text = character_pack_distribution_text(pack)
+
+    assert "Private fanwork" in warning
+    assert "do not distribute" in warning.lower()
+    assert warning in text
 
 
 def test_character_pack_import_review_text_warns_about_rights() -> None:

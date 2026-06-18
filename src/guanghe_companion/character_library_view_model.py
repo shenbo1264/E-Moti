@@ -5,6 +5,7 @@ from pathlib import Path
 
 from .character_pack import DEFAULT_CHARACTER_ID
 from .character_registry import CharacterPackSummary
+from .distribution_boundaries import distribution_warning_for_boundary
 
 
 def character_pack_role_label(
@@ -34,6 +35,7 @@ def character_pack_distribution_text(pack: CharacterPackSummary) -> str:
             f"Role: {character_pack_role_label(pack)}",
             f"Source: {pack.source}",
             f"Distribution: {pack.distribution_boundary}",
+            f"Warning: {character_pack_distribution_warning(pack)}",
             f"Provenance: {_relative_pack_paths(pack, pack.provenance_paths)}",
             f"License: {_relative_pack_paths(pack, pack.license_paths)}",
             character_pack_readiness_text(pack),
@@ -51,6 +53,10 @@ def character_pack_readiness_text(pack: CharacterPackSummary) -> str:
             f"Manual QA: {_manual_qa_status(pack)}",
         )
     )
+
+
+def character_pack_distribution_warning(pack: CharacterPackSummary) -> str:
+    return distribution_warning_for_boundary(pack.distribution_boundary)
 
 
 def character_pack_import_review_text(pack: CharacterPackSummary) -> str:

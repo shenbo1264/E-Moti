@@ -153,6 +153,25 @@ def test_import_character_pack_tool_reports_local_ugc_distribution_boundary(tmp_
     assert payload["ok"] is True
     assert payload["character_id"] == "local_ugc_echo"
     assert payload["distribution_boundary"] == "local_ugc_only"
+    assert "Local UGC" in payload["distribution_warning"]
+
+
+def test_import_character_pack_tool_reports_private_fanwork_distribution_warning(tmp_path):
+    source = _write_complete_pack(
+        tmp_path / "source",
+        character_id="private_fanwork_echo",
+        distribution_boundary="private_local_fanwork",
+    )
+    target_root = tmp_path / "user-data" / "character_packs"
+
+    result = _run_tool(source, target_root)
+
+    payload = json.loads(result.stdout)
+    assert result.returncode == 0
+    assert payload["ok"] is True
+    assert payload["distribution_boundary"] == "private_local_fanwork"
+    assert "Private fanwork" in payload["distribution_warning"]
+    assert "must not be redistributed" in payload["distribution_warning"]
 
 
 def test_import_character_pack_tool_rejects_generated_draft(tmp_path):

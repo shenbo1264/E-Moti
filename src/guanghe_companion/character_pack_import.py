@@ -10,6 +10,7 @@ from .character_registry import (
     summarize_character_pack_dir,
     validate_character_pack_dir,
 )
+from .distribution_boundaries import distribution_warning_for_boundary
 
 
 @dataclass(frozen=True, slots=True)
@@ -26,6 +27,7 @@ class CharacterPackImportReport:
             "ok": self.ok,
             "character_id": self.character_id,
             "distribution_boundary": self.distribution_boundary,
+            "distribution_warning": distribution_warning_for_boundary(self.distribution_boundary),
             "source_path": str(self.source_path),
             "target_path": str(self.target_path),
             "errors": list(self.errors),
