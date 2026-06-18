@@ -11,6 +11,30 @@ $env:DEEPSEEK_API_KEY="your-local-key"
 python tools\llm_provider_diagnostics.py --provider deepseek --model deepseek-v4-flash --base-url https://api.deepseek.com
 ```
 
+## Provider Matrix
+
+Use the provider matrix before live smoke tests. It distinguishes missing keys, authentication failure, quota or rate limits, timeouts, invalid responses, and local servers that are not running.
+
+Recommended development routes:
+
+- DeepSeek for low-cost cloud smoke.
+- OpenRouter as an alternate cloud smoke route.
+- Ollama or LM Studio as a local no-key fallback.
+
+Dry run, no provider calls:
+
+```powershell
+python tools\llm_provider_matrix.py --dry-run --report artifacts\llm_smoke\provider-matrix-dry-run.json --markdown artifacts\llm_smoke\provider-matrix-dry-run.md
+```
+
+Live route probe:
+
+```powershell
+python tools\llm_provider_matrix.py --timeout-seconds 5 --report artifacts\llm_smoke\provider-matrix-live.json --markdown artifacts\llm_smoke\provider-matrix-live.md
+```
+
+`ready` in dry-run mode means the local configuration is present. `ready` in live mode means the provider model-list route responded successfully. Reports never include API key values.
+
 ## Dry Run
 
 ```powershell
@@ -34,5 +58,8 @@ python tools\llm_expression_cue_probe.py --provider deepseek --timeout-seconds 4
 ## Failure Handling
 
 - `missing_api_key`: configure the local environment variable only.
+- `http_401` or `auth_failed`: replace the local API key and rerun the provider matrix.
+- `http_429` or `quota_or_rate_limited`: wait, reduce request rate, or switch provider.
+- `timeout`: increase timeout or use a local provider for demo rehearsal.
 - provider timeout: keep local fallback speech enabled and do not change state.
 - unsafe event: inspect the smoke report, parser tests, and typed event schema before retrying.
