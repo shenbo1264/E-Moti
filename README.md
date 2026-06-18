@@ -169,6 +169,14 @@ type docs\pixel_pet_sequence_sop.md
 
 The older VN portrait, AI-video, LivePortrait, and Live2D notes are retained as research or historical planning material. They are not the near-term art-production route.
 
+Current final gate:
+
+```powershell
+type docs\final_release_gate_2026-07.md
+```
+
+The P12-P17 gate keeps `original_oc` as the default pack, keeps `xingxi_pixel_pet` as an optional bundled candidate, validates the live DeepSeek expression cue probe, and records the P16 confused/shy row as ignored QA evidence only. That row is not promoted into runtime assets until visual approval and a separate asset-promotion package.
+
 Portrait candidate validation before manifest promotion:
 
 ```powershell
