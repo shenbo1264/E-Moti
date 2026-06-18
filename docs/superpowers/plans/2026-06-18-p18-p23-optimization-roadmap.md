@@ -14,7 +14,7 @@
 
 ### Repository State
 
-- Working directory: `D:\学工文档\光核\电子宠物\E-Moti_demo`.
+- Working directory: repository root.
 - Branch: `codex/demo-worktree-cleanup`.
 - Remote used for the public PR: `origin` -> `https://github.com/shenbo1264/E-Moti.git`.
 - Remote default branch: `main`.
