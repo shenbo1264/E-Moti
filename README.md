@@ -107,6 +107,8 @@ python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
 python tools\review_character_pack_status.py assets\companion\original_oc --json artifacts\character-pack-status-original-oc.json --markdown artifacts\character-pack-status-original-oc.md
 ```
 
+Character-pack distribution rules are documented in `docs\character_pack_distribution_policy.md`. Keep third-party and fanwork packs local unless rights are cleared.
+
 Generated character draft validation:
 
 ```powershell
