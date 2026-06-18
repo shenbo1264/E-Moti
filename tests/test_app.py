@@ -2665,6 +2665,8 @@ def test_expression_settings_test_button_shows_auth_action_without_api_key(monke
     status = window.expression_settings_status_label.text()
     assert "Provider 认证失败" in status
     assert "Action: replace API key" in status
+    assert "Ollama" in status
+    assert "LM Studio" in status
     assert "sk-secret" not in status
     assert after.stats == before.stats
     assert after.inventory == before.inventory

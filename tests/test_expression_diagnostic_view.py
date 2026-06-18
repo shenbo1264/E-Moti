@@ -67,6 +67,14 @@ def test_expression_diagnostic_actions_cover_common_provider_failures():
         assert phrase in expression_test_action_text(reason)
 
 
+def test_expression_diagnostic_actions_recommend_local_fallback_for_cloud_provider_failures():
+    for reason in ("http_401", "http_403", "http_429"):
+        action = expression_test_action_text(reason)
+
+        assert "Ollama" in action
+        assert "LM Studio" in action
+
+
 def test_model_fetch_reason_extracts_known_provider_reason():
     assert model_fetch_reason(RuntimeError("model list fetch failed: empty_model_list")) == "empty_model_list"
     assert model_fetch_reason(RuntimeError("model list fetch failed: http_401")) == "http_401"

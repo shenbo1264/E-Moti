@@ -31,9 +31,9 @@ FAILURE_LABELS = {
 ACTION_HINTS = {
     "disabled": "Action: enable LLM expression and save settings",
     "missing_api_key": "Action: set API key in local settings",
-    "http_401": "Action: replace API key and rerun provider matrix",
-    "http_403": "Action: check provider account access",
-    "http_429": "Action: check quota or switch provider",
+    "http_401": "Action: replace API key, or switch to Ollama/LM Studio local provider",
+    "http_403": "Action: check provider account access, or switch to Ollama/LM Studio local provider",
+    "http_429": "Action: check quota, switch cloud provider, or use Ollama/LM Studio locally",
     "network_error": "Action: check network or start local provider",
     "timeout": "Action: increase timeout or use a local provider",
     "provider_error": "Action: run provider matrix and inspect provider status",

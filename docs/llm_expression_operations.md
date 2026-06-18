@@ -21,6 +21,13 @@ Recommended development routes:
 - OpenRouter as an alternate cloud smoke route.
 - Ollama or LM Studio as a local no-key fallback.
 
+## Recommended Provider Path
+
+1. Use `python tools\llm_provider_matrix.py --dry-run` to confirm settings shape.
+2. Use a local Ollama or LM Studio server when cloud credentials are unavailable.
+3. Use DeepSeek or OpenRouter for cloud smoke only after the key is current.
+4. Treat missing key, auth failure, quota, timeout, invalid JSON, unsafe event, and state mutation as distinct failures.
+
 Dry run, no provider calls:
 
 ```powershell
