@@ -1,11 +1,12 @@
-# Xingxi Pixel Pet Candidate Provenance
+# Xingxi Pixel Pet Optional Bundled Candidate Provenance
 
 - Character: Xingxi, original E-Moti OC.
 - Route: hatch-pet-style pixel-pet sequence workflow.
-- Pack status: optional bundled candidate, not the default runtime character.
-- Runtime boundary: this pack is discoverable through the character library, but it does not replace `assets/companion/original_oc`.
-- QA boundary: row repair, atlas validation, runtime pack validation, promotion-gate validation, UI smoke tests, full tests, and packaging checks must remain recorded before any later default-asset promotion.
+- Source generation: built-in `$imagegen` through the local hatch-pet row workflow and project-owned prompts.
+- Source candidate: `xingxi_pixel_pet_edge_style_v2` clean-edge run, curated into this optional bundled pack on 2026-06-18.
+- Renderer: sprite backend using `spritesheet.png` plus `motion_manifest.json`.
+- Boundary: optional bundled character-library candidate only; it does not replace `original_oc` as the default character.
+- QA summary: atlas validation, pixel-pet pack validation, runtime character-pack validation, edge-halo visual QA, LLM emote mapping, local character-library smoke, DeepSeek expression cue probe, and pixel-pet promotion gate passed before bundling.
+- Visual QA note: the earlier bright magenta edge halo was repaired; remaining dark edge pixels are accepted as pixel outline style. `waving` remains conservative but readable.
 
-The source generation run, rejected variants, and raw repair history are intentionally kept in ignored local artifacts. This committed pack keeps the curated runtime files, contact sheet, manual QA summary, and license note needed for open-source review.
-
-This pack contains original project assets for E-Moti. It does not include copied third-party character art, franchise assets, downloaded fanwork, Live2D sample models, or provider account secrets.
+This pack uses original Xingxi project assets and generated row candidates. It does not include third-party franchise art, downloaded fanwork, provider secrets, or copied reference-project assets.

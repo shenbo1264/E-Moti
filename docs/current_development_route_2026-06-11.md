@@ -379,3 +379,23 @@ python -m json.tool assets\companion\original_oc\shop_items.json
 python tools\validate_character_pack.py assets\companion\original_oc
 python tools\release_readiness_report.py --full-local-snapshot --json artifacts\roadmap-scan-20260611\release-readiness.json --markdown artifacts\roadmap-scan-20260611\release-readiness.md
 ```
+
+## 10. 2026-06-18 延续状态
+
+本文档的 P5 edge-style 路线已在后续路线文档中继续推进，最新事实以 `docs/current_development_route_2026-06-17.md` 第 13-16 节为准。
+
+当前已完成：
+
+- v2 clean-edge candidate 已生成并通过 `pixel_pet_visual_qa --fail-on-warnings`；
+- DeepSeek expression cue probe 已通过，LLM 只驱动 speech、expression、motion 和只读 intent；
+- `assets/companion/xingxi_pixel_pet` 已替换为 clean-edge optional bundled candidate；
+- `original_oc` 仍是默认角色；
+- runtime default manifest 未改变；
+- Ikaros/Nairong 未进入 bundled assets；
+- Windows app、installer、frozen control-panel smoke、frozen `--pet-mode` smoke 均已通过。
+
+当前下一步：
+
+- 若要让像素星汐成为默认角色，必须另开 P6-default-promotion 包；
+- P6 必须重新跑 UI、full pytest、release readiness、Windows app/installer gates 和 frozen exe smoke；
+- 未经单独 P6，不要把 `original_oc` 默认包替换为 `xingxi_pixel_pet`。

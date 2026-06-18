@@ -1125,3 +1125,185 @@ P5 当前结论：
 - 下一步必须先产生明确人工美术 QA 结论和 `manual_qa.json`；
 - 只有 `manual_qa.manual_decision` 以 `promotion_gate_candidate` 开头，并且 deterministic checks 全部为 true 后，才可运行 `tools/pixel_pet_promotion_gate.py`；
 - promotion gate 通过后仍需要单独执行 bundled asset copy/update、UI smoke、full pytest、release readiness；若涉及冻结包或安装器，再跑 Windows app/installer gates。
+
+## 16. 2026-06-18 P5 optional bundled clean-edge promotion 结果
+
+本节记录 clean-edge Xingxi pixel-pet 从 ignored candidate 晋升为 optional bundled candidate 的真实结果。结论：`assets/companion/xingxi_pixel_pet` 已替换为 clean-edge 版本，仍不改变默认 `original_oc`，并已完成源码包、UI、LLM 映射、Windows app、installer 和 frozen exe smoke 验证。
+
+### 人工/视觉 QA 证据
+
+已人工查看：
+
+```text
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/edge-repair-tool-cleaned-outline-rgb-alpha-20260618/xingxi_pixel_pet/preview/contact-sheet.png
+artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/edge-repair-tool-cleaned-outline-rgb-alpha-20260618/candidate-pack-visual-qa-preview.png
+artifacts/character-library-qa/xingxi-pixel-pet-v2-edge-repair-outline-rgb-alpha-screenshots/xingxi_pixel_pet-desktop-pet.png
+```
+
+视觉结论：
+
+```text
+identity_consistency_ok=true
+contact_sheet_rows_readable=true
+idle_blink_ok=true
+waiting_blink_ok=true
+running_direction_readable=true
+failed_and_review_expressions_readable=true
+waving_readable_but_conservative=true
+bright_magenta_halo_removed=true
+remaining_dark_outline_acceptable=true
+desktop_small_size_readable=true
+```
+
+已写入 bundled 包：
+
+```text
+assets/companion/xingxi_pixel_pet/manual_qa.json
+assets/companion/xingxi_pixel_pet/qa_report.json
+assets/companion/xingxi_pixel_pet/provenance.md
+```
+
+关键边界：
+
+```text
+manual_decision=promotion_gate_candidate_clean_edge_optional_bundled
+runtime_manifest_updated=false
+default_character_updated=false
+distribution_boundary=official_candidate
+```
+
+### promoted files
+
+本包替换的 runtime assets：
+
+```text
+assets/companion/xingxi_pixel_pet/spritesheet.png
+assets/companion/xingxi_pixel_pet/preview/contact-sheet.png
+assets/companion/xingxi_pixel_pet/manual_qa.json
+assets/companion/xingxi_pixel_pet/qa_report.json
+assets/companion/xingxi_pixel_pet/provenance.md
+```
+
+复制时未删除角色包中的其他文件；`character.json`、`dialogue_style.json`、`motion_manifest.json`、`shop_items.json`、`LICENSE.md` 和 `item_icons/` 文件集与 clean-edge candidate 对齐，git diff 只显示发生实际内容变化的文件。
+
+### 源码包验证
+
+已执行：
+
+```powershell
+<PYTHON311> tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
+<PYTHON311> tools\validate_pixel_pet_pack.py assets\companion\xingxi_pixel_pet --report artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-pack-validation.json
+<PYTHON311> tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --report artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-visual-qa.json --preview artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-visual-qa-preview.png --fail-on-warnings
+<PYTHON311> tools\pixel_pet_emote_mapping_check.py assets\companion\xingxi_pixel_pet --json artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-emote-mapping.json --markdown artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-emote-mapping.md
+<PYTHON311> tools\pixel_pet_promotion_gate.py assets\companion\xingxi_pixel_pet --manual-qa assets\companion\xingxi_pixel_pet\manual_qa.json --report artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-promotion-gate.json
+```
+
+结果：
+
+```text
+validate_character_pack=ok
+validate_pixel_pet_pack=ok
+pixel_visual_qa=status ready, warnings=[]
+pixel_visual_qa.suspicious_edge_halo_pixel_count=372
+pixel_visual_qa.suspicious_edge_halo_ratio=0.008811
+pixel_emote_mapping=status ready, missing_motion_ids=[]
+promotion_gate=ok, warnings=[]
+```
+
+### UI / desktop smoke
+
+已执行：
+
+```powershell
+$env:QT_QPA_PLATFORM='offscreen'
+<PYTHON311> tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-clean-edge-bundled-qa.json --screenshot-dir artifacts\character-library-qa\xingxi-pixel-pet-clean-edge-bundled-screenshots --pet-seconds 0.5
+```
+
+结果：
+
+```text
+ok=true
+default_character_id=original_oc
+selected_character_id=xingxi_pixel_pet
+after_switch_character_id=xingxi_pixel_pet
+candidate_source=builtin
+candidate_backend=sprite
+desktop_backend=sprite
+errors=[]
+```
+
+### Python tests
+
+已执行：
+
+```powershell
+<PYTHON311> -m pytest tests\test_character_pack.py tests\test_character_registry.py tests\test_character_pack_import_tool.py tests\test_character_library_qa_tool.py tests\test_pixel_pet_promotion_preflight.py tests\test_pixel_pet_promotion_gate.py tests\test_pixel_pet_pack_validator_tool.py tests\test_pixel_pet_visual_qa.py tests\test_pixel_pet_emote_mapping.py tests\test_app.py tests\test_desktop_pet_smoke.py -q
+<PYTHON311> -m pytest
+```
+
+结果：
+
+```text
+asset/UI targeted tests=161 passed
+full pytest=832 passed in 135.06s
+```
+
+### Windows build / installer / frozen smoke
+
+已执行：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1 -PythonPath <PYTHON311>
+powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild -PythonPath <PYTHON311>
+<PYTHON311> tools\validate_windows_build.py --report artifacts\windows-build-validation.json
+```
+
+结果：
+
+```text
+Windows app build=ok, dist\E-Moti\E-Moti.exe rebuilt
+installer build=ok, dist\installer\E-Moti_Setup_0.1.0.exe rebuilt
+validate_windows_build=ok
+```
+
+额外验证 optional bundled pack 已进入 frozen dist：
+
+```text
+assets/companion/xingxi_pixel_pet/spritesheet.png SHA256 == dist/E-Moti/_internal/assets/companion/xingxi_pixel_pet/spritesheet.png SHA256
+assets/companion/xingxi_pixel_pet/manual_qa.json SHA256 == dist/E-Moti/_internal/assets/companion/xingxi_pixel_pet/manual_qa.json SHA256
+dist/E-Moti/_internal/assets/companion/xingxi_pixel_pet validate_character_pack=ok
+dist/E-Moti/_internal/assets/companion/xingxi_pixel_pet validate_pixel_pet_pack=ok
+```
+
+Frozen exe smoke：
+
+```text
+dist\E-Moti\E-Moti.exe control panel 5s smoke=ok
+dist\E-Moti\E-Moti.exe --pet-mode 5s smoke=ok
+```
+
+### final release readiness
+
+已执行：
+
+```powershell
+<PYTHON311> tools\release_readiness_report.py --character-pack assets\companion\xingxi_pixel_pet --llm-report artifacts\llm_smoke\deepseek-expression-cue-probe-clean-edge-live-rerun-20260618.json --pixel-pet-emote-mapping-report artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-emote-mapping.json --pixel-pet-visual-qa-report artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-visual-qa.json --json artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-release-readiness-final.json --markdown artifacts\route-scan-20260618\xingxi-pixel-pet-clean-edge-bundled-release-readiness-final.md
+```
+
+结果：
+
+```text
+ok=true
+status=ready
+check_count=5
+ready_check_count=5
+attention_check_count=0
+```
+
+P5 当前结论：
+
+- `xingxi_pixel_pet` clean-edge 版本现在是 optional bundled candidate；
+- 默认角色仍是 `original_oc`；
+- 没有改变 runtime default manifest；
+- Ikaros/Nairong 仍不进入开源 bundled assets；
+- 下一步只有在明确要做默认角色替换时，才进入单独的 P6-default-promotion 包。

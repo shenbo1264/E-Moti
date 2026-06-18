@@ -1,31 +1,38 @@
 {
   "character_id": "xingxi_pixel_pet",
-  "reviewed_at": "2026-06-11",
+  "reviewed_at": "2026-06-18",
+  "review_source": "codex_visual_qa",
   "contact_sheet": "preview/contact-sheet.png",
+  "manual_decision": "promotion_gate_candidate_clean_edge_optional_bundled",
+  "runtime_manifest_updated": false,
+  "default_character_updated": false,
   "deterministic_checks": {
     "final_validation_ok": true,
     "hatch_review_ok": true,
     "pixel_pack_validation_ok": true,
     "runtime_import_smoke_ok": true,
-    "jumping_row_review_ok": true,
-    "failed_row_review_ok": true,
+    "pixel_visual_qa_ok": true,
+    "llm_emote_mapping_ok": true,
+    "deepseek_expression_cue_probe_ok": true,
     "promotion_gate_ok": true
   },
-  "manual_decision": "promotion_gate_candidate_bundled_optional_after_jumping_failed_row_repair",
-  "repaired_rows": [
-    {
-      "row": "jumping",
-      "decision": "accepted_for_promotion_gate_candidate"
-    },
-    {
-      "row": "failed",
-      "decision": "accepted_for_promotion_gate_candidate"
-    }
-  ],
+  "visual_checks": {
+    "identity_consistency_ok": true,
+    "contact_sheet_rows_readable": true,
+    "idle_blink_ok": true,
+    "waiting_blink_ok": true,
+    "running_direction_readable": true,
+    "failed_and_review_expressions_readable": true,
+    "waving_readable_but_conservative": true,
+    "bright_magenta_halo_removed": true,
+    "remaining_dark_outline_acceptable": true,
+    "desktop_small_size_readable": true
+  },
   "remaining_notes": [
-    "Current candidate is suitable as an optional bundled character-library pack.",
-    "Default original_oc runtime assets and manifests remain unchanged.",
-    "A later package can decide whether this candidate should replace the default role after UI and art QA."
-  ],
-  "runtime_manifest_updated": false
+    "Clean-edge candidate is suitable as an optional bundled character-library pack.",
+    "Waving remains conservative but readable.",
+    "The previous bright magenta halo has been removed; remaining dark edge pixels are treated as pixel outline style.",
+    "This pack does not replace original_oc as the default character.",
+    "A later package can separately decide whether to promote a pixel-pet pack to default after release gates."
+  ]
 }
