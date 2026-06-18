@@ -496,6 +496,8 @@ def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_p
         "澄光 | 桌面回声同伴",
         "星汐 | 桌面频率同伴",
     ]
+    assert "Optional official candidate" in window.character_list.item(0).toolTip()
+    assert "Default official" in window.character_list.item(1).toolTip()
     window.character_list.setCurrentRow(0)
     window.character_switch_button.click()
     app.processEvents()
@@ -535,8 +537,13 @@ def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_pat
     app.processEvents()
 
     details = window.character_detail_label.text()
+    assert "Role: Default official" in details
     assert "Source: builtin" in details
     assert "Distribution: shareable_after_review" in details
+    assert "Provenance: ready" in details
+    assert "License: ready" in details
+    assert "Visual QA: not recorded" in details
+    assert "Manual QA: not recorded" in details
     assert "Provenance: provenance.md" in details
     assert "License: LICENSE" in details
 

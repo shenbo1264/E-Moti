@@ -43,6 +43,7 @@ from .capability_runtime import CapabilityRuntime
 from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
 from .capability_settings import CapabilitySettings
 from .character_library_view_model import (
+    character_pack_list_item_text,
     character_pack_distribution_text,
     character_pack_import_review_text,
 )
@@ -839,6 +840,7 @@ class CompanionWindow(QMainWindow):
         }
         for pack in self._character_pack_summaries.values():
             item = QListWidgetItem(f"{pack.name} | {pack.title}")
+            item.setToolTip(character_pack_list_item_text(pack))
             item.setData(Qt.ItemDataRole.UserRole, pack.character_id)
             if pack.preview_path.is_file():
                 item.setIcon(QIcon(str(pack.preview_path)))
