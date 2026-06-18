@@ -103,6 +103,14 @@ def test_default_expression_cue_probes_cover_core_emotion_tags():
     assert not any("motion_hint" in case.prompt for case in DEFAULT_EXPRESSION_CUE_PROBES)
 
 
+def test_focused_expression_cue_probe_avoids_calm_conflict_wording():
+    focused = next(case for case in DEFAULT_EXPRESSION_CUE_PROBES if case.case_id == "focused")
+
+    assert "\u4e13\u6ce8" in focused.prompt
+    assert "\u5b89\u9759" not in focused.prompt
+    assert focused.expected_expression_id == "focused"
+
+
 def test_configured_llm_dialogue_smoke_uses_llm_path_without_growth_mutation(tmp_path):
     class FakeExpressor:
         enabled = True
