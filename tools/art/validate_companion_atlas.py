@@ -8,12 +8,11 @@ from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 
 
-EXPECTED_COLUMNS = 8
 EXPECTED_ROWS = 9
 EXPECTED_FRAME_WIDTH = 192
 EXPECTED_FRAME_HEIGHT = 208
-EXPECTED_WIDTH = EXPECTED_COLUMNS * EXPECTED_FRAME_WIDTH
 EXPECTED_HEIGHT = EXPECTED_ROWS * EXPECTED_FRAME_HEIGHT
+MAX_SHEET_COLUMNS = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,11 +44,6 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
     except (OSError, UnidentifiedImageError) as exc:
         return AtlasValidationReport(False, 0, 0, "", [f"atlas image is invalid: {exc}"])
 
-    if (width, height) != (EXPECTED_WIDTH, EXPECTED_HEIGHT):
-        errors.append(f"atlas size must be 1536x1872, got {width}x{height}")
-    if mode != "RGBA":
-        errors.append(f"atlas mode must be RGBA, got {mode}")
-
     try:
         payload = json.loads(manifest.read_text(encoding="utf-8"))
     except (OSError, json.JSONDecodeError) as exc:
@@ -57,14 +51,24 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
     if not isinstance(payload, dict):
         return AtlasValidationReport(False, width, height, mode, ["manifest must be an object"])
 
-    if payload.get("sheet_columns") != EXPECTED_COLUMNS:
-        errors.append(f"sheet_columns must be 8, got {payload.get('sheet_columns')}")
+    sheet_columns = payload.get("sheet_columns")
+    sheet_rows = payload.get("sheet_rows")
+    frame_width = payload.get("frame_width")
+    frame_height = payload.get("frame_height")
+    if isinstance(sheet_columns, bool) or not isinstance(sheet_columns, int) or not 1 <= sheet_columns <= MAX_SHEET_COLUMNS:
+        errors.append(f"sheet_columns must be between 1 and {MAX_SHEET_COLUMNS}, got {sheet_columns}")
     if payload.get("sheet_rows") != EXPECTED_ROWS:
-        errors.append(f"sheet_rows must be 9, got {payload.get('sheet_rows')}")
+        errors.append(f"sheet_rows must be 9, got {sheet_rows}")
     if payload.get("frame_width") != EXPECTED_FRAME_WIDTH:
-        errors.append(f"frame_width must be 192, got {payload.get('frame_width')}")
+        errors.append(f"frame_width must be 192, got {frame_width}")
     if payload.get("frame_height") != EXPECTED_FRAME_HEIGHT:
-        errors.append(f"frame_height must be 208, got {payload.get('frame_height')}")
+        errors.append(f"frame_height must be 208, got {frame_height}")
+    if isinstance(sheet_columns, int) and not isinstance(sheet_columns, bool):
+        expected_width = sheet_columns * EXPECTED_FRAME_WIDTH
+        if (width, height) != (expected_width, EXPECTED_HEIGHT):
+            errors.append(f"atlas size must be {expected_width}x1872, got {width}x{height}")
+    if mode != "RGBA":
+        errors.append(f"atlas mode must be RGBA, got {mode}")
 
     motions = payload.get("motions")
     if not isinstance(motions, dict):
@@ -83,9 +87,12 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
             isinstance(frame_count, bool)
             or not isinstance(frame_count, int)
             or frame_count < 1
-            or frame_count > EXPECTED_COLUMNS
+            or not isinstance(sheet_columns, int)
+            or isinstance(sheet_columns, bool)
+            or frame_count > sheet_columns
         ):
-            errors.append(f"{name}.frame_count must be between 1 and 8, got {frame_count}")
+            max_frame_count = sheet_columns if isinstance(sheet_columns, int) and not isinstance(sheet_columns, bool) else "sheet_columns"
+            errors.append(f"{name}.frame_count must be between 1 and {max_frame_count}, got {frame_count}")
 
     return AtlasValidationReport(not errors, width, height, mode, errors)
 

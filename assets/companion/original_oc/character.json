@@ -26,5 +26,50 @@
     "Shop": "资源补给",
     "Tick": "时间流逝",
     "SwitchDown": "低状态反馈"
-  }
+  },
+  "renderer": {
+    "backend": "portrait",
+    "portrait_manifest": "portrait_manifest.json",
+    "motion_map": {
+      "Default": "Default",
+      "TouchHead": "TouchHead",
+      "Play": "Play",
+      "SwitchDown": "SwitchDown",
+      "Sleep": "Sleep",
+      "Raised": "Raised",
+      "Study": "Study"
+    },
+    "expression_map": {
+      "joy": "smile",
+      "sadness": "sad",
+      "sleepy": "sleepy",
+      "excited": "smile",
+      "focused": "thinking",
+      "surprised": "surprised",
+      "calm": "neutral"
+    },
+    "intent_map": {
+      "ask_comfort": "ask_comfort",
+      "invite_play": "invite_play",
+      "offer_rest": "offer_rest",
+      "gentle_reminder": "gentle_reminder",
+      "stay_quiet": "stay_quiet",
+      "celebrate": "celebrate",
+      "ask_preference": "ask_preference"
+    }
+  },
+  "relationship_decorations": [
+    {
+      "unlock_id": "unlock_first_nickname",
+      "item_id": "star_hairpin",
+      "label": "星形发夹",
+      "icon": "item_icons/star_hairpin.png"
+    },
+    {
+      "unlock_id": "unlock_shared_ritual",
+      "item_id": "comet_ribbon",
+      "label": "彗尾丝带",
+      "icon": "item_icons/comet_ribbon.png"
+    }
+  ]
 }

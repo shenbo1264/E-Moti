@@ -1,6 +1,10 @@
 from dataclasses import replace
+import json
 import time
 
+import guanghe_companion.character_pack as character_pack_module
+import guanghe_companion.motion as motion_module
+import guanghe_companion.shop_items as shop_items_module
 from guanghe_companion.actions import CompanionActionRequest
 from guanghe_companion.ai_expressor import ExpressionRequest
 from guanghe_companion.controller import CompanionController
@@ -9,6 +13,70 @@ from guanghe_companion.engine import create_initial_state
 from guanghe_companion.events import CompanionEvent
 from guanghe_companion.snapshot import CompanionSnapshot
 from guanghe_companion.storage import save_state
+
+
+def _write_controller_character_pack(root, character_id="custom_character"):
+    pack_dir = root / character_id
+    (pack_dir / "item_icons").mkdir(parents=True)
+    (pack_dir / "spritesheet.png").write_bytes(b"not-used-by-controller-tests")
+    (pack_dir / "item_icons" / "moon_cake.png").write_bytes(b"not-used-by-controller-tests")
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": character_id,
+                "name": "澄光",
+                "title": "桌面回声同伴",
+                "description": "一个原创桌面伴侣。",
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "安静回应。"},
+                "motion_labels": {
+                    "Default": "安静待机",
+                    "Eat": "收下点心",
+                    "Shop": "补给清单",
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "motion_manifest.json").write_text(
+        json.dumps(
+            {
+                "sheet_columns": 8,
+                "sheet_rows": 9,
+                "frame_width": 192,
+                "frame_height": 208,
+                "motions": {"Default": {"row": 0, "frame_count": 1, "fps": 4}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "shop_items.json").write_text(
+        json.dumps(
+            [
+                {
+                    "item_id": "moon_cake",
+                    "name": "月光糕",
+                    "category": "food",
+                    "icon": "item_icons/moon_cake.png",
+                    "price": 3,
+                    "effects": {"mood": 5},
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return pack_dir
+
+
+def _patch_character_assets(monkeypatch, root):
+    monkeypatch.setattr(character_pack_module, "ASSETS_ROOT", root)
+    monkeypatch.setattr(motion_module, "ASSETS_ROOT", root)
+    monkeypatch.setattr(shop_items_module, "ASSETS_ROOT", root)
 
 
 def test_snapshot_exposes_status_actions_shop_and_inventory():
@@ -28,6 +96,145 @@ def test_snapshot_exposes_status_actions_shop_and_inventory():
     assert snapshot["events"][0]["character_name"] == "星汐"
     assert snapshot["relationship_stage"] == "初识"
     assert "信任达到 20" in snapshot["next_relationship_unlock"]
+
+
+def test_controller_can_boot_with_non_default_character_pack(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path)
+    _patch_character_assets(monkeypatch, tmp_path)
+
+    controller = CompanionController(
+        character_id="custom_character",
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+    )
+
+    snapshot = controller.get_snapshot()
+
+    assert snapshot["character_id"] == "custom_character"
+    assert snapshot["character_name"] == "澄光"
+    assert snapshot["character_title"] == "桌面回声同伴"
+    assert snapshot["shop_items"] == [
+        {
+            "item_id": "moon_cake",
+            "name": "月光糕",
+            "category": "food",
+            "icon_path": str(tmp_path / "custom_character" / "item_icons" / "moon_cake.png"),
+            "price": 3,
+            "affordable": True,
+            "unlocked": True,
+        }
+    ]
+    assert snapshot["inventory"] == {"moon_cake": 0}
+
+
+def test_controller_purchase_and_inventory_use_current_character_shop_items(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path)
+    _patch_character_assets(monkeypatch, tmp_path)
+    controller = CompanionController(
+        character_id="custom_character",
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+    )
+
+    purchased = controller.purchase_shop_item("moon_cake")
+    used = controller.use_inventory_item("moon_cake", usage="feed")
+
+    assert purchased["inventory"]["moon_cake"] == 1
+    assert used["inventory"]["moon_cake"] == 0
+    assert used["delta_text"] == "mood +5.0"
+    assert "月光糕" in used["feedback"]
+
+
+def test_controller_character_session_paths_isolate_dialogue_and_memory(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path / "assets", "custom_character")
+    _write_controller_character_pack(tmp_path / "assets", "solar_mender")
+    _patch_character_assets(monkeypatch, tmp_path / "assets")
+
+    first = CompanionController(
+        character_id="custom_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    first.submit_dialogue_request(DialogueRequest("你好", source="desktop_pet"))
+    first.upsert_long_term_memory(
+        key="preference:quiet",
+        category="preference",
+        summary="喜欢安静陪伴",
+    )
+
+    second = CompanionController(
+        character_id="solar_mender",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+
+    assert first.save_path == tmp_path / "user-data" / "characters" / "custom_character" / "companion_save.json"
+    assert first.dialogue_history_path.name == "dialogue_history.json"
+    assert first.long_term_memory_path.name == "long_term_memory.json"
+    first_metadata = json.loads(
+        (tmp_path / "user-data" / "characters" / "custom_character" / "pack_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    second_metadata = json.loads(
+        (tmp_path / "user-data" / "characters" / "solar_mender" / "pack_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert first_metadata["character_id"] == "custom_character"
+    assert second_metadata["character_id"] == "solar_mender"
+    assert first.get_snapshot()["dialogue_history"]
+    assert first.get_snapshot()["long_term_memory"]
+    assert second.get_snapshot()["dialogue_history"] == []
+    assert second.get_snapshot()["long_term_memory"] == []
+
+
+def test_controller_reloads_character_session_inventory_with_current_shop_items(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path / "assets", "custom_character")
+    _patch_character_assets(monkeypatch, tmp_path / "assets")
+    user_data_root = tmp_path / "user-data"
+    controller = CompanionController(
+        character_id="custom_character",
+        user_data_root=user_data_root,
+        auto_load=False,
+    )
+
+    controller.purchase_shop_item("moon_cake")
+
+    reloaded = CompanionController(
+        character_id="custom_character",
+        user_data_root=user_data_root,
+    )
+
+    assert reloaded.get_snapshot()["inventory"] == {"moon_cake": 1}
+    assert reloaded.get_snapshot()["inventory_items"][0]["item_id"] == "moon_cake"
+
+
+def test_controller_rebuilds_session_when_saved_character_id_does_not_match(tmp_path, monkeypatch):
+    _write_controller_character_pack(tmp_path / "assets", "custom_character")
+    _patch_character_assets(monkeypatch, tmp_path / "assets")
+    user_data_root = tmp_path / "user-data"
+    wrong_session = user_data_root / "characters" / "custom_character"
+    wrong_session.mkdir(parents=True)
+    wrong_state = create_initial_state(
+        character_id="other_character",
+        character_name="Other",
+        buyable_items={"moon_cake": next(iter(CompanionController(
+            character_id="custom_character",
+            user_data_root=user_data_root,
+            auto_load=False,
+        ).shop_items.values()))},
+    )
+    save_state(wrong_state, wrong_session / "companion_save.json")
+
+    controller = CompanionController(
+        character_id="custom_character",
+        user_data_root=user_data_root,
+    )
+
+    assert controller.get_snapshot()["character_id"] == "custom_character"
+    assert controller.get_snapshot()["character_name"] == "澄光"
+    assert controller.get_snapshot()["inventory"] == {"moon_cake": 0}
 
 
 def test_controller_keeps_runtime_events_typed_while_exporting_legacy_snapshot_events():
@@ -69,12 +276,16 @@ def test_controller_expression_provider_test_does_not_mutate_growth_state():
     result = controller.test_expression_provider()
 
     after = controller.get_typed_snapshot()
-    assert result == {
-        "ok": True,
-        "speech": "LLM 连接成功",
-        "effect": "ATTENTION",
-        "fallback_reason": "",
-    }
+    assert result["ok"] is True
+    assert result["stage"] == "event_validation"
+    assert result["reason"] == ""
+    assert result["speech"] == "LLM 连接成功"
+    assert result["effect"] == "ATTENTION"
+    assert result["fallback_reason"] == ""
+    assert result["provider"] == "openai"
+    assert result["model"]
+    assert result["base_url"].startswith("https://")
+    assert "api_key" not in result
     assert isinstance(fake_expressor.requests[0][0], ExpressionRequest)
     assert fake_expressor.requests[0][1] == "ATTENTION"
     assert after.stats == before.stats
@@ -83,6 +294,114 @@ def test_controller_expression_provider_test_does_not_mutate_growth_state():
     assert after.unlocks == before.unlocks
     assert after.memory_log == before.memory_log
     assert tuple(controller.last_events) == before_events
+
+
+def test_controller_expression_provider_test_reports_disabled_diagnostic_without_growth_mutation():
+    controller = CompanionController(auto_load=False)
+    before = controller.get_typed_snapshot()
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result["ok"] is False
+    assert result["stage"] == "settings"
+    assert result["reason"] == "disabled"
+    assert result["fallback_reason"] == "disabled"
+    assert result["provider"] == "openai"
+    assert result["speech"] == ""
+    assert "api_key" not in result
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.unlocks == before.unlocks
+    assert after.memory_log == before.memory_log
+
+
+def test_controller_expression_provider_test_reports_missing_key_before_provider_call(tmp_path):
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    class FailingIfCalledExpressor:
+        enabled = False
+
+        def express(self, snapshot, effect=None):
+            raise AssertionError("missing API key should be diagnosed before provider call.")
+
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+    controller.expression_settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "deepseek",
+            "model": "deepseek-v4-flash",
+            "base_url": "https://api.deepseek.com",
+            "api_key": "",
+        }
+    )
+    controller.ai_expressor = FailingIfCalledExpressor()
+    before = controller.get_typed_snapshot()
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result["ok"] is False
+    assert result["stage"] == "settings"
+    assert result["reason"] == "missing_api_key"
+    assert result["provider"] == "deepseek"
+    assert result["model"] == "deepseek-v4-flash"
+    assert result["base_url"] == "https://api.deepseek.com"
+    assert "api_key" not in result
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+
+def test_controller_expression_provider_test_reports_provider_call_failure_stage():
+    class BrokenExpressor:
+        enabled = True
+
+        def express(self, snapshot, effect=None):
+            raise RuntimeError("network down")
+
+    controller = CompanionController(auto_load=False, ai_expressor=BrokenExpressor())
+    before = controller.get_typed_snapshot()
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result["ok"] is False
+    assert result["stage"] == "provider_call"
+    assert result["reason"] == "provider_error"
+    assert result["fallback_reason"] == "provider_error"
+    assert result["speech"] == ""
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+
+def test_controller_expression_provider_test_reports_event_validation_failure_stage():
+    from guanghe_companion.ai_expressor import ShinsekaiAIExpressor
+
+    controller = CompanionController(
+        auto_load=False,
+        ai_expressor=ShinsekaiAIExpressor(
+            llm_client=lambda prompt: '[{"type":"speech","speech":"try write","effect":"ATTENTION","coins":999}]'
+        ),
+    )
+    before = controller.get_typed_snapshot()
+
+    result = controller.test_expression_provider()
+
+    after = controller.get_typed_snapshot()
+    assert result["ok"] is False
+    assert result["stage"] == "event_validation"
+    assert result["reason"] == "unsafe_event"
+    assert result["fallback_reason"] == "unsafe_event"
+    assert result["speech"] == controller.last_feedback
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
 
 
 def test_controller_fetches_expression_models_without_mutating_growth_state(monkeypatch):
@@ -156,8 +475,16 @@ def test_controller_adds_typed_relationship_event_for_unlock_feedback():
     assert len(snapshot["events"]) == 3
 
 
-def test_controller_adds_typed_proactive_event_for_active_companionship():
-    controller = CompanionController(auto_load=False)
+def test_controller_adds_typed_proactive_event_for_active_companionship(tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    controller = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "capability-settings.json",
+    )
+    controller.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
     controller.state.charge = 25
     controller.state.mood = 60
     controller.state.focus = 70
@@ -429,6 +756,10 @@ def test_controller_uses_local_character_expression_context_by_default(tmp_path)
     assert "tool_results" not in snapshot
     assert "perception_summary" not in snapshot
     assert snapshot["mood"] == 62
+
+
+def test_controller_does_not_own_relationship_expression_context_builder():
+    assert not hasattr(CompanionController, "_relationship_presentation_tool_result")
 
 
 def test_controller_passes_optional_readonly_expression_context_to_ai_adapter(tmp_path):
@@ -744,8 +1075,16 @@ def test_controller_tick_updates_status_and_tick_counter():
     assert snapshot["tick_count"] == 1
 
 
-def test_tick_surfaces_low_charge_proactive_companionship_once():
-    controller = CompanionController(auto_load=False)
+def test_tick_surfaces_low_charge_proactive_companionship_once(tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    controller = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "capability-settings.json",
+    )
+    controller.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
     controller.state.charge = 25
     controller.state.mood = 60
     controller.state.focus = 70
@@ -765,8 +1104,16 @@ def test_tick_surfaces_low_charge_proactive_companionship_once():
     assert [entry["kind"] for entry in repeated["memory_log"]].count("主动陪伴") == 1
 
 
-def test_tick_surfaces_mood_drop_after_long_quiet():
-    controller = CompanionController(auto_load=False)
+def test_tick_surfaces_mood_drop_after_long_quiet(tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    controller = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "capability-settings.json",
+    )
+    controller.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
     controller.now = 60
     controller.state.last_interaction_at = 0
     controller.state.charge = 80
@@ -780,6 +1127,57 @@ def test_tick_surfaces_mood_drop_after_long_quiet():
     assert "我还在这里" in snapshot["feedback"]
     assert snapshot["memory_log"][0]["kind"] == "主动陪伴"
     assert "久未互动" in snapshot["memory_log"][0]["summary"]
+
+
+def test_tick_suppresses_proactive_companionship_by_default(tmp_path):
+    controller = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "capability-settings.json",
+    )
+    controller.state.charge = 25
+    controller.state.mood = 60
+    controller.state.focus = 70
+    controller.state.stability = 70
+
+    snapshot = controller.advance_tick()
+
+    assert snapshot["proactive_feedback"] is None
+    assert not any(event.event_type == "proactive" for event in controller.last_events)
+    assert snapshot["memory_log"] == []
+
+
+def test_enabled_proactive_companionship_does_not_change_growth_fields_or_call_apply_action(monkeypatch, tmp_path):
+    import guanghe_companion.controller as controller_module
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    def fail_apply_action(*args, **kwargs):
+        raise AssertionError("proactive companionship must not call apply_action")
+
+    monkeypatch.setattr(controller_module, "apply_action", fail_apply_action)
+    passive = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "passive-capability-settings.json",
+    )
+    active = CompanionController(
+        auto_load=False,
+        capability_settings_path=tmp_path / "active-capability-settings.json",
+    )
+    active.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
+    for controller in (passive, active):
+        controller.state.charge = 25
+        controller.state.mood = 60
+        controller.state.focus = 70
+        controller.state.stability = 70
+
+    passive_snapshot = passive.advance_tick()
+    active_snapshot = active.advance_tick()
+
+    assert active_snapshot["proactive_feedback"]["kind"] == "low_charge"
+    for key in ("focus", "charge", "stability", "mood", "trust", "coins", "inventory", "unlocks"):
+        assert active_snapshot[key] == passive_snapshot[key]
+    assert active.state.last_interaction_at == passive.state.last_interaction_at
 
 
 def test_demo_trigger_surfaces_low_charge_proactive_companionship_immediately():
@@ -806,6 +1204,26 @@ def test_demo_trigger_surfaces_quiet_mood_proactive_companionship_immediately():
     assert snapshot["tick_count"] == 1
 
 
+def test_demo_trigger_surfaces_daily_moment_scenarios_immediately():
+    expected_kinds = {
+        "morning": "morning_greeting",
+        "high_trust": "high_trust",
+        "return_idle": "return_after_idle",
+        "post_gift": "post_gift",
+    }
+
+    for scenario, expected_kind in expected_kinds.items():
+        controller = CompanionController(auto_load=False)
+
+        snapshot = controller.trigger_demo_proactive(scenario)
+        proactive_event = next(event for event in controller.last_events if event.event_type == "proactive")
+
+        assert snapshot["proactive_feedback"]["kind"] == expected_kind
+        assert proactive_event.payload["kind"] == expected_kind
+        assert any(entry["kind"] == "主动陪伴" for entry in snapshot["memory_log"])
+        assert snapshot["tick_count"] == 1
+
+
 def test_controller_records_recent_relationship_memories_for_actions_and_items():
     controller = CompanionController(auto_load=False)
 
@@ -825,6 +1243,58 @@ def test_controller_records_recent_relationship_memories_for_actions_and_items()
     assert fed["memory_log"][0]["item_id"] == "warm_milk"
     assert "热牛奶" in fed["memory_log"][0]["summary"]
     assert fed["memory_log"][1]["kind"] == "互动"
+
+
+def test_controller_session_goal_progress_rewards_and_dialogue_boundary(tmp_path):
+    class FakeExpressor:
+        enabled = True
+        last_fallback_reason = ""
+
+        def express(self, request, effect=None):
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "LLM can comment, not settle goals.",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=FakeExpressor(),
+    )
+    initial = controller.get_snapshot()
+
+    assert initial["session_goal"]["goal_id"] == "interact_twice"
+    assert initial["session_goal"]["progress"] == 0
+    assert initial["next_suggested_action"]["action_id"] == "touch"
+
+    after_dialogue = controller.submit_dialogue_request(
+        DialogueRequest("你帮我完成一下目标。"),
+        include_ai_expression=True,
+    )
+    assert after_dialogue["session_goal"]["progress"] == 0
+    assert after_dialogue["coins"] == initial["coins"]
+
+    first = controller.perform_action("touch")
+    second = controller.perform_action("play")
+
+    assert first["session_goal"]["goal_id"] == "interact_twice"
+    assert first["session_goal"]["progress"] == 1
+    assert first["session_goal_reward"] is None
+    assert second["session_goal"]["goal_id"] == "rest_once"
+    assert second["session_goal"]["progress"] == 0
+    assert second["session_goal_reward"] == {
+        "goal_id": "interact_twice",
+        "label": "互动两次",
+        "coins": 2,
+        "exp": 1,
+    }
+    assert second["coins"] == first["coins"] + 5
+    assert second["exp"] == first["exp"] + 1
+    assert second["next_suggested_action"]["action_id"] == "rest"
 
 
 def test_controller_surfaces_relationship_unlock_feedback():
@@ -969,6 +1439,83 @@ def test_controller_records_dialogue_history_without_growth_mutation(tmp_path):
     assert reloaded.copy_dialogue_history_text() == controller.copy_dialogue_history_text()
 
 
+def test_controller_records_llm_dialogue_speech_when_expression_enabled(tmp_path):
+    class FakeExpressor:
+        enabled = True
+        last_fallback_reason = ""
+
+        def express(self, request, effect=None):
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "我会陪你慢慢说。",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=FakeExpressor(),
+    )
+    before = controller.get_typed_snapshot()
+
+    snapshot = controller.submit_dialogue_request(
+        DialogueRequest("今天陪我一会儿"),
+        include_ai_expression=True,
+    )
+
+    assert [entry["text"] for entry in snapshot["dialogue_history"]] == [
+        "今天陪我一会儿",
+        "我会陪你慢慢说。",
+    ]
+    assert "我会陪你慢慢说。" in controller.copy_dialogue_history_text()
+    assert controller.get_typed_snapshot().stats == before.stats
+    assert controller.get_typed_snapshot().inventory == before.inventory
+    assert controller.get_typed_snapshot().memory_log == before.memory_log
+
+
+def test_controller_passes_dialogue_text_as_readonly_player_message_to_llm(tmp_path):
+    class CapturingExpressor:
+        enabled = True
+        last_fallback_reason = ""
+
+        def __init__(self):
+            self.requests = []
+
+        def express(self, request, effect=None):
+            self.requests.append(request)
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "我听到你的原话了。",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    expressor = CapturingExpressor()
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        dialogue_history_path=tmp_path / "dialogue-history.json",
+        ai_expressor=expressor,
+    )
+    before = controller.get_typed_snapshot()
+
+    controller.submit_dialogue_request(
+        DialogueRequest("给我一个很短的鼓励。"),
+        include_ai_expression=True,
+    )
+
+    assert expressor.requests[0].player_message == "给我一个很短的鼓励。"
+    assert controller.get_typed_snapshot().stats == before.stats
+    assert controller.get_typed_snapshot().inventory == before.inventory
+    assert controller.get_typed_snapshot().memory_log == before.memory_log
+
+
 def test_controller_clear_replay_and_revert_dialogue_history_do_not_touch_growth_state(tmp_path):
     controller = CompanionController(
         save_path=tmp_path / "save.json",
@@ -1110,6 +1657,114 @@ def test_web_search_results_do_not_change_growth_state(tmp_path):
 
     assert context["tool_results"][0]["source"] == "web_search"
     assert context["tool_results"][0]["title"] == "A"
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+
+def test_controller_loads_bad_long_term_memory_file_as_empty(tmp_path):
+    long_term_memory_path = tmp_path / "long-term-memory.json"
+    long_term_memory_path.write_text("{not json", encoding="utf-8")
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        long_term_memory_path=long_term_memory_path,
+    )
+
+    assert controller.get_typed_snapshot().long_term_memory == ()
+    assert controller.get_snapshot()["long_term_memory"] == []
+
+
+def test_controller_relationship_unlock_upserts_long_term_memory_and_reloads(tmp_path):
+    save_path = tmp_path / "save.json"
+    long_term_memory_path = tmp_path / "long-term-memory.json"
+    controller = CompanionController(
+        save_path=save_path,
+        auto_load=False,
+        long_term_memory_path=long_term_memory_path,
+    )
+    controller.state.trust = 19
+
+    snapshot = controller.perform_action("touch", include_ai_expression=False)
+
+    assert snapshot["relationship_stage"] == "熟悉的陪伴"
+    assert snapshot["long_term_memory"] == [
+        {
+            "category": "relationship_unlock",
+            "summary": "第一次主动称呼解锁了。她开始用更亲近的方式回应你。",
+            "source": "relationship_unlock",
+        }
+    ]
+
+    reloaded = CompanionController(
+        save_path=save_path,
+        auto_load=False,
+        long_term_memory_path=long_term_memory_path,
+    )
+    assert reloaded.get_snapshot()["long_term_memory"] == snapshot["long_term_memory"]
+
+
+def test_controller_dialogue_and_llm_output_do_not_write_long_term_memory(tmp_path):
+    class OverreachingExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "type": "speech",
+                    "speech": "我只是一句表达。",
+                    "effect": "ATTENTION",
+                    "memory": {"key": "llm:memory", "summary": "should not persist"},
+                    "state": {"trust": 99},
+                    "relationship": "rewrite",
+                    "goal": "rewrite",
+                    "save": "rewrite",
+                    "coins": 999,
+                    "inventory": {"warm_milk": 99},
+                }
+            ]
+
+    long_term_memory_path = tmp_path / "long-term-memory.json"
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=OverreachingExpressor(),
+        long_term_memory_path=long_term_memory_path,
+    )
+
+    dialogue_snapshot = controller.submit_dialogue_request(DialogueRequest("记住这句话"))
+    action_snapshot = controller.perform_action("touch")
+
+    assert dialogue_snapshot["long_term_memory"] == []
+    assert action_snapshot["long_term_memory"] == []
+    assert not long_term_memory_path.exists()
+    assert "llm:memory" not in action_snapshot["event_preview"]
+
+
+def test_controller_explicit_local_api_upserts_long_term_memory_without_growth_mutation(tmp_path):
+    long_term_memory_path = tmp_path / "long-term-memory.json"
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        long_term_memory_path=long_term_memory_path,
+    )
+    before = controller.get_typed_snapshot()
+
+    snapshot = controller.upsert_long_term_memory(
+        key="local:favorite_drink",
+        category="local_note",
+        summary="你说过热牛奶适合睡前。",
+        source="local_api",
+    )
+    after = controller.get_typed_snapshot()
+
+    assert snapshot["long_term_memory"] == [
+        {
+            "category": "local_note",
+            "summary": "你说过热牛奶适合睡前。",
+            "source": "local_api",
+        }
+    ]
     assert after.stats == before.stats
     assert after.inventory == before.inventory
     assert after.relationship_stage == before.relationship_stage

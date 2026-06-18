@@ -43,6 +43,19 @@ def write_preview_atlas(path: Path) -> None:
     image.save(path)
 
 
+def write_portrait_candidate_image(path: Path, *, size: tuple[int, int] = (256, 512)) -> None:
+    image = Image.new("RGBA", size, (0, 0, 0, 0))
+    draw = ImageDraw.Draw(image)
+    margin_x = max(8, size[0] // 8)
+    margin_y = max(8, size[1] // 16)
+    draw.rounded_rectangle(
+        (margin_x, margin_y, size[0] - margin_x, size[1] - margin_y),
+        radius=12,
+        fill=(20, 40, 80, 255),
+    )
+    image.save(path)
+
+
 def test_validate_atlas_accepts_valid_8x9_rgba_sheet(tmp_path: Path):
     atlas = tmp_path / "spritesheet.webp"
     manifest = tmp_path / "motion_manifest.json"
@@ -54,6 +67,33 @@ def test_validate_atlas_accepts_valid_8x9_rgba_sheet(tmp_path: Path):
     assert report.ok is True
     assert report.errors == []
     assert report.width == 1536
+    assert report.height == 1872
+
+
+def test_validate_atlas_accepts_manifest_declared_wide_sheet(tmp_path: Path):
+    atlas = tmp_path / "spritesheet.png"
+    manifest = tmp_path / "motion_manifest.json"
+    Image.new("RGBA", (2880, 1872), (0, 0, 0, 0)).save(atlas)
+    manifest.write_text(
+        json.dumps(
+            {
+                "sheet_columns": 15,
+                "sheet_rows": 9,
+                "frame_width": 192,
+                "frame_height": 208,
+                "motions": {
+                    "Default": {"row": 0, "frame_count": 15, "fps": 8},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_atlas(atlas, manifest)
+
+    assert report.ok is True
+    assert report.errors == []
+    assert report.width == 2880
     assert report.height == 1872
 
 
@@ -92,6 +132,261 @@ def test_build_previews_preserves_identical_gif_frames(tmp_path: Path):
 
     with Image.open(output.joinpath("gifs", "Default.gif")) as image:
         assert image.n_frames == 6
+
+
+def test_build_previews_preserves_original_oc_manifest_frame_counts(tmp_path: Path):
+    root = Path(__file__).resolve().parents[1] / "assets" / "companion" / "original_oc"
+    manifest = root / "motion_manifest.json"
+    output = tmp_path / "preview"
+    payload = json.loads(manifest.read_text(encoding="utf-8"))
+
+    build_previews(root / "spritesheet.png", manifest, output)
+
+    for name, motion in payload["motions"].items():
+        with Image.open(output.joinpath("gifs", f"{name}.gif")) as image:
+            assert image.n_frames == motion["frame_count"], name
+
+
+def test_build_smooth_sprite_atlas_inserts_blended_frames_and_updates_manifest(tmp_path: Path):
+    from tools.art.build_smooth_sprite_atlas import build_smooth_sprite_atlas
+
+    atlas = tmp_path / "spritesheet.png"
+    manifest = tmp_path / "motion_manifest.json"
+    output_atlas = tmp_path / "smooth.png"
+    output_manifest = tmp_path / "smooth_manifest.json"
+    frame_width = 192
+    frame_height = 208
+    source = Image.new("RGBA", (3 * frame_width, 9 * frame_height), (0, 0, 0, 0))
+    draw = ImageDraw.Draw(source)
+    source_colors = [
+        (255, 0, 0, 255),
+        (0, 0, 255, 255),
+        (0, 255, 0, 255),
+    ]
+    for index, color in enumerate(source_colors):
+        draw.rectangle(
+            (index * frame_width, 0, (index + 1) * frame_width - 1, frame_height - 1),
+            fill=color,
+        )
+    source.save(atlas)
+    manifest.write_text(
+        json.dumps(
+            {
+                "sheet_columns": 3,
+                "sheet_rows": 9,
+                "frame_width": frame_width,
+                "frame_height": frame_height,
+                "motions": {"Default": {"row": 0, "frame_count": 3, "fps": 6}},
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    build_smooth_sprite_atlas(atlas, manifest, output_atlas, output_manifest)
+
+    output_payload = json.loads(output_manifest.read_text(encoding="utf-8"))
+    assert output_payload["sheet_columns"] == 5
+    assert output_payload["motions"]["Default"] == {"row": 0, "frame_count": 5, "fps": 10}
+    with Image.open(output_atlas) as image:
+        assert image.size == (5 * frame_width, 9 * frame_height)
+        pixels = [
+            image.getpixel((index * frame_width + 8, 8))
+            for index in range(5)
+        ]
+    assert pixels[0] == source_colors[0]
+    assert pixels[2] == source_colors[1]
+    assert pixels[4] == source_colors[2]
+    assert pixels[1][:3] in {(127, 0, 127), (128, 0, 128)}
+    assert pixels[3][:3] in {(0, 127, 127), (0, 128, 128)}
+    assert validate_atlas(output_atlas, output_manifest).ok
+
+
+def test_validate_portrait_candidate_writes_contact_sheet(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png")
+    write_portrait_candidate_image(candidate / "smile_open.png")
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "candidate",
+                "expressions": {
+                    "neutral": "neutral_open.png",
+                    "smile": {"open": "smile_open.png"},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+    contact_sheet = tmp_path / "candidate-contact-sheet.png"
+
+    report = validate_portrait_candidate(manifest, contact_sheet_path=contact_sheet)
+
+    assert report.ok is True
+    assert report.status == "candidate"
+    assert report.image_count == 2
+    assert report.errors == []
+    assert contact_sheet.exists()
+    with Image.open(contact_sheet) as image:
+        assert image.mode == "RGBA"
+        assert image.width >= 512
+        assert image.height >= 512
+
+
+def test_validate_portrait_candidate_includes_optional_motion_frames(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png")
+    (candidate / "motion_frames").mkdir()
+    write_portrait_candidate_image(candidate / "motion_frames" / "idle_0001.png")
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "candidate",
+                "expressions": {"neutral": "neutral_open.png"},
+                "motion_frames": ["motion_frames/idle_0001.png"],
+            }
+        ),
+        encoding="utf-8",
+    )
+    contact_sheet = tmp_path / "candidate-contact-sheet.png"
+
+    report = validate_portrait_candidate(manifest, contact_sheet_path=contact_sheet)
+
+    assert report.ok is True
+    assert report.image_count == 2
+    assert contact_sheet.exists()
+
+
+def test_validate_portrait_candidate_rejects_unsafe_motion_frame_path(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png")
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "candidate",
+                "expressions": {"neutral": "neutral_open.png"},
+                "motion_frames": ["../idle_0001.png"],
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(manifest)
+
+    assert report.ok is False
+    assert "motion_frames.0 path must stay inside candidate directory" in report.errors
+
+
+def test_validate_portrait_candidate_rejects_invalid_status_and_unsafe_path(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps(
+            {
+                "status": "final",
+                "expressions": {
+                    "neutral": "../neutral.png",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(manifest)
+
+    assert report.ok is False
+    assert "status must be one of: approved, candidate, rejected" in report.errors
+    assert "expressions.neutral path must stay inside candidate directory" in report.errors
+
+
+def test_validate_portrait_candidate_rejects_fully_opaque_rgba_background(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    Image.new("RGBA", (256, 512), (20, 40, 80, 255)).save(candidate / "neutral_open.png")
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps({"status": "candidate", "expressions": {"neutral": "neutral_open.png"}}),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(manifest)
+
+    assert report.ok is False
+    assert "portrait image must include transparent alpha pixels: neutral" in report.errors
+
+
+def test_validate_portrait_candidate_rejects_non_portrait_aspect_ratio(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png", size=(512, 512))
+    manifest = candidate / "portrait_candidate.json"
+    manifest.write_text(
+        json.dumps({"status": "candidate", "expressions": {"neutral": "neutral_open.png"}}),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(manifest)
+
+    assert report.ok is False
+    assert "portrait image must be taller than wide for Spirit/VN staging: neutral" in report.errors
+
+
+def test_validate_portrait_candidate_rejects_unapproved_runtime_manifest_reference(tmp_path: Path):
+    from tools.art.validate_portrait_candidates import validate_portrait_candidate
+
+    candidate = tmp_path / "candidate"
+    candidate.mkdir()
+    write_portrait_candidate_image(candidate / "neutral_open.png")
+    candidate_manifest = candidate / "portrait_candidate.json"
+    candidate_manifest.write_text(
+        json.dumps({"status": "candidate", "expressions": {"neutral": "neutral_open.png"}}),
+        encoding="utf-8",
+    )
+    runtime_manifest = tmp_path / "portrait_manifest.json"
+    runtime_manifest.write_text(
+        json.dumps(
+            {
+                "fallback_expression": "neutral",
+                "expressions": {
+                    "neutral": "candidate/neutral_open.png",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_portrait_candidate(candidate_manifest, runtime_manifest_path=runtime_manifest)
+
+    assert report.ok is False
+    assert "runtime manifest references unapproved candidate image: neutral_open.png" in report.errors
+
+    candidate_manifest.write_text(
+        json.dumps({"status": "approved", "expressions": {"neutral": "neutral_open.png"}}),
+        encoding="utf-8",
+    )
+
+    approved_report = validate_portrait_candidate(candidate_manifest, runtime_manifest_path=runtime_manifest)
+
+    assert approved_report.ok is True
+    assert approved_report.status == "approved"
 
 
 def test_build_previews_rejects_invalid_manifest_without_output(tmp_path: Path):

@@ -1,6 +1,8 @@
 from guanghe_companion.ai_expressor import ExpressionRequest
 from guanghe_companion.character_pack import load_default_character_pack
 from guanghe_companion.controller import CompanionController
+from guanghe_companion.engine import create_initial_state
+import guanghe_companion.expression_context as expression_context_module
 from guanghe_companion.expression_context import (
     CharacterProfileExpressionContextProvider,
     ExpressionContextChain,
@@ -227,6 +229,68 @@ def test_manual_perception_context_bounds_enabled_summary():
 
     assert long_provider() == {"perception_summary": "x" * 240}
     assert invalid_provider() == {}
+
+
+def test_runtime_expression_context_service_merges_readonly_runtime_and_relationship_context():
+    state = create_initial_state(now=0)
+    state.player_alias = "player one"
+    state.trust = 20
+    state.unlocks = ["unlock_first_nickname"]
+    service_cls = getattr(expression_context_module, "RuntimeExpressionContextService", None)
+
+    assert service_cls is not None
+
+    service = service_cls(
+        state=state,
+        relationship_decorations=[
+            {
+                "unlock_id": "unlock_first_nickname",
+                "item_id": "star_hairpin",
+                "label": "Star Hairpin",
+                "icon": "item_icons/star_hairpin.png",
+            }
+        ],
+        external_provider=lambda: {
+            "perception_summary": "external\nsummary",
+            "tool_results": [
+                {"source": "external", "title": "profile", "summary": "gentle voice"},
+            ],
+            "coins": 999,
+        },
+        perception_summary="runtime\tfocus",
+        tool_results=[
+            {"source": "runtime", "title": "search", "summary": "desktop pet context", "coins": 999},
+        ],
+    )
+
+    context = service()
+
+    assert context["perception_summary"] == "runtime focus"
+    assert [entry["source"] for entry in context["tool_results"]] == [
+        "runtime",
+        "local_relationship_presentation",
+    ]
+    assert "player one" in context["tool_results"][-1]["summary"]
+    assert "Star Hairpin" in context["tool_results"][-1]["summary"]
+    assert "coins" not in str(context)
+
+
+def test_runtime_expression_context_service_skips_empty_relationship_context_and_failed_provider():
+    state = create_initial_state(now=0)
+    service_cls = getattr(expression_context_module, "RuntimeExpressionContextService", None)
+
+    def failed_provider():
+        raise RuntimeError("provider failed")
+
+    assert service_cls is not None
+
+    context = service_cls(
+        state=state,
+        external_provider=failed_provider,
+        perception_summary="manual context",
+    )()
+
+    assert context == {"perception_summary": "manual context"}
 
 
 def test_controller_routes_character_profile_context_without_snapshot_shape_changes(tmp_path):

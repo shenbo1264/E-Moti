@@ -96,9 +96,13 @@ def test_voice_settings_are_explicitly_disabled_by_default():
 
 
 def test_expression_settings_supports_provider_presets_for_openai_compatible_services():
-    from guanghe_companion.expression_settings import EXPRESSION_PROVIDER_PRESETS, normalize_expression_settings
+    from guanghe_companion.expression_settings import (
+        EXPRESSION_PROVIDER_PRESETS,
+        normalize_expression_settings,
+        provider_api_key_required,
+    )
 
-    assert set(EXPRESSION_PROVIDER_PRESETS) >= {"openai", "deepseek", "openrouter", "custom"}
+    assert set(EXPRESSION_PROVIDER_PRESETS) >= {"openai", "deepseek", "openrouter", "ollama", "lmstudio", "custom"}
 
     deepseek = normalize_expression_settings(
         {
@@ -130,3 +134,20 @@ def test_expression_settings_supports_provider_presets_for_openai_compatible_ser
     )
 
     assert slow_provider.timeout_seconds == 30.0
+
+    ollama = normalize_expression_settings({"provider": "ollama", "model": "", "base_url": "", "api_key": ""})
+    assert ollama.provider == "ollama"
+    assert ollama.model == "llama3.2"
+    assert ollama.base_url == "http://127.0.0.1:11434/v1"
+    assert ollama.api_key == ""
+    assert provider_api_key_required("ollama") is False
+
+    lmstudio = normalize_expression_settings({"provider": "lmstudio", "model": "", "base_url": "", "api_key": ""})
+    assert lmstudio.provider == "lmstudio"
+    assert lmstudio.model == "local-model"
+    assert lmstudio.base_url == "http://127.0.0.1:1234/v1"
+    assert lmstudio.api_key == ""
+    assert provider_api_key_required("lmstudio") is False
+
+    assert provider_api_key_required("openai") is True
+    assert provider_api_key_required("custom") is False

@@ -1,4 +1,8 @@
 import time
+import json
+
+import pytest
+from PIL import Image
 
 
 def make_window(monkeypatch, tmp_path):
@@ -21,6 +25,121 @@ def make_controller(tmp_path, ai_expressor=None):
     from guanghe_companion.controller import CompanionController
 
     return CompanionController(save_path=tmp_path / "save.json", auto_load=False, ai_expressor=ai_expressor)
+
+
+def write_ui_character_pack(
+    root,
+    character_id,
+    *,
+    name,
+    title,
+    distribution_boundary="shareable_after_review",
+):
+    pack_dir = root / character_id
+    (pack_dir / "item_icons").mkdir(parents=True)
+    (pack_dir / "preview").mkdir()
+    Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
+    Image.new("RGBA", (32, 32), (40, 80, 120, 255)).save(pack_dir / "item_icons" / "snack.png")
+    Image.new("RGBA", (64, 64), (40, 80, 120, 255)).save(pack_dir / "preview" / "contact-sheet.png")
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": character_id,
+                "name": name,
+                "title": title,
+                "description": f"{name} 是一个原创桌面伴侣。",
+                "distribution_boundary": distribution_boundary,
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "安静回应。"},
+                "motion_labels": {"Default": "安静待机", "Shop": "补给", "Eat": "收下点心"},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "motion_manifest.json").write_text(
+        json.dumps(
+            {
+                "sheet_columns": 8,
+                "sheet_rows": 9,
+                "frame_width": 192,
+                "frame_height": 208,
+                "motions": {"Default": {"row": 0, "frame_count": 1, "fps": 4}},
+            }
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "dialogue_style.json").write_text(
+        json.dumps(
+            {"tone": "安静、清晰", "keywords": ["桌面", "陪伴"], "fallback_style": "短句回应"},
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (pack_dir / "shop_items.json").write_text(
+        json.dumps(
+            [
+                {
+                    "item_id": "snack",
+                    "name": "小点心",
+                    "category": "food",
+                    "icon": "item_icons/snack.png",
+                    "price": 1,
+                    "effects": {"mood": 1},
+                }
+            ],
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    return pack_dir
+
+
+def add_ui_portrait_renderer(pack_dir):
+    (pack_dir / "portraits").mkdir()
+    expressions = {
+        "neutral": "portraits/neutral.png",
+        "smile": "portraits/smile.png",
+        "thinking": "portraits/thinking.png",
+        "surprised": "portraits/surprised.png",
+        "sad": "portraits/sad.png",
+        "sleepy": "portraits/sleepy.png",
+    }
+    for relative_path in expressions.values():
+        Image.new("RGBA", (256, 384), (40, 80, 120, 255)).save(pack_dir / relative_path)
+    (pack_dir / "portrait_manifest.json").write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "fallback_expression": "neutral",
+                "anchor": "bottom_center",
+                "default_scale": 1.0,
+                "expressions": expressions,
+            }
+        ),
+        encoding="utf-8",
+    )
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "portrait",
+        "portrait_manifest": "portrait_manifest.json",
+        "expression_map": {"focused": "thinking", "excited": "smile"},
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+
+
+def patch_ui_character_assets(monkeypatch, root):
+    import guanghe_companion.character_pack as character_pack_module
+    import guanghe_companion.motion as motion_module
+    import guanghe_companion.shop_items as shop_items_module
+
+    monkeypatch.setattr(character_pack_module, "ASSETS_ROOT", root)
+    monkeypatch.setattr(motion_module, "ASSETS_ROOT", root)
+    monkeypatch.setattr(shop_items_module, "ASSETS_ROOT", root)
 
 
 class FakeSignal:
@@ -74,6 +193,40 @@ class FakeSystemTrayIcon:
 
     def showMessage(self, title, message, icon=None, msecs=0):
         self.messages.append((title, message, icon, msecs))
+
+
+@pytest.fixture(autouse=True)
+def disable_system_tray_by_default(monkeypatch):
+    import guanghe_companion.app as app_module
+
+    FakeSystemTrayIcon.instances = []
+    FakeSystemTrayIcon.available = False
+    monkeypatch.setattr(app_module, "QSystemTrayIcon", FakeSystemTrayIcon, raising=False)
+    yield
+
+    from PySide6.QtCore import QCoreApplication, QEvent
+    from PySide6.QtWidgets import QApplication
+
+    app = QApplication.instance()
+    if app is None:
+        return
+    for widget in list(QApplication.topLevelWidgets()):
+        for timer_name in (
+            "frame_timer",
+            "tick_timer",
+            "countdown_timer",
+            "screen_observation_timer",
+        ):
+            timer = getattr(widget, timer_name, None)
+            if timer is not None:
+                timer.stop()
+        tray_controller = getattr(widget, "tray_controller", None)
+        if tray_controller is not None:
+            tray_controller.force_exit = True
+        widget.close()
+        widget.deleteLater()
+    QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+    app.processEvents()
 
 
 def test_sprite_drag_uses_global_cursor_delta_when_window_moves(monkeypatch):
@@ -160,6 +313,53 @@ def test_application_style_uses_fusion_and_chinese_font(monkeypatch):
     assert "font-family" in app.styleSheet()
 
 
+def test_companion_font_loader_adds_available_cjk_font_files(tmp_path):
+    from guanghe_companion import app as app_module
+
+    font_file = tmp_path / "msyh.ttc"
+    font_file.write_bytes(b"fake-font")
+
+    class FakeFontDatabase:
+        loaded_paths: list[str] = []
+
+        @staticmethod
+        def addApplicationFont(path: str) -> int:
+            FakeFontDatabase.loaded_paths.append(path)
+            return 7
+
+        @staticmethod
+        def applicationFontFamilies(font_id: int) -> list[str]:
+            assert font_id == 7
+            return ["Microsoft YaHei UI", "Microsoft YaHei"]
+
+    families = app_module.load_companion_font_files(
+        candidates=(tmp_path / "missing.ttc", font_file),
+        font_database=FakeFontDatabase,
+    )
+
+    assert families == ("Microsoft YaHei UI", "Microsoft YaHei")
+    assert FakeFontDatabase.loaded_paths == [str(font_file)]
+
+
+def test_application_style_attempts_to_load_companion_fonts(monkeypatch):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion import app as app_module
+
+    calls: list[bool] = []
+    monkeypatch.setattr(
+        app_module,
+        "ensure_companion_font_files_loaded",
+        lambda: calls.append(True) or ("Microsoft YaHei UI",),
+    )
+    app = QApplication.instance() or QApplication([])
+
+    assert app_module.configure_application_style(app) is True
+    assert calls == [True]
+
+
 def test_control_panel_presents_desktop_pet_as_primary_launch(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
@@ -183,7 +383,9 @@ def test_control_panel_launches_separate_desktop_pet_window(monkeypatch, tmp_pat
     assert window.status_card.isVisibleTo(window)
     assert pet_window is not window
     assert pet_window.desktop_mode is True
-    assert pet_window.sprite_label.isVisibleTo(pet_window)
+    assert pet_window.presentation_renderer.backend == "portrait"
+    assert pet_window.spirit_surface.isVisibleTo(pet_window)
+    assert not pet_window.sprite_label.isVisibleTo(pet_window)
     assert not pet_window.tick_timer.isActive()
 
     pet_window.close()
@@ -215,6 +417,7 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
         "总览",
         "互动",
         "背包",
+        "角色库",
         "感知与搜索",
         "隐私",
         "LLM表达",
@@ -244,15 +447,823 @@ def test_control_panel_navigation_switches_right_hand_pages(monkeypatch, tmp_pat
     app.processEvents()
 
     assert window.content_stack.currentIndex() == 3
-    assert window.perception_search_page.isVisibleTo(window)
-    assert not window.shop_card.isVisibleTo(window)
+    assert window.character_library_page.isVisibleTo(window)
 
     window.navigation_buttons[4].click()
     app.processEvents()
 
     assert window.content_stack.currentIndex() == 4
+    assert window.perception_search_page.isVisibleTo(window)
+    assert not window.shop_card.isVisibleTo(window)
+
+    window.navigation_buttons[5].click()
+    app.processEvents()
+
+    assert window.content_stack.currentIndex() == 5
     assert window.perception_card.isVisibleTo(window)
     assert not window.shop_card.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    write_ui_character_pack(assets_root, "custom_character", name="澄光", title="桌面回声同伴")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    assert window.character_list.count() == 2
+    assert [window.character_list.item(index).text() for index in range(window.character_list.count())] == [
+        "澄光 | 桌面回声同伴",
+        "星汐 | 桌面频率同伴",
+    ]
+    assert "Optional official candidate" in window.character_list.item(0).toolTip()
+    assert "Default official" in window.character_list.item(1).toolTip()
+    window.character_list.setCurrentRow(0)
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert window.controller.state.character_id == "custom_character"
+    assert "澄光" in window.character_label.text()
+    assert window.dialogue_input.placeholderText() == "和澄光说点什么"
+    assert not window.spritesheet.isNull()
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(assets_root, "original_oc", name="Xingxi", title="Desktop companion")
+    (pack_dir / "provenance.md").write_text("# Provenance\n\nOriginal local test pack.", encoding="utf-8")
+    (pack_dir / "LICENSE").write_text("Test license.", encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    details = window.character_detail_label.text()
+    assert "Role: Default official" in details
+    assert "Source: builtin" in details
+    assert "Distribution: shareable_after_review" in details
+    assert "Provenance: ready" in details
+    assert "License: ready" in details
+    assert "Visual QA: not recorded" in details
+    assert "Manual QA: not recorded" in details
+    assert "Provenance: provenance.md" in details
+    assert "License: LICENSE" in details
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_detail_metadata_is_scrollable(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    (pack_dir / "provenance.md").write_text("Original generated pack.", encoding="utf-8")
+    (pack_dir / "LICENSE.md").write_text("Test license.", encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.resize(720, 520)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    assert window.character_detail_scroll_area.widget() is window.character_detail_label
+    assert window.character_detail_label.wordWrap()
+    assert window.character_detail_label.alignment() & Qt.AlignmentFlag.AlignTop
+    assert "Distribution: shareable_after_review" in window.character_detail_label.text()
+    assert "Provenance: provenance.md" in window.character_detail_label.text()
+    assert "License: LICENSE.md" in window.character_detail_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_switches_user_character_pack(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    monkeypatch.setenv("E_MOTI_USER_DATA_DIR", str(tmp_path / "user-data"))
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    write_ui_character_pack(
+        tmp_path / "user-data" / "character_packs",
+        "custom_character",
+        name="澄光",
+        title="桌面回声同伴",
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from PySide6.QtCore import Qt
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window._show_message = lambda message: None
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "custom_character":
+            window.character_list.setCurrentItem(item)
+            break
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert window.controller.state.character_id == "custom_character"
+    assert window.controller.resources.asset_dir == tmp_path / "user-data" / "character_packs" / "custom_character"
+    assert "澄光" in window.character_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_imports_complete_pack_from_selected_directory(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    source_pack = write_ui_character_pack(
+        tmp_path / "import-source",
+        "imported_character",
+        name="澄光",
+        title="本地导入同伴",
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    monkeypatch.setattr(
+        app_module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(source_pack),
+    )
+    monkeypatch.setattr(
+        app_module.QMessageBox,
+        "question",
+        lambda *args, **kwargs: app_module.QMessageBox.StandardButton.Yes,
+    )
+    messages = []
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = app_module.CompanionWindow(controller=controller)
+    window._show_message = messages.append
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    assert window.character_import_button.isEnabled()
+    window.character_import_button.click()
+    app.processEvents()
+
+    imported_dir = tmp_path / "user-data" / "character_packs" / "imported_character"
+    assert imported_dir.is_dir()
+    assert any("imported_character" in message for message in messages)
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "imported_character":
+            window.character_list.setCurrentItem(item)
+            break
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert window.controller.state.character_id == "imported_character"
+    assert window.controller.resources.asset_dir == imported_dir
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_import_confirmation_shows_distribution_metadata(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="Xingxi", title="Desktop companion")
+    source_pack = write_ui_character_pack(
+        tmp_path / "import-source",
+        "imported_character",
+        name="Echo",
+        title="Local companion",
+        distribution_boundary="local_ugc_only",
+    )
+    (source_pack / "provenance.md").write_text("Original generated pack.", encoding="utf-8")
+    (source_pack / "LICENSE").write_text("Test license.", encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    monkeypatch.setattr(
+        app_module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(source_pack),
+    )
+    confirmations = []
+
+    def capture_question(parent, title, text, buttons, default_button):
+        confirmations.append((title, text, buttons, default_button))
+        return app_module.QMessageBox.StandardButton.Yes
+
+    monkeypatch.setattr(app_module.QMessageBox, "question", capture_question)
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = app_module.CompanionWindow(controller=controller)
+    window._show_message = lambda message: None
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    window.character_import_button.click()
+    app.processEvents()
+
+    assert (tmp_path / "user-data" / "character_packs" / "imported_character").is_dir()
+    assert len(confirmations) == 1
+    assert "imported_character" in confirmations[0][1]
+    assert "Source: import_source" in confirmations[0][1]
+    assert "Distribution: local_ugc_only" in confirmations[0][1]
+    assert "Provenance: provenance.md" in confirmations[0][1]
+    assert "License: LICENSE" in confirmations[0][1]
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_import_cancel_does_not_copy_pack(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="Xingxi", title="Desktop companion")
+    source_pack = write_ui_character_pack(
+        tmp_path / "import-source",
+        "imported_character",
+        name="Echo",
+        title="Local companion",
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    monkeypatch.setattr(
+        app_module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(source_pack),
+    )
+    monkeypatch.setattr(
+        app_module.QMessageBox,
+        "question",
+        lambda *args, **kwargs: app_module.QMessageBox.StandardButton.Cancel,
+    )
+    messages = []
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = app_module.CompanionWindow(controller=controller)
+    window._show_message = messages.append
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    window.character_import_button.click()
+    app.processEvents()
+
+    assert not (tmp_path / "user-data" / "character_packs" / "imported_character").exists()
+    assert messages == ["Character pack import cancelled."]
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_library_rejects_draft_import_without_copying(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    import guanghe_companion.app as app_module
+    from guanghe_companion.character_generation_workflow import CharacterGenerationWorkflow
+    from guanghe_companion.controller import CompanionController
+
+    draft = CharacterGenerationWorkflow(output_root=tmp_path / "generated").create_draft(
+        {
+            "character_id": "draft_echo",
+            "name": "Draft Echo",
+            "title": "Draft companion",
+            "description": "Original draft companion for import validation.",
+            "visual_keywords": ["teal"],
+            "personality_keywords": ["gentle"],
+            "boundaries": ["No third-party IP"],
+        }
+    )
+    monkeypatch.setattr(
+        app_module.QFileDialog,
+        "getExistingDirectory",
+        lambda *args, **kwargs: str(draft.pack_dir),
+    )
+    messages = []
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = app_module.CompanionWindow(controller=controller)
+    window._show_message = messages.append
+    window.show()
+    app.processEvents()
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    window.character_import_button.click()
+    app.processEvents()
+
+    assert not (tmp_path / "user-data" / "character_packs" / "draft_echo").exists()
+    assert any("spritesheet not found: spritesheet.png" in message for message in messages)
+    assert window.controller.state.character_id == "original_oc"
+
+    window.close()
+    app.processEvents()
+
+
+def test_window_started_with_custom_character_loads_matching_motion_assets(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "custom_character", name="澄光", title="桌面回声同伴")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="custom_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    assert window.motion_catalog.sheet_path == assets_root / "custom_character" / "spritesheet.png"
+    assert "澄光" in window.character_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_window_applies_visual_action_motion_without_mutating_controller_state(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    motion_manifest_path = pack_dir / "motion_manifest.json"
+    motion_manifest = json.loads(motion_manifest_path.read_text(encoding="utf-8"))
+    motion_manifest["motions"]["Raised"] = {"row": 7, "frame_count": 1, "fps": 4}
+    motion_manifest_path.write_text(json.dumps(motion_manifest), encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(
+        controller=CompanionController(save_path=tmp_path / "save.json", auto_load=False),
+    )
+    window.show()
+    app.processEvents()
+    snapshot = window.controller.get_snapshot()
+    assert snapshot["motion"] == "Default"
+    assert window.presentation_renderer.backend == "sprite"
+
+    snapshot["visual_actions"] = [
+        {
+            "type": "motion",
+            "id": "Raised",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        }
+    ]
+    window._apply_snapshot(snapshot)
+    app.processEvents()
+
+    assert window.motion_animator.current_motion.name == "Raised"
+    assert window.controller.get_snapshot()["motion"] == "Default"
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_mode_prefers_live2d_surface_for_live2d_renderer(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(
+        assets_root,
+        "live2d_character",
+        name="Live2D",
+        title="Live2D companion",
+    )
+    (pack_dir / "live2d").mkdir()
+    (pack_dir / "live2d" / "Xingxi.model3.json").write_text("{}", encoding="utf-8")
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "live2d_web",
+        "model": "live2d/Xingxi.model3.json",
+        "motion_map": {"Play": "TapBody"},
+        "expression_map": {"excited": "F02"},
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication, QLabel
+    import guanghe_companion.app as app_module
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class FakeLive2DWebSurface(QLabel):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            self.loaded_frames = []
+
+        def load_frame(self, frame, asset_dir):
+            self.loaded_frames.append((frame, asset_dir))
+
+    monkeypatch.setattr(app_module, "Live2DWebSurface", FakeLive2DWebSurface)
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="live2d_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert window.presentation_renderer.backend == "live2d_web"
+    assert window.live2d_surface.isVisibleTo(window)
+    assert not window.sprite_label.isVisibleTo(window)
+    frame, asset_dir = window.live2d_surface.loaded_frames[-1]
+    assert frame.backend == "live2d_web"
+    assert frame.model_path == "live2d/Xingxi.model3.json"
+    assert asset_dir == pack_dir
+
+    window.close()
+    app.processEvents()
+
+
+def test_live2d_renderer_frame_timer_does_not_restore_sprite_surface(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(
+        assets_root,
+        "live2d_character",
+        name="Live2D",
+        title="Live2D companion",
+    )
+    (pack_dir / "live2d").mkdir()
+    (pack_dir / "live2d" / "Xingxi.model3.json").write_text("{}", encoding="utf-8")
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "live2d_web",
+        "model": "live2d/Xingxi.model3.json",
+        "motion_map": {"Play": "TapBody"},
+        "expression_map": {"excited": "F02"},
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication, QLabel
+    import guanghe_companion.app as app_module
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class FakeLive2DWebSurface(QLabel):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            self.loaded_frames = []
+
+        def load_frame(self, frame, asset_dir):
+            self.loaded_frames.append((frame, asset_dir))
+
+    monkeypatch.setattr(app_module, "Live2DWebSurface", FakeLive2DWebSurface)
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="live2d_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    window._advance_frame()
+    app.processEvents()
+
+    assert window.live2d_surface.isVisibleTo(window)
+    assert not window.sprite_label.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_mode_prefers_spirit_surface_for_portrait_renderer(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(
+        assets_root,
+        "portrait_character",
+        name="Portrait",
+        title="Portrait companion",
+    )
+    add_ui_portrait_renderer(pack_dir)
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication, QLabel
+    import guanghe_companion.app as app_module
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class FakeSpiritStageSurface(QLabel):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            self.loaded_frames = []
+
+        def load_frame(self, frame, asset_dir):
+            self.loaded_frames.append((frame, asset_dir))
+
+    monkeypatch.setattr(app_module, "SpiritStageSurface", FakeSpiritStageSurface, raising=False)
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="portrait_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert window.presentation_renderer.backend == "portrait"
+    assert window.spirit_surface.isVisibleTo(window)
+    assert not window.sprite_label.isVisibleTo(window)
+    assert not window.live2d_surface.isVisibleTo(window)
+    frame, asset_dir = window.spirit_surface.loaded_frames[-1]
+    assert frame.backend == "portrait"
+    assert frame.portrait_manifest == "portrait_manifest.json"
+    assert frame.portrait_id == "neutral"
+    assert asset_dir == pack_dir
+
+    window.close()
+    app.processEvents()
+
+
+def test_portrait_renderer_frame_timer_does_not_restore_sprite_surface(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(
+        assets_root,
+        "portrait_character",
+        name="Portrait",
+        title="Portrait companion",
+    )
+    add_ui_portrait_renderer(pack_dir)
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication, QLabel
+    import guanghe_companion.app as app_module
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class FakeSpiritStageSurface(QLabel):
+        def __init__(self, *args, **kwargs):
+            super().__init__()
+            self.loaded_frames = []
+
+        def load_frame(self, frame, asset_dir):
+            self.loaded_frames.append((frame, asset_dir))
+
+    monkeypatch.setattr(app_module, "SpiritStageSurface", FakeSpiritStageSurface, raising=False)
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="portrait_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    window._advance_frame()
+    app.processEvents()
+
+    assert window.presentation_renderer.backend == "portrait"
+    assert window.spirit_surface.isVisibleTo(window)
+    assert not window.sprite_label.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_mode_falls_back_to_sprite_when_live2d_model_is_missing(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(
+        assets_root,
+        "live2d_character",
+        name="Live2D",
+        title="Live2D companion",
+    )
+    character_path = pack_dir / "character.json"
+    payload = json.loads(character_path.read_text(encoding="utf-8"))
+    payload["renderer"] = {
+        "backend": "live2d_web",
+        "model": "live2d/missing.model3.json",
+        "motion_map": {"Play": "TapBody"},
+        "expression_map": {"excited": "F02"},
+    }
+    character_path.write_text(json.dumps(payload, ensure_ascii=False), encoding="utf-8")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="live2d_character",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert window.presentation_renderer.backend == "sprite"
+    assert window.sprite_label.isVisibleTo(window)
+    assert not window.live2d_surface.isVisibleTo(window)
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_switch_updates_open_desktop_pet_window(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    write_ui_character_pack(assets_root, "custom_character", name="澄光", title="桌面回声同伴")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+    window.enter_desktop_mode_button.click()
+    app.processEvents()
+    pet_window = window.desktop_pet_window
+
+    window.navigation_buttons[3].click()
+    window.character_list.setCurrentRow(0)
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert pet_window is not None
+    assert pet_window.controller.state.character_id == "custom_character"
+    assert pet_window.motion_catalog.sheet_path == assets_root / "custom_character" / "spritesheet.png"
+    assert "澄光" in pet_window.character_label.text()
+
+    pet_window.close()
+    window.close()
+    app.processEvents()
+
+
+def test_character_switch_preserves_manual_perception_expression_context(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "original_oc", name="鏄熸睈", title="妗岄潰棰戠巼鍚屼即")
+    write_ui_character_pack(assets_root, "custom_character", name="婢勫厜", title="妗岄潰鍥炲０鍚屼即")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication, QMessageBox
+    from guanghe_companion.app import CompanionWindow, MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
+    from guanghe_companion.controller import CompanionController
+
+    monkeypatch.setattr(QMessageBox, "information", lambda parent, title, message: None)
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="original_oc",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "custom_character":
+            window.character_list.setCurrentItem(item)
+            break
+    window.character_switch_button.click()
+    app.processEvents()
+
+    window.observe_screen_button.click()
+    app.processEvents()
+    context = window.controller.expression_context_provider()
+
+    assert context["perception_summary"] == MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
 
     window.close()
     app.processEvents()
@@ -308,7 +1319,7 @@ def test_desktop_mode_uses_pet_window_chrome_and_hides_control_panels(monkeypatc
     app.processEvents()
 
 
-def test_desktop_mode_shows_sprite_with_dialogue_controls_after_layout(monkeypatch, tmp_path):
+def test_desktop_mode_shows_primary_surface_with_dialogue_controls_after_layout(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
     from PySide6.QtCore import Qt
@@ -327,11 +1338,14 @@ def test_desktop_mode_shows_sprite_with_dialogue_controls_after_layout(monkeypat
     assert window.root_widget.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert window.hero_card.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert window.sprite_label.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+    assert window.spirit_surface.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert "border: none" in window.hero_card.styleSheet()
     assert "background: transparent" in window.sprite_label.styleSheet()
-    assert window.sprite_label.isVisibleTo(window)
-    assert window.sprite_label.pixmap() is not None
-    assert not window.sprite_label.pixmap().isNull()
+    assert window.presentation_renderer.backend == "portrait"
+    assert window.spirit_surface.isVisibleTo(window)
+    assert window.spirit_surface.pixmap() is not None
+    assert not window.spirit_surface.pixmap().isNull()
+    assert not window.sprite_label.isVisibleTo(window)
     assert window.mask().isEmpty()
     assert not window.character_label.isVisibleTo(window)
     assert not window.desktop_feedback_label.isVisibleTo(window)
@@ -393,6 +1407,69 @@ def test_desktop_pet_dialogue_send_shows_xingxi_response_without_growth_settleme
     app.processEvents()
 
 
+def test_dialogue_submit_uses_enabled_llm_expression_without_growth_mutation(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    class FakeExpressor:
+        def __init__(self):
+            self.last_fallback_reason = None
+            self.requests = []
+
+        def express(self, snapshot, effect=None):
+            self.requests.append((snapshot, effect))
+            return [
+                {
+                    "character_name": snapshot.character_name,
+                    "speech": "我会陪你慢慢说。",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    app = QApplication.instance() or QApplication([])
+    fake_expressor = FakeExpressor()
+    controller = make_controller(tmp_path, ai_expressor=fake_expressor)
+    controller.update_expression_settings(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "custom",
+                "model": "local-model",
+                "base_url": "http://127.0.0.1:1234/v1",
+                "api_key": "",
+            }
+        )
+    )
+    controller.ai_expressor = fake_expressor
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.dialogue_input.setText("今天有点累")
+    window.dialogue_send_button.click()
+    app.processEvents()
+
+    after = window.controller.get_typed_snapshot()
+    assert fake_expressor.requests
+    assert fake_expressor.requests[-1][1] == "ATTENTION"
+    assert "我会陪你慢慢说。" in window.desktop_feedback_label.text()
+    assert "我会陪你慢慢说。" in window.events_label.text()
+    assert window.dialogue_input.text() == ""
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
 def test_desktop_mode_context_menu_status_panel_shows_feedback(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
@@ -445,7 +1522,7 @@ def test_desktop_mode_feedback_overlay_updates_after_sprite_touch(monkeypatch, t
 
     QTest.mouseClick(window.sprite_label, Qt.MouseButton.LeftButton, pos=QPoint(24, 24))
     app.processEvents()
-    text = window._format_desktop_status_panel(window.controller.get_snapshot())
+    text = window.snapshot_renderer.format_desktop_status_panel(window.controller.get_snapshot())
 
     assert "模式：Calm" in text
     assert "靠近回应" in text
@@ -875,7 +1952,7 @@ def test_dragging_desktop_pet_window_stays_inside_available_screen(monkeypatch, 
     app = QApplication.instance() or QApplication([])
     window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
     window.resize(120, 100)
-    window._desktop_available_geometry = lambda: QRect(0, 0, 300, 260)
+    window.desktop_shell.available_geometry_provider = lambda: QRect(0, 0, 300, 260)
     window.move(150, 140)
     window.show()
     app.processEvents()
@@ -908,7 +1985,7 @@ def test_desktop_pet_drag_release_docks_to_near_left_edge(monkeypatch, tmp_path)
 
     app = QApplication.instance() or QApplication([])
     window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
-    window._desktop_available_geometry = lambda: QRect(0, 0, 1000, 800)
+    window.desktop_shell.available_geometry_provider = lambda: QRect(0, 0, 1000, 800)
     window.show()
     app.processEvents()
     window.move(24, 140)
@@ -936,10 +2013,10 @@ def test_desktop_pet_drag_release_docks_to_near_right_edge(monkeypatch, tmp_path
 
     app = QApplication.instance() or QApplication([])
     window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
-    window._desktop_available_geometry = lambda: QRect(0, 0, 1000, 800)
+    window.desktop_shell.available_geometry_provider = lambda: QRect(0, 0, 1000, 800)
     window.show()
     app.processEvents()
-    docked_x = window._clamp_desktop_position(QPoint(10_000, 140)).x()
+    docked_x = window.desktop_shell.clamp_position(QPoint(10_000, 140)).x()
     window.move(docked_x - 24, 140)
     app.processEvents()
 
@@ -1021,10 +2098,142 @@ def test_window_shows_relationship_stage_and_next_unlock(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_window_shows_local_alias_relationship_presentation_and_badges(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window.player_alias_input.setText("小沈")
+    window.player_alias_save_button.click()
+    window.controller.state.trust = 20
+    window.controller.state.unlocks = ["unlock_first_nickname"]
+    window._apply_snapshot(window.controller.get_snapshot())
+    app.processEvents()
+
+    text = window.relationship_label.text()
+    assert "小沈" in text
+    assert "熟悉陪伴" in text
+    assert "靠近一点" in text
+    assert "星形发夹" in text
+    assert window.controller.state.player_alias == "小沈"
+
+    window.close()
+    app.processEvents()
+
+
+def test_llm_expression_reads_relationship_presentation_without_alias_write_surface(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.ai_expressor import ExpressionRequest
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    class CapturingExpressor:
+        def __init__(self):
+            self.requests = []
+
+        def express(self, snapshot, effect=None):
+            self.requests.append(snapshot)
+            return []
+
+    app = QApplication.instance() or QApplication([])
+    expressor = CapturingExpressor()
+    controller = make_controller(tmp_path, ai_expressor=expressor)
+    controller.set_player_alias("小沈")
+    controller.state.trust = 20
+    controller.state.unlocks = ["unlock_first_nickname"]
+    controller.update_expression_settings(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "custom",
+                "model": "local-model",
+                "base_url": "http://127.0.0.1:1234/v1",
+                "api_key": "",
+            }
+        )
+    )
+    controller.ai_expressor = expressor
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    window.dialogue_input.setText("今天陪我一会儿")
+    window.dialogue_send_button.click()
+    app.processEvents()
+
+    request = expressor.requests[-1]
+    relationship_context = [
+        entry for entry in request.tool_results if entry["source"] == "local_relationship_presentation"
+    ]
+    assert isinstance(request, ExpressionRequest)
+    assert relationship_context
+    assert "小沈" in relationship_context[0]["summary"]
+    assert "熟悉陪伴" in relationship_context[0]["summary"]
+    assert "靠近一点" in relationship_context[0]["summary"]
+    assert not hasattr(request, "player_alias")
+    assert not hasattr(request, "unlocks")
+
+    window.close()
+    app.processEvents()
+
+
+def test_llm_expression_cannot_write_player_alias_or_relationship_unlocks(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    class OverreachingExpressor:
+        def express(self, snapshot, effect=None):
+            return [
+                {
+                    "type": "speech",
+                    "speech": "我来改称呼。",
+                    "effect": "ATTENTION",
+                    "player_alias": "被 LLM 改写",
+                    "unlocks": ["unlock_shared_ritual"],
+                }
+            ]
+
+    app = QApplication.instance() or QApplication([])
+    controller = make_controller(tmp_path, ai_expressor=OverreachingExpressor())
+    controller.set_player_alias("小沈")
+    controller.update_expression_settings(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "custom",
+                "model": "local-model",
+                "base_url": "http://127.0.0.1:1234/v1",
+                "api_key": "",
+            }
+        )
+    )
+    controller.ai_expressor = OverreachingExpressor()
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+    before_unlocks = list(window.controller.state.unlocks)
+
+    window.dialogue_input.setText("今天陪我一会儿")
+    window.dialogue_send_button.click()
+    app.processEvents()
+
+    assert window.controller.state.player_alias == "小沈"
+    assert window.controller.state.unlocks == before_unlocks
+    assert "我来改称呼" not in window.desktop_feedback_label.text()
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_shows_screen_perception_disabled_by_default(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
-    window.navigation_buttons[4].click()
+    window.navigation_buttons[5].click()
     app.processEvents()
 
     assert window.perception_card.isVisibleTo(window)
@@ -1049,6 +2258,12 @@ def test_capability_pages_have_safe_defaults(monkeypatch, tmp_path):
     assert window.web_search_enabled_check.isChecked() is False
     assert window.tts_enabled_check.isChecked() is False
     assert window.asr_enabled_check.isChecked() is False
+    assert window.proactive_companion_enabled_check.isChecked() is False
+    assert window.proactive_interval_input.value() == 900
+    assert window.proactive_global_cooldown_input.value() == 1800
+    assert window.proactive_daily_limit_input.value() == 8
+    assert window.proactive_quiet_hours_check.isChecked() is False
+    assert window.proactive_allow_context_topic_check.isChecked() is True
     assert "不会自动点击" in window.perception_privacy_label.text()
 
     window.close()
@@ -1063,6 +2278,14 @@ def test_capability_ui_save_round_trips_to_controller(monkeypatch, tmp_path):
     window.web_search_enabled_check.setChecked(True)
     window.tts_enabled_check.setChecked(True)
     window.asr_enabled_check.setChecked(True)
+    window.proactive_companion_enabled_check.setChecked(True)
+    window.proactive_interval_input.setValue(1200)
+    window.proactive_global_cooldown_input.setValue(2400)
+    window.proactive_daily_limit_input.setValue(6)
+    window.proactive_quiet_hours_check.setChecked(True)
+    window.proactive_quiet_start_input.setText("22:30")
+    window.proactive_quiet_end_input.setText("07:30")
+    window.proactive_allow_context_topic_check.setChecked(False)
     window.capability_save_button.click()
     app.processEvents()
 
@@ -1072,6 +2295,14 @@ def test_capability_ui_save_round_trips_to_controller(monkeypatch, tmp_path):
     assert settings.web_search.enabled is True
     assert settings.tts.enabled is True
     assert settings.asr.enabled is True
+    assert settings.proactive_companion.enabled is True
+    assert settings.proactive_companion.interval_seconds == 1200
+    assert settings.proactive_companion.global_cooldown_seconds == 2400
+    assert settings.proactive_companion.daily_limit == 6
+    assert settings.proactive_companion.quiet_hours_enabled is True
+    assert settings.proactive_companion.quiet_start == "22:30"
+    assert settings.proactive_companion.quiet_end == "07:30"
+    assert settings.proactive_companion.allow_context_topic is False
     assert "已保存" in window.capability_feedback_label.text()
     assert after.stats == before.stats
     assert after.inventory == before.inventory
@@ -1224,7 +2455,7 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[5].click()
+    window.navigation_buttons[6].click()
     app.processEvents()
 
     assert window.expression_settings_card.isVisibleTo(window)
@@ -1309,7 +2540,7 @@ def test_expression_settings_test_button_saves_and_tests_llm_without_mutating_st
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[5].click()
+    window.navigation_buttons[6].click()
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
@@ -1340,6 +2571,110 @@ def test_expression_settings_test_button_saves_and_tests_llm_without_mutating_st
     app.processEvents()
 
 
+def test_expression_settings_test_button_shows_diagnostic_stage_and_reason(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[6].click()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    def fake_test_expression_provider():
+        return {
+            "ok": False,
+            "stage": "provider_call",
+            "reason": "timeout",
+            "fallback_reason": "timeout",
+            "provider": "deepseek",
+            "model": "deepseek-v4-flash",
+            "base_url": "https://api.deepseek.com",
+            "timeout_seconds": 0.5,
+            "speech": "",
+            "effect": "",
+        }
+
+    window.controller.test_expression_provider = fake_test_expression_provider
+    window.expression_provider_combo.setCurrentText("deepseek")
+    window.expression_enabled_checkbox.setChecked(True)
+    window.expression_api_key_input.setText("test-key")
+    window.expression_timeout_input.setValue(0.5)
+    window.expression_test_button.click()
+    app.processEvents()
+
+    after = window.controller.get_typed_snapshot()
+    status = window.expression_settings_status_label.text()
+    assert "LLM 测试失败" in status
+    assert "调用服务" in status
+    assert "请求超时" in status
+    assert "deepseek-v4-flash" in status
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_expression_settings_test_button_shows_auth_action_without_api_key(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[6].click()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    def fake_test_expression_provider():
+        return {
+            "ok": False,
+            "stage": "provider_call",
+            "reason": "http_401",
+            "fallback_reason": "http_401",
+            "provider": "deepseek",
+            "model": "deepseek-v4-flash",
+            "base_url": "https://api.deepseek.com",
+            "timeout_seconds": 0.5,
+            "speech": "",
+            "effect": "",
+        }
+
+    window.controller.test_expression_provider = fake_test_expression_provider
+    window.expression_provider_combo.setCurrentText("deepseek")
+    window.expression_enabled_checkbox.setChecked(True)
+    window.expression_api_key_input.setText("sk-secret")
+    window.expression_test_button.click()
+    app.processEvents()
+
+    after = window.controller.get_typed_snapshot()
+    status = window.expression_settings_status_label.text()
+    assert "Provider 认证失败" in status
+    assert "Action: replace API key" in status
+    assert "sk-secret" not in status
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.relationship_stage == before.relationship_stage
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
 def test_expression_settings_fetches_provider_model_list_without_saving_or_mutating_state(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
@@ -1359,12 +2694,12 @@ def test_expression_settings_fetches_provider_model_list_without_saving_or_mutat
     window.show()
     app.processEvents()
 
-    window.navigation_buttons[5].click()
+    window.navigation_buttons[6].click()
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
     provider_items = [window.expression_provider_combo.itemText(index) for index in range(window.expression_provider_combo.count())]
-    assert provider_items == ["openai", "deepseek", "openrouter", "custom"]
+    assert provider_items == ["openai", "deepseek", "openrouter", "ollama", "lmstudio", "custom"]
     assert not window.expression_model_list_combo.isVisibleTo(window)
 
     window.expression_provider_combo.setCurrentText("deepseek")
@@ -1413,7 +2748,7 @@ def test_expression_rule_preview_page_is_readonly_and_copyable(monkeypatch, tmp_
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
-    window.navigation_buttons[6].click()
+    window.navigation_buttons[7].click()
     app.processEvents()
 
     preview = window.expression_rule_preview_text.toPlainText()
@@ -1450,7 +2785,7 @@ def test_voice_settings_page_marks_tts_and_asr_disabled(monkeypatch, tmp_path):
     app.processEvents()
     before = window.controller.get_typed_snapshot()
 
-    window.navigation_buttons[7].click()
+    window.navigation_buttons[8].click()
     app.processEvents()
 
     assert window.voice_settings_card.isVisibleTo(window)
@@ -1732,7 +3067,12 @@ def test_window_manual_screen_perception_reaches_typed_expression_request(monkey
 
 
 def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
     app, window = make_window(monkeypatch, tmp_path)
+    window.controller.update_capability_settings(
+        CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
+    )
     window.controller.state.charge = 25
     window.controller.state.mood = 60
     window.controller.state.focus = 70
@@ -1777,6 +3117,21 @@ def test_window_close_closes_controller(monkeypatch, tmp_path):
     app.processEvents()
 
     assert controller.close_calls == 1
+
+
+def test_window_close_stops_runtime_timers(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    assert window.frame_timer.isActive()
+    assert window.countdown_timer.isActive()
+
+    window.close()
+    app.processEvents()
+
+    assert not window.frame_timer.isActive()
+    assert not window.tick_timer.isActive()
+    assert not window.countdown_timer.isActive()
+    assert not window.screen_observation_timer.isActive()
 
 
 def test_control_panel_close_hides_to_tray_without_closing_controller(monkeypatch, tmp_path):

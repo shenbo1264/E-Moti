@@ -1,5 +1,6 @@
 param(
     [switch]$SkipAppBuild,
+    [string]$PythonPath = "",
     [string]$ISCCPath = ""
 )
 
@@ -52,7 +53,11 @@ if (-not (Test-Path -LiteralPath $InstallerScript)) {
 $ResolvedISCCPath = Resolve-ISCCPath -RequestedPath $ISCCPath
 
 if (-not $SkipAppBuild) {
-    & $AppBuildScript
+    $AppBuildArgs = @()
+    if ($PythonPath) {
+        $AppBuildArgs += @("-PythonPath", $PythonPath)
+    }
+    & $AppBuildScript @AppBuildArgs
     if ($LASTEXITCODE -ne 0) {
         throw "App build script failed with exit code $LASTEXITCODE"
     }

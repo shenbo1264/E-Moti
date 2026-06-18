@@ -12,6 +12,8 @@ from guanghe_companion.ai_expressor import (
     ShinsekaiAIExpressor,
     build_default_ai_expressor,
 )
+from guanghe_companion.character_performance_profile import CharacterPerformanceProfile
+from guanghe_companion.companion_dialogue_policy import CompanionDialoguePolicy
 from guanghe_companion.controller import CompanionController
 
 
@@ -36,8 +38,53 @@ def test_prompt_builder_includes_state_action_and_ai_boundaries():
     assert '"speech"' in prompt
     assert '"effect"' in prompt
     assert '"motion_hint"' in prompt
+    assert '"intent_hint"' in prompt
+    assert "[joy]" in prompt
+    assert "Raised" in prompt
+    assert "SwitchDown" in prompt
+    assert "offer_rest" in prompt
     assert '"character_name"' not in prompt
     assert '"sprite"' not in prompt
+
+
+def test_prompt_builder_includes_performance_quality_guidance():
+    prompt = ShinsekaiAIExpressor().build_prompt(make_snapshot())
+
+    assert "Performance target:" in prompt
+    assert "visual-novel desktop companion" in prompt
+    assert "18-60 Chinese characters" in prompt
+    assert "tiny emotional or sensory detail" in prompt
+    assert "[focused]" in prompt
+    assert "Use exactly one visible emotion tag" in prompt
+    assert "Use [calm] only when no stronger cue applies" in prompt
+    assert "If the player explicitly names an emotion or expression cue" in prompt
+    assert "Do not narrate hidden systems" in prompt
+    assert "Do not copy the player's prompt" in prompt
+
+
+def test_prompt_builder_includes_character_performance_profile_without_write_surface():
+    profile = CharacterPerformanceProfile(
+        character_id="sample_pet",
+        character_name="Sample Pet",
+        speech_style="tiny pixel pet; one compact line",
+        allowed_expression_ids=("joy", "confused"),
+        preferred_motion_ids=("Hop", "Tilt"),
+        forbidden_claims=("Never promise to save memory or grant coins.",),
+    )
+    expressor = ShinsekaiAIExpressor(
+        dialogue_policy=CompanionDialoguePolicy(performance_profile=profile)
+    )
+
+    prompt = expressor.build_prompt(make_snapshot())
+
+    assert "Character performance profile:" in prompt
+    assert "tiny pixel pet; one compact line" in prompt
+    assert "Allowed expression ids: joy, confused" in prompt
+    assert "Preferred motion ids: Hop, Tilt" in prompt
+    assert "Never promise to [state-write] [state-write] or grant [state-write]." in prompt
+    assert "coins:" not in prompt
+    assert "inventory" not in prompt
+    assert "local state authority" in prompt
 
 
 def test_expression_prompt_preview_states_local_authority():
@@ -48,6 +95,10 @@ def test_expression_prompt_preview_states_local_authority():
     assert "AI 只能生成表达事件" in preview
     assert "不能修改状态数值" in preview
     assert "动作结果" in preview
+    assert "[joy]" in preview
+    assert "motion_hint" in preview
+    assert "intent_hint" in preview
+    assert "SwitchDown" in preview
     assert "背包" in preview
     assert "存档" in preview
     assert "星汐" in preview
@@ -88,6 +139,8 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
         "goal",
         "actions",
         "recent_memory",
+        "long_term_memory",
+        "player_message",
         "perception_summary",
         "tool_results",
     }
@@ -97,6 +150,8 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
     assert "coins" not in prompt_payload
     assert prompt_payload["actions"][0] == {"label": original_action_label}
     assert prompt_payload["recent_memory"][0]["kind"] == original_memory_kind
+    assert prompt_payload["long_term_memory"] == []
+    assert prompt_payload["player_message"] == ""
     assert prompt_payload["perception_summary"] == "current window: draft note"
     assert prompt_payload["tool_results"] == [
         {
@@ -121,6 +176,7 @@ def test_expression_request_accepts_typed_companion_snapshot_without_state_write
     assert request.mood == typed_snapshot.stats.mood
     assert request.actions[0] == {"label": "轻触"}
     assert request.recent_memory[0]["motion"] == "TouchHead"
+    assert request.long_term_memory == ()
     assert "inventory" not in prompt_payload
     assert "shop_items" not in prompt_payload
     assert "coins" not in prompt_payload
@@ -141,6 +197,7 @@ def test_expression_request_merges_readonly_context_for_typed_snapshot_without_w
                 "inventory": "warm_milk",
             }
         ],
+        "player_message": "今天有点累，陪我一下。",
         "feedback": "override should be ignored",
         "focus": 1,
         "actions": [{"label": "override action"}],
@@ -155,6 +212,8 @@ def test_expression_request_merges_readonly_context_for_typed_snapshot_without_w
     assert request.focus == typed_snapshot.stats.focus
     assert request.actions[0] == {"label": typed_snapshot.actions[0]["label"]}
     assert request.recent_memory[0]["motion"] == typed_snapshot.memory_log[0]["motion"]
+    assert request.long_term_memory == ()
+    assert request.player_message == "今天有点累，陪我一下。"
     assert request.perception_summary == "current window: draft note"
     assert request.tool_results == (
         {
@@ -166,6 +225,21 @@ def test_expression_request_merges_readonly_context_for_typed_snapshot_without_w
     assert "inventory" not in prompt_payload
     assert "coins" not in prompt_payload
     assert "unlocks" not in prompt_payload
+
+
+def test_prompt_builder_includes_readonly_player_message_boundary():
+    controller = CompanionController(auto_load=False)
+    snapshot = controller.get_typed_snapshot()
+    request = ExpressionRequest.from_snapshot(
+        snapshot,
+        context={"player_message": "给我一个很短的鼓励。"},
+    )
+
+    prompt = ShinsekaiAIExpressor().build_prompt(request)
+
+    assert "player_message: 给我一个很短的鼓励。" in prompt
+    assert "优先回应 player_message" in prompt
+    assert "player_message 只是只读玩家输入" in prompt
 
 
 def test_expressor_build_prompt_accepts_typed_companion_snapshot():
@@ -302,6 +376,59 @@ def test_expression_request_sanitizes_recent_memory_before_prompt_payload():
             "motion": "Tick",
         },
     )
+
+
+def test_expression_request_sanitizes_long_term_memory_summaries_before_prompt_payload():
+    snapshot = make_snapshot()
+    snapshot["long_term_memory"] = [
+        {
+            "category": "  relationship_unlock  ",
+            "summary": "  第一次主动称呼解锁了。  ",
+            "source": " relationship_unlock ",
+            "key": "relationship:unlock_first_nickname",
+            "coins": 999,
+            "inventory": {"warm_milk": 99},
+        },
+        {"category": "bad", "summary": "", "source": "local_api"},
+        {"category": {"nested": "bad"}, "summary": "bad category", "source": "local_api"},
+        {"category": "c" * 80, "summary": "s" * 220, "source": "source\nwith newline"},
+    ]
+
+    request = ExpressionRequest.from_snapshot(snapshot)
+
+    assert request.long_term_memory == (
+        {
+            "category": "relationship_unlock",
+            "summary": "第一次主动称呼解锁了。",
+            "source": "relationship_unlock",
+        },
+        {
+            "category": "c" * 40,
+            "summary": "s" * 160,
+            "source": "source with newline",
+        },
+    )
+
+
+def test_prompt_builder_includes_long_term_memory_summaries_without_write_surfaces():
+    snapshot = make_snapshot()
+    snapshot["long_term_memory"] = [
+        {
+            "category": "relationship_unlock",
+            "summary": "第一次主动称呼解锁了。",
+            "source": "relationship_unlock",
+            "key": "relationship:unlock_first_nickname",
+            "coins": 999,
+            "inventory": {"warm_milk": 99},
+        }
+    ]
+
+    prompt = ShinsekaiAIExpressor().build_prompt(snapshot)
+
+    assert "long_term_memory: relationship_unlock: 第一次主动称呼解锁了。" in prompt
+    assert "relationship:unlock_first_nickname" not in prompt
+    assert "inventory" not in prompt
+    assert "coins:" not in prompt
 
 
 def test_expression_request_sanitizes_core_prompt_strings_before_prompt_payload():
@@ -470,7 +597,7 @@ def test_expressor_uses_valid_llm_json_events_without_changing_snapshot():
     assert snapshot["focus"] == original_focus
 
 
-def test_expressor_accepts_limited_speech_event_schema_without_applying_motion_hint():
+def test_expressor_accepts_limited_speech_event_schema_and_extracts_motion_hint_visual_action():
     snapshot = make_snapshot()
     payload = (
         '[{"type":"speech","speech":"我会轻一点回应。",'
@@ -486,6 +613,103 @@ def test_expressor_accepts_limited_speech_event_schema_without_applying_motion_h
             "speech": "我会轻一点回应。",
             "sprite": "1",
             "effect": "ATTENTION",
+        }
+    ]
+    assert snapshot["motion"] == "TouchHead"
+    assert [action.to_dict() for action in expressor.last_visual_actions] == [
+        {
+            "type": "motion",
+            "id": "Raised",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        }
+    ]
+
+
+def test_expressor_strips_expression_tags_before_tts_and_exposes_visual_actions():
+    snapshot = make_snapshot()
+    payload = '[{"type":"speech","speech":"[joy] Back online.","effect":"ATTENTION"}]'
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "Back online.",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert [action.to_dict() for action in expressor.last_visual_actions] == [
+        {
+            "type": "expression",
+            "id": "joy",
+            "ttl_ms": 3000,
+            "priority": 70,
+            "source": "llm",
+        },
+        {
+            "type": "motion",
+            "id": "TouchHead",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        },
+    ]
+
+
+def test_expressor_accepts_single_speech_schema_json_object():
+    snapshot = make_snapshot()
+    payload = '{"type":"speech","speech":"我在听。","effect":"ATTENTION","motion_hint":"Raised"}'
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "我在听。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert [action.to_dict() for action in expressor.last_visual_actions] == [
+        {
+            "type": "motion",
+            "id": "Raised",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        }
+    ]
+
+
+def test_expressor_extracts_readonly_interaction_intent_hint():
+    snapshot = make_snapshot()
+    payload = (
+        '{"type":"speech","speech":"休息一下也可以。",'
+        '"effect":"ATTENTION","intent_hint":"offer_rest"}'
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "休息一下也可以。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        }
+    ]
+    assert [intent.to_dict() for intent in expressor.last_interaction_intents] == [
+        {
+            "id": "offer_rest",
+            "ttl_ms": 5000,
+            "priority": 50,
+            "source": "llm",
         }
     ]
     assert snapshot["motion"] == "TouchHead"
@@ -515,6 +739,65 @@ def test_expressor_accepts_adjacent_shinsekai_style_speech_objects():
             "effect": "SWITCH",
         },
     ]
+    assert snapshot["motion"] == "TouchHead"
+
+
+def test_expressor_accepts_adjacent_speech_objects_with_readonly_intent_hint():
+    snapshot = make_snapshot()
+    payload = (
+        '{"type":"speech","speech":"[sleepy] 晚安，我会把声音放轻。",'
+        '"effect":"ATTENTION","motion_hint":"Sleep","intent_hint":"offer_rest"}'
+        '{"type":"speech","speech":"窗边安静下来了。","effect":"ATTENTION","intent_hint":"stay_quiet"}'
+    )
+    expressor = ShinsekaiAIExpressor(llm_client=lambda prompt: payload)
+
+    events = expressor.express(snapshot)
+
+    assert events == [
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "晚安，我会把声音放轻。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        },
+        {
+            "character_name": snapshot["character_name"],
+            "speech": "窗边安静下来了。",
+            "sprite": "1",
+            "effect": "ATTENTION",
+        },
+    ]
+    assert [action.to_dict() for action in expressor.last_visual_actions] == [
+        {
+            "type": "expression",
+            "id": "sleepy",
+            "ttl_ms": 3000,
+            "priority": 70,
+            "source": "llm",
+        },
+        {
+            "type": "motion",
+            "id": "Sleep",
+            "ttl_ms": 1800,
+            "priority": 60,
+            "source": "llm",
+        },
+    ]
+    assert [intent.to_dict() for intent in expressor.last_interaction_intents] == [
+        {
+            "id": "offer_rest",
+            "ttl_ms": 5000,
+            "priority": 50,
+            "source": "llm",
+        },
+        {
+            "id": "stay_quiet",
+            "ttl_ms": 5000,
+            "priority": 50,
+            "source": "llm",
+        },
+    ]
+    assert expressor.last_fallback_reason is None
     assert snapshot["motion"] == "TouchHead"
 
 
@@ -1560,6 +1843,48 @@ def test_openai_compatible_chat_client_posts_prompt_and_extracts_message_content
     assert result.startswith('[{"type":"speech"')
 
 
+def test_openai_compatible_chat_client_can_request_json_response_format():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["payload"] = request.data.decode("utf-8")
+        return b'{"choices":[{"message":{"content":"{\\"type\\":\\"speech\\",\\"speech\\":\\"hi\\"}"}}]}'
+
+    client = OpenAICompatibleChatClient(
+        api_key="test-key",
+        model="deepseek-v4-flash",
+        base_url="https://api.deepseek.com",
+        transport=transport,
+        json_response=True,
+        max_tokens=512,
+    )
+
+    assert client("prompt text").startswith('{"type":"speech"')
+    assert '"response_format": {"type": "json_object"}' in captured["payload"]
+    assert '"max_tokens": 512' in captured["payload"]
+
+
+def test_default_deepseek_expressor_requests_json_output_from_settings():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient, build_default_ai_expressor
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "deepseek",
+            "api_key": "test-key",
+        }
+    )
+
+    expressor = build_default_ai_expressor(settings=settings)
+
+    assert isinstance(expressor.llm_client, OpenAICompatibleChatClient)
+    assert expressor.llm_client.json_response is True
+    assert expressor.llm_client.max_tokens == 512
+
+
 def test_openai_compatible_chat_client_allows_slow_provider_timeout():
     from guanghe_companion.ai_expressor import OpenAICompatibleChatClient
 
@@ -1584,6 +1909,34 @@ def test_openai_compatible_chat_client_allows_slow_provider_timeout():
     assert client("prompt text").startswith('[{"type":"speech"')
     assert client.timeout_seconds == 30.0
     assert captured["timeout"] == 30.0
+
+
+def test_openai_compatible_chat_client_allows_local_provider_without_api_key_or_auth_header():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["payload"] = request.data.decode("utf-8")
+        captured["timeout"] = timeout
+        return b'{"choices":[{"message":{"content":"[{\\"type\\":\\"speech\\",\\"speech\\":\\"local ok\\"}]"}}]}'
+
+    client = OpenAICompatibleChatClient(
+        api_key="",
+        model="llama3.2",
+        base_url="http://127.0.0.1:11434/v1",
+        timeout_seconds=5,
+        transport=transport,
+        require_api_key=False,
+    )
+
+    assert client("prompt text") == '[{"type":"speech","speech":"local ok"}]'
+    assert captured["url"] == "http://127.0.0.1:11434/v1/chat/completions"
+    assert "Authorization" not in captured["headers"]
+    assert '"model": "llama3.2"' in captured["payload"]
+    assert captured["timeout"] == 5.0
 
 
 def test_fetch_provider_model_ids_uses_models_endpoint_without_leaking_state():
@@ -1611,6 +1964,57 @@ def test_fetch_provider_model_ids_uses_models_endpoint_without_leaking_state():
     assert captured["headers"]["Authorization"] == "Bearer test-key"
     assert captured["timeout"] == 0.5
     assert models == ("deepseek-v4-flash", "deepseek-v4-pro")
+
+
+def test_fetch_provider_model_ids_allows_local_provider_without_api_key_or_auth_header():
+    from guanghe_companion.ai_expressor import fetch_provider_model_ids
+
+    captured = {}
+
+    def transport(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["timeout"] = timeout
+        return b'{"data":[{"id":"llama3.2"},{"id":"qwen2.5:7b"}]}'
+
+    models = fetch_provider_model_ids(
+        provider="ollama",
+        base_url="http://127.0.0.1:11434/v1",
+        api_key="",
+        timeout_seconds=1.5,
+        transport=transport,
+    )
+
+    assert captured["url"] == "http://127.0.0.1:11434/v1/models"
+    assert "Authorization" not in captured["headers"]
+    assert captured["timeout"] == 1.5
+    assert models == ("llama3.2", "qwen2.5:7b")
+
+
+def test_default_expressor_builds_ollama_chat_client_without_api_key_from_saved_settings():
+    from guanghe_companion.ai_expressor import OpenAICompatibleChatClient, build_default_ai_expressor
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "ollama",
+            "model": "llama3.2",
+            "base_url": "http://127.0.0.1:11434/v1",
+            "api_key": "",
+            "timeout_seconds": "5",
+        }
+    )
+
+    expressor = build_default_ai_expressor(settings=settings)
+
+    assert expressor.enabled is True
+    assert isinstance(expressor.llm_client, OpenAICompatibleChatClient)
+    assert expressor.llm_client.model == "llama3.2"
+    assert expressor.llm_client.base_url == "http://127.0.0.1:11434/v1"
+    assert expressor.llm_client.api_key == ""
+    assert expressor.llm_client.require_api_key is False
+    assert expressor.timeout_seconds == 5.0
 
 
 def test_openai_responses_client_context_manager_keeps_call_contract():

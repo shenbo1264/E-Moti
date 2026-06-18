@@ -4,6 +4,8 @@ from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass
 
 from .character_pack import CharacterPack
+from .models import CompanionState
+from .relationship import RelationshipService
 
 ExpressionContextProvider = Callable[[], dict[str, object]]
 MAX_MOCK_SEARCH_RESULTS = 3
@@ -98,6 +100,67 @@ class ManualPerceptionExpressionContextProvider:
             return {}
         summary = _sanitize_perception_summary(self.summary)
         return {"perception_summary": summary[:MAX_PERCEPTION_SUMMARY_LENGTH]} if summary else {}
+
+
+@dataclass(frozen=True, slots=True)
+class RuntimeExpressionContextService:
+    state: CompanionState
+    relationship_decorations: Iterable[Mapping[str, str]] | None = None
+    external_provider: ExpressionContextProvider | None = None
+    perception_summary: str = ""
+    tool_results: Iterable[Mapping[str, object]] | None = None
+
+    def __call__(self) -> dict[str, object]:
+        if self.external_provider is not None:
+            try:
+                external_context = self.external_provider()
+            except Exception:
+                external_context = {}
+        else:
+            external_context = {}
+
+        context: dict[str, object] = {}
+        if isinstance(external_context, dict):
+            for key in ("perception_summary", "tool_results"):
+                if key in external_context:
+                    context[key] = external_context[key]
+
+        runtime_context = ExpressionContextChain([self._runtime_context])()
+        if runtime_context:
+            context.update(runtime_context)
+        relationship_result = self._relationship_presentation_tool_result()
+        if relationship_result is None:
+            return context
+
+        existing_tool_results = context.get("tool_results")
+        tool_results = existing_tool_results if isinstance(existing_tool_results, list) else []
+        return {**context, "tool_results": [*tool_results, relationship_result]}
+
+    def _runtime_context(self) -> dict[str, object]:
+        context: dict[str, object] = {}
+        if self.perception_summary:
+            context["perception_summary"] = self.perception_summary
+        if self.tool_results:
+            context["tool_results"] = list(self.tool_results)
+        return context
+
+    def _relationship_presentation_tool_result(self) -> dict[str, str] | None:
+        presentation = RelationshipService(self.state).presentation(self.relationship_decorations)
+        if (
+            not getattr(self.state, "player_alias", "")
+            and not presentation.unlocked_decorations
+            and self.state.trust < 20
+        ):
+            return None
+        badges = " / ".join(badge["label"] for badge in presentation.unlocked_decorations) or "none"
+        return {
+            "source": "local_relationship_presentation",
+            "title": "relationship presentation",
+            "summary": (
+                f"{presentation.address_line}；语气：{presentation.tone_label}；"
+                f"小动作：{presentation.micro_motion}；装饰：{badges}"
+            ),
+        }
 
 
 def _sanitize_perception_summary(value: object) -> str:

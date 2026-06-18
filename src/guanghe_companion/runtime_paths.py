@@ -56,6 +56,10 @@ def capability_settings_path() -> Path:
     return user_data_dir() / "capability_settings.json"
 
 
+def long_term_memory_path() -> Path:
+    return user_data_dir() / "long_term_memory.json"
+
+
 def tts_cache_dir() -> Path:
     return user_data_dir() / "cache" / "tts"
 

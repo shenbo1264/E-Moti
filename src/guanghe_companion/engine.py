@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from dataclasses import replace
+from collections.abc import Mapping
 
 from .models import ActionResult, CompanionState, ItemDefinition
 from .shop_items import load_default_shop_items
@@ -15,11 +16,18 @@ CHARACTER_NAME = "星汐"
 BUYABLE_ITEMS: dict[str, ItemDefinition] = load_default_shop_items()
 
 
-def create_initial_state(now: int = 0) -> CompanionState:
+def create_initial_state(
+    now: int = 0,
+    *,
+    character_id: str = "original_oc",
+    character_name: str = CHARACTER_NAME,
+    buyable_items: Mapping[str, ItemDefinition] | None = None,
+) -> CompanionState:
+    items = buyable_items or BUYABLE_ITEMS
     return _finalize_state(
         CompanionState(
-            character_id="original_oc",
-            character_name=CHARACTER_NAME,
+            character_id=character_id,
+            character_name=character_name,
             focus=72,
             charge=65,
             stability=78,
@@ -30,7 +38,7 @@ def create_initial_state(now: int = 0) -> CompanionState:
             coins=20,
             mode="Calm",
             resting=False,
-            inventory={item_id: 0 for item_id in BUYABLE_ITEMS},
+            inventory={item_id: 0 for item_id in items},
             unlocks=[],
             current_goal_id="reach_trust_20",
             last_interaction_at=now,
@@ -89,8 +97,13 @@ def apply_tick(state: CompanionState, ticks: int, now: int) -> CompanionState:
     return _finalize_state(next_state)
 
 
-def purchase_item(state: CompanionState, item_id: str) -> CompanionState:
-    item = BUYABLE_ITEMS[item_id]
+def purchase_item(
+    state: CompanionState,
+    item_id: str,
+    buyable_items: Mapping[str, ItemDefinition] | None = None,
+) -> CompanionState:
+    items = buyable_items or BUYABLE_ITEMS
+    item = items[item_id]
     if state.coins < item.price:
         raise ValueError("Not enough coins.")
     if state.level < item.unlock_level or state.trust < item.unlock_trust:
@@ -103,7 +116,17 @@ def purchase_item(state: CompanionState, item_id: str) -> CompanionState:
 
 
 def use_inventory_item(state: CompanionState, item_id: str, usage: str, now: int) -> CompanionState:
-    item = BUYABLE_ITEMS[item_id]
+    return use_inventory_item_with_catalog(state, item_id, usage, now, BUYABLE_ITEMS)
+
+
+def use_inventory_item_with_catalog(
+    state: CompanionState,
+    item_id: str,
+    usage: str,
+    now: int,
+    buyable_items: Mapping[str, ItemDefinition],
+) -> CompanionState:
+    item = buyable_items[item_id]
     if state.inventory.get(item_id, 0) <= 0:
         raise ValueError("Item is not in inventory.")
     if item.category == "food" and usage == "feed" and state.charge >= 95:

@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>E-Moti Live2D Spike</title>
+    <style>
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #101820;
+        font-family: "Microsoft YaHei UI", "Microsoft YaHei", Arial, sans-serif;
+      }
+
+      #stage {
+        display: block;
+        width: 100vw;
+        height: 100vh;
+      }
+
+      #status {
+        position: fixed;
+        left: 12px;
+        bottom: 12px;
+        max-width: calc(100vw - 24px);
+        padding: 8px 10px;
+        border-radius: 6px;
+        color: #d8f3ff;
+        background: rgb(0 0 0 / 62%);
+        font-size: 12px;
+        line-height: 1.45;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="stage"></canvas>
+    <div id="status">loading</div>
+    <script src="/tools/live2d_spike/node_modules/pixi.js/dist/browser/pixi.min.js"></script>
+    <script src="/tmp/live2d_research/live2dcubismcore.min.js"></script>
+    <script src="/tools/live2d_spike/node_modules/pixi-live2d-display/dist/cubism4.min.js"></script>
+    <script src="/tools/live2d_spike/live2d_spike.js"></script>
+  </body>
+</html>

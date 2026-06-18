@@ -20,14 +20,21 @@ class PreviewValidationError(ValueError):
 
 
 def _ensure_distinct_gif_frames(frames: list[Image.Image]) -> list[Image.Image]:
-    if len({frame.tobytes() for frame in frames}) == len(frames):
-        return frames
-
     marked_frames = [frame.copy() for frame in frames]
-    marker_x = marked_frames[0].width - 1
-    marker_y = marked_frames[0].height - 1
+    marker_size = 6
+    marker_x = max(marked_frames[0].width - marker_size, 0)
+    marker_y = max(marked_frames[0].height - marker_size, 0)
     for index, frame in enumerate(marked_frames):
-        frame.putpixel((marker_x, marker_y), ((index + 1) % 256, 0, 0, 255))
+        draw = ImageDraw.Draw(frame)
+        draw.rectangle(
+            (marker_x, marker_y, marker_x + marker_size - 1, marker_y + marker_size - 1),
+            fill=(255, 255, 255, 255),
+        )
+        for bit in range(16):
+            if index & (1 << bit):
+                x = marker_x + 1 + bit % 4
+                y = marker_y + 1 + bit // 4
+                draw.point((x, y), fill=(0, 0, 0, 255))
     return marked_frames
 
 

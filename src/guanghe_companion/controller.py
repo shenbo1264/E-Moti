@@ -7,13 +7,17 @@ from typing import Protocol
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
 from .ai_expressor import (
-    ExpressionRequest,
     ShinsekaiAIExpressor,
     build_default_ai_expressor,
-    fetch_provider_model_ids,
 )
 from .capability_settings import CapabilitySettings, CapabilitySettingsStore
-from .character_pack import ASSETS_ROOT, load_default_character_pack, resolve_motion_caption
+from .character_pack import DEFAULT_CHARACTER_ID, resolve_motion_caption
+from .character_resources import CharacterResources, load_character_resources, load_character_resources_from_dir
+from .character_session import (
+    CharacterSessionPaths,
+    build_character_session_paths,
+    write_character_session_pack_metadata,
+)
 from .dialogue import DialogueRequest
 from .dialogue_history import (
     DialogueHistoryEntry,
@@ -23,26 +27,43 @@ from .dialogue_history import (
     replay_latest_assistant,
     revert_latest_exchange,
 )
-from .engine import BUYABLE_ITEMS, TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
+from .engine import TICK_SECONDS, apply_action, apply_tick, create_initial_state, describe_goal
 from .events import (
     ActionDomainEventRequest,
     CompanionEvent,
     DomainEventComposer,
-    EventValidator,
     InventoryDomainEventRequest,
     ProactiveDomainEventRequest,
-    build_typed_fallback_events,
 )
-from .expression_context import CharacterProfileExpressionContextProvider, ExpressionContextChain
-from .expression_settings import ExpressionSettings, ExpressionSettingsStore, normalize_expression_settings
+from .expression_diagnostics import ExpressionDiagnosticsService, fetch_provider_model_ids
+from .expression_context import (
+    CharacterProfileExpressionContextProvider,
+    ExpressionContextChain,
+    RuntimeExpressionContextService,
+)
+from .expression_event_pipeline import ExpressionEventPipeline
+from .expression_settings import (
+    ExpressionSettings,
+    ExpressionSettingsStore,
+    normalize_expression_settings,
+)
 from .inventory import InventoryService, InventoryUseRequest, ShopPurchaseRequest, ShopService, format_item_effect
-from .memory import MemoryLogService, memory_kind_for_inventory_usage
+from .memory import (
+    LongTermMemoryEntry,
+    LongTermMemoryService,
+    LongTermMemoryStore,
+    MemoryLogService,
+    memory_kind_for_inventory_usage,
+)
 from .models import CompanionState
-from .relationship import ProactiveCompanionDecision, ProactiveCompanionService, RelationshipService
+from .proactive_companion import ProactiveCompanionDecision, ProactiveCompanionService
+from .relationship import RelationshipService
 from .runtime_paths import (
     capability_settings_path as default_capability_settings_path,
     expression_settings_path as default_expression_settings_path,
+    long_term_memory_path as default_long_term_memory_path,
 )
+from .session_goals import SessionGoalResult, SessionGoalTracker
 from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory, format_delta_text
 from .storage import DEFAULT_SAVE_PATH, SaveManager, logical_time_from_state
 
@@ -84,6 +105,14 @@ class CompanionCapabilitySettingsStore(Protocol):
         ...
 
 
+class CompanionLongTermMemoryStore(Protocol):
+    def load(self) -> tuple[LongTermMemoryEntry, ...]:
+        ...
+
+    def save(self, entries: Iterable[LongTermMemoryEntry]) -> None:
+        ...
+
+
 class CompanionController:
     def __init__(
         self,
@@ -98,20 +127,50 @@ class CompanionController:
         expression_settings_store: CompanionExpressionSettingsStore | None = None,
         capability_settings_path: Path | None = None,
         capability_settings_store: CompanionCapabilitySettingsStore | None = None,
+        long_term_memory_path: Path | None = None,
+        long_term_memory_store: CompanionLongTermMemoryStore | None = None,
+        character_id: str = DEFAULT_CHARACTER_ID,
+        character_resources: CharacterResources | None = None,
+        user_data_root: Path | str | None = None,
     ) -> None:
-        self.save_path = Path(save_path) if save_path is not None else DEFAULT_SAVE_PATH
-        self.save_manager = save_manager or SaveManager(self.save_path)
+        self._user_data_root = Path(user_data_root) if user_data_root is not None else None
+        session_paths = (
+            build_character_session_paths(character_id, user_data_root=self._user_data_root)
+            if self._user_data_root is not None
+            else None
+        )
+        self.resources = character_resources or load_character_resources(character_id)
+        self.character_pack = self.resources.character_pack
+        self.shop_items = self.resources.shop_items
+        self.save_path = Path(save_path) if save_path is not None else (
+            session_paths.save_path if session_paths is not None else DEFAULT_SAVE_PATH
+        )
+        self.save_manager = save_manager or SaveManager(
+            self.save_path,
+            inventory_item_ids=tuple(self.shop_items),
+            expected_character_id=self.character_pack.character_id,
+        )
+        if session_paths is not None:
+            self._write_session_pack_metadata(session_paths)
         self.dialogue_history_path = (
             Path(dialogue_history_path)
             if dialogue_history_path is not None
-            else _dialogue_history_path_for_save_path(self.save_path)
+            else (
+                session_paths.dialogue_history_path
+                if session_paths is not None
+                else _dialogue_history_path_for_save_path(self.save_path)
+            )
         )
         self.dialogue_history_store = dialogue_history_store or DialogueHistoryStore(self.dialogue_history_path)
         self.dialogue_history = self.dialogue_history_store.load()
         self.expression_settings_path = (
             Path(expression_settings_path)
             if expression_settings_path is not None
-            else _expression_settings_path_for_save_path(self.save_path)
+            else (
+                session_paths.expression_settings_path
+                if session_paths is not None
+                else _expression_settings_path_for_save_path(self.save_path)
+            )
         )
         self.expression_settings_store = expression_settings_store or ExpressionSettingsStore(
             self.expression_settings_path
@@ -126,9 +185,28 @@ class CompanionController:
             self.capability_settings_path
         )
         self.capability_settings = self.capability_settings_store.load()
+        self.long_term_memory_path = (
+            Path(long_term_memory_path)
+            if long_term_memory_path is not None
+            else (
+                session_paths.long_term_memory_path
+                if session_paths is not None
+                else _long_term_memory_path_for_save_path(self.save_path)
+            )
+        )
+        self._long_term_memory_enabled = (
+            auto_load
+            or session_paths is not None
+            or long_term_memory_path is not None
+            or long_term_memory_store is not None
+        )
+        self.long_term_memory_store = long_term_memory_store or LongTermMemoryStore(self.long_term_memory_path)
+        self.long_term_memory_service = LongTermMemoryService(
+            self.long_term_memory_store.load() if self._long_term_memory_enabled else ()
+        )
         self._perception_summary = ""
         self._tool_results: list[dict[str, object]] = []
-        self.character_pack = load_default_character_pack()
+        self._current_player_message = ""
         self.ai_expressor = ai_expressor or build_default_ai_expressor(
             settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
         )
@@ -137,7 +215,14 @@ class CompanionController:
             [CharacterProfileExpressionContextProvider(self.character_pack)]
         )
         loaded_state = self.save_manager.load() if auto_load else None
-        self.state = loaded_state or create_initial_state(now=0)
+        if loaded_state is not None and loaded_state.character_id != self.character_pack.character_id:
+            loaded_state = None
+        self.state = loaded_state or create_initial_state(
+            now=0,
+            character_id=self.character_pack.character_id,
+            character_name=self.character_pack.name,
+            buyable_items=self.shop_items,
+        )
         if self.state.character_id == self.character_pack.character_id:
             self.state = replace(self.state, character_name=self.character_pack.name)
         self.now = logical_time_from_state(self.state) if loaded_state is not None else 0
@@ -149,6 +234,11 @@ class CompanionController:
         self.last_item_feedback_icon: str | None = None
         self.last_proactive_feedback: dict[str, str] | None = None
         self._last_proactive_at: dict[str, int] = {}
+        self._proactive_daily_counts: dict[str, int] = {}
+        self._force_next_proactive = False
+        self._force_next_proactive_kind = ""
+        self.session_goals = SessionGoalTracker()
+        self.last_session_goal_reward: dict[str, object] | None = None
         self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
         if loaded_state is None:
             self._persist()
@@ -171,19 +261,33 @@ class CompanionController:
         finally:
             self._closed = True
 
+    @property
+    def user_data_root(self) -> Path | None:
+        return self._user_data_root
+
     def reset_demo_state(self, *, include_ai_expression: bool = True) -> dict[str, object]:
-        self.state = create_initial_state(now=0)
+        self.state = create_initial_state(
+            now=0,
+            character_id=self.character_pack.character_id,
+            character_name=self.character_pack.name,
+            buyable_items=self.shop_items,
+        )
         if self.state.character_id == self.character_pack.character_id:
             self.state = replace(self.state, character_name=self.character_pack.name)
         self.now = 0
         self.tick_count = 0
         self.last_motion = "Default"
-        self.last_feedback = "演示状态已重置。星汐回到初识、空背包和 20 coins。"
+        self.last_feedback = f"演示状态已重置。{self.character_pack.name} 回到初识、空背包和 20 coins。"
         self.last_delta_text = "演示 seed 已重置"
         self.last_allowed = True
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
         self._last_proactive_at.clear()
+        self._proactive_daily_counts.clear()
+        self._force_next_proactive = False
+        self._force_next_proactive_kind = ""
+        self.session_goals = SessionGoalTracker()
+        self.last_session_goal_reward = None
         self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
         self._persist()
         return self.get_snapshot()
@@ -214,8 +318,87 @@ class CompanionController:
             item_feedback_icon=self.last_item_feedback_icon,
             proactive_feedback=self.last_proactive_feedback,
             dialogue_history=self.dialogue_history,
+            long_term_memory=self.long_term_memory_service.summaries(),
+            relationship_decorations=self.character_pack.relationship_decorations,
+            session_goal=self.session_goals.snapshot(),
+            next_suggested_action=self._next_session_goal_action(),
+            session_goal_reward=self.last_session_goal_reward,
         ).build_input()
         return SnapshotBuilder(builder_input).build()
+
+    def switch_character(
+        self,
+        character_id: str,
+        *,
+        pack_dir: Path | str | None = None,
+        include_ai_expression: bool = False,
+    ) -> dict[str, object]:
+        if character_id == self.character_pack.character_id:
+            return self.get_snapshot()
+
+        resources = (
+            load_character_resources_from_dir(pack_dir)
+            if pack_dir is not None
+            else load_character_resources(character_id)
+        )
+        if resources.character_pack.character_id != character_id:
+            raise ValueError("character pack id does not match selected character")
+        session_paths = build_character_session_paths(character_id, user_data_root=self._user_data_root)
+        self.resources = resources
+        self.character_pack = resources.character_pack
+        self.shop_items = resources.shop_items
+        self.save_path = session_paths.save_path
+        self.save_manager = SaveManager(
+            self.save_path,
+            inventory_item_ids=tuple(self.shop_items),
+            expected_character_id=self.character_pack.character_id,
+        )
+        self._write_session_pack_metadata(session_paths)
+        self.dialogue_history_path = session_paths.dialogue_history_path
+        self.dialogue_history_store = DialogueHistoryStore(self.dialogue_history_path)
+        self.dialogue_history = self.dialogue_history_store.load()
+        self.expression_settings_path = session_paths.expression_settings_path
+        self.expression_settings_store = ExpressionSettingsStore(self.expression_settings_path)
+        self.expression_settings = self.expression_settings_store.load()
+        self.long_term_memory_path = session_paths.long_term_memory_path
+        self._long_term_memory_enabled = True
+        self.long_term_memory_store = LongTermMemoryStore(self.long_term_memory_path)
+        self.long_term_memory_service = LongTermMemoryService(self.long_term_memory_store.load())
+        self.expression_context_provider = ExpressionContextChain(
+            [CharacterProfileExpressionContextProvider(self.character_pack)]
+        )
+        self._replace_ai_expressor(
+            build_default_ai_expressor(
+                settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
+            )
+        )
+        loaded_state = self.save_manager.load()
+        if loaded_state is not None and loaded_state.character_id != self.character_pack.character_id:
+            loaded_state = None
+        self.state = loaded_state or create_initial_state(
+            now=0,
+            character_id=self.character_pack.character_id,
+            character_name=self.character_pack.name,
+            buyable_items=self.shop_items,
+        )
+        if self.state.character_id == self.character_pack.character_id:
+            self.state = replace(self.state, character_name=self.character_pack.name)
+        self.now = logical_time_from_state(self.state) if loaded_state is not None else 0
+        self.tick_count = 0
+        self.last_motion = "Default"
+        self.last_feedback = f"已切换到 {self.character_pack.name}。"
+        self.last_delta_text = "角色会话已切换"
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
+        self._perception_summary = ""
+        self._tool_results = []
+        self.session_goals = SessionGoalTracker()
+        self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
+        if loaded_state is None:
+            self._persist()
+        return self.get_snapshot()
 
     def perform_action(self, action_id: str, *, include_ai_expression: bool = True) -> dict[str, object]:
         return self.perform_action_request(
@@ -240,13 +423,23 @@ class CompanionController:
         self.last_allowed = True
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
-        self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
+        self.last_session_goal_reward = None
+        self._current_player_message = text
+        try:
+            self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
+        finally:
+            self._current_player_message = ""
         if text:
+            assistant_text = _assistant_dialogue_text_from_events(
+                self.last_events,
+                character_name=self.state.character_name,
+                fallback=self.last_feedback,
+            )
             self.dialogue_history = append_dialogue_exchange(
                 self.dialogue_history,
                 user_text=text,
                 assistant_name=self.state.character_name,
-                assistant_text=self.last_feedback,
+                assistant_text=assistant_text,
                 effect="ATTENTION",
                 source=request.source,
             )
@@ -275,69 +468,52 @@ class CompanionController:
         self.capability_settings = self.capability_settings_store.save(normalized)
         return self.capability_settings
 
+    def set_player_alias(self, alias: str, *, include_ai_expression: bool = False) -> dict[str, object]:
+        normalized = RelationshipService(self.state).set_player_alias(alias)
+        self.last_motion = "Default"
+        if normalized:
+            self.last_feedback = f"我记住这个称呼了：{normalized}"
+        else:
+            self.last_feedback = "本地称呼已清空。"
+        self.last_delta_text = "本地称呼更新，不改变成长数值"
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_proactive_feedback = None
+        self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
+        self._persist()
+        return self.get_snapshot()
+
     def set_perception_summary(self, summary: str) -> None:
         self._perception_summary = summary if isinstance(summary, str) else ""
 
     def set_tool_results(self, results: list[dict[str, object]]) -> None:
         self._tool_results = list(results) if isinstance(results, list) else []
 
-    def test_expression_provider(self) -> dict[str, object]:
-        request = ExpressionRequest.from_snapshot(
-            self.get_typed_snapshot(),
-            context=self._expression_context(),
+    def upsert_long_term_memory(
+        self,
+        *,
+        key: str,
+        category: str,
+        summary: str,
+        source: str = "local_api",
+    ) -> dict[str, object]:
+        self._upsert_long_term_memory(
+            key=key,
+            category=category,
+            summary=summary,
+            source=source,
+            now=self.now,
         )
-        try:
-            expressed_events = self.ai_expressor.express(request, effect="ATTENTION")
-        except Exception:
-            return {"ok": False, "speech": "", "effect": "", "fallback_reason": "provider_error"}
+        return self.get_snapshot()
 
-        choices = [entry["label"] for entry in self._build_actions()]
-        validated_events = EventValidator(self.state).validate(
-            events=expressed_events,
-            fallback_feedback=self.last_feedback,
-            choices=choices,
-        )
-        speech_event = next(
-            (
-                event
-                for event in validated_events
-                if event.event_type == "speech" and event.character_name == self.state.character_name
-            ),
-            None,
-        )
-        fallback_reason = str(getattr(self.ai_expressor, "last_fallback_reason", "") or "")
-        is_local_fallback = _is_local_fallback_expression(validated_events, self.last_feedback)
-        if speech_event is None:
-            return {
-                "ok": False,
-                "speech": "",
-                "effect": "",
-                "fallback_reason": fallback_reason or "invalid_event",
-            }
-        return {
-            "ok": not fallback_reason and not is_local_fallback,
-            "speech": speech_event.speech,
-            "effect": speech_event.effect,
-            "fallback_reason": "" if not fallback_reason and not is_local_fallback else fallback_reason or "invalid_event",
-        }
+    def test_expression_provider(self) -> dict[str, object]:
+        return self._expression_diagnostics().test_provider().to_public_dict()
 
     def fetch_expression_models(
         self,
         settings: ExpressionSettings | dict[str, object] | None = None,
     ) -> tuple[str, ...]:
-        normalized = (
-            self.expression_settings
-            if settings is None
-            else settings
-            if isinstance(settings, ExpressionSettings)
-            else normalize_expression_settings(settings)
-        )
-        return fetch_provider_model_ids(
-            provider=normalized.provider,
-            base_url=normalized.base_url,
-            api_key=normalized.api_key,
-            timeout_seconds=normalized.timeout_seconds,
-        )
+        return self._expression_diagnostics().fetch_models(settings)
 
     def clear_dialogue_history(self) -> dict[str, object]:
         self.dialogue_history = ()
@@ -399,6 +575,7 @@ class CompanionController:
         self.last_allowed = result.allowed
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
         new_unlocks = self._new_relationship_unlocks(previous_unlocks)
         unlock_feedback = self._relationship_unlock_feedback(new_unlocks)
         if unlock_feedback:
@@ -408,6 +585,7 @@ class CompanionController:
             memory_summary = f"{self._action_label(action_id)}：{self.last_feedback}"
             self._remember(kind="互动", summary=memory_summary, motion=result.motion)
             self._remember_relationship_unlocks(new_unlocks)
+            self._settle_session_goal_event("action", action_id=action_id)
         event_bundle = DomainEventComposer(self.state).action_events(
             ActionDomainEventRequest(
                 action_id=action_id,
@@ -434,21 +612,25 @@ class CompanionController:
             include_ai_expression=include_ai_expression,
         )
 
+    def purchase_shop_item(self, item_id: str, *, include_ai_expression: bool = True) -> dict[str, object]:
+        return self.buy_selected_item(item_id, include_ai_expression=include_ai_expression)
+
     def buy_item_request(
         self,
         request: ShopPurchaseRequest,
         *,
         include_ai_expression: bool = True,
     ) -> dict[str, object]:
-        self.state = ShopService(self.state, self._item_icon_path).purchase(request)
+        self.state = ShopService(self.state, self._item_icon_path, self.shop_items).purchase(request)
         item_id = request.item_id
-        item = BUYABLE_ITEMS[item_id]
+        item = self.shop_items[item_id]
         self.last_motion = "Shop"
         self.last_feedback = f"已购买：{item.name}。放进背包里了。"
         self.last_delta_text = f"coins -{item.price}"
         self.last_allowed = True
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
         event_bundle = DomainEventComposer(self.state).inventory_events(
             InventoryDomainEventRequest(
                 motion=self.last_motion,
@@ -480,6 +662,15 @@ class CompanionController:
             include_ai_expression=include_ai_expression,
         )
 
+    def use_inventory_item(
+        self,
+        item_id: str,
+        usage: str,
+        *,
+        include_ai_expression: bool = True,
+    ) -> dict[str, object]:
+        return self.use_selected_item(item_id, usage, include_ai_expression=include_ai_expression)
+
     def use_inventory_request(
         self,
         request: InventoryUseRequest,
@@ -489,10 +680,10 @@ class CompanionController:
         self.now += 5
         item_id = request.item_id
         usage = request.usage
-        item = BUYABLE_ITEMS[item_id]
+        item = self.shop_items[item_id]
         previous_unlocks = set(self.state.unlocks)
         try:
-            self.state = InventoryService(self.state, self._item_icon_path).use(request, now=self.now)
+            self.state = InventoryService(self.state, self._item_icon_path, self.shop_items).use(request, now=self.now)
         except ValueError as exc:
             self.last_motion = "SwitchDown"
             self.last_feedback = str(exc)
@@ -500,6 +691,7 @@ class CompanionController:
             self.last_allowed = False
             self.last_item_feedback_icon = None
             self.last_proactive_feedback = None
+            self.last_session_goal_reward = None
             event_bundle = DomainEventComposer(self.state).action_events(
                 ActionDomainEventRequest(
                     action_id=usage,
@@ -529,10 +721,11 @@ class CompanionController:
         unlock_feedback = self._relationship_unlock_feedback(new_unlocks)
         if unlock_feedback:
             self.last_feedback = f"{self.last_feedback} {unlock_feedback}"
-        self.last_delta_text = format_item_effect(item_id, usage)
+        self.last_delta_text = format_item_effect(item_id, usage, self.shop_items)
         self.last_allowed = True
         self.last_item_feedback_icon = self._item_icon_path(item)
         self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
         memory_kind = memory_kind_for_inventory_usage(usage)
         memory_summary = f"{memory_kind}了 {item.name}：{self.last_delta_text}"
         self._remember(
@@ -542,6 +735,7 @@ class CompanionController:
             item_id=item_id,
         )
         self._remember_relationship_unlocks(new_unlocks)
+        self._settle_session_goal_event("inventory", action_id=usage)
         base_effect = "ATTENTION" if usage in {"feed", "gift"} else "SWITCH"
         event_bundle = DomainEventComposer(self.state).inventory_events(
             InventoryDomainEventRequest(
@@ -580,11 +774,14 @@ class CompanionController:
         self.last_delta_text = "tick -15s"
         self.last_allowed = True
         self.last_item_feedback_icon = None
+        self.last_session_goal_reward = None
         proactive_decision = self._select_proactive_decision(previous_state)
         self.last_proactive_feedback = proactive_decision.to_legacy_feedback()
         if proactive_decision.feedback:
             self.last_feedback = proactive_decision.feedback.speech
             self._last_proactive_at.update(proactive_decision.cooldown_updates())
+            for key, count in proactive_decision.daily_count_updates().items():
+                self._proactive_daily_counts[key] = self._proactive_daily_counts.get(key, 0) + count
             MemoryLogService(self.state.memory_log).append_drafts(
                 at=self.now,
                 drafts=proactive_decision.memory_drafts(),
@@ -609,24 +806,67 @@ class CompanionController:
 
     def trigger_demo_proactive(self, scenario: str, *, include_ai_expression: bool = True) -> dict[str, object]:
         if scenario == "low_charge":
+            forced_kind = "low_charge"
             self.state.charge = 25
             self.state.focus = max(self.state.focus, 70)
             self.state.stability = max(self.state.stability, 70)
             self.state.mood = max(self.state.mood, 60)
             self._last_proactive_at.pop("low_charge", None)
         elif scenario == "quiet_mood":
+            forced_kind = "low_mood"
             self.now = max(self.now, self.state.last_interaction_at + 61)
             self.state.charge = max(self.state.charge, 80)
             self.state.focus = max(self.state.focus, 80)
             self.state.stability = max(self.state.stability, 80)
             self.state.mood = 35
             self._last_proactive_at.pop("low_mood", None)
+        elif scenario == "morning":
+            forced_kind = "morning_greeting"
+            self.now = max(self.now, 8 * 3600 - TICK_SECONDS)
+            self.state.charge = max(self.state.charge, 80)
+            self.state.focus = max(self.state.focus, 70)
+            self.state.stability = max(self.state.stability, 70)
+            self._last_proactive_at.pop("morning_greeting", None)
+        elif scenario == "high_trust":
+            forced_kind = "high_trust"
+            self.state.trust = 34.9
+            self.state.mood = max(self.state.mood, 80)
+            self.state.charge = max(self.state.charge, 80)
+            self.state.focus = max(self.state.focus, 80)
+            self._last_proactive_at.pop("high_trust", None)
+        elif scenario == "return_idle":
+            forced_kind = "return_after_idle"
+            self.now = max(self.now, self.state.last_interaction_at + 300 - TICK_SECONDS)
+            self.state.charge = max(self.state.charge, 80)
+            self.state.focus = max(self.state.focus, 80)
+            self.state.stability = max(self.state.stability, 80)
+            self.state.mood = max(self.state.mood, 60)
+            self._last_proactive_at.pop("return_after_idle", None)
+        elif scenario == "post_gift":
+            forced_kind = "post_gift"
+            self.state.last_gift_at = self.now
+            self.state.last_gift_item_id = "demo_gift"
+            self.state.charge = max(self.state.charge, 80)
+            self.state.focus = max(self.state.focus, 80)
+            self.state.stability = max(self.state.stability, 80)
+            self._last_proactive_at.pop("post_gift", None)
         else:
             raise ValueError(f"Unknown demo proactive scenario: {scenario}")
+        self._force_next_proactive = True
+        self._force_next_proactive_kind = forced_kind
         return self.advance_tick(include_ai_expression=include_ai_expression)
 
     def _persist(self) -> None:
         self.save_manager.save(self.state)
+
+    def _write_session_pack_metadata(self, session_paths: CharacterSessionPaths) -> None:
+        write_character_session_pack_metadata(
+            session_paths,
+            pack_name=self.character_pack.name,
+            asset_dir=self.resources.asset_dir,
+            renderer_backend=self.character_pack.renderer.backend,
+            spritesheet=self.character_pack.spritesheet,
+        )
 
     def _replace_ai_expressor(self, next_expressor: ShinsekaiAIExpressor) -> None:
         current = self.ai_expressor
@@ -638,6 +878,17 @@ class CompanionController:
             except Exception:
                 pass
         self.ai_expressor = next_expressor
+
+    def _expression_diagnostics(self) -> ExpressionDiagnosticsService:
+        return ExpressionDiagnosticsService(
+            settings=self.expression_settings,
+            expressor=self.ai_expressor,
+            state_provider=lambda: self.state,
+            snapshot_provider=self.get_typed_snapshot,
+            context_provider=self._expression_context,
+            choices_provider=lambda: tuple(entry["label"] for entry in self._build_actions()),
+            model_fetcher=fetch_provider_model_ids,
+        )
 
     def _set_dialogue_history_feedback(self, *, feedback: str, delta_text: str, effect: str) -> None:
         self.last_motion = "Default"
@@ -655,77 +906,67 @@ class CompanionController:
         *,
         include_ai_expression: bool = True,
     ) -> list[CompanionEvent]:
-        actions = self._build_actions()
-        choices = [entry["label"] for entry in actions]
-        fallback_events = build_typed_fallback_events(
+        return ExpressionEventPipeline(
             state=self.state,
-            feedback=self.last_feedback,
-            choices=choices,
+            expressor=self.ai_expressor,
+            snapshot_provider=self.get_typed_snapshot,
+            context_provider=self._expression_context,
+            actions_provider=self._build_actions,
+        ).build_events(
             effect=effect,
+            feedback=self.last_feedback,
+            domain_events=domain_events,
+            include_ai_expression=include_ai_expression,
+            closed=self._closed,
         )
-        if self._closed or not include_ai_expression:
-            return fallback_events + list(domain_events or [])
-        expression_request = ExpressionRequest.from_snapshot(
-            self.get_typed_snapshot(),
-            context=self._expression_context(),
-        )
-        try:
-            expressed_events = self.ai_expressor.express(expression_request, effect=effect)
-        except Exception:
-            return fallback_events + list(domain_events or [])
-        if not expressed_events:
-            return fallback_events + list(domain_events or [])
-        if expressed_events == [event.to_legacy_dict() for event in fallback_events]:
-            return fallback_events + list(domain_events or [])
-        validated_events = EventValidator(self.state).validate(
-            events=expressed_events,
-            fallback_feedback=self.last_feedback,
-            choices=choices,
-        )
-        if _is_local_fallback_expression(validated_events, self.last_feedback):
-            return fallback_events + list(domain_events or [])
-        local_context_events = [event for event in fallback_events if event.event_type in {"stat", "choice"}]
-        expression_events = [event for event in validated_events if event.event_type == "speech"]
-        if not expression_events:
-            return fallback_events + list(domain_events or [])
-        return expression_events[:1] + local_context_events + list(domain_events or [])
 
     def _build_actions(self) -> list[dict[str, object]]:
         return [action.to_legacy_dict() for action in CompanionActionLayer(self.state).available_actions()]
 
     def _build_shop_items(self) -> list[dict[str, object]]:
-        return [item.to_legacy_dict() for item in ShopService(self.state, self._item_icon_path).shop_items()]
+        return [
+            item.to_legacy_dict()
+            for item in ShopService(self.state, self._item_icon_path, self.shop_items).shop_items()
+        ]
 
     def _build_inventory_items(self) -> list[dict[str, object]]:
-        return [item.to_legacy_dict() for item in InventoryService(self.state, self._item_icon_path).inventory_items()]
+        return [
+            item.to_legacy_dict()
+            for item in InventoryService(self.state, self._item_icon_path, self.shop_items).inventory_items()
+        ]
+
+    def _next_session_goal_action(self) -> dict[str, object] | None:
+        suggested = self.session_goals.suggested_action()
+        for action in self._build_actions():
+            if action.get("action_id") == suggested["action_id"]:
+                return dict(action)
+        return suggested
+
+    def _settle_session_goal_event(self, event_type: str, *, action_id: str) -> SessionGoalResult:
+        result = self.session_goals.record_event(event_type, action_id=action_id)
+        reward = result.to_public_dict()
+        self.last_session_goal_reward = reward
+        if reward:
+            self.state.coins += int(reward.get("coins", 0))
+            self.state.exp += int(reward.get("exp", 0))
+        return result
 
     def _expression_context(self) -> dict[str, object]:
-        context: dict[str, object] = {}
-        if self.expression_context_provider is None:
-            external_context = {}
-        else:
-            try:
-                external_context = self.expression_context_provider()
-            except Exception:
-                external_context = {}
-        if isinstance(external_context, dict):
-            for key in ("perception_summary", "tool_results"):
-                if key in external_context:
-                    context[key] = external_context[key]
-        runtime_context = ExpressionContextChain(
-            [
-                lambda: {"perception_summary": self._perception_summary},
-                lambda: {"tool_results": self._tool_results},
-            ]
+        context = RuntimeExpressionContextService(
+            state=self.state,
+            relationship_decorations=self.character_pack.relationship_decorations,
+            external_provider=self.expression_context_provider,
+            perception_summary=self._perception_summary,
+            tool_results=self._tool_results,
         )()
-        if runtime_context:
-            context.update(runtime_context)
+        if self._current_player_message:
+            context["player_message"] = self._current_player_message
         return context
 
     def _item_icon_path(self, item) -> str:
         if not item.icon:
             return ""
-        return str(ASSETS_ROOT / self.character_pack.character_id / item.icon)
+        return str(self.resources.asset_dir / item.icon)
 
     def _remember(self, kind: str, summary: str, motion: str, item_id: str | None = None) -> None:
         MemoryLogService(self.state.memory_log).append(
@@ -750,21 +991,65 @@ class CompanionController:
             at=self.now,
             drafts=RelationshipService(self.state).unlock_memory_drafts(unlocks, motion=self.last_motion),
         )
+        for payload in RelationshipService(self.state).unlock_event_payloads(unlocks):
+            self._upsert_long_term_memory(
+                key=f"relationship:{payload['unlock_id']}",
+                category="relationship_unlock",
+                summary=payload["message"],
+                source="relationship_unlock",
+                now=self.now,
+            )
+
+    def _upsert_long_term_memory(
+        self,
+        *,
+        key: str,
+        category: str,
+        summary: str,
+        source: str,
+        now: int,
+    ) -> None:
+        if not self._long_term_memory_enabled:
+            return
+        self.long_term_memory_service.upsert(
+            key=key,
+            category=category,
+            summary=summary,
+            source=source,
+            now=now,
+        )
+        self.long_term_memory_store.save(self.long_term_memory_service.entries)
 
     def _relationship_event_payloads(self, unlocks: list[str]) -> list[dict[str, str]]:
         return RelationshipService(self.state).unlock_event_payloads(unlocks)
 
     def _select_proactive_decision(self, previous_state: CompanionState) -> ProactiveCompanionDecision:
+        settings = self.capability_settings.proactive_companion
+        forced_kind = ""
+        if self._force_next_proactive:
+            forced_kind = self._force_next_proactive_kind
+            settings = replace(
+                settings,
+                enabled=True,
+                interval_seconds=60,
+                global_cooldown_seconds=60,
+                daily_limit=max(settings.daily_limit, 1),
+                quiet_hours_enabled=False,
+            )
+            self._force_next_proactive = False
+            self._force_next_proactive_kind = ""
+        expression_context = self._expression_context()
         return ProactiveCompanionService(
             state=self.state,
             previous_state=previous_state,
             now=self.now,
+            settings=settings,
             last_proactive_at=self._last_proactive_at,
+            daily_counts=self._proactive_daily_counts,
+            perception_summary=str(expression_context.get("perception_summary", "")),
+            tool_results=expression_context.get("tool_results", []),
+            forced_kind=forced_kind,
         ).select_decision(motion=self.last_motion)
-
-
-def _is_local_fallback_expression(events: list[CompanionEvent], feedback: str) -> bool:
-    return [event.event_type for event in events] == ["speech", "stat", "choice"] and events[0].speech == feedback
 
 
 def _dialogue_history_path_for_save_path(save_path: Path) -> Path:
@@ -789,3 +1074,23 @@ def _capability_settings_path_for_save_path(save_path: Path) -> Path:
     if save_path.name == "companion_demo_save.json":
         return save_path.with_name("companion_demo_capability_settings.json")
     return save_path.with_name(f"{save_path.stem}_capability_settings.json")
+
+
+def _long_term_memory_path_for_save_path(save_path: Path) -> Path:
+    if save_path.name == "companion_save.json":
+        return default_long_term_memory_path()
+    if save_path.name == "companion_demo_save.json":
+        return save_path.with_name("companion_demo_long_term_memory.json")
+    return save_path.with_name(f"{save_path.stem}_long_term_memory.json")
+
+
+def _assistant_dialogue_text_from_events(
+    events: list[CompanionEvent],
+    *,
+    character_name: str,
+    fallback: str,
+) -> str:
+    for event in events:
+        if event.event_type == "speech" and event.character_name == character_name and event.speech.strip():
+            return event.speech
+    return fallback

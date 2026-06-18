@@ -90,6 +90,8 @@ def test_event_payload_schema_covers_stage_one_event_types():
         "inventory": frozenset({"item_id", "action", "item_name", "icon_path"}),
         "proactive": frozenset({"kind", "summary"}),
         "system": frozenset({"code", "message"}),
+        "visual": frozenset({"actions"}),
+        "intent": frozenset({"intents"}),
     }
 
 

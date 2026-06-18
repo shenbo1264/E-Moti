@@ -179,11 +179,48 @@ class ASRSettings:
 
 
 @dataclass(frozen=True, slots=True)
+class ProactiveCompanionSettings:
+    enabled: bool = False
+    interval_seconds: int = 900
+    global_cooldown_seconds: int = 1800
+    daily_limit: int = 8
+    quiet_hours_enabled: bool = False
+    quiet_start: str = "23:00"
+    quiet_end: str = "08:00"
+    allow_context_topic: bool = True
+
+    @classmethod
+    def from_dict(cls, data: object) -> "ProactiveCompanionSettings":
+        source = _mapping(data)
+        return cls(
+            enabled=_clean_bool(source.get("enabled")),
+            interval_seconds=_clean_int(
+                source.get("interval_seconds"),
+                default=900,
+                minimum=60,
+                maximum=86_400,
+            ),
+            global_cooldown_seconds=_clean_int(
+                source.get("global_cooldown_seconds"),
+                default=1800,
+                minimum=60,
+                maximum=86_400,
+            ),
+            daily_limit=_clean_int(source.get("daily_limit"), default=8, minimum=1, maximum=24),
+            quiet_hours_enabled=_clean_bool(source.get("quiet_hours_enabled")),
+            quiet_start=_clean_time_string(source.get("quiet_start"), default="23:00"),
+            quiet_end=_clean_time_string(source.get("quiet_end"), default="08:00"),
+            allow_context_topic=_clean_bool(source.get("allow_context_topic"), default=True),
+        )
+
+
+@dataclass(frozen=True, slots=True)
 class CapabilitySettings:
     screen_observation: ScreenObservationSettings = field(default_factory=ScreenObservationSettings)
     web_search: WebSearchSettings = field(default_factory=WebSearchSettings)
     tts: TTSSettings = field(default_factory=TTSSettings)
     asr: ASRSettings = field(default_factory=ASRSettings)
+    proactive_companion: ProactiveCompanionSettings = field(default_factory=ProactiveCompanionSettings)
 
     @classmethod
     def default(cls) -> "CapabilitySettings":
@@ -197,6 +234,7 @@ class CapabilitySettings:
             web_search=WebSearchSettings.from_dict(source.get("web_search")),
             tts=TTSSettings.from_dict(source.get("tts")),
             asr=ASRSettings.from_dict(source.get("asr")),
+            proactive_companion=ProactiveCompanionSettings.from_dict(source.get("proactive_companion")),
         )
 
     def to_dict(self) -> dict[str, Any]:
@@ -276,3 +314,17 @@ def _clean_string(value: object, *, max_length: int) -> str:
         return ""
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length]
+
+
+def _clean_time_string(value: object, *, default: str) -> str:
+    raw = _clean_string(value, max_length=5)
+    if len(raw) not in {4, 5} or ":" not in raw:
+        return default
+    hour_text, minute_text = raw.split(":", 1)
+    if not hour_text.isdigit() or not minute_text.isdigit():
+        return default
+    hour = int(hour_text)
+    minute = int(minute_text)
+    if hour < 0 or hour > 23 or minute < 0 or minute > 59:
+        return default
+    return f"{hour:02d}:{minute:02d}"

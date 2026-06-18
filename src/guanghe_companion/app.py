@@ -1,17 +1,20 @@
 from __future__ import annotations
 
 import json
+import os
 import sys
 
 from collections.abc import Callable
+from pathlib import Path
 
-from PySide6.QtCore import QEvent, QPoint, QRect, QSize, QTimer, Qt, Slot
-from PySide6.QtGui import QAction, QFont, QIcon, QPixmap
+from PySide6.QtCore import QEvent, QPoint, QSize, QTimer, Qt, Slot
+from PySide6.QtGui import QAction, QFont, QFontDatabase, QIcon, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
     QComboBox,
     QDoubleSpinBox,
+    QFileDialog,
     QFrame,
     QGridLayout,
     QGroupBox,
@@ -25,6 +28,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QProgressBar,
+    QScrollArea,
     QSpinBox,
     QStackedWidget,
     QTextEdit,
@@ -35,25 +39,49 @@ from PySide6.QtWidgets import (
 )
 
 from .ai_expressor import build_expression_prompt_preview
-from .capability_settings import (
-    ASRSettings,
-    CapabilitySettings,
-    ScreenObservationSettings,
-    TTSSettings,
-    WebSearchSettings,
+from .capability_runtime import CapabilityRuntime
+from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
+from .capability_settings import CapabilitySettings
+from .character_library_view_model import (
+    character_pack_list_item_text,
+    character_pack_distribution_text,
+    character_pack_import_review_text,
+)
+from .character_pack_import import import_character_pack_dir
+from .character_registry import (
+    CharacterPackSummary,
+    CharacterRegistry,
+    summarize_character_pack_dir,
+    validate_character_pack_dir,
 )
 from .controller import CompanionController
 from .dialogue import DialogueRequest
+from .desktop_shell import DesktopShell
 from .expression_settings import (
     EXPRESSION_PROVIDER_PRESETS,
     normalize_expression_settings,
     provider_default_base_url,
     provider_default_model,
 )
+from .expression_diagnostic_view import (
+    expression_test_status_text,
+    format_expression_test_failure,
+    model_fetch_reason,
+)
 from .expression_context import ExpressionContextChain, ManualPerceptionExpressionContextProvider
-from .motion import MotionAnimator, load_default_motion_catalog
+from .motion import MotionAnimator, load_motion_catalog_from_dir
+from .live2d_web import Live2DWebSurface, has_safe_live2d_model
+from .presentation_renderer import (
+    Live2DWebPresentationAdapter,
+    PortraitPresentationAdapter,
+    PresentationFrame,
+    SpritePresentationAdapter,
+)
 from .screen_observation import ScreenObservationService
+from .snapshot_renderer import SnapshotRenderer
+from .spirit_stage import SpiritStageSurface, has_safe_portrait_manifest, load_portrait_manifest
 from .storage import DEMO_SAVE_PATH
+from .tray_controller import TrayController
 from .voice_asr import ASRService
 from .voice_tts import TTSManager
 from .web_search import WebSearchService
@@ -73,6 +101,13 @@ CONTROL_PANEL_SPRITE_STYLE = (
 DESKTOP_SPRITE_STYLE = "QLabel { border: none; padding: 0; background: transparent; }"
 DESKTOP_HERO_STYLE = "QGroupBox { border: none; margin: 0; padding: 0; background: transparent; }"
 APP_FONT_FAMILY = "Microsoft YaHei UI"
+WINDOWS_CJK_FONT_FILENAMES = (
+    "msyh.ttc",
+    "msyhbd.ttc",
+    "simhei.ttf",
+    "simsun.ttc",
+)
+_LOADED_COMPANION_FONT_FAMILIES: tuple[str, ...] | None = None
 STAT_LABELS = {
     "focus": "专注",
     "charge": "能量",
@@ -200,10 +235,62 @@ QListWidget::item:selected {
 """
 
 
+def _windows_font_dirs() -> tuple[Path, ...]:
+    roots = (os.environ.get("WINDIR"), os.environ.get("SystemRoot"), r"C:\Windows")
+    dirs: list[Path] = []
+    seen: set[str] = set()
+    for root in roots:
+        if not root:
+            continue
+        font_dir = Path(root) / "Fonts"
+        key = str(font_dir).casefold()
+        if key not in seen:
+            dirs.append(font_dir)
+            seen.add(key)
+    return tuple(dirs)
+
+
+def _companion_font_candidates() -> tuple[Path, ...]:
+    return tuple(font_dir / name for font_dir in _windows_font_dirs() for name in WINDOWS_CJK_FONT_FILENAMES)
+
+
+def load_companion_font_files(
+    *,
+    candidates: tuple[Path, ...] | None = None,
+    font_database: type[QFontDatabase] = QFontDatabase,
+) -> tuple[str, ...]:
+    loaded: list[str] = []
+    for path in candidates or _companion_font_candidates():
+        if not path.is_file():
+            continue
+        try:
+            font_id = font_database.addApplicationFont(str(path))
+        except Exception:
+            continue
+        if font_id < 0:
+            continue
+        try:
+            families = font_database.applicationFontFamilies(font_id)
+        except Exception:
+            families = ()
+        for family in families:
+            if family and family not in loaded:
+                loaded.append(str(family))
+    return tuple(loaded)
+
+
+def ensure_companion_font_files_loaded() -> tuple[str, ...]:
+    global _LOADED_COMPANION_FONT_FAMILIES
+    if _LOADED_COMPANION_FONT_FAMILIES is None:
+        _LOADED_COMPANION_FONT_FAMILIES = load_companion_font_files()
+    return _LOADED_COMPANION_FONT_FAMILIES
+
+
 def configure_application_style(app: QApplication | None = None) -> bool:
     target = app if app is not None else QApplication.instance()
     if target is None:
         return False
+    ensure_companion_font_files_loaded()
     fusion = QStyleFactory.create("Fusion")
     if fusion is not None and hasattr(target, "setStyle"):
         target.setStyle(fusion)
@@ -264,6 +351,31 @@ class SpriteInteractionLabel(QLabel):
         event.accept()
 
 
+def _presentation_renderer_from_profile(renderer_profile, asset_dir):
+    if (
+        renderer_profile.backend == "portrait"
+        and renderer_profile.portrait_manifest
+        and has_safe_portrait_manifest(asset_dir, renderer_profile.portrait_manifest)
+    ):
+        manifest = load_portrait_manifest(asset_dir, renderer_profile.portrait_manifest)
+        return PortraitPresentationAdapter(
+            portrait_manifest=renderer_profile.portrait_manifest,
+            expression_map=renderer_profile.expression_map,
+            fallback_expression=manifest.fallback_expression,
+        )
+    if (
+        renderer_profile.backend == "live2d_web"
+        and renderer_profile.model
+        and has_safe_live2d_model(asset_dir, renderer_profile.model)
+    ):
+        return Live2DWebPresentationAdapter(
+            model_path=renderer_profile.model,
+            motion_map=renderer_profile.motion_map,
+            expression_map=renderer_profile.expression_map,
+        )
+    return SpritePresentationAdapter(motion_map=renderer_profile.motion_map)
+
+
 class CompanionWindow(QMainWindow):
     def __init__(
         self,
@@ -284,17 +396,48 @@ class CompanionWindow(QMainWindow):
         self.web_search_service = WebSearchService()
         self.tts_manager = TTSManager()
         self.asr_service = ASRService()
+        self.capability_runtime = CapabilityRuntime(
+            settings_saver=self._save_capability_settings_from_ui,
+            settings_reader=self.controller.get_capability_settings,
+            set_perception_summary=self.controller.set_perception_summary,
+            set_tool_results=self.controller.set_tool_results,
+            screen_observation_service=lambda: self.screen_observation_service,
+            web_search_service=lambda: self.web_search_service,
+            tts_manager=lambda: self.tts_manager,
+            asr_service=lambda: self.asr_service,
+        )
         self._last_auto_tts_key: tuple[str, str] | None = None
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
-        self._tray_icon: QSystemTrayIcon | None = None
-        self._tray_close_message_shown = False
-        self._force_exit = False
-        self._previous_quit_on_last_window_closed: bool | None = None
-        self.motion_catalog = load_default_motion_catalog()
+        self.snapshot_renderer = SnapshotRenderer()
+        self.presentation_renderer = _presentation_renderer_from_profile(
+            self.controller.character_pack.renderer,
+            self.controller.resources.asset_dir,
+        )
+        user_pack_root = (
+            self.controller.user_data_root / "character_packs"
+            if self.controller.user_data_root is not None
+            else None
+        )
+        self.character_registry = CharacterRegistry(
+            builtin_root=self.controller.resources.asset_dir.parent,
+            user_root=user_pack_root,
+        )
+        self.motion_catalog = load_motion_catalog_from_dir(self.controller.resources.asset_dir)
         self.motion_animator = MotionAnimator(self.motion_catalog)
         self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
+        self.desktop_shell = DesktopShell(self, dock_threshold_px=DESKTOP_DOCK_THRESHOLD_PX)
+        self.tray_controller = TrayController(
+            parent=self,
+            tray_icon_class=QSystemTrayIcon,
+            icon_provider=self._build_tray_icon,
+            show_control_panel=self._show_control_panel_from_tray,
+            show_desktop_pet=self._show_desktop_pet_from_tray,
+            hide_window=self.hide,
+            close_window=self.close,
+            application_provider=QApplication.instance,
+        )
         self.remaining_seconds = 15
         self.action_buttons: dict[str, QPushButton] = {}
         self.navigation_buttons: list[QPushButton] = []
@@ -302,9 +445,8 @@ class CompanionWindow(QMainWindow):
         self.stat_name_labels: list[QLabel] = []
         self._manual_perception_summary = ""
         self._base_expression_context_provider = self.controller.expression_context_provider
-        self.controller.expression_context_provider = ExpressionContextChain(
-            [self._base_expression_context_provider, self._manual_perception_context]
-        )
+        self._manual_expression_context_provider = self.controller.expression_context_provider
+        self._install_manual_expression_context_provider()
 
         configure_application_style(QApplication.instance())
         self.setWindowTitle("星汐 E-Moti 桌面伴侣")
@@ -314,7 +456,17 @@ class CompanionWindow(QMainWindow):
             self._apply_desktop_mode()
         self._setup_timers()
         self._apply_snapshot(self.controller.get_snapshot())
-        self._setup_system_tray()
+        self.tray_controller.setup(owns_controller=self._owns_controller)
+
+    def _install_manual_expression_context_provider(self) -> None:
+        current_provider = self.controller.expression_context_provider
+        if current_provider is self._manual_expression_context_provider:
+            current_provider = self._base_expression_context_provider
+        self._base_expression_context_provider = current_provider
+        self._manual_expression_context_provider = ExpressionContextChain(
+            [self._base_expression_context_provider, self._manual_perception_context]
+        )
+        self.controller.expression_context_provider = self._manual_expression_context_provider
 
     def _register_close_callback(self, callback: Callable[["CompanionWindow"], None]) -> None:
         self._close_callbacks.append(callback)
@@ -324,56 +476,37 @@ class CompanionWindow(QMainWindow):
         if (
             event.type() == QEvent.Type.WindowStateChange
             and self.isMinimized()
-            and self._should_hide_to_tray()
+            and self.tray_controller.should_hide_to_tray()
         ):
-            QTimer.singleShot(0, self._hide_to_tray)
+            QTimer.singleShot(0, self.tray_controller.hide_to_tray)
 
     def closeEvent(self, event) -> None:
-        if self._should_hide_to_tray():
+        if self.tray_controller.should_hide_to_tray():
             event.ignore()
-            self._hide_to_tray()
+            self.tray_controller.hide_to_tray()
             return
         pet_window = self.desktop_pet_window
         if pet_window is not None:
             self.desktop_pet_window = None
             pet_window.close()
-        tray_icon = self._tray_icon
-        if tray_icon is not None:
-            tray_icon.hide()
-            self._tray_icon = None
+        self.tray_controller.cleanup()
+        self.frame_timer.stop()
+        self.tick_timer.stop()
+        self.countdown_timer.stop()
         self.screen_observation_timer.stop()
         self._manual_perception_summary = ""
-        self.controller.expression_context_provider = self._base_expression_context_provider
+        if self.controller.expression_context_provider is self._manual_expression_context_provider:
+            self.controller.expression_context_provider = self._base_expression_context_provider
         try:
             if self._owns_controller:
                 self.controller.close()
         except Exception:
             pass
         finally:
-            self._restore_quit_on_last_window_closed()
+            self.tray_controller.restore_quit_on_last_window_closed()
             super().closeEvent(event)
             for callback in tuple(self._close_callbacks):
                 callback(self)
-
-    def _setup_system_tray(self) -> None:
-        if not self._owns_controller:
-            return
-        try:
-            if not QSystemTrayIcon.isSystemTrayAvailable():
-                return
-        except Exception:
-            return
-
-        tray_icon = QSystemTrayIcon(self._build_tray_icon(), self)
-        tray_icon.setToolTip("星汐 E-Moti")
-        tray_icon.setContextMenu(self._build_tray_menu())
-        tray_icon.activated.connect(self._handle_tray_activated)
-        tray_icon.show()
-        self._tray_icon = tray_icon
-        app = QApplication.instance()
-        if app is not None and self._previous_quit_on_last_window_closed is None:
-            self._previous_quit_on_last_window_closed = app.quitOnLastWindowClosed()
-            app.setQuitOnLastWindowClosed(False)
 
     def _build_tray_icon(self) -> QIcon:
         pixmap = self.spritesheet.copy(self.motion_animator.current_frame_rect())
@@ -384,50 +517,6 @@ class CompanionWindow(QMainWindow):
                 Qt.TransformationMode.SmoothTransformation,
             )
         return QIcon(pixmap)
-
-    def _build_tray_menu(self) -> QMenu:
-        menu = QMenu(self)
-        show_panel_action = QAction("显示控制面板", self)
-        show_panel_action.triggered.connect(self._show_control_panel_from_tray)
-        show_pet_action = QAction("显示/进入桌宠模式", self)
-        show_pet_action.triggered.connect(self._show_desktop_pet_from_tray)
-        hide_action = QAction("隐藏到托盘", self)
-        hide_action.triggered.connect(self._hide_to_tray)
-        exit_action = QAction("退出", self)
-        exit_action.triggered.connect(self._quit_from_tray)
-        menu.addAction(show_panel_action)
-        menu.addAction(show_pet_action)
-        menu.addAction(hide_action)
-        menu.addSeparator()
-        menu.addAction(exit_action)
-        return menu
-
-    def _handle_tray_activated(self, reason) -> None:
-        if reason in (
-            QSystemTrayIcon.ActivationReason.Trigger,
-            QSystemTrayIcon.ActivationReason.DoubleClick,
-        ):
-            self._show_control_panel_from_tray()
-
-    def _should_hide_to_tray(self) -> bool:
-        return self._tray_icon is not None and not self._force_exit
-
-    def _hide_to_tray(self) -> None:
-        if self._tray_icon is None or self._force_exit:
-            return
-        self.hide()
-        if self._tray_close_message_shown:
-            return
-        self._tray_close_message_shown = True
-        try:
-            self._tray_icon.showMessage(
-                "星汐 E-Moti",
-                "星汐已隐藏到托盘，可从托盘菜单恢复或退出。",
-                QSystemTrayIcon.MessageIcon.Information,
-                2500,
-            )
-        except Exception:
-            pass
 
     def _show_control_panel_from_tray(self) -> None:
         if self.desktop_mode:
@@ -445,20 +534,6 @@ class CompanionWindow(QMainWindow):
             self.activateWindow()
             return
         self._enter_desktop_mode()
-
-    def _quit_from_tray(self) -> None:
-        self._force_exit = True
-        self.close()
-        if self._owns_controller:
-            app = QApplication.instance()
-            if app is not None:
-                app.quit()
-
-    def _restore_quit_on_last_window_closed(self) -> None:
-        app = QApplication.instance()
-        if app is not None and self._previous_quit_on_last_window_closed is not None:
-            app.setQuitOnLastWindowClosed(self._previous_quit_on_last_window_closed)
-            self._previous_quit_on_last_window_closed = None
 
     def _build_ui(self) -> None:
         root = QWidget(self)
@@ -536,25 +611,17 @@ class CompanionWindow(QMainWindow):
         lower.addWidget(self.inventory_card, stretch=1)
         self.content_stack.addWidget(inventory_page)
 
-        self.perception_search_page = QWidget()
-        perception_search_layout = QVBoxLayout(self.perception_search_page)
-        self.perception_search_layout = perception_search_layout
-        perception_search_layout.setContentsMargins(0, 0, 0, 0)
-        perception_search_layout.setSpacing(12)
-        self.control_panel_page_layouts.append(perception_search_layout)
-        self.screen_observation_settings_card = self._build_screen_observation_settings_card()
-        self.web_search_settings_card = self._build_web_search_settings_card()
-        perception_search_layout.addWidget(self.screen_observation_settings_card)
-        perception_search_layout.addWidget(self.web_search_settings_card)
-        capability_save_row = QHBoxLayout()
-        self.capability_save_button = QPushButton("保存能力设置")
-        self.capability_save_button.clicked.connect(self._save_capability_settings_from_ui)
-        self.capability_feedback_label = QLabel("")
-        self.capability_feedback_label.setWordWrap(True)
-        capability_save_row.addWidget(self.capability_save_button)
-        capability_save_row.addWidget(self.capability_feedback_label, stretch=1)
-        perception_search_layout.addLayout(capability_save_row)
-        perception_search_layout.addStretch(1)
+        self.character_library_page = self._build_character_library_page()
+        self.content_stack.addWidget(self.character_library_page)
+
+        self.capability_settings_panel = CapabilitySettingsPanel(self.controller.get_capability_settings())
+        self.capability_settings_panel.saveRequested.connect(self._save_capability_settings_from_ui)
+        self.capability_settings_panel.screenObservationRequested.connect(self._run_screen_observation)
+        self.capability_settings_panel.webSearchRequested.connect(self._run_web_search)
+        self._alias_capability_settings_panel_widgets()
+        self.perception_search_page = self.capability_settings_panel
+        self.perception_search_layout = self.capability_settings_panel.perception_search_layout
+        self.control_panel_page_layouts.append(self.perception_search_layout)
         self.content_stack.addWidget(self.perception_search_page)
 
         privacy_page = QWidget()
@@ -562,7 +629,9 @@ class CompanionWindow(QMainWindow):
         privacy_layout.setContentsMargins(0, 0, 0, 0)
         privacy_layout.setSpacing(12)
         self.control_panel_page_layouts.append(privacy_layout)
-        self.perception_card = self._build_perception_card()
+        self.perception_card = ManualPerceptionPanel()
+        self.perception_card.manualPerceptionRequested.connect(self._handle_manual_screen_perception)
+        self._alias_manual_perception_panel_widgets()
         privacy_layout.addWidget(self.perception_card)
         privacy_layout.addStretch(1)
         self.content_stack.addWidget(privacy_page)
@@ -592,11 +661,85 @@ class CompanionWindow(QMainWindow):
         voice_layout.setContentsMargins(0, 0, 0, 0)
         voice_layout.setSpacing(12)
         self.control_panel_page_layouts.append(voice_layout)
-        self.voice_settings_card = self._build_voice_settings_card()
+        self.voice_settings_card = VoiceSettingsPanel(
+            self.controller.get_capability_settings(),
+            self.controller.get_expression_settings(),
+        )
+        self.voice_settings_card.ttsTestRequested.connect(self._handle_tts_test)
+        self.voice_settings_card.ttsStopRequested.connect(self._handle_tts_stop)
+        self.voice_settings_card.asrStartRequested.connect(self._handle_asr_start)
+        self.voice_settings_card.asrStopRequested.connect(self._handle_asr_stop)
+        self._alias_voice_settings_panel_widgets()
         voice_layout.addWidget(self.voice_settings_card)
         voice_layout.addStretch(1)
         self.content_stack.addWidget(voice_page)
         self._load_capability_settings_into_ui()
+
+    def _alias_capability_settings_panel_widgets(self) -> None:
+        for name in (
+            "screen_observation_settings_card",
+            "screen_observation_enabled_check",
+            "screen_observation_auto_check",
+            "screen_observation_interval_input",
+            "screen_observation_max_width_input",
+            "screen_observation_model_input",
+            "screen_observation_base_url_input",
+            "screen_observation_api_key_input",
+            "screen_observation_run_button",
+            "screen_observation_status_label",
+            "web_search_settings_card",
+            "web_search_enabled_check",
+            "web_search_engine_combo",
+            "web_search_max_results_input",
+            "web_search_query_input",
+            "web_search_run_button",
+            "web_search_results_label",
+            "proactive_companion_settings_card",
+            "proactive_companion_enabled_check",
+            "proactive_interval_input",
+            "proactive_global_cooldown_input",
+            "proactive_daily_limit_input",
+            "proactive_quiet_hours_check",
+            "proactive_quiet_start_input",
+            "proactive_quiet_end_input",
+            "proactive_allow_context_topic_check",
+            "capability_save_button",
+            "capability_feedback_label",
+        ):
+            setattr(self, name, getattr(self.capability_settings_panel, name))
+
+    def _alias_manual_perception_panel_widgets(self) -> None:
+        for name in (
+            "perception_status_label",
+            "perception_privacy_label",
+            "observe_screen_button",
+        ):
+            setattr(self, name, getattr(self.perception_card, name))
+
+    def _alias_voice_settings_panel_widgets(self) -> None:
+        for name in (
+            "voice_status_label",
+            "voice_tts_provider_label",
+            "voice_asr_provider_label",
+            "tts_enabled_check",
+            "tts_provider_combo",
+            "tts_api_url_input",
+            "tts_model_variant_combo",
+            "tts_auto_speak_check",
+            "tts_test_button",
+            "tts_stop_button",
+            "asr_enabled_check",
+            "asr_provider_combo",
+            "asr_model_input",
+            "asr_base_url_input",
+            "asr_api_key_input",
+            "asr_auto_send_check",
+            "asr_start_button",
+            "asr_stop_button",
+            "voice_tts_enable_button",
+            "voice_asr_enable_button",
+        ):
+            setattr(self, name, getattr(self.voice_settings_card, name))
 
     def _build_sidebar_card(self) -> QFrame:
         frame = QFrame()
@@ -610,7 +753,7 @@ class CompanionWindow(QMainWindow):
         self.navigation_hint_label.setObjectName("NavigationHint")
         layout.addWidget(self.navigation_hint_label)
 
-        for index, label in enumerate(("总览", "互动", "背包", "感知与搜索", "隐私", "LLM表达", "表达规则", "语音")):
+        for index, label in enumerate(("总览", "互动", "背包", "角色库", "感知与搜索", "隐私", "LLM表达", "表达规则", "语音")):
             button = QPushButton(label)
             button.setObjectName("NavigationButton")
             button.setCheckable(True)
@@ -622,11 +765,208 @@ class CompanionWindow(QMainWindow):
         layout.addStretch(1)
         return frame
 
+    def _build_character_library_page(self) -> QWidget:
+        page = QWidget()
+        layout = QHBoxLayout(page)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(12)
+        self.control_panel_page_layouts.append(layout)
+
+        list_box = QGroupBox("角色库")
+        list_layout = QVBoxLayout(list_box)
+        self.character_list = QListWidget()
+        self.character_list.currentItemChanged.connect(lambda current, previous=None: self._update_character_detail())
+        list_layout.addWidget(self.character_list)
+        self.character_refresh_button = QPushButton("刷新角色包")
+        self.character_refresh_button.clicked.connect(self._refresh_character_library)
+        list_layout.addWidget(self.character_refresh_button)
+        layout.addWidget(list_box, stretch=2)
+
+        detail_box = QGroupBox("角色详情")
+        detail_layout = QVBoxLayout(detail_box)
+        detail_layout.setSpacing(10)
+        self.character_preview_label = QLabel()
+        self.character_preview_label.setFixedHeight(148)
+        self.character_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.character_preview_label.setStyleSheet(
+            "QLabel { border: 1px solid #cbdde5; border-radius: 8px; background: #f7fbfd; }"
+        )
+        self.character_detail_label = QLabel("选择一个角色包。")
+        self.character_detail_label.setWordWrap(True)
+        self.character_detail_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        self.character_detail_label.setObjectName("CharacterDetailLabel")
+        self.character_detail_scroll_area = QScrollArea()
+        self.character_detail_scroll_area.setWidgetResizable(True)
+        self.character_detail_scroll_area.setFrameShape(QFrame.Shape.NoFrame)
+        self.character_detail_scroll_area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.character_detail_scroll_area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.character_detail_scroll_area.setMinimumHeight(220)
+        self.character_detail_scroll_area.setWidget(self.character_detail_label)
+        self.character_switch_button = QPushButton("切换到此角色")
+        self.character_switch_button.clicked.connect(self._handle_character_switch)
+        self.character_import_button = QPushButton("导入角色包")
+        self.character_import_button.clicked.connect(self._handle_character_import)
+        self.character_import_button.setToolTip("P4：本地导入角色包，先校验再启用。")
+        self.character_generate_button = QPushButton("生成新角色")
+        self.character_generate_button.setEnabled(False)
+        self.character_generate_button.setToolTip("P5：AI 生成工作流输出到临时目录，人工 QA 后导入。")
+        detail_layout.addWidget(self.character_preview_label)
+        detail_layout.addWidget(self.character_detail_scroll_area, stretch=1)
+        detail_layout.addWidget(self.character_switch_button)
+        controls = QHBoxLayout()
+        controls.addWidget(self.character_import_button)
+        controls.addWidget(self.character_generate_button)
+        detail_layout.addLayout(controls)
+        detail_layout.addStretch(1)
+        layout.addWidget(detail_box, stretch=3)
+
+        self._character_pack_summaries: dict[str, CharacterPackSummary] = {}
+        self._refresh_character_library()
+        return page
+
     def _select_navigation_button(self, selected_index: int) -> None:
         for index, button in enumerate(self.navigation_buttons):
             button.setChecked(index == selected_index)
         if hasattr(self, "content_stack"):
             self.content_stack.setCurrentIndex(selected_index)
+
+    def _refresh_character_library(self) -> None:
+        if not hasattr(self, "character_list"):
+            return
+        current_id = self._selected_character_id() or self.controller.state.character_id
+        self.character_list.clear()
+        self._character_pack_summaries = {
+            pack.character_id: pack for pack in self.character_registry.list_available_packs()
+        }
+        for pack in self._character_pack_summaries.values():
+            item = QListWidgetItem(f"{pack.name} | {pack.title}")
+            item.setToolTip(character_pack_list_item_text(pack))
+            item.setData(Qt.ItemDataRole.UserRole, pack.character_id)
+            if pack.preview_path.is_file():
+                item.setIcon(QIcon(str(pack.preview_path)))
+            self.character_list.addItem(item)
+            if pack.character_id == current_id:
+                self.character_list.setCurrentItem(item)
+        if self.character_list.currentItem() is None and self.character_list.count():
+            self.character_list.setCurrentRow(0)
+        self._update_character_detail()
+
+    def _selected_character_id(self) -> str:
+        if not hasattr(self, "character_list"):
+            return ""
+        item = self.character_list.currentItem()
+        return str(item.data(Qt.ItemDataRole.UserRole) or "") if item is not None else ""
+
+    def _update_character_detail(self) -> None:
+        character_id = self._selected_character_id()
+        pack = self._character_pack_summaries.get(character_id)
+        if pack is None:
+            self.character_detail_label.setText("没有可用角色包。")
+            self.character_preview_label.clear()
+            self.character_switch_button.setEnabled(False)
+            return
+        current = character_id == self.controller.state.character_id
+        self.character_detail_label.setText(
+            f"{pack.name}\n{pack.title}\n\n{pack.description}\n\n"
+            "切换角色会切换外观、语气、商店主题和独立记忆，不改写其他角色会话。\n\n"
+            f"{character_pack_distribution_text(pack)}"
+        )
+        if pack.preview_path.is_file():
+            preview = QPixmap(str(pack.preview_path))
+            self.character_preview_label.setPixmap(
+                preview.scaled(
+                    220,
+                    132,
+                    Qt.AspectRatioMode.KeepAspectRatio,
+                    Qt.TransformationMode.SmoothTransformation,
+                )
+            )
+        else:
+            self.character_preview_label.setText("暂无预览")
+        self.character_switch_button.setEnabled(not current)
+        self.character_switch_button.setText("当前角色" if current else "切换到此角色")
+
+    def _handle_character_switch(self) -> None:
+        character_id = self._selected_character_id()
+        if not character_id:
+            self._show_message("请先选择一个角色。")
+            return
+        try:
+            pack = self._character_pack_summaries.get(character_id)
+            snapshot = self.controller.switch_character(
+                character_id,
+                pack_dir=pack.path if pack is not None else None,
+                include_ai_expression=False,
+            )
+            self._reload_character_assets()
+            self._install_manual_expression_context_provider()
+            self._sync_linked_character_windows(snapshot)
+            self._apply_snapshot(snapshot)
+            self._refresh_character_library()
+        except (KeyError, ValueError, OSError) as exc:
+            self._show_message(str(exc))
+
+    def _handle_character_import(self) -> None:
+        source_dir = QFileDialog.getExistingDirectory(self, "选择角色包目录", "")
+        if not source_dir:
+            return
+        source_path = Path(source_dir)
+        preview_validation = validate_character_pack_dir(source_path, source="import_source")
+        if preview_validation.ok:
+            pack = summarize_character_pack_dir(source_path, source="import_source")
+            if pack is not None and not self._confirm_character_import(pack):
+                self._show_message("Character pack import cancelled.")
+                return
+        report = import_character_pack_dir(
+            source_path,
+            target_root=self.character_registry.user_root,
+        )
+        if not report.ok:
+            self._show_message("角色包导入失败：\n" + "\n".join(report.errors))
+            return
+        self._refresh_character_library()
+        self._select_character_pack(report.character_id)
+        self._show_message(f"角色包已导入：{report.character_id}")
+
+    def _confirm_character_import(self, pack: CharacterPackSummary) -> bool:
+        result = QMessageBox.question(
+            self,
+            "Import character pack",
+            character_pack_import_review_text(pack),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        return result == QMessageBox.StandardButton.Yes
+
+    def _select_character_pack(self, character_id: str) -> None:
+        if not character_id or not hasattr(self, "character_list"):
+            return
+        for index in range(self.character_list.count()):
+            item = self.character_list.item(index)
+            if item.data(Qt.ItemDataRole.UserRole) == character_id:
+                self.character_list.setCurrentItem(item)
+                return
+
+    def _sync_linked_character_windows(self, snapshot: dict[str, object]) -> None:
+        linked = []
+        if self.desktop_pet_window is not None and self.desktop_pet_window is not self:
+            linked.append(self.desktop_pet_window)
+        if self._return_target_window is not None and self._return_target_window is not self:
+            linked.append(self._return_target_window)
+        for window in linked:
+            window._reload_character_assets()
+            window._install_manual_expression_context_provider()
+            window._apply_snapshot(snapshot)
+            window._refresh_character_library()
+
+    def _reload_character_assets(self) -> None:
+        self.motion_catalog = load_motion_catalog_from_dir(self.controller.resources.asset_dir)
+        self.motion_animator = MotionAnimator(self.motion_catalog)
+        self.spritesheet = QPixmap(str(self.motion_catalog.sheet_path))
+        self.presentation_renderer = _presentation_renderer_from_profile(
+            self.controller.character_pack.renderer,
+            self.controller.resources.asset_dir,
+        )
 
     def _build_launcher_card(self) -> QFrame:
         frame = QFrame()
@@ -664,7 +1004,7 @@ class CompanionWindow(QMainWindow):
         self.sprite_label = SpriteInteractionLabel(
             on_click=lambda: self._handle_action("touch"),
             on_drag=lambda: self._handle_action("drag"),
-            on_drag_move=self._move_desktop_window_by,
+            on_drag_move=lambda delta: self.desktop_shell.move_by(delta, enabled=self.desktop_mode),
         )
         self.sprite_label.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.sprite_label.customContextMenuRequested.connect(
@@ -674,6 +1014,22 @@ class CompanionWindow(QMainWindow):
         self.sprite_label.setStyleSheet(CONTROL_PANEL_SPRITE_STYLE)
         self.sprite_label.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         layout.addWidget(self.sprite_label)
+        self.live2d_surface = Live2DWebSurface()
+        self.live2d_surface.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.live2d_surface.customContextMenuRequested.connect(
+            lambda pos: self._show_desktop_context_menu(self.live2d_surface.mapToGlobal(pos))
+        )
+        self.live2d_surface.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
+        self.live2d_surface.hide()
+        layout.addWidget(self.live2d_surface)
+        self.spirit_surface = SpiritStageSurface()
+        self.spirit_surface.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.spirit_surface.customContextMenuRequested.connect(
+            lambda pos: self._show_desktop_context_menu(self.spirit_surface.mapToGlobal(pos))
+        )
+        self.spirit_surface.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
+        self.spirit_surface.hide()
+        layout.addWidget(self.spirit_surface)
         self.desktop_feedback_label = QLabel()
         self.desktop_feedback_label.setWordWrap(True)
         self.desktop_feedback_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -742,6 +1098,14 @@ class CompanionWindow(QMainWindow):
         for widget in (self.mode_label, self.resources_label, self.goal_label, self.relationship_label, self.tick_label):
             widget.setWordWrap(True)
             layout.addWidget(widget)
+        alias_row = QHBoxLayout()
+        self.player_alias_input = QLineEdit()
+        self.player_alias_input.setPlaceholderText("本地称呼")
+        self.player_alias_save_button = QPushButton("记住称呼")
+        self.player_alias_save_button.clicked.connect(self._handle_player_alias_save)
+        alias_row.addWidget(self.player_alias_input, stretch=1)
+        alias_row.addWidget(self.player_alias_save_button)
+        layout.addLayout(alias_row)
 
         grid = QGridLayout()
         layout.addLayout(grid)
@@ -805,98 +1169,6 @@ class CompanionWindow(QMainWindow):
         ):
             button.setMinimumHeight(36)
             layout.addWidget(button)
-        return box
-
-    def _build_screen_observation_settings_card(self) -> QGroupBox:
-        box = QGroupBox("屏幕观察")
-        layout = QGridLayout(box)
-        layout.setHorizontalSpacing(10)
-        layout.setVerticalSpacing(8)
-        settings = self.controller.get_capability_settings().screen_observation
-
-        self.screen_observation_enabled_check = QCheckBox("启用屏幕观察")
-        self.screen_observation_enabled_check.setChecked(settings.enabled)
-        self.screen_observation_auto_check = QCheckBox("自动观察")
-        self.screen_observation_auto_check.setChecked(settings.auto_enabled)
-        self.screen_observation_interval_input = QSpinBox()
-        self.screen_observation_interval_input.setRange(10, 600)
-        self.screen_observation_interval_input.setValue(settings.interval_seconds)
-        self.screen_observation_max_width_input = QSpinBox()
-        self.screen_observation_max_width_input.setRange(640, 1920)
-        self.screen_observation_max_width_input.setValue(settings.max_screenshot_width)
-        self.screen_observation_model_input = QLineEdit(settings.vision_model)
-        self.screen_observation_model_input.setPlaceholderText("视觉模型 ID")
-        self.screen_observation_base_url_input = QLineEdit(settings.vision_base_url)
-        self.screen_observation_base_url_input.setPlaceholderText("OpenAI-compatible Base URL")
-        self.screen_observation_api_key_input = QLineEdit(settings.vision_api_key)
-        self.screen_observation_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.screen_observation_api_key_input.setPlaceholderText("视觉 API Key")
-        self.screen_observation_run_button = QPushButton("观察一次")
-        self.screen_observation_run_button.clicked.connect(self._run_screen_observation)
-        self.screen_observation_status_label = QLabel("屏幕观察未运行")
-        self.screen_observation_status_label.setWordWrap(True)
-
-        layout.addWidget(self.screen_observation_enabled_check, 0, 0)
-        layout.addWidget(self.screen_observation_auto_check, 0, 1)
-        layout.addWidget(QLabel("间隔秒数"), 1, 0)
-        layout.addWidget(self.screen_observation_interval_input, 1, 1)
-        layout.addWidget(QLabel("最长边"), 1, 2)
-        layout.addWidget(self.screen_observation_max_width_input, 1, 3)
-        layout.addWidget(QLabel("模型"), 2, 0)
-        layout.addWidget(self.screen_observation_model_input, 2, 1, 1, 3)
-        layout.addWidget(QLabel("Base URL"), 3, 0)
-        layout.addWidget(self.screen_observation_base_url_input, 3, 1, 1, 3)
-        layout.addWidget(QLabel("API Key"), 4, 0)
-        layout.addWidget(self.screen_observation_api_key_input, 4, 1, 1, 3)
-        layout.addWidget(self.screen_observation_run_button, 5, 0)
-        layout.addWidget(self.screen_observation_status_label, 5, 1, 1, 3)
-        return box
-
-    def _build_web_search_settings_card(self) -> QGroupBox:
-        box = QGroupBox("联网搜索")
-        layout = QGridLayout(box)
-        layout.setHorizontalSpacing(10)
-        layout.setVerticalSpacing(8)
-        settings = self.controller.get_capability_settings().web_search
-
-        self.web_search_enabled_check = QCheckBox("启用联网搜索")
-        self.web_search_enabled_check.setChecked(settings.enabled)
-        self.web_search_engine_combo = QComboBox()
-        self.web_search_engine_combo.addItems(["duckduckgo"])
-        self.web_search_engine_combo.setCurrentText(settings.engine)
-        self.web_search_max_results_input = QSpinBox()
-        self.web_search_max_results_input.setRange(1, 5)
-        self.web_search_max_results_input.setValue(settings.max_results)
-        self.web_search_query_input = QLineEdit()
-        self.web_search_query_input.setPlaceholderText("输入要搜索的内容")
-        self.web_search_run_button = QPushButton("搜索并提供给星汐")
-        self.web_search_run_button.clicked.connect(self._run_web_search_from_ui)
-        self.web_search_results_label = QLabel("暂无搜索结果")
-        self.web_search_results_label.setWordWrap(True)
-
-        layout.addWidget(self.web_search_enabled_check, 0, 0)
-        layout.addWidget(QLabel("引擎"), 1, 0)
-        layout.addWidget(self.web_search_engine_combo, 1, 1)
-        layout.addWidget(QLabel("结果数"), 1, 2)
-        layout.addWidget(self.web_search_max_results_input, 1, 3)
-        layout.addWidget(self.web_search_query_input, 2, 0, 1, 3)
-        layout.addWidget(self.web_search_run_button, 2, 3)
-        layout.addWidget(self.web_search_results_label, 3, 0, 1, 4)
-        return box
-
-    def _build_perception_card(self) -> QGroupBox:
-        box = QGroupBox("屏幕感知")
-        layout = QVBoxLayout(box)
-        self.perception_status_label = QLabel("屏幕感知：关闭")
-        self.perception_status_label.setWordWrap(True)
-        self.perception_privacy_label = QLabel("默认不会读取屏幕；只在手动触发时显示隐私提示。本轮不会自动截图，不会自动点击、输入或操作电脑。")
-        self.perception_privacy_label.setWordWrap(True)
-        self.observe_screen_button = QPushButton("手动触发屏幕感知")
-        self.observe_screen_button.setMinimumHeight(36)
-        self.observe_screen_button.clicked.connect(self._handle_manual_screen_perception)
-        layout.addWidget(self.perception_status_label)
-        layout.addWidget(self.perception_privacy_label)
-        layout.addWidget(self.observe_screen_button)
         return box
 
     def _build_expression_settings_card(self) -> QGroupBox:
@@ -980,98 +1252,6 @@ class CompanionWindow(QMainWindow):
         layout.addWidget(self.expression_rule_status_label)
         return box
 
-    def _build_voice_settings_card(self) -> QGroupBox:
-        box = QGroupBox("语音")
-        layout = QGridLayout(box)
-        layout.setHorizontalSpacing(10)
-        layout.setVerticalSpacing(8)
-        expression_settings = self.controller.get_expression_settings()
-        capability_settings = self.controller.get_capability_settings()
-        tts_settings = capability_settings.tts
-        asr_settings = capability_settings.asr
-
-        self.voice_status_label = QLabel("TTS 暂未启用 / ASR 暂未启用")
-        self.voice_status_label.setWordWrap(True)
-        self.voice_tts_provider_label = QLabel(f"tts_provider: {expression_settings['tts_provider']}")
-        self.voice_asr_provider_label = QLabel(f"asr_provider: {expression_settings['asr_provider']}")
-
-        self.tts_enabled_check = QCheckBox("启用 TTS")
-        self.tts_enabled_check.setChecked(tts_settings.enabled)
-        self.tts_provider_combo = QComboBox()
-        self.tts_provider_combo.addItems(["windows_sapi", "http_qwen3tts"])
-        self.tts_provider_combo.setCurrentText(tts_settings.provider)
-        self.tts_api_url_input = QLineEdit(tts_settings.api_url)
-        self.tts_api_url_input.setPlaceholderText("http://127.0.0.1:9880/")
-        self.tts_model_variant_combo = QComboBox()
-        self.tts_model_variant_combo.addItems(["qwen3tts_1.6b", "qwen3tts_0.7b"])
-        self.tts_model_variant_combo.setCurrentText(tts_settings.model_variant)
-        self.tts_auto_speak_check = QCheckBox("自动朗读星汐回复")
-        self.tts_auto_speak_check.setChecked(tts_settings.auto_speak)
-        self.tts_test_button = QPushButton("测试朗读")
-        self.tts_test_button.setEnabled(False)
-        self.tts_test_button.clicked.connect(self._handle_tts_test)
-        self.tts_stop_button = QPushButton("停止朗读")
-        self.tts_stop_button.setEnabled(False)
-        self.tts_stop_button.clicked.connect(self._handle_tts_stop)
-        self.tts_enabled_check.toggled.connect(self._sync_voice_controls_enabled)
-
-        self.asr_enabled_check = QCheckBox("启用 ASR")
-        self.asr_enabled_check.setChecked(asr_settings.enabled)
-        self.asr_provider_combo = QComboBox()
-        self.asr_provider_combo.addItems(["openai_compatible", "vosk"])
-        self.asr_provider_combo.setCurrentText(asr_settings.provider)
-        self.asr_model_input = QLineEdit(asr_settings.model)
-        self.asr_model_input.setPlaceholderText("whisper-1")
-        self.asr_base_url_input = QLineEdit(asr_settings.base_url)
-        self.asr_base_url_input.setPlaceholderText("OpenAI-compatible Base URL")
-        self.asr_api_key_input = QLineEdit(asr_settings.api_key)
-        self.asr_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
-        self.asr_api_key_input.setPlaceholderText("ASR API Key")
-        self.asr_auto_send_check = QCheckBox("识别后自动发送")
-        self.asr_auto_send_check.setChecked(asr_settings.auto_send)
-        self.asr_start_button = QPushButton("开始录音")
-        self.asr_start_button.setEnabled(False)
-        self.asr_start_button.clicked.connect(self._handle_asr_start)
-        self.asr_stop_button = QPushButton("停止并识别")
-        self.asr_stop_button.setEnabled(False)
-        self.asr_stop_button.clicked.connect(self._handle_asr_stop)
-        self.asr_enabled_check.toggled.connect(self._sync_voice_controls_enabled)
-
-        self.voice_tts_enable_button = QPushButton("启用 TTS")
-        self.voice_tts_enable_button.setEnabled(False)
-        self.voice_asr_enable_button = QPushButton("启用 ASR")
-        self.voice_asr_enable_button.setEnabled(False)
-
-        layout.addWidget(self.voice_status_label, 0, 0, 1, 4)
-        layout.addWidget(self.voice_tts_provider_label, 1, 0, 1, 2)
-        layout.addWidget(self.voice_asr_provider_label, 1, 2, 1, 2)
-        layout.addWidget(self.tts_enabled_check, 2, 0)
-        layout.addWidget(QLabel("TTS provider"), 3, 0)
-        layout.addWidget(self.tts_provider_combo, 3, 1)
-        layout.addWidget(QLabel("TTS API URL"), 4, 0)
-        layout.addWidget(self.tts_api_url_input, 4, 1, 1, 3)
-        layout.addWidget(QLabel("Qwen3TTS model"), 5, 0)
-        layout.addWidget(self.tts_model_variant_combo, 5, 1)
-        layout.addWidget(self.tts_auto_speak_check, 6, 0)
-        layout.addWidget(self.tts_test_button, 6, 1)
-        layout.addWidget(self.tts_stop_button, 6, 2)
-        layout.addWidget(self.asr_enabled_check, 7, 0)
-        layout.addWidget(QLabel("ASR provider"), 8, 0)
-        layout.addWidget(self.asr_provider_combo, 8, 1)
-        layout.addWidget(QLabel("ASR model"), 8, 2)
-        layout.addWidget(self.asr_model_input, 8, 3)
-        layout.addWidget(QLabel("ASR Base URL"), 9, 0)
-        layout.addWidget(self.asr_base_url_input, 9, 1, 1, 3)
-        layout.addWidget(QLabel("ASR API Key"), 10, 0)
-        layout.addWidget(self.asr_api_key_input, 10, 1, 1, 3)
-        layout.addWidget(self.asr_auto_send_check, 11, 0)
-        layout.addWidget(self.asr_start_button, 11, 1)
-        layout.addWidget(self.asr_stop_button, 11, 2)
-        layout.addWidget(self.voice_tts_enable_button, 12, 0)
-        layout.addWidget(self.voice_asr_enable_button, 12, 1)
-        self._sync_voice_controls_enabled()
-        return box
-
     def _build_shop_card(self) -> QGroupBox:
         box = QGroupBox("轻量商店")
         layout = QVBoxLayout(box)
@@ -1112,7 +1292,7 @@ class CompanionWindow(QMainWindow):
             | Qt.WindowType.NoDropShadowWindowHint
         )
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-        for widget in (self.root_widget, self.hero_card, self.sprite_label):
+        for widget in (self.root_widget, self.hero_card, self.sprite_label, self.live2d_surface, self.spirit_surface):
             widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
             widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground)
             widget.setAutoFillBackground(False)
@@ -1131,6 +1311,7 @@ class CompanionWindow(QMainWindow):
         self.demo_card.hide()
         self.screen_observation_settings_card.hide()
         self.web_search_settings_card.hide()
+        self.proactive_companion_settings_card.hide()
         self.perception_card.hide()
         self.expression_settings_card.hide()
         self.expression_rule_card.hide()
@@ -1142,6 +1323,8 @@ class CompanionWindow(QMainWindow):
         self.hero_layout.setContentsMargins(0, 0, 0, 0)
         self.hero_layout.setSpacing(6)
         self.hero_layout.setAlignment(self.sprite_label, Qt.AlignmentFlag.AlignHCenter)
+        self.hero_layout.setAlignment(self.live2d_surface, Qt.AlignmentFlag.AlignHCenter)
+        self.hero_layout.setAlignment(self.spirit_surface, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.desktop_feedback_label, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.dialogue_bar, Qt.AlignmentFlag.AlignHCenter)
         self.character_label.hide()
@@ -1150,6 +1333,10 @@ class CompanionWindow(QMainWindow):
         self.item_feedback_label.hide()
         self.sprite_label.setStyleSheet(DESKTOP_SPRITE_STYLE)
         self.sprite_label.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
+        self.live2d_surface.setStyleSheet(DESKTOP_SPRITE_STYLE)
+        self.live2d_surface.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
+        self.spirit_surface.setStyleSheet(DESKTOP_SPRITE_STYLE)
+        self.spirit_surface.setFixedSize(DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT)
         self.desktop_feedback_label.setFixedWidth(DESKTOP_WINDOW_WIDTH)
         self.dialogue_bar.setFixedWidth(DESKTOP_WINDOW_WIDTH)
         self.setFixedSize(DESKTOP_WINDOW_WIDTH, DESKTOP_WINDOW_HEIGHT)
@@ -1195,7 +1382,7 @@ class CompanionWindow(QMainWindow):
         return_action = QAction("返回控制面板", self)
         return_action.triggered.connect(self._return_to_control_panel)
         exit_action = QAction("退出", self)
-        exit_action.triggered.connect(self._quit_from_tray)
+        exit_action.triggered.connect(self.tray_controller.request_quit)
         menu.addAction(status_action)
         menu.addAction(history_action)
         menu.addAction(clear_history_action)
@@ -1223,7 +1410,7 @@ class CompanionWindow(QMainWindow):
         QMessageBox.information(
             self,
             "状态面板",
-            self._format_desktop_status_panel(self.controller.get_snapshot()),
+            self.snapshot_renderer.format_desktop_status_panel(self.controller.get_snapshot()),
         )
 
     def _show_dialogue_history_panel(self) -> None:
@@ -1251,15 +1438,6 @@ class CompanionWindow(QMainWindow):
         self._apply_snapshot(self.controller.revert_dialogue_history())
         self.desktop_feedback_label.show()
 
-    def _format_desktop_status_panel(self, snapshot: dict[str, object]) -> str:
-        return (
-            f"模式：{snapshot['mode']}\n"
-            f"能量 {int(float(snapshot['charge']))} / 心情 {int(float(snapshot['mood']))} / "
-            f"信任 {int(float(snapshot['trust']))}\n"
-            f"动作：{snapshot['motion_caption']}\n"
-            f"{snapshot['feedback']}"
-        )
-
     def _return_to_control_panel(self) -> None:
         if not self.desktop_mode:
             return
@@ -1276,7 +1454,7 @@ class CompanionWindow(QMainWindow):
         flags &= ~Qt.WindowType.NoDropShadowWindowHint
         self.setWindowFlags(flags)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
-        for widget in (self.root_widget, self.hero_card, self.sprite_label):
+        for widget in (self.root_widget, self.hero_card, self.sprite_label, self.live2d_surface, self.spirit_surface):
             widget.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, False)
             widget.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, False)
             widget.setAutoFillBackground(False)
@@ -1298,6 +1476,7 @@ class CompanionWindow(QMainWindow):
             self.demo_card,
             self.screen_observation_settings_card,
             self.web_search_settings_card,
+            self.proactive_companion_settings_card,
             self.perception_card,
             self.expression_settings_card,
             self.expression_rule_card,
@@ -1315,6 +1494,12 @@ class CompanionWindow(QMainWindow):
         self.sprite_label.setMinimumSize(0, CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         self.sprite_label.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         self.sprite_label.setStyleSheet(CONTROL_PANEL_SPRITE_STYLE)
+        self.live2d_surface.setMaximumSize(MAX_QT_WIDGET_SIZE, MAX_QT_WIDGET_SIZE)
+        self.live2d_surface.setMinimumSize(0, CONTROL_PANEL_SPRITE_MIN_HEIGHT)
+        self.live2d_surface.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
+        self.spirit_surface.setMaximumSize(MAX_QT_WIDGET_SIZE, MAX_QT_WIDGET_SIZE)
+        self.spirit_surface.setMinimumSize(0, CONTROL_PANEL_SPRITE_MIN_HEIGHT)
+        self.spirit_surface.setMinimumHeight(CONTROL_PANEL_SPRITE_MIN_HEIGHT)
         self.clearMask()
         self.desktop_feedback_label.hide()
         self.dialogue_bar.hide()
@@ -1322,45 +1507,6 @@ class CompanionWindow(QMainWindow):
         self.show()
         self._apply_snapshot(self.controller.get_snapshot())
         self._update_screen_observation_timer()
-
-    def _move_desktop_window_by(self, delta: QPoint) -> None:
-        if not self.desktop_mode:
-            return
-        self.move(self._clamp_desktop_position(self.pos() + delta))
-
-    def _clamp_desktop_position(self, target: QPoint) -> QPoint:
-        bounds = self._desktop_available_geometry()
-        max_x = max(bounds.left(), bounds.right() - self.width() + 1)
-        max_y = max(bounds.top(), bounds.bottom() - self.height() + 1)
-        x = min(max(target.x(), bounds.left()), max_x)
-        y = min(max(target.y(), bounds.top()), max_y)
-        return QPoint(x, y)
-
-    def _dock_desktop_position(self, target: QPoint) -> QPoint:
-        clamped = self._clamp_desktop_position(target)
-        bounds = self._desktop_available_geometry()
-        max_x = max(bounds.left(), bounds.right() - self.width() + 1)
-        max_y = max(bounds.top(), bounds.bottom() - self.height() + 1)
-
-        x = clamped.x()
-        if x - bounds.left() <= DESKTOP_DOCK_THRESHOLD_PX:
-            x = bounds.left()
-        elif max_x - x <= DESKTOP_DOCK_THRESHOLD_PX:
-            x = max_x
-
-        y = clamped.y()
-        if y - bounds.top() <= DESKTOP_DOCK_THRESHOLD_PX:
-            y = bounds.top()
-        elif max_y - y <= DESKTOP_DOCK_THRESHOLD_PX:
-            y = max_y
-
-        return QPoint(x, y)
-
-    def _desktop_available_geometry(self) -> QRect:
-        screen = QApplication.screenAt(self.frameGeometry().center()) or QApplication.primaryScreen()
-        if screen is None:
-            return QRect(self.pos(), self.size())
-        return screen.availableGeometry()
 
     def _setup_timers(self) -> None:
         self.frame_timer = QTimer(self)
@@ -1392,12 +1538,14 @@ class CompanionWindow(QMainWindow):
 
     @Slot()
     def _advance_frame(self) -> None:
+        if self.presentation_renderer.backend != "sprite":
+            return
         self.motion_animator.advance()
         self._render_current_frame()
 
     def _handle_action(self, action_id: str) -> None:
         if self.desktop_mode and action_id == "drag":
-            self.move(self._dock_desktop_position(self.pos()))
+            self.move(self.desktop_shell.dock_position(self.pos()))
         self._apply_snapshot(self.controller.perform_action(action_id, include_ai_expression=False))
 
     @Slot()
@@ -1409,10 +1557,20 @@ class CompanionWindow(QMainWindow):
             self._run_web_search(query)
             return
         request = DialogueRequest(text=text)
-        snapshot = self.controller.submit_dialogue_request(request, include_ai_expression=False)
+        snapshot = self.controller.submit_dialogue_request(
+            request,
+            include_ai_expression=self._llm_expression_enabled(),
+        )
         self.dialogue_input.clear()
         self._apply_snapshot(snapshot)
         self.desktop_feedback_label.show()
+
+    def _handle_player_alias_save(self) -> None:
+        snapshot = self.controller.set_player_alias(
+            self.player_alias_input.text(),
+            include_ai_expression=False,
+        )
+        self._apply_snapshot(snapshot)
 
     def _handle_demo_proactive(self, scenario: str) -> None:
         self._reset_countdown()
@@ -1433,12 +1591,8 @@ class CompanionWindow(QMainWindow):
         self._manual_perception_summary = MANUAL_PERCEPTION_NO_SCREEN_SUMMARY
 
     def _run_screen_observation(self) -> None:
-        self._save_capability_settings_from_ui()
-        result = self.screen_observation_service.observe(
-            self.controller.get_capability_settings().screen_observation
-        )
+        result = self.capability_runtime.run_screen_observation()
         if result.summary:
-            self.controller.set_perception_summary(result.summary)
             self.screen_observation_status_label.setText(f"{result.message}：{result.summary}")
             return
         self.screen_observation_status_label.setText(result.message)
@@ -1447,19 +1601,8 @@ class CompanionWindow(QMainWindow):
         self._run_web_search(self.web_search_query_input.text())
 
     def _run_web_search(self, query: str) -> None:
-        self._save_capability_settings_from_ui()
-        result = self.web_search_service.search(query, self.controller.get_capability_settings().web_search)
-        if result.tool_results:
-            self.controller.set_tool_results(result.tool_results)
-            lines = [result.message]
-            for item in result.tool_results:
-                title = item.get("title", "")
-                summary = item.get("summary", "")
-                url = item.get("url", "")
-                lines.append(f"{title} - {summary}" + (f" ({url})" if url else ""))
-            self.web_search_results_label.setText("\n".join(lines))
-            return
-        self.web_search_results_label.setText(result.message)
+        result = self.capability_runtime.run_web_search(query)
+        self.web_search_results_label.setText(result.display_text)
 
     def _update_screen_observation_timer(self) -> None:
         settings = self.controller.get_capability_settings().screen_observation
@@ -1469,39 +1612,31 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_timer.start(settings.interval_seconds * 1000)
 
     def _handle_tts_test(self) -> None:
-        settings = self._save_capability_settings_from_ui().tts
-        result = self.tts_manager.speak("星汐在这里，语音测试正常。", settings)
+        result = self.capability_runtime.run_tts_test("星汐在这里，语音测试正常。")
         self.voice_status_label.setText(result.message)
 
     def _handle_tts_stop(self) -> None:
-        result = self.tts_manager.stop(self.controller.get_capability_settings().tts)
+        result = self.capability_runtime.stop_tts()
         self.voice_status_label.setText(result.message)
 
     def _sync_voice_controls_enabled(self) -> None:
-        tts_enabled = self.tts_enabled_check.isChecked()
-        self.tts_test_button.setEnabled(tts_enabled)
-        self.tts_stop_button.setEnabled(tts_enabled)
-        asr_enabled = self.asr_enabled_check.isChecked()
-        self.asr_start_button.setEnabled(asr_enabled)
-        self.asr_stop_button.setEnabled(asr_enabled)
+        self.voice_settings_card.sync_controls_enabled()
         self.dialogue_asr_button.setEnabled(False)
 
     def _handle_asr_start(self) -> None:
-        settings = self._save_capability_settings_from_ui().asr
-        result = self.asr_service.start_recording(settings)
+        result = self.capability_runtime.start_asr()
         self.voice_status_label.setText(result.message)
 
     def _handle_asr_stop(self) -> None:
-        settings = self._save_capability_settings_from_ui().asr
-        result = self.asr_service.stop_and_transcribe(settings)
+        result = self.capability_runtime.stop_asr()
         self.voice_status_label.setText(result.message)
         if not result.text:
             return
         self.dialogue_input.setText(result.text)
-        if settings.auto_send:
+        if result.dialogue_request is not None:
             snapshot = self.controller.submit_dialogue_request(
-                DialogueRequest(text=result.text, source="asr"),
-                include_ai_expression=False,
+                result.dialogue_request,
+                include_ai_expression=self._llm_expression_enabled(),
             )
             self.dialogue_input.clear()
             self._apply_snapshot(snapshot)
@@ -1514,11 +1649,7 @@ class CompanionWindow(QMainWindow):
     def _handle_expression_settings_test(self) -> None:
         self._save_expression_settings_from_form()
         result = self.controller.test_expression_provider()
-        if result["ok"]:
-            self.expression_settings_status_label.setText(f"LLM 测试通过：{result['speech']}")
-            return
-        reason = self._format_expression_test_failure(str(result["fallback_reason"]))
-        self.expression_settings_status_label.setText(f"LLM 测试失败：{reason}")
+        self.expression_settings_status_label.setText(expression_test_status_text(result))
 
     def _handle_expression_provider_change(self, provider: str) -> None:
         normalized_provider = str(provider).strip()
@@ -1535,7 +1666,7 @@ class CompanionWindow(QMainWindow):
         try:
             models = self.controller.fetch_expression_models(self._expression_settings_payload_from_form())
         except Exception as exc:
-            reason = self._format_expression_test_failure(_model_fetch_reason(exc))
+            reason = format_expression_test_failure(model_fetch_reason(exc))
             self.expression_model_list_combo.clear()
             self.expression_model_list_combo.setEnabled(False)
             self.expression_model_list_combo.hide()
@@ -1577,73 +1708,22 @@ class CompanionWindow(QMainWindow):
             "timeout_seconds": self.expression_timeout_input.value(),
         }
 
+    def _llm_expression_enabled(self) -> bool:
+        return bool(self.controller.get_expression_settings().get("enabled"))
+
     def _save_capability_settings_from_ui(self) -> CapabilitySettings:
-        settings = CapabilitySettings(
-            screen_observation=ScreenObservationSettings(
-                enabled=self.screen_observation_enabled_check.isChecked(),
-                auto_enabled=self.screen_observation_auto_check.isChecked(),
-                interval_seconds=self.screen_observation_interval_input.value(),
-                max_screenshot_width=self.screen_observation_max_width_input.value(),
-                vision_model=self.screen_observation_model_input.text(),
-                vision_base_url=self.screen_observation_base_url_input.text(),
-                vision_api_key=self.screen_observation_api_key_input.text(),
-            ),
-            web_search=WebSearchSettings(
-                enabled=self.web_search_enabled_check.isChecked(),
-                engine=self.web_search_engine_combo.currentText(),
-                max_results=self.web_search_max_results_input.value(),
-            ),
-            tts=TTSSettings(
-                enabled=self.tts_enabled_check.isChecked(),
-                provider=self.tts_provider_combo.currentText(),
-                api_url=self.tts_api_url_input.text(),
-                model_variant=self.tts_model_variant_combo.currentText(),
-                auto_speak=self.tts_auto_speak_check.isChecked(),
-            ),
-            asr=ASRSettings(
-                enabled=self.asr_enabled_check.isChecked(),
-                provider=self.asr_provider_combo.currentText(),
-                model=self.asr_model_input.text(),
-                base_url=self.asr_base_url_input.text(),
-                api_key=self.asr_api_key_input.text(),
-                auto_send=self.asr_auto_send_check.isChecked(),
-            ),
-        )
+        base = self.controller.get_capability_settings()
+        settings = self.capability_settings_panel.collect_settings(base)
+        settings = self.voice_settings_card.collect_settings(settings)
         saved = self.controller.update_capability_settings(settings)
         self._load_capability_settings_into_ui(saved)
-        self.capability_feedback_label.setText("能力设置已保存")
+        self.capability_settings_panel.set_feedback("能力设置已保存")
         return saved
 
     def _load_capability_settings_into_ui(self, settings: CapabilitySettings | None = None) -> None:
         settings = settings or self.controller.get_capability_settings()
-        screen = settings.screen_observation
-        self.screen_observation_enabled_check.setChecked(screen.enabled)
-        self.screen_observation_auto_check.setChecked(screen.auto_enabled)
-        self.screen_observation_interval_input.setValue(screen.interval_seconds)
-        self.screen_observation_max_width_input.setValue(screen.max_screenshot_width)
-        self.screen_observation_model_input.setText(screen.vision_model)
-        self.screen_observation_base_url_input.setText(screen.vision_base_url)
-        self.screen_observation_api_key_input.setText(screen.vision_api_key)
-
-        search = settings.web_search
-        self.web_search_enabled_check.setChecked(search.enabled)
-        self._set_combo_current_text(self.web_search_engine_combo, search.engine)
-        self.web_search_max_results_input.setValue(search.max_results)
-
-        tts = settings.tts
-        self.tts_enabled_check.setChecked(tts.enabled)
-        self._set_combo_current_text(self.tts_provider_combo, tts.provider)
-        self.tts_api_url_input.setText(tts.api_url)
-        self._set_combo_current_text(self.tts_model_variant_combo, tts.model_variant)
-        self.tts_auto_speak_check.setChecked(tts.auto_speak)
-
-        asr = settings.asr
-        self.asr_enabled_check.setChecked(asr.enabled)
-        self._set_combo_current_text(self.asr_provider_combo, asr.provider)
-        self.asr_model_input.setText(asr.model)
-        self.asr_base_url_input.setText(asr.base_url)
-        self.asr_api_key_input.setText(asr.api_key)
-        self.asr_auto_send_check.setChecked(asr.auto_send)
+        self.capability_settings_panel.load_settings(settings)
+        self.voice_settings_card.load_settings(settings, self.controller.get_expression_settings())
         self.dialogue_asr_button.setEnabled(False)
         self._sync_voice_controls_enabled()
         self._update_screen_observation_timer()
@@ -1654,24 +1734,6 @@ class CompanionWindow(QMainWindow):
             combo.addItem(value)
             index = combo.findText(value)
         combo.setCurrentIndex(max(0, index))
-
-    def _format_expression_test_failure(self, reason: str) -> str:
-        labels = {
-            "disabled": "未启用或缺少 API Key",
-            "missing_api_key": "缺少 API Key",
-            "timeout": "请求超时",
-            "provider_error": "Provider 调用失败",
-            "invalid_json": "返回不是合法 JSON",
-            "invalid_response_json": "返回不是合法 JSON",
-            "invalid_response_shape": "返回结构不符合模型列表格式",
-            "invalid_payload": "返回内容为空或格式不符合规则",
-            "empty_model_list": "模型列表为空",
-            "unsafe_event": "返回包含不允许的字段",
-            "invalid_event": "返回事件未通过本地校验",
-            "too_many_events": "返回事件过多",
-            "closed": "表达器已关闭",
-        }
-        return labels.get(reason, reason or "未知错误")
 
     def _handle_expression_rule_copy(self) -> None:
         text = self.expression_rule_preview_text.toPlainText()
@@ -1706,23 +1768,30 @@ class CompanionWindow(QMainWindow):
             self._show_message(str(exc))
 
     def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
-        self.motion_animator.set_motion(str(snapshot["motion"]))
-        self.frame_timer.setInterval(self.motion_animator.interval_ms())
-        self._render_current_frame()
+        frame = self.presentation_renderer.frame_from_snapshot(snapshot)
+        if frame.backend == "portrait":
+            self._render_portrait_frame(frame)
+        elif frame.backend == "live2d_web":
+            self._render_live2d_frame(frame)
+        else:
+            self.motion_animator.set_motion(frame.motion)
+            self.frame_timer.setInterval(self.motion_animator.interval_ms())
+            self._render_current_frame()
         self.character_label.setText(
             f"{snapshot['character_name']}\n{snapshot['character_title']}\n\n"
             f"模式：{snapshot['mode']}\n"
             f"动作：{snapshot['motion_caption']}\n\n"
             f"{snapshot['character_description']}"
         )
+        self.dialogue_input.setPlaceholderText(f"和{snapshot['character_name']}说点什么")
         self.mode_label.setText(f"当前模式：{snapshot['mode']}")
         self.resources_label.setText(
             f"金币 {snapshot['coins']} / 等级 {snapshot['level']} / 经验 {snapshot['exp']}"
         )
         self.goal_label.setText(str(snapshot["goal"]))
-        self.relationship_label.setText(
-            f"当前关系：{snapshot['relationship_stage']}\n下个解锁：{snapshot['next_relationship_unlock']}"
-        )
+        self.relationship_label.setText(self.snapshot_renderer.format_relationship_presentation(snapshot))
+        if not self.player_alias_input.hasFocus():
+            self.player_alias_input.setText(str(snapshot.get("player_alias") or ""))
         self.tick_label.setText(f"15 秒 tick：已结算 {snapshot['tick_count']} 次，下一轮 {self.remaining_seconds} 秒后")
 
         for stat_name, bar in self.status_bars.items():
@@ -1730,9 +1799,10 @@ class CompanionWindow(QMainWindow):
 
         self.feedback_label.setText(str(snapshot["feedback"]))
         self.delta_label.setText(f"最近变化：{snapshot['delta_text']}")
-        self.events_label.setText(self._format_event_summary(snapshot["events"]))
-        self.memory_label.setText(self._format_memory_log(snapshot["memory_log"]))
-        self.desktop_feedback_label.setText(f"{snapshot['character_name']}：{snapshot['feedback']}")
+        self.events_label.setText(self.snapshot_renderer.format_event_summary(snapshot["events"]))
+        self.memory_label.setText(self.snapshot_renderer.format_memory_log(snapshot["memory_log"]))
+        desktop_speech = self.snapshot_renderer.snapshot_tts_speech(snapshot) or str(snapshot["feedback"])
+        self.desktop_feedback_label.setText(str(snapshot["character_name"]) + ": " + desktop_speech)
 
         actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
         for action_id, button in self.action_buttons.items():
@@ -1750,32 +1820,20 @@ class CompanionWindow(QMainWindow):
         settings = self.controller.get_capability_settings().tts
         if not settings.enabled or not settings.auto_speak:
             return
-        speech = self._snapshot_tts_speech(snapshot)
+        speech = self.snapshot_renderer.snapshot_tts_speech(snapshot)
         if not speech:
             return
         key = (str(snapshot.get("event_preview", "")), speech)
         if key == self._last_auto_tts_key:
             return
         self._last_auto_tts_key = key
-        result = self.tts_manager.speak(speech, settings)
+        result = self.capability_runtime.speak_text(speech)
         self.voice_status_label.setText(result.message)
 
-    def _snapshot_tts_speech(self, snapshot: dict[str, object]) -> str:
-        character_name = str(snapshot.get("character_name", ""))
-        events = snapshot.get("events")
-        if not isinstance(events, list):
-            return ""
-        for event in events:
-            if not isinstance(event, dict):
-                continue
-            if event.get("character_name") != character_name:
-                continue
-            speech = str(event.get("speech", "")).strip()
-            if speech:
-                return speech
-        return ""
-
     def _render_current_frame(self) -> None:
+        self.live2d_surface.hide()
+        self.spirit_surface.hide()
+        self.sprite_label.show()
         if self.spritesheet.isNull():
             self.sprite_label.setText("spritesheet 未找到")
             return
@@ -1788,6 +1846,22 @@ class CompanionWindow(QMainWindow):
             Qt.TransformationMode.SmoothTransformation,
         )
         self.sprite_label.setPixmap(scaled)
+        if self.desktop_mode:
+            self.clearMask()
+
+    def _render_live2d_frame(self, frame: PresentationFrame) -> None:
+        self.sprite_label.hide()
+        self.spirit_surface.hide()
+        self.live2d_surface.show()
+        self.live2d_surface.load_frame(frame, self.controller.resources.asset_dir)
+        if self.desktop_mode:
+            self.clearMask()
+
+    def _render_portrait_frame(self, frame: PresentationFrame) -> None:
+        self.sprite_label.hide()
+        self.live2d_surface.hide()
+        self.spirit_surface.show()
+        self.spirit_surface.load_frame(frame, self.controller.resources.asset_dir)
         if self.desktop_mode:
             self.clearMask()
 
@@ -1832,33 +1906,6 @@ class CompanionWindow(QMainWindow):
         self.item_feedback_label.show()
         QTimer.singleShot(1_400, self.item_feedback_label.hide)
 
-    def _format_memory_log(self, entries: object) -> str:
-        if not entries:
-            return "回忆日志：暂无回忆"
-        lines = ["回忆日志："]
-        for entry in list(entries)[:5]:
-            lines.append(f"- {entry['kind']}：{entry['summary']}")
-        return "\n".join(lines)
-
-    def _format_event_summary(self, events: object) -> str:
-        if not isinstance(events, list) or not events:
-            return "最近事件：暂无"
-        lines: list[str] = []
-        for event in events[:3]:
-            if not isinstance(event, dict):
-                continue
-            character_name = str(event.get("character_name", ""))
-            speech = str(event.get("speech", "")).strip()
-            if not speech:
-                continue
-            if character_name == "STAT":
-                lines.append(f"状态：{speech}")
-            elif character_name == "CHOICE":
-                lines.append(f"可选动作：{speech}")
-            elif character_name:
-                lines.append(f"{character_name}：{speech}")
-        return "\n".join(lines) if lines else "最近事件：暂无"
-
     def _sync_inventory_buttons(self, items: object) -> None:
         selected_id = self._current_item_id(self.inventory_list)
         current = None
@@ -1881,23 +1928,6 @@ class CompanionWindow(QMainWindow):
 
     def _show_message(self, message: str) -> None:
         QMessageBox.information(self, "提示", message)
-
-
-def _model_fetch_reason(exc: Exception) -> str:
-    message = str(exc)
-    for reason in (
-        "missing_api_key",
-        "timeout",
-        "invalid_response_json",
-        "invalid_response_shape",
-        "empty_model_list",
-        "invalid_response_encoding",
-        "invalid_response_bytes",
-        "invalid_response_size",
-    ):
-        if reason in message:
-            return reason
-    return "provider_error"
 
 
 def should_use_desktop_mode(argv: list[str]) -> bool:

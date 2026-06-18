@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from pathlib import Path
 
 from .character_pack import ASSETS_ROOT, DEFAULT_CHARACTER_ID
 from .models import ItemDefinition
@@ -11,7 +12,11 @@ def load_default_shop_items() -> dict[str, ItemDefinition]:
 
 
 def load_shop_items(character_id: str) -> dict[str, ItemDefinition]:
-    payload = json.loads((ASSETS_ROOT / character_id / "shop_items.json").read_text(encoding="utf-8"))
+    return load_shop_items_from_dir(ASSETS_ROOT / character_id)
+
+
+def load_shop_items_from_dir(asset_dir: Path | str) -> dict[str, ItemDefinition]:
+    payload = json.loads((Path(asset_dir) / "shop_items.json").read_text(encoding="utf-8"))
     items: dict[str, ItemDefinition] = {}
     for row in payload:
         item = ItemDefinition(

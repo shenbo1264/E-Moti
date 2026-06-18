@@ -16,6 +16,14 @@ def test_default_capabilities_are_disabled() -> None:
     assert settings.tts.model_variant == "qwen3tts_1.6b"
     assert settings.asr.enabled is False
     assert settings.asr.auto_send is False
+    assert settings.proactive_companion.enabled is False
+    assert settings.proactive_companion.interval_seconds == 900
+    assert settings.proactive_companion.global_cooldown_seconds == 1800
+    assert settings.proactive_companion.daily_limit == 8
+    assert settings.proactive_companion.quiet_hours_enabled is False
+    assert settings.proactive_companion.quiet_start == "23:00"
+    assert settings.proactive_companion.quiet_end == "08:00"
+    assert settings.proactive_companion.allow_context_topic is True
 
 
 def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
@@ -48,6 +56,16 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
                     "api_key": "asr-secret",
                     "max_record_seconds": 99,
                 },
+                "proactive_companion": {
+                    "enabled": True,
+                    "interval_seconds": 1,
+                    "global_cooldown_seconds": 1,
+                    "daily_limit": 99,
+                    "quiet_hours_enabled": True,
+                    "quiet_start": "25:99",
+                    "quiet_end": "bad",
+                    "allow_context_topic": False,
+                },
             },
             ensure_ascii=False,
         ),
@@ -68,6 +86,14 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
     assert settings.tts.volume == 1.0
     assert settings.asr.provider == "openai_compatible"
     assert settings.asr.max_record_seconds == 30
+    assert settings.proactive_companion.enabled is True
+    assert settings.proactive_companion.interval_seconds == 60
+    assert settings.proactive_companion.global_cooldown_seconds == 60
+    assert settings.proactive_companion.daily_limit == 24
+    assert settings.proactive_companion.quiet_hours_enabled is True
+    assert settings.proactive_companion.quiet_start == "23:00"
+    assert settings.proactive_companion.quiet_end == "08:00"
+    assert settings.proactive_companion.allow_context_topic is False
 
     public = settings.to_public_dict()
     assert public["screen_observation"]["vision_api_key"] == "***"
@@ -84,6 +110,7 @@ def test_store_save_creates_parent_and_writes_normalized_json(tmp_path) -> None:
         ScreenObservationSettings,
         TTSSettings,
         WebSearchSettings,
+        ProactiveCompanionSettings,
     )
 
     path = tmp_path / "nested" / "capability_settings.json"
@@ -93,6 +120,14 @@ def test_store_save_creates_parent_and_writes_normalized_json(tmp_path) -> None:
         web_search=WebSearchSettings(enabled=True, max_results=0),
         tts=TTSSettings(enabled=True, provider="http-qwen3tts", model_variant="1.6B", volume=-1),
         asr=ASRSettings(enabled=True, max_record_seconds=99),
+        proactive_companion=ProactiveCompanionSettings(
+            enabled=True,
+            interval_seconds=30,
+            global_cooldown_seconds=30,
+            daily_limit=0,
+            quiet_start="7:05",
+            quiet_end="24:00",
+        ),
     )
 
     saved = store.save(settings)
@@ -104,6 +139,11 @@ def test_store_save_creates_parent_and_writes_normalized_json(tmp_path) -> None:
     assert reloaded.tts.model_variant == "qwen3tts_1.6b"
     assert reloaded.tts.volume == 0.0
     assert reloaded.asr.max_record_seconds == 30
+    assert reloaded.proactive_companion.interval_seconds == 60
+    assert reloaded.proactive_companion.global_cooldown_seconds == 60
+    assert reloaded.proactive_companion.daily_limit == 1
+    assert reloaded.proactive_companion.quiet_start == "07:05"
+    assert reloaded.proactive_companion.quiet_end == "08:00"
     assert json.loads(path.read_text(encoding="utf-8"))["tts"]["provider"] == "http_qwen3tts"
 
 

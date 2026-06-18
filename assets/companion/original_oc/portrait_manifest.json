@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "fallback_expression": "neutral",
+  "anchor": "bottom_center",
+  "default_scale": 1.0,
+  "expressions": {
+    "neutral": "portraits/neutral.png",
+    "smile": "portraits/smile.png",
+    "thinking": "portraits/thinking.png",
+    "surprised": "portraits/surprised.png",
+    "sad": "portraits/sad.png",
+    "sleepy": "portraits/sleepy.png"
+  },
+  "animation": {
+    "breathing": {
+      "enabled": true,
+      "amplitude_px": 2,
+      "scale_delta": 0.006,
+      "cycle_ms": 4600
+    },
+    "blink": {
+      "enabled": false,
+      "min_interval_ms": 3000,
+      "max_interval_ms": 7000,
+      "half_ms": 45,
+      "closed_ms": 90
+    }
+  }
+}
