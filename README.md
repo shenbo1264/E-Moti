@@ -215,6 +215,8 @@ python tools\portrait_promotion_gate.py path\to\complete_pack --report artifacts
 
 LLM expression smoke with DeepSeek or another OpenAI-compatible provider:
 
+LLM setup and smoke-test operations are documented in `docs\llm_expression_operations.md`.
+
 ```powershell
 python tools\llm_dialogue_smoke.py --provider deepseek --dry-run
 $env:DEEPSEEK_API_KEY="<your_deepseek_api_key>"
