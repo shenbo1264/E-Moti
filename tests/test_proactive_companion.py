@@ -130,6 +130,7 @@ def test_context_topic_uses_readonly_perception_and_tool_results() -> None:
 
 def test_context_topic_can_be_disabled() -> None:
     state = create_initial_state(now=0)
+    state.last_interaction_at = 3550
     settings = ProactiveCompanionSettings(enabled=True, allow_context_topic=False)
 
     feedback = ProactiveCompanionService(

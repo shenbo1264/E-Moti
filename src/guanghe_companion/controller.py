@@ -228,6 +228,7 @@ class CompanionController:
         self._last_proactive_at: dict[str, int] = {}
         self._proactive_daily_counts: dict[str, int] = {}
         self._force_next_proactive = False
+        self._force_next_proactive_kind = ""
         self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
         if loaded_state is None:
             self._persist()
@@ -274,6 +275,7 @@ class CompanionController:
         self._last_proactive_at.clear()
         self._proactive_daily_counts.clear()
         self._force_next_proactive = False
+        self._force_next_proactive_kind = ""
         self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
         self._persist()
         return self.get_snapshot()
@@ -774,21 +776,54 @@ class CompanionController:
 
     def trigger_demo_proactive(self, scenario: str, *, include_ai_expression: bool = True) -> dict[str, object]:
         if scenario == "low_charge":
+            forced_kind = "low_charge"
             self.state.charge = 25
             self.state.focus = max(self.state.focus, 70)
             self.state.stability = max(self.state.stability, 70)
             self.state.mood = max(self.state.mood, 60)
             self._last_proactive_at.pop("low_charge", None)
         elif scenario == "quiet_mood":
+            forced_kind = "low_mood"
             self.now = max(self.now, self.state.last_interaction_at + 61)
             self.state.charge = max(self.state.charge, 80)
             self.state.focus = max(self.state.focus, 80)
             self.state.stability = max(self.state.stability, 80)
             self.state.mood = 35
             self._last_proactive_at.pop("low_mood", None)
+        elif scenario == "morning":
+            forced_kind = "morning_greeting"
+            self.now = max(self.now, 8 * 3600 - TICK_SECONDS)
+            self.state.charge = max(self.state.charge, 80)
+            self.state.focus = max(self.state.focus, 70)
+            self.state.stability = max(self.state.stability, 70)
+            self._last_proactive_at.pop("morning_greeting", None)
+        elif scenario == "high_trust":
+            forced_kind = "high_trust"
+            self.state.trust = 34.9
+            self.state.mood = max(self.state.mood, 80)
+            self.state.charge = max(self.state.charge, 80)
+            self.state.focus = max(self.state.focus, 80)
+            self._last_proactive_at.pop("high_trust", None)
+        elif scenario == "return_idle":
+            forced_kind = "return_after_idle"
+            self.now = max(self.now, self.state.last_interaction_at + 300 - TICK_SECONDS)
+            self.state.charge = max(self.state.charge, 80)
+            self.state.focus = max(self.state.focus, 80)
+            self.state.stability = max(self.state.stability, 80)
+            self.state.mood = max(self.state.mood, 60)
+            self._last_proactive_at.pop("return_after_idle", None)
+        elif scenario == "post_gift":
+            forced_kind = "post_gift"
+            self.state.last_gift_at = self.now
+            self.state.last_gift_item_id = "demo_gift"
+            self.state.charge = max(self.state.charge, 80)
+            self.state.focus = max(self.state.focus, 80)
+            self.state.stability = max(self.state.stability, 80)
+            self._last_proactive_at.pop("post_gift", None)
         else:
             raise ValueError(f"Unknown demo proactive scenario: {scenario}")
         self._force_next_proactive = True
+        self._force_next_proactive_kind = forced_kind
         return self.advance_tick(include_ai_expression=include_ai_expression)
 
     def _persist(self) -> None:
@@ -935,7 +970,9 @@ class CompanionController:
 
     def _select_proactive_decision(self, previous_state: CompanionState) -> ProactiveCompanionDecision:
         settings = self.capability_settings.proactive_companion
+        forced_kind = ""
         if self._force_next_proactive:
+            forced_kind = self._force_next_proactive_kind
             settings = replace(
                 settings,
                 enabled=True,
@@ -945,6 +982,7 @@ class CompanionController:
                 quiet_hours_enabled=False,
             )
             self._force_next_proactive = False
+            self._force_next_proactive_kind = ""
         expression_context = self._expression_context()
         return ProactiveCompanionService(
             state=self.state,
@@ -955,6 +993,7 @@ class CompanionController:
             daily_counts=self._proactive_daily_counts,
             perception_summary=str(expression_context.get("perception_summary", "")),
             tool_results=expression_context.get("tool_results", []),
+            forced_kind=forced_kind,
         ).select_decision(motion=self.last_motion)
 
 

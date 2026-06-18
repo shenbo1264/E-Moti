@@ -1192,6 +1192,26 @@ def test_demo_trigger_surfaces_quiet_mood_proactive_companionship_immediately():
     assert snapshot["tick_count"] == 1
 
 
+def test_demo_trigger_surfaces_daily_moment_scenarios_immediately():
+    expected_kinds = {
+        "morning": "morning_greeting",
+        "high_trust": "high_trust",
+        "return_idle": "return_after_idle",
+        "post_gift": "post_gift",
+    }
+
+    for scenario, expected_kind in expected_kinds.items():
+        controller = CompanionController(auto_load=False)
+
+        snapshot = controller.trigger_demo_proactive(scenario)
+        proactive_event = next(event for event in controller.last_events if event.event_type == "proactive")
+
+        assert snapshot["proactive_feedback"]["kind"] == expected_kind
+        assert proactive_event.payload["kind"] == expected_kind
+        assert any(entry["kind"] == "主动陪伴" for entry in snapshot["memory_log"])
+        assert snapshot["tick_count"] == 1
+
+
 def test_controller_records_recent_relationship_memories_for_actions_and_items():
     controller = CompanionController(auto_load=False)
 

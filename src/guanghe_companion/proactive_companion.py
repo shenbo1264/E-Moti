@@ -4,10 +4,10 @@ from dataclasses import dataclass
 from typing import Mapping, Sequence
 
 from .capability_settings import ProactiveCompanionSettings
+from .companion_moments import companion_moment_candidates
 from .models import CompanionState
 
 GLOBAL_COOLDOWN_KEY = "__global__"
-MAX_CONTEXT_TOPIC_LENGTH = 80
 
 
 @dataclass(frozen=True, slots=True)
@@ -76,6 +76,7 @@ class ProactiveCompanionService:
         daily_counts: Mapping[str, int],
         perception_summary: str = "",
         tool_results: Sequence[Mapping[str, object]] | None = None,
+        forced_kind: str = "",
     ) -> None:
         self.state = state
         self.previous_state = previous_state
@@ -85,38 +86,26 @@ class ProactiveCompanionService:
         self.daily_counts = daily_counts
         self.perception_summary = perception_summary if isinstance(perception_summary, str) else ""
         self.tool_results = tuple(tool_results or ())
+        self.forced_kind = forced_kind if isinstance(forced_kind, str) else ""
 
     def select_feedback(self) -> ProactiveFeedback | None:
         if not self._can_emit_any():
             return None
-        idle_seconds = self.now - self.state.last_interaction_at
-        if self.state.charge < 25 and self._can_emit_kind("low_charge"):
-            line = self._line("low_charge")
-            return ProactiveFeedback(
-                kind="low_charge",
-                speech=line,
-                summary=f"能量有点低时主动陪伴：{line}",
-            )
-        if (
-            idle_seconds > 60
-            and self.state.mood <= 35
-            and self.state.mood < self.previous_state.mood
-            and self._can_emit_kind("low_mood")
+        for candidate in companion_moment_candidates(
+            state=self.state,
+            previous_state=self.previous_state,
+            now=self.now,
+            perception_summary=self.perception_summary,
+            tool_results=self.tool_results,
+            allow_context_topic=self.settings.allow_context_topic,
         ):
-            line = self._line("low_mood")
-            return ProactiveFeedback(
-                kind="low_mood",
-                speech=line,
-                summary=f"久未互动后主动陪伴：{line}",
-            )
-        if self.settings.allow_context_topic and self._can_emit_kind("context_topic"):
-            topic = self._context_topic()
-            if topic:
-                line = f"我看到你可能在处理 {topic}。不用马上回应，我只是轻轻陪你确认一下节奏。"
+            if self.forced_kind and candidate.kind != self.forced_kind:
+                continue
+            if self._can_emit_kind(candidate.kind):
                 return ProactiveFeedback(
-                    kind="context_topic",
-                    speech=line,
-                    summary=f"只读上下文主动陪伴：{topic}",
+                    kind=candidate.kind,
+                    speech=candidate.speech,
+                    summary=candidate.summary,
                 )
         return None
 
@@ -147,37 +136,6 @@ class ProactiveCompanionService:
         last_at = self.last_proactive_at.get(kind)
         return last_at is None or self.now - last_at >= self.settings.interval_seconds
 
-    def _line(self, kind: str) -> str:
-        has_ritual = "unlock_shared_ritual" in self.state.unlocks
-        has_nickname = "unlock_first_nickname" in self.state.unlocks
-        if kind == "low_charge":
-            if has_ritual:
-                return "像我们的日常小仪式一样，先把节奏放轻一点吧。我的能量有点低，陪你安静待一会儿也很好。"
-            if has_nickname:
-                return "现在可以更亲近一点叫你了。能量有点低，我想挨着你慢慢缓一会儿。"
-            return "能量有点低了。我会把亮度放轻一点；你想休息或给我一点小点心都可以。"
-        if has_ritual:
-            return "刚才安静得有点久，我还在这里。按我们的小默契，我先轻轻靠近你。"
-        if has_nickname:
-            return "刚才安静得有点久，我还在这里。现在我可以更自然地靠近你一点。"
-        return "刚才安静得有点久，我还在这里。你不用立刻回应，我只是想靠近一点。"
-
-    def _context_topic(self) -> str:
-        parts: list[str] = []
-        if self.perception_summary.strip():
-            parts.append(self.perception_summary)
-        for item in self.tool_results:
-            title = item.get("title")
-            summary = item.get("summary")
-            if isinstance(title, str) and title.strip():
-                parts.append(title)
-            if isinstance(summary, str) and summary.strip():
-                parts.append(summary)
-            if parts:
-                break
-        return _sanitize_topic(" / ".join(parts))
-
-
 def daily_count_key(now: int) -> str:
     return str(max(0, int(now)) // 86_400)
 
@@ -196,8 +154,3 @@ def _is_quiet_time(now: int, quiet_start: str, quiet_end: str) -> bool:
 def _time_to_seconds(value: str) -> int:
     hour, minute = value.split(":", 1)
     return int(hour) * 3600 + int(minute) * 60
-
-
-def _sanitize_topic(value: str) -> str:
-    cleaned = " ".join(value.replace("\n", " ").replace("\r", " ").split())
-    return cleaned[:MAX_CONTEXT_TOPIC_LENGTH]
