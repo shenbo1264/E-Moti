@@ -108,6 +108,7 @@ python tools\review_character_pack_status.py assets\companion\original_oc --json
 ```
 
 Character-pack distribution rules are documented in `docs\character_pack_distribution_policy.md`. Keep third-party and fanwork packs local unless rights are cleared.
+Local character-pack authoring is documented in `docs\character_pack_authoring_runbook.md`.
 
 Generated character draft validation:
 
