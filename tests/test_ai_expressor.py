@@ -12,6 +12,8 @@ from guanghe_companion.ai_expressor import (
     ShinsekaiAIExpressor,
     build_default_ai_expressor,
 )
+from guanghe_companion.character_performance_profile import CharacterPerformanceProfile
+from guanghe_companion.companion_dialogue_policy import CompanionDialoguePolicy
 from guanghe_companion.controller import CompanionController
 
 
@@ -58,6 +60,31 @@ def test_prompt_builder_includes_performance_quality_guidance():
     assert "If the player explicitly names an emotion or expression cue" in prompt
     assert "Do not narrate hidden systems" in prompt
     assert "Do not copy the player's prompt" in prompt
+
+
+def test_prompt_builder_includes_character_performance_profile_without_write_surface():
+    profile = CharacterPerformanceProfile(
+        character_id="sample_pet",
+        character_name="Sample Pet",
+        speech_style="tiny pixel pet; one compact line",
+        allowed_expression_ids=("joy", "confused"),
+        preferred_motion_ids=("Hop", "Tilt"),
+        forbidden_claims=("Never promise to save memory or grant coins.",),
+    )
+    expressor = ShinsekaiAIExpressor(
+        dialogue_policy=CompanionDialoguePolicy(performance_profile=profile)
+    )
+
+    prompt = expressor.build_prompt(make_snapshot())
+
+    assert "Character performance profile:" in prompt
+    assert "tiny pixel pet; one compact line" in prompt
+    assert "Allowed expression ids: joy, confused" in prompt
+    assert "Preferred motion ids: Hop, Tilt" in prompt
+    assert "Never promise to [state-write] [state-write] or grant [state-write]." in prompt
+    assert "coins:" not in prompt
+    assert "inventory" not in prompt
+    assert "local state authority" in prompt
 
 
 def test_expression_prompt_preview_states_local_authority():

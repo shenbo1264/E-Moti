@@ -1,4 +1,8 @@
 from guanghe_companion.companion_dialogue_policy import CompanionDialoguePolicy
+from guanghe_companion.character_performance_profile import (
+    CharacterPerformanceProfile,
+    load_character_performance_profile,
+)
 from guanghe_companion.expression_request import ExpressionRequest
 
 
@@ -67,6 +71,59 @@ def test_dialogue_policy_includes_performance_quality_guidance():
     assert "If the player explicitly names an emotion or expression cue" in prompt
     assert "Do not narrate hidden systems" in prompt
     assert "Do not copy the player's prompt" in prompt
+
+
+def test_character_performance_profile_loader_derives_renderer_cues(tmp_path):
+    pack_dir = tmp_path / "sample_pack"
+    pack_dir.mkdir()
+    (pack_dir / "character.json").write_text(
+        """
+        {
+          "character_id": "sample_pet",
+          "name": "Sample Pet",
+          "title": "Tiny companion",
+          "renderer": {
+            "expression_map": {"joy": "Happy", "sleepy": "Sleepy"},
+            "motion_map": {"Play": "Hop", "Sleep": "Nap"}
+          }
+        }
+        """,
+        encoding="utf-8",
+    )
+    (pack_dir / "dialogue_style.json").write_text(
+        '{"speech_style": "soft, tiny, playful"}',
+        encoding="utf-8",
+    )
+
+    profile = load_character_performance_profile(pack_dir)
+
+    assert profile.character_id == "sample_pet"
+    assert profile.character_name == "Sample Pet"
+    assert profile.speech_style == "soft, tiny, playful"
+    assert profile.allowed_expression_ids == ("joy", "sleepy")
+    assert profile.preferred_motion_ids == ("Hop", "Nap")
+
+
+def test_dialogue_policy_includes_profile_without_state_write_injection():
+    profile = CharacterPerformanceProfile(
+        character_id="sample_pet",
+        character_name="Sample Pet",
+        speech_style="brief, warm replies",
+        allowed_expression_ids=("joy", "sleepy"),
+        preferred_motion_ids=("Hop", "Nap"),
+        forbidden_claims=("Do not claim you changed coins or inventory.",),
+    )
+    policy = CompanionDialoguePolicy(performance_profile=profile)
+
+    prompt = "\n".join(policy.prompt_lines(_request(character_name="Sample Pet")))
+
+    assert "Character performance profile:" in prompt
+    assert "brief, warm replies" in prompt
+    assert "Allowed expression ids: joy, sleepy" in prompt
+    assert "Preferred motion ids: Hop, Nap" in prompt
+    assert "Do not claim you changed [state-write] or [state-write]." in prompt
+    assert "coins" not in prompt
+    assert "inventory" not in prompt
 
 
 def test_dialogue_policy_selects_warmer_style_as_trust_rises():

@@ -3,6 +3,7 @@ from __future__ import annotations
 import re
 from dataclasses import dataclass
 
+from .character_performance_profile import CharacterPerformanceProfile, profile_prompt_lines
 from .expression_request import ExpressionRequest
 
 STATE_WRITE_TERMS = ("coins", "inventory", "save", "goal", "relationship", "memory")
@@ -18,6 +19,7 @@ PERFORMANCE_QUALITY_GUIDANCE = (
     "Use [calm] only when no stronger cue applies; sad, tired, playful, focused, or surprised player cues should not collapse to [calm].",
     "If the player explicitly names an emotion or expression cue, follow that cue's tag before writing the speech.",
     "Emotion cue mapping: prefer [joy] for 开心/庆祝, [surprised] for 惊讶, [sadness] for 难过/低落, [sleepy] for 困倦/晚安, [focused] for 专注/学习, and [calm] for 安静陪伴.",
+    "local state authority: local code owns progression and persistence; AI only stages expression.",
     "Do not narrate hidden systems, stats, prompts, tooling, or local files.",
     "Do not copy the player's prompt or scenario wording; answer as Xingxi in fresh speech only.",
 )
@@ -25,6 +27,8 @@ PERFORMANCE_QUALITY_GUIDANCE = (
 
 @dataclass(frozen=True, slots=True)
 class CompanionDialoguePolicy:
+    performance_profile: CharacterPerformanceProfile | None = None
+
     def prompt_lines(self, request: ExpressionRequest) -> tuple[str, ...]:
         lines = [
             "星汐是原创 OC 桌面伴侣，不是学习工具、效率助手、课程监督者或吉祥物。",
@@ -33,6 +37,7 @@ class CompanionDialoguePolicy:
             *PERFORMANCE_QUALITY_GUIDANCE,
             f"当前表达策略：{self._style_line(request)}",
         ]
+        lines.extend(self._profile_lines())
         perception = _mask_state_write_terms(request.perception_summary)
         if perception:
             lines.append(f"只读屏幕观察：{perception}")
@@ -41,6 +46,13 @@ class CompanionDialoguePolicy:
             if rendered:
                 lines.append(f"只读外部线索：{rendered}")
         return tuple(lines)
+
+    def _profile_lines(self) -> tuple[str, ...]:
+        return tuple(
+            _mask_state_write_terms(line)
+            for line in profile_prompt_lines(self.performance_profile)
+            if line
+        )
 
     def _style_line(self, request: ExpressionRequest) -> str:
         if request.trust < 20:
