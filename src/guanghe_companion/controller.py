@@ -13,7 +13,11 @@ from .ai_expressor import (
 from .capability_settings import CapabilitySettings, CapabilitySettingsStore
 from .character_pack import DEFAULT_CHARACTER_ID, resolve_motion_caption
 from .character_resources import CharacterResources, load_character_resources, load_character_resources_from_dir
-from .character_session import build_character_session_paths
+from .character_session import (
+    CharacterSessionPaths,
+    build_character_session_paths,
+    write_character_session_pack_metadata,
+)
 from .dialogue import DialogueRequest
 from .dialogue_history import (
     DialogueHistoryEntry,
@@ -144,7 +148,10 @@ class CompanionController:
         self.save_manager = save_manager or SaveManager(
             self.save_path,
             inventory_item_ids=tuple(self.shop_items),
+            expected_character_id=self.character_pack.character_id,
         )
+        if session_paths is not None:
+            self._write_session_pack_metadata(session_paths)
         self.dialogue_history_path = (
             Path(dialogue_history_path)
             if dialogue_history_path is not None
@@ -341,7 +348,12 @@ class CompanionController:
         self.character_pack = resources.character_pack
         self.shop_items = resources.shop_items
         self.save_path = session_paths.save_path
-        self.save_manager = SaveManager(self.save_path, inventory_item_ids=tuple(self.shop_items))
+        self.save_manager = SaveManager(
+            self.save_path,
+            inventory_item_ids=tuple(self.shop_items),
+            expected_character_id=self.character_pack.character_id,
+        )
+        self._write_session_pack_metadata(session_paths)
         self.dialogue_history_path = session_paths.dialogue_history_path
         self.dialogue_history_store = DialogueHistoryStore(self.dialogue_history_path)
         self.dialogue_history = self.dialogue_history_store.load()
@@ -846,6 +858,15 @@ class CompanionController:
 
     def _persist(self) -> None:
         self.save_manager.save(self.state)
+
+    def _write_session_pack_metadata(self, session_paths: CharacterSessionPaths) -> None:
+        write_character_session_pack_metadata(
+            session_paths,
+            pack_name=self.character_pack.name,
+            asset_dir=self.resources.asset_dir,
+            renderer_backend=self.character_pack.renderer.backend,
+            spritesheet=self.character_pack.spritesheet,
+        )
 
     def _replace_ai_expressor(self, next_expressor: ShinsekaiAIExpressor) -> None:
         current = self.ai_expressor

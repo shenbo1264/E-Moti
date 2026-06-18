@@ -21,14 +21,19 @@ def save_state(state: CompanionState, path: Path | str = DEFAULT_SAVE_PATH) -> N
     SaveManager(path).save(state)
 
 
-def load_state(path: Path | str = DEFAULT_SAVE_PATH) -> CompanionState | None:
-    return SaveManager(path).load()
+def load_state(
+    path: Path | str = DEFAULT_SAVE_PATH,
+    *,
+    expected_character_id: str | None = None,
+) -> CompanionState | None:
+    return SaveManager(path, expected_character_id=expected_character_id).load()
 
 
 @dataclass(frozen=True, slots=True)
 class SaveManager:
     path: Path | str = DEFAULT_SAVE_PATH
     inventory_item_ids: Iterable[str] | None = None
+    expected_character_id: str | None = None
 
     def save(self, state: CompanionState) -> None:
         target = Path(self.path)
@@ -48,7 +53,13 @@ class SaveManager:
         if not isinstance(payload, dict):
             return None
         try:
-            return CompanionState(**_migrate_payload(payload, item_ids=self.inventory_item_ids))
+            migrated = _migrate_payload(payload, item_ids=self.inventory_item_ids)
+            if (
+                self.expected_character_id is not None
+                and migrated.get("character_id") != self.expected_character_id
+            ):
+                return None
+            return CompanionState(**migrated)
         except (TypeError, ValueError):
             return None
 

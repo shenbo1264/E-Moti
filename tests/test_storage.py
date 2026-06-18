@@ -61,6 +61,41 @@ def test_save_manager_wraps_schema_aware_load_and_save(tmp_path: Path):
     assert getattr(loaded, "schema_version", None) == 1
 
 
+def test_save_manager_rejects_unexpected_character_id(tmp_path: Path):
+    save_path = tmp_path / "managed-save.json"
+    state = create_initial_state(now=0, character_id="quiet_nebula", character_name="Quiet")
+    save_state(state, save_path)
+
+    manager = storage_module.SaveManager(save_path, expected_character_id="solar_mender")
+
+    assert manager.load() is None
+
+
+def test_save_manager_keeps_isolated_progression_per_character_path(tmp_path: Path):
+    first_path = tmp_path / "characters" / "quiet_nebula" / "companion_save.json"
+    second_path = tmp_path / "characters" / "solar_mender" / "companion_save.json"
+    first_state = create_initial_state(now=0, character_id="quiet_nebula", character_name="Quiet")
+    second_state = create_initial_state(now=0, character_id="solar_mender", character_name="Solar")
+    first_state.coins = 33
+    second_state.coins = 7
+    save_state(first_state, first_path)
+    save_state(second_state, second_path)
+
+    first_loaded = storage_module.SaveManager(
+        first_path,
+        expected_character_id="quiet_nebula",
+    ).load()
+    second_loaded = storage_module.SaveManager(
+        second_path,
+        expected_character_id="solar_mender",
+    ).load()
+
+    assert first_loaded is not None
+    assert second_loaded is not None
+    assert first_loaded.coins == 33
+    assert second_loaded.coins == 7
+
+
 def test_load_state_ignores_unknown_top_level_fields_from_future_saves(tmp_path: Path):
     save_path = tmp_path / "future-save.json"
     save_state(create_initial_state(now=0), save_path)

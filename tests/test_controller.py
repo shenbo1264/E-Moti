@@ -171,6 +171,18 @@ def test_controller_character_session_paths_isolate_dialogue_and_memory(tmp_path
     assert first.save_path == tmp_path / "user-data" / "characters" / "custom_character" / "companion_save.json"
     assert first.dialogue_history_path.name == "dialogue_history.json"
     assert first.long_term_memory_path.name == "long_term_memory.json"
+    first_metadata = json.loads(
+        (tmp_path / "user-data" / "characters" / "custom_character" / "pack_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    second_metadata = json.loads(
+        (tmp_path / "user-data" / "characters" / "solar_mender" / "pack_metadata.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert first_metadata["character_id"] == "custom_character"
+    assert second_metadata["character_id"] == "solar_mender"
     assert first.get_snapshot()["dialogue_history"]
     assert first.get_snapshot()["long_term_memory"]
     assert second.get_snapshot()["dialogue_history"] == []
