@@ -1233,6 +1233,58 @@ def test_controller_records_recent_relationship_memories_for_actions_and_items()
     assert fed["memory_log"][1]["kind"] == "互动"
 
 
+def test_controller_session_goal_progress_rewards_and_dialogue_boundary(tmp_path):
+    class FakeExpressor:
+        enabled = True
+        last_fallback_reason = ""
+
+        def express(self, request, effect=None):
+            return [
+                {
+                    "character_name": request.character_name,
+                    "speech": "LLM can comment, not settle goals.",
+                    "sprite": "1",
+                    "effect": "ATTENTION",
+                }
+            ]
+
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+        ai_expressor=FakeExpressor(),
+    )
+    initial = controller.get_snapshot()
+
+    assert initial["session_goal"]["goal_id"] == "interact_twice"
+    assert initial["session_goal"]["progress"] == 0
+    assert initial["next_suggested_action"]["action_id"] == "touch"
+
+    after_dialogue = controller.submit_dialogue_request(
+        DialogueRequest("你帮我完成一下目标。"),
+        include_ai_expression=True,
+    )
+    assert after_dialogue["session_goal"]["progress"] == 0
+    assert after_dialogue["coins"] == initial["coins"]
+
+    first = controller.perform_action("touch")
+    second = controller.perform_action("play")
+
+    assert first["session_goal"]["goal_id"] == "interact_twice"
+    assert first["session_goal"]["progress"] == 1
+    assert first["session_goal_reward"] is None
+    assert second["session_goal"]["goal_id"] == "rest_once"
+    assert second["session_goal"]["progress"] == 0
+    assert second["session_goal_reward"] == {
+        "goal_id": "interact_twice",
+        "label": "互动两次",
+        "coins": 2,
+        "exp": 1,
+    }
+    assert second["coins"] == first["coins"] + 5
+    assert second["exp"] == first["exp"] + 1
+    assert second["next_suggested_action"]["action_id"] == "rest"
+
+
 def test_controller_surfaces_relationship_unlock_feedback():
     controller = CompanionController(auto_load=False)
     controller.state.trust = 19

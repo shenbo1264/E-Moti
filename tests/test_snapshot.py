@@ -43,6 +43,9 @@ def test_controller_exposes_typed_snapshot_with_required_stage_one_fields(tmp_pa
     assert all(isinstance(event, CompanionEvent) for event in typed_snapshot.events)
     assert [event.event_type for event in typed_snapshot.events] == ["speech", "stat", "choice"]
     assert typed_snapshot.proactive_feedback is None
+    assert typed_snapshot.session_goal["goal_id"] == "interact_twice"
+    assert typed_snapshot.next_suggested_action["action_id"] == "touch"
+    assert typed_snapshot.session_goal_reward is None
 
 
 def test_typed_snapshot_exports_controller_compatible_dict_without_ui_shape_changes(tmp_path):
@@ -73,6 +76,9 @@ def test_typed_snapshot_exports_controller_compatible_dict_without_ui_shape_chan
     assert compatible["actions"] == snapshot["actions"]
     assert compatible["long_term_memory"] == snapshot["long_term_memory"]
     assert compatible["relationship_presentation"] == typed_snapshot.relationship_presentation.to_dict()
+    assert compatible["session_goal"]["goal_id"] == "interact_twice"
+    assert compatible["next_suggested_action"]["action_id"] == "touch"
+    assert compatible["session_goal_reward"] is None
 
 
 def test_snapshot_legacy_event_helpers_filter_domain_events_and_format_preview():
@@ -205,6 +211,9 @@ def test_snapshot_builder_accepts_single_typed_input_context(tmp_path):
 
     assert snapshot.character_name == "星汐"
     assert snapshot.goal == "目标：信任达到 20"
+    assert snapshot.session_goal == {}
+    assert snapshot.next_suggested_action is None
+    assert snapshot.session_goal_reward is None
     assert snapshot.actions == actions
     assert snapshot.shop_items == shop_items
     assert snapshot.inventory_items == inventory_items
@@ -297,6 +306,9 @@ def test_snapshot_context_factory_derives_state_owned_snapshot_fields(tmp_path):
 
     assert isinstance(builder_input, SnapshotBuilderInput)
     assert builder_input.goal == "目标：让信任达到 20，解锁第一次主动称呼。"
+    assert builder_input.session_goal == {}
+    assert builder_input.next_suggested_action is None
+    assert builder_input.session_goal_reward is None
     assert builder_input.relationship_stage == "初识"
     assert builder_input.next_relationship_unlock == "信任达到 20：解锁第一次主动称呼"
 

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 import json
 
 from .dialogue_history import DialogueHistoryEntry, format_dialogue_history_text
@@ -135,6 +135,9 @@ class CompanionSnapshot:
     item_feedback_icon: str | None = None
     dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
     long_term_memory: tuple[dict[str, str], ...] = ()
+    session_goal: dict[str, object] = field(default_factory=dict)
+    next_suggested_action: dict[str, object] | None = None
+    session_goal_reward: dict[str, object] | None = None
 
     def to_compatible_dict(self) -> dict[str, object]:
         return SnapshotCompatibleSerializer(self).to_dict()
@@ -185,6 +188,9 @@ class SnapshotCompatibleSerializer:
             "interaction_intents": deepcopy(interaction_intents),
             "item_feedback_icon": self.snapshot.item_feedback_icon,
             "proactive_feedback": deepcopy(self.snapshot.proactive_feedback),
+            "session_goal": deepcopy(self.snapshot.session_goal),
+            "next_suggested_action": deepcopy(self.snapshot.next_suggested_action),
+            "session_goal_reward": deepcopy(self.snapshot.session_goal_reward),
             "memory_log": deepcopy(self.snapshot.memory_log),
             "actions": deepcopy(self.snapshot.actions),
             "shop_items": deepcopy(self.snapshot.shop_items),
@@ -218,6 +224,9 @@ class SnapshotBuilderInput:
     dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
     long_term_memory: tuple[dict[str, str], ...] = ()
     relationship_presentation: RelationshipPresentation | None = None
+    session_goal: dict[str, object] = field(default_factory=dict)
+    next_suggested_action: dict[str, object] | None = None
+    session_goal_reward: dict[str, object] | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -240,6 +249,9 @@ class SnapshotContextFactory:
     dialogue_history: tuple[DialogueHistoryEntry, ...] = ()
     long_term_memory: tuple[dict[str, str], ...] = ()
     relationship_decorations: tuple[dict[str, str], ...] = ()
+    session_goal: dict[str, object] = field(default_factory=dict)
+    next_suggested_action: dict[str, object] | None = None
+    session_goal_reward: dict[str, object] | None = None
 
     def build_input(self) -> SnapshotBuilderInput:
         relationship = RelationshipService(self.state)
@@ -265,6 +277,9 @@ class SnapshotContextFactory:
             proactive_feedback=self.proactive_feedback,
             dialogue_history=self.dialogue_history,
             long_term_memory=self.long_term_memory,
+            session_goal=deepcopy(self.session_goal),
+            next_suggested_action=deepcopy(self.next_suggested_action),
+            session_goal_reward=deepcopy(self.session_goal_reward),
         )
 
 
@@ -307,4 +322,7 @@ class SnapshotBuilder:
             item_feedback_icon=source.item_feedback_icon,
             dialogue_history=tuple(source.dialogue_history),
             long_term_memory=tuple(dict(entry) for entry in source.long_term_memory[:MAX_LONG_TERM_MEMORY_SUMMARIES]),
+            session_goal=deepcopy(source.session_goal),
+            next_suggested_action=deepcopy(source.next_suggested_action),
+            session_goal_reward=deepcopy(source.session_goal_reward),
         )

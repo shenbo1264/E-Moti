@@ -59,6 +59,7 @@ from .runtime_paths import (
     expression_settings_path as default_expression_settings_path,
     long_term_memory_path as default_long_term_memory_path,
 )
+from .session_goals import SessionGoalResult, SessionGoalTracker
 from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory, format_delta_text
 from .storage import DEFAULT_SAVE_PATH, SaveManager, logical_time_from_state
 
@@ -229,6 +230,8 @@ class CompanionController:
         self._proactive_daily_counts: dict[str, int] = {}
         self._force_next_proactive = False
         self._force_next_proactive_kind = ""
+        self.session_goals = SessionGoalTracker()
+        self.last_session_goal_reward: dict[str, object] | None = None
         self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
         if loaded_state is None:
             self._persist()
@@ -276,6 +279,8 @@ class CompanionController:
         self._proactive_daily_counts.clear()
         self._force_next_proactive = False
         self._force_next_proactive_kind = ""
+        self.session_goals = SessionGoalTracker()
+        self.last_session_goal_reward = None
         self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
         self._persist()
         return self.get_snapshot()
@@ -308,6 +313,9 @@ class CompanionController:
             dialogue_history=self.dialogue_history,
             long_term_memory=self.long_term_memory_service.summaries(),
             relationship_decorations=self.character_pack.relationship_decorations,
+            session_goal=self.session_goals.snapshot(),
+            next_suggested_action=self._next_session_goal_action(),
+            session_goal_reward=self.last_session_goal_reward,
         ).build_input()
         return SnapshotBuilder(builder_input).build()
 
@@ -371,8 +379,10 @@ class CompanionController:
         self.last_allowed = True
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
         self._perception_summary = ""
         self._tool_results = []
+        self.session_goals = SessionGoalTracker()
         self.last_events = self._build_events(effect="SWITCH", include_ai_expression=include_ai_expression)
         if loaded_state is None:
             self._persist()
@@ -401,6 +411,7 @@ class CompanionController:
         self.last_allowed = True
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
         self._current_player_message = text
         try:
             self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
@@ -552,6 +563,7 @@ class CompanionController:
         self.last_allowed = result.allowed
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
         new_unlocks = self._new_relationship_unlocks(previous_unlocks)
         unlock_feedback = self._relationship_unlock_feedback(new_unlocks)
         if unlock_feedback:
@@ -561,6 +573,7 @@ class CompanionController:
             memory_summary = f"{self._action_label(action_id)}：{self.last_feedback}"
             self._remember(kind="互动", summary=memory_summary, motion=result.motion)
             self._remember_relationship_unlocks(new_unlocks)
+            self._settle_session_goal_event("action", action_id=action_id)
         event_bundle = DomainEventComposer(self.state).action_events(
             ActionDomainEventRequest(
                 action_id=action_id,
@@ -605,6 +618,7 @@ class CompanionController:
         self.last_allowed = True
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
         event_bundle = DomainEventComposer(self.state).inventory_events(
             InventoryDomainEventRequest(
                 motion=self.last_motion,
@@ -665,6 +679,7 @@ class CompanionController:
             self.last_allowed = False
             self.last_item_feedback_icon = None
             self.last_proactive_feedback = None
+            self.last_session_goal_reward = None
             event_bundle = DomainEventComposer(self.state).action_events(
                 ActionDomainEventRequest(
                     action_id=usage,
@@ -698,6 +713,7 @@ class CompanionController:
         self.last_allowed = True
         self.last_item_feedback_icon = self._item_icon_path(item)
         self.last_proactive_feedback = None
+        self.last_session_goal_reward = None
         memory_kind = memory_kind_for_inventory_usage(usage)
         memory_summary = f"{memory_kind}了 {item.name}：{self.last_delta_text}"
         self._remember(
@@ -707,6 +723,7 @@ class CompanionController:
             item_id=item_id,
         )
         self._remember_relationship_unlocks(new_unlocks)
+        self._settle_session_goal_event("inventory", action_id=usage)
         base_effect = "ATTENTION" if usage in {"feed", "gift"} else "SWITCH"
         event_bundle = DomainEventComposer(self.state).inventory_events(
             InventoryDomainEventRequest(
@@ -745,6 +762,7 @@ class CompanionController:
         self.last_delta_text = "tick -15s"
         self.last_allowed = True
         self.last_item_feedback_icon = None
+        self.last_session_goal_reward = None
         proactive_decision = self._select_proactive_decision(previous_state)
         self.last_proactive_feedback = proactive_decision.to_legacy_feedback()
         if proactive_decision.feedback:
@@ -895,6 +913,22 @@ class CompanionController:
             item.to_legacy_dict()
             for item in InventoryService(self.state, self._item_icon_path, self.shop_items).inventory_items()
         ]
+
+    def _next_session_goal_action(self) -> dict[str, object] | None:
+        suggested = self.session_goals.suggested_action()
+        for action in self._build_actions():
+            if action.get("action_id") == suggested["action_id"]:
+                return dict(action)
+        return suggested
+
+    def _settle_session_goal_event(self, event_type: str, *, action_id: str) -> SessionGoalResult:
+        result = self.session_goals.record_event(event_type, action_id=action_id)
+        reward = result.to_public_dict()
+        self.last_session_goal_reward = reward
+        if reward:
+            self.state.coins += int(reward.get("coins", 0))
+            self.state.exp += int(reward.get("exp", 0))
+        return result
 
     def _expression_context(self) -> dict[str, object]:
         context = RuntimeExpressionContextService(
