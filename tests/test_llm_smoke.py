@@ -11,6 +11,8 @@ from guanghe_companion.llm_smoke import (
     DEFAULT_EXPRESSION_CUE_PROBES,
     DEFAULT_LLM_SMOKE_PROMPTS,
     LLMExpressionCueProbeCase,
+    load_short_session_scenarios,
+    DEFAULT_LLM_SHORT_SESSION_SCENARIOS,
     load_llm_conversation_scenarios,
     run_configured_llm_dialogue_smoke,
     run_configured_llm_expression_cue_probes,
@@ -20,6 +22,7 @@ from guanghe_companion.visual_actions import VisualAction
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 SCENARIO_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "llm_conversation_scenarios.json"
+SHORT_SESSION_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "llm_short_session_scenarios.json"
 
 
 def _load_tool(path: Path):
@@ -71,6 +74,17 @@ def test_default_llm_conversation_scenarios_load_from_versioned_fixture():
     assert all(scenario.expected_motion_ids for scenario in scenario_set.scenarios)
     assert DEFAULT_LLM_CONVERSATION_SCENARIOS == scenario_set
     assert DEFAULT_LLM_SMOKE_PROMPTS == tuple(scenario.prompt for scenario in scenario_set.scenarios)
+
+
+def test_llm_short_session_fixture_loads_player_turns():
+    scenario_set = load_short_session_scenarios(SHORT_SESSION_FIXTURE)
+
+    assert scenario_set.version == 1
+    assert len(scenario_set.turns) == 10
+    assert scenario_set.turns[0].turn_id == "return_after_idle"
+    assert scenario_set.turns[0].player_text
+    assert scenario_set.turns[0].expected_cues == ("joy", "surprised")
+    assert DEFAULT_LLM_SHORT_SESSION_SCENARIOS == scenario_set
 
 
 def test_default_llm_smoke_prompts_cover_quality_gate_emotional_cues():

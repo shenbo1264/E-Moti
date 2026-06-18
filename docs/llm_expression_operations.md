@@ -62,6 +62,14 @@ Review an existing dialogue smoke or cue probe report:
 python tools\review_llm_smoke_report.py artifacts\llm_smoke\dialogue-smoke-dry-run.json --json artifacts\llm_smoke\dialogue-smoke-review.json --markdown artifacts\llm_smoke\dialogue-smoke-review.md
 ```
 
+Review short-session companion quality without calling a provider:
+
+```powershell
+python tools\review_llm_session_quality.py artifacts\llm_smoke\dialogue-smoke-dry-run.json --json artifacts\llm_smoke\session-quality-review.json --markdown artifacts\llm_smoke\session-quality-review.md
+```
+
+The session quality review flags flat repeated speech, low expression diversity, source smoke failures, and any state mutation reported by the smoke guard. Use it after a live or dry-run dialogue smoke to separate provider connectivity from perceived companion performance.
+
 ## Live Cue Probe
 
 ```powershell

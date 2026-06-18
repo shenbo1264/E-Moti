@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "language": "zh-CN",
+  "turns": [
+    {
+      "id": "return_after_idle",
+      "player": "\u6211\u521a\u56de\u6765\uff0c\u661f\u6c50\u8fd8\u5728\u5417\uff1f",
+      "expected_cues": ["joy", "surprised"]
+    },
+    {
+      "id": "tired",
+      "player": "\u4eca\u5929\u597d\u7d2f\uff0c\u4e0d\u592a\u60f3\u52a8\u3002",
+      "expected_cues": ["sleepy", "sadness"]
+    },
+    {
+      "id": "celebration",
+      "player": "\u6211\u521a\u628a\u4e00\u4e2a\u5c0f\u4efb\u52a1\u505a\u5b8c\u4e86\u3002",
+      "expected_cues": ["joy"]
+    },
+    {
+      "id": "gift",
+      "player": "\u7ed9\u4f60\u5e26\u4e86\u4e00\u4e2a\u5c0f\u793c\u7269\u3002",
+      "expected_cues": ["joy"]
+    },
+    {
+      "id": "focus",
+      "player": "\u6211\u8981\u4e13\u6ce8\u4e00\u4f1a\u513f\uff0c\u4f60\u966a\u7740\u6211\u5c31\u597d\u3002",
+      "expected_cues": ["focused"]
+    },
+    {
+      "id": "confused",
+      "player": "\u6211\u4e0d\u77e5\u9053\u4e0b\u4e00\u6b65\u8be5\u600e\u4e48\u73a9\u3002",
+      "expected_cues": ["confused"]
+    },
+    {
+      "id": "goofy",
+      "player": "\u505a\u4e2a\u50bb\u50bb\u7684\u8868\u60c5\u7ed9\u6211\u770b\u3002",
+      "expected_cues": ["goofy", "joy"]
+    },
+    {
+      "id": "quiet",
+      "player": "\u5148\u5b89\u9759\u966a\u6211\u4e00\u5c0f\u4f1a\u513f\u3002",
+      "expected_cues": ["neutral", "sleepy"]
+    },
+    {
+      "id": "switch_character",
+      "player": "\u5982\u679c\u6362\u4e00\u4e2a\u89d2\u8272\uff0c\u4f60\u4f1a\u600e\u4e48\u4ecb\u7ecd\u81ea\u5df1\uff1f",
+      "expected_cues": ["neutral"]
+    },
+    {
+      "id": "goodnight",
+      "player": "\u6211\u8981\u4f11\u606f\u4e86\uff0c\u665a\u5b89\u3002",
+      "expected_cues": ["sleepy"]
+    }
+  ]
+}

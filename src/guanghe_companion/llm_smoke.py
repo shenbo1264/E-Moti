@@ -15,6 +15,9 @@ DEFAULT_LLM_CONVERSATION_SCENARIO_VERSION = 1
 DEFAULT_LLM_CONVERSATION_SCENARIO_FIXTURE = (
     Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "llm_conversation_scenarios.json"
 )
+DEFAULT_LLM_SHORT_SESSION_SCENARIO_FIXTURE = (
+    Path(__file__).resolve().parents[2] / "tests" / "fixtures" / "llm_short_session_scenarios.json"
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -46,6 +49,36 @@ class LLMConversationScenarioSet:
             "scenario_count": len(self.scenarios),
             "scenario_ids": [scenario.scenario_id for scenario in self.scenarios],
             "scenarios": [scenario.to_public_dict() for scenario in self.scenarios],
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class LLMShortSessionTurn:
+    turn_id: str
+    player_text: str
+    expected_cues: tuple[str, ...] = ()
+
+    def to_public_dict(self) -> dict[str, object]:
+        return {
+            "id": self.turn_id,
+            "player_preview": self.player_text[:60],
+            "expected_cues": list(self.expected_cues),
+        }
+
+
+@dataclass(frozen=True, slots=True)
+class LLMShortSessionScenarioSet:
+    version: int
+    language: str
+    turns: tuple[LLMShortSessionTurn, ...]
+
+    def to_public_dict(self) -> dict[str, object]:
+        return {
+            "version": self.version,
+            "language": self.language,
+            "turn_count": len(self.turns),
+            "turn_ids": [turn.turn_id for turn in self.turns],
+            "turns": [turn.to_public_dict() for turn in self.turns],
         }
 
 
@@ -119,6 +152,24 @@ _FALLBACK_LLM_CONVERSATION_SCENARIO_PAYLOAD = {
 }
 
 
+_FALLBACK_LLM_SHORT_SESSION_PAYLOAD = {
+    "version": DEFAULT_LLM_CONVERSATION_SCENARIO_VERSION,
+    "language": "zh-CN",
+    "turns": [
+        {"id": "return_after_idle", "player": "我刚回来，星汐还在吗？", "expected_cues": ["joy", "surprised"]},
+        {"id": "tired", "player": "今天好累，不太想动。", "expected_cues": ["sleepy", "sadness"]},
+        {"id": "celebration", "player": "我刚把一个小任务做完了。", "expected_cues": ["joy"]},
+        {"id": "gift", "player": "给你带了一个小礼物。", "expected_cues": ["joy"]},
+        {"id": "focus", "player": "我要专注一会儿，你陪着我就好。", "expected_cues": ["focused"]},
+        {"id": "confused", "player": "我不知道下一步该怎么玩。", "expected_cues": ["confused"]},
+        {"id": "goofy", "player": "做个傻傻的表情给我看。", "expected_cues": ["goofy", "joy"]},
+        {"id": "quiet", "player": "先安静陪我一小会儿。", "expected_cues": ["neutral", "sleepy"]},
+        {"id": "switch_character", "player": "如果换一个角色，你会怎么介绍自己？", "expected_cues": ["neutral"]},
+        {"id": "goodnight", "player": "我要休息了，晚安。", "expected_cues": ["sleepy"]},
+    ],
+}
+
+
 def load_llm_conversation_scenarios(path: Path | str) -> LLMConversationScenarioSet:
     try:
         payload = json.loads(Path(path).read_text(encoding="utf-8-sig"))
@@ -131,6 +182,20 @@ def load_default_llm_conversation_scenarios() -> LLMConversationScenarioSet:
     if DEFAULT_LLM_CONVERSATION_SCENARIO_FIXTURE.exists():
         return load_llm_conversation_scenarios(DEFAULT_LLM_CONVERSATION_SCENARIO_FIXTURE)
     return _scenario_set_from_payload(_FALLBACK_LLM_CONVERSATION_SCENARIO_PAYLOAD)
+
+
+def load_short_session_scenarios(path: Path | str) -> LLMShortSessionScenarioSet:
+    try:
+        payload = json.loads(Path(path).read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+        raise ValueError(f"invalid llm short session scenario fixture: {exc}") from exc
+    return _short_session_set_from_payload(payload)
+
+
+def load_default_short_session_scenarios() -> LLMShortSessionScenarioSet:
+    if DEFAULT_LLM_SHORT_SESSION_SCENARIO_FIXTURE.exists():
+        return load_short_session_scenarios(DEFAULT_LLM_SHORT_SESSION_SCENARIO_FIXTURE)
+    return _short_session_set_from_payload(_FALLBACK_LLM_SHORT_SESSION_PAYLOAD)
 
 
 def _scenario_set_from_payload(payload: object) -> LLMConversationScenarioSet:
@@ -146,6 +211,20 @@ def _scenario_set_from_payload(payload: object) -> LLMConversationScenarioSet:
     return LLMConversationScenarioSet(version=version, scenarios=scenarios)
 
 
+def _short_session_set_from_payload(payload: object) -> LLMShortSessionScenarioSet:
+    if not isinstance(payload, Mapping):
+        raise ValueError("llm short session scenario fixture must be a JSON object")
+    version = payload.get("version")
+    if not isinstance(version, int):
+        raise ValueError("llm short session scenario fixture version must be an integer")
+    language = _required_text(payload, "language")
+    raw_turns = payload.get("turns")
+    if not isinstance(raw_turns, list) or not raw_turns:
+        raise ValueError("llm short session scenario fixture must include turns")
+    turns = tuple(_short_session_turn_from_mapping(item) for item in raw_turns)
+    return LLMShortSessionScenarioSet(version=version, language=language, turns=turns)
+
+
 def _scenario_from_mapping(value: object) -> LLMConversationScenario:
     if not isinstance(value, Mapping):
         raise ValueError("llm conversation scenario must be an object")
@@ -155,6 +234,16 @@ def _scenario_from_mapping(value: object) -> LLMConversationScenario:
         prompt=_required_text(value, "prompt"),
         expected_expression_ids=_optional_text_tuple(value.get("expected_expression_ids")),
         expected_motion_ids=_optional_text_tuple(value.get("expected_motion_ids")),
+    )
+
+
+def _short_session_turn_from_mapping(value: object) -> LLMShortSessionTurn:
+    if not isinstance(value, Mapping):
+        raise ValueError("llm short session turn must be an object")
+    return LLMShortSessionTurn(
+        turn_id=_required_text(value, "id"),
+        player_text=_required_text(value, "player"),
+        expected_cues=_optional_text_tuple(value.get("expected_cues")),
     )
 
 
@@ -174,6 +263,7 @@ def _optional_text_tuple(value: object) -> tuple[str, ...]:
 
 
 DEFAULT_LLM_CONVERSATION_SCENARIOS = load_default_llm_conversation_scenarios()
+DEFAULT_LLM_SHORT_SESSION_SCENARIOS = load_default_short_session_scenarios()
 DEFAULT_LLM_SMOKE_PROMPTS = tuple(scenario.prompt for scenario in DEFAULT_LLM_CONVERSATION_SCENARIOS.scenarios)
 
 _DEFAULT_EXPRESSION_CUE_PROBE_ROWS = (
