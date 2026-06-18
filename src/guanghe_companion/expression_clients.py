@@ -6,7 +6,7 @@ import os
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
 from typing import Any
-from urllib import request
+from urllib import error, request
 
 from .expression_settings import ExpressionSettings, provider_api_key_required, provider_api_style
 
@@ -27,7 +27,9 @@ JSON_RESPONSE_PROVIDERS = frozenset({"deepseek"})
 
 
 class LLMProviderError(RuntimeError):
-    pass
+    def __init__(self, message: str, *, public_reason: str | None = None) -> None:
+        super().__init__(message)
+        self.public_reason = public_reason or _public_reason_from_message(message)
 
 
 @dataclass(frozen=True, slots=True)
@@ -69,15 +71,15 @@ class OpenAIResponsesClient:
 
     def __call__(self, prompt: str) -> str:
         if self._closed:
-            raise LLMProviderError("OpenAI expression provider failed: closed")
+            raise _provider_error("OpenAI expression provider failed", "closed")
         if not self.api_key:
-            raise LLMProviderError("OpenAI expression provider failed: missing_api_key")
+            raise _provider_error("OpenAI expression provider failed", "missing_api_key")
         if not isinstance(prompt, str):
-            raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
+            raise _provider_error("OpenAI expression provider failed", "invalid_prompt")
         if not prompt.strip():
-            raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
+            raise _provider_error("OpenAI expression provider failed", "invalid_prompt")
         if len(prompt) > MAX_OPENAI_PROMPT_LENGTH:
-            raise LLMProviderError("OpenAI expression provider failed: invalid_prompt")
+            raise _provider_error("OpenAI expression provider failed", "invalid_prompt")
         payload = json.dumps(
             {
                 "model": self.model,
@@ -97,27 +99,27 @@ class OpenAIResponsesClient:
         try:
             raw = self.transport(api_request, self.timeout_seconds)
             if not isinstance(raw, (bytes, bytearray)):
-                raise LLMProviderError("OpenAI expression provider failed: invalid_response_bytes")
+                raise _provider_error("OpenAI expression provider failed", "invalid_response_bytes")
             if len(raw) > MAX_OPENAI_RESPONSE_BYTES:
-                raise LLMProviderError("OpenAI expression provider failed: invalid_response_size")
+                raise _provider_error("OpenAI expression provider failed", "invalid_response_size")
             try:
                 decoded = bytes(raw).decode("utf-8")
             except UnicodeDecodeError as exc:
-                raise LLMProviderError("OpenAI expression provider failed: invalid_response_encoding") from exc
+                raise _provider_error("OpenAI expression provider failed", "invalid_response_encoding") from exc
             try:
                 response = json.loads(decoded)
             except json.JSONDecodeError as exc:
-                raise LLMProviderError("OpenAI expression provider failed: invalid_response_json") from exc
+                raise _provider_error("OpenAI expression provider failed", "invalid_response_json") from exc
             if not isinstance(response, dict):
-                raise LLMProviderError("OpenAI expression provider failed: invalid_response_shape")
+                raise _provider_error("OpenAI expression provider failed", "invalid_response_shape")
             try:
                 return _extract_response_text(response)
             except ValueError as exc:
-                raise LLMProviderError("OpenAI expression provider failed: invalid_response_text") from exc
+                raise _provider_error("OpenAI expression provider failed", "invalid_response_text") from exc
         except LLMProviderError:
             raise
         except Exception as exc:
-            raise LLMProviderError(f"OpenAI expression provider failed: {type(exc).__name__}") from exc
+            raise _provider_error_from_exception("OpenAI expression provider failed", exc) from exc
 
     def close(self) -> None:
         self._closed = True
@@ -153,15 +155,15 @@ class OpenAICompatibleChatClient:
 
     def __call__(self, prompt: str) -> str:
         if self._closed:
-            raise LLMProviderError("OpenAI-compatible expression provider failed: closed")
+            raise _provider_error("OpenAI-compatible expression provider failed", "closed")
         if self.require_api_key and not self.api_key:
-            raise LLMProviderError("OpenAI-compatible expression provider failed: missing_api_key")
+            raise _provider_error("OpenAI-compatible expression provider failed", "missing_api_key")
         if not isinstance(prompt, str):
-            raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
+            raise _provider_error("OpenAI-compatible expression provider failed", "invalid_prompt")
         if not prompt.strip():
-            raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
+            raise _provider_error("OpenAI-compatible expression provider failed", "invalid_prompt")
         if len(prompt) > MAX_OPENAI_PROMPT_LENGTH:
-            raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_prompt")
+            raise _provider_error("OpenAI-compatible expression provider failed", "invalid_prompt")
         payload_dict: dict[str, object] = {
             "model": self.model,
             "messages": [{"role": "user", "content": prompt}],
@@ -180,27 +182,27 @@ class OpenAICompatibleChatClient:
         try:
             raw = self.transport(api_request, self.timeout_seconds)
             if not isinstance(raw, (bytes, bytearray)):
-                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_bytes")
+                raise _provider_error("OpenAI-compatible expression provider failed", "invalid_response_bytes")
             if len(raw) > MAX_OPENAI_RESPONSE_BYTES:
-                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_size")
+                raise _provider_error("OpenAI-compatible expression provider failed", "invalid_response_size")
             try:
                 decoded = bytes(raw).decode("utf-8")
             except UnicodeDecodeError as exc:
-                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_encoding") from exc
+                raise _provider_error("OpenAI-compatible expression provider failed", "invalid_response_encoding") from exc
             try:
                 response = json.loads(decoded)
             except json.JSONDecodeError as exc:
-                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_json") from exc
+                raise _provider_error("OpenAI-compatible expression provider failed", "invalid_response_json") from exc
             if not isinstance(response, dict):
-                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_shape")
+                raise _provider_error("OpenAI-compatible expression provider failed", "invalid_response_shape")
             try:
                 return _extract_chat_completion_text(response)
             except ValueError as exc:
-                raise LLMProviderError("OpenAI-compatible expression provider failed: invalid_response_text") from exc
+                raise _provider_error("OpenAI-compatible expression provider failed", "invalid_response_text") from exc
         except LLMProviderError:
             raise
         except Exception as exc:
-            raise LLMProviderError(f"OpenAI-compatible expression provider failed: {type(exc).__name__}") from exc
+            raise _provider_error_from_exception("OpenAI-compatible expression provider failed", exc) from exc
 
     def close(self) -> None:
         self._closed = True
@@ -216,7 +218,7 @@ def fetch_provider_model_ids(
 ) -> tuple[str, ...]:
     normalized_api_key = _normalize_api_key(api_key)
     if provider_api_key_required(provider) and not normalized_api_key:
-        raise LLMProviderError("model list fetch failed: missing_api_key")
+        raise _provider_error("model list fetch failed", "missing_api_key")
     normalized_base_url = _normalize_base_url(base_url)
     api_request = request.Request(
         _models_url(normalized_base_url),
@@ -226,23 +228,23 @@ def fetch_provider_model_ids(
     try:
         raw = (transport or _default_transport)(api_request, _normalize_timeout(timeout_seconds))
         if not isinstance(raw, (bytes, bytearray)):
-            raise LLMProviderError("model list fetch failed: invalid_response_bytes")
+            raise _provider_error("model list fetch failed", "invalid_response_bytes")
         if len(raw) > MAX_OPENAI_RESPONSE_BYTES:
-            raise LLMProviderError("model list fetch failed: invalid_response_size")
+            raise _provider_error("model list fetch failed", "invalid_response_size")
         response = json.loads(bytes(raw).decode("utf-8"))
     except LLMProviderError:
         raise
     except UnicodeDecodeError as exc:
-        raise LLMProviderError("model list fetch failed: invalid_response_encoding") from exc
+        raise _provider_error("model list fetch failed", "invalid_response_encoding") from exc
     except json.JSONDecodeError as exc:
-        raise LLMProviderError("model list fetch failed: invalid_response_json") from exc
+        raise _provider_error("model list fetch failed", "invalid_response_json") from exc
     except Exception as exc:
-        raise LLMProviderError(f"model list fetch failed: {type(exc).__name__}") from exc
+        raise _provider_error_from_exception("model list fetch failed", exc) from exc
     if not isinstance(response, dict):
-        raise LLMProviderError("model list fetch failed: invalid_response_shape")
+        raise _provider_error("model list fetch failed", "invalid_response_shape")
     data = response.get("data")
     if not isinstance(data, list):
-        raise LLMProviderError("model list fetch failed: invalid_response_shape")
+        raise _provider_error("model list fetch failed", "invalid_response_shape")
     models: list[str] = []
     seen: set[str] = set()
     for entry in data:
@@ -256,7 +258,7 @@ def fetch_provider_model_ids(
         if len(models) >= 200:
             break
     if not models:
-        raise LLMProviderError("model list fetch failed: empty_model_list")
+        raise _provider_error("model list fetch failed", "empty_model_list")
     return tuple(models)
 
 
@@ -325,6 +327,34 @@ def _openai_config_from_env(env: Mapping[str, object] | None = None) -> _OpenAIP
 def _default_transport(api_request: request.Request, timeout: float) -> bytes:
     with request.urlopen(api_request, timeout=timeout) as response:
         return response.read()
+
+
+def _provider_error(prefix: str, public_reason: str) -> LLMProviderError:
+    return LLMProviderError(f"{prefix}: {public_reason}", public_reason=public_reason)
+
+
+def _provider_error_from_exception(prefix: str, exc: Exception) -> LLMProviderError:
+    return _provider_error(prefix, _public_reason_from_exception(exc))
+
+
+def _public_reason_from_exception(exc: Exception) -> str:
+    if isinstance(exc, error.HTTPError):
+        return f"http_{exc.code}"
+    if isinstance(exc, TimeoutError):
+        return "timeout"
+    if isinstance(exc, error.URLError):
+        reason = getattr(exc, "reason", None)
+        if isinstance(reason, TimeoutError):
+            return "timeout"
+        return "network_error"
+    return "provider_error"
+
+
+def _public_reason_from_message(message: str) -> str:
+    if ":" not in message:
+        return "provider_error"
+    reason = message.rsplit(":", 1)[-1].strip()
+    return reason if reason else "provider_error"
 
 
 def _json_request_headers(api_key: str) -> dict[str, str]:

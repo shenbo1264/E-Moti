@@ -2,6 +2,7 @@ import guanghe_companion.expression_diagnostics as diagnostics_module
 from guanghe_companion.ai_expressor import ExpressionRequest, ShinsekaiAIExpressor
 from guanghe_companion.engine import create_initial_state
 from guanghe_companion.events import build_typed_fallback_events
+from guanghe_companion.expression_clients import LLMProviderError
 from guanghe_companion.expression_settings import normalize_expression_settings
 from guanghe_companion.interaction_intents import InteractionIntent
 from guanghe_companion.snapshot import SnapshotBuilder, SnapshotContextFactory
@@ -204,6 +205,45 @@ def test_expression_diagnostics_service_reports_missing_key_before_provider_call
     assert result["model"] == "deepseek-v4-flash"
     assert result["base_url"] == "https://api.deepseek.com"
     assert "api_key" not in result
+
+
+def test_expression_diagnostics_service_preserves_provider_public_error_reason():
+    service_cls = getattr(diagnostics_module, "ExpressionDiagnosticsService", None)
+    assert service_cls is not None
+
+    class Http401Expressor:
+        enabled = True
+
+        def express(self, request, effect=None):
+            raise LLMProviderError(
+                "OpenAI-compatible expression provider failed: http_401",
+                public_reason="http_401",
+            )
+
+    state = create_initial_state(now=0)
+    service = service_cls(
+        settings=normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "deepseek",
+                "model": "deepseek-v4-flash",
+                "base_url": "https://api.deepseek.com",
+                "api_key": "sk-secret",
+            }
+        ),
+        expressor=Http401Expressor(),
+        state_provider=lambda: state,
+        snapshot_provider=lambda: _snapshot(state),
+        context_provider=lambda: {},
+        choices_provider=lambda: ("Touch", "Rest"),
+    )
+
+    result = service.test_provider().to_public_dict()
+
+    assert result["ok"] is False
+    assert result["stage"] == "provider_call"
+    assert result["reason"] == "http_401"
+    assert "sk-secret" not in str(result)
 
 
 def test_expression_diagnostics_service_reports_event_validation_failure_for_overreach():

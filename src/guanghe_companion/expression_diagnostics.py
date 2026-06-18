@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from typing import Protocol
 
 from .ai_expressor import ExpressionRequest
-from .expression_clients import fetch_provider_model_ids
+from .expression_clients import LLMProviderError, fetch_provider_model_ids
 from .events import CompanionEvent, EventValidator
 from .expression_settings import (
     ExpressionSettings,
@@ -97,6 +97,9 @@ class ExpressionDiagnosticsService:
         )
         try:
             expressed_events = self.expressor.express(request, effect="ATTENTION")
+        except LLMProviderError as exc:
+            reason = exc.public_reason or "provider_error"
+            return self._result(ok=False, stage=expression_diagnostic_stage(reason), reason=reason)
         except Exception:
             return self._result(ok=False, stage="provider_call", reason="provider_error")
 
@@ -222,7 +225,7 @@ def expression_diagnostic_stage(reason: str) -> str:
         return "event_validation"
     if reason in {"disabled", "missing_api_key", "invalid_prompt"}:
         return "settings"
-    if reason in {"timeout", "provider_error", "closed"}:
+    if reason in {"timeout", "provider_error", "closed", "network_error"} or reason.startswith("http_"):
         return "provider_call"
     if reason in {
         "invalid_response_text",

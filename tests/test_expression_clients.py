@@ -1,3 +1,8 @@
+from io import BytesIO
+from urllib.error import HTTPError
+
+import pytest
+
 import guanghe_companion.ai_expressor as ai_expressor_module
 import guanghe_companion.expression_clients as expression_clients_module
 import guanghe_companion.expression_diagnostics as diagnostics_module
@@ -61,3 +66,29 @@ def test_expression_clients_model_fetch_allows_local_provider_without_auth_heade
     assert captured["url"] == "http://127.0.0.1:11434/v1/models"
     assert "Authorization" not in captured["headers"]
     assert captured["timeout"] == 1.5
+
+
+def test_expression_clients_openai_compatible_chat_classifies_http_401_without_secret():
+    def transport(request, timeout):
+        raise HTTPError(
+            request.full_url,
+            401,
+            "Unauthorized",
+            hdrs=None,
+            fp=BytesIO(b'{"error":{"message":"Authentication Fails, Your api key: sk-secret is invalid"}}'),
+        )
+
+    client = expression_clients_module.OpenAICompatibleChatClient(
+        api_key="sk-secret",
+        model="deepseek-v4-flash",
+        base_url="https://api.deepseek.com",
+        timeout_seconds=0.5,
+        transport=transport,
+    )
+
+    with pytest.raises(expression_clients_module.LLMProviderError) as captured:
+        client("prompt text")
+
+    assert captured.value.public_reason == "http_401"
+    assert "sk-secret" not in str(captured.value)
+    assert "Authentication Fails" not in str(captured.value)
