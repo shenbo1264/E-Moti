@@ -146,3 +146,13 @@ python tools\pixel_pet_promotion_gate.py path\to\character_packs_drafts\<charact
 ```
 
 The gate is still read-only. A passing report means the candidate can enter a separate bundled-asset promotion package; it does not update `assets/companion/`, runtime manifests, saves, packaging scripts, or LLM behavior.
+
+## Draft Run Status
+
+Use the read-only status tool before deciding whether a hatch-pet draft has enough structure for validation:
+
+```powershell
+python tools\pixel_pet_sequence_status.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\sequence-status.json
+```
+
+The report is an ignored artifact. It does not copy, edit, promote, or import assets.
