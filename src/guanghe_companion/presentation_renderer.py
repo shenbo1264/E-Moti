@@ -28,16 +28,25 @@ class PresentationRendererAdapter(Protocol):
 class SpritePresentationAdapter:
     backend: RendererBackend = "sprite"
 
-    def __init__(self, motion_map: Mapping[str, str] | None = None) -> None:
+    def __init__(
+        self,
+        motion_map: Mapping[str, str] | None = None,
+        expression_map: Mapping[str, str] | None = None,
+    ) -> None:
         self.motion_map = {
             key: value
             for key, value in dict(motion_map or {}).items()
             if isinstance(key, str) and isinstance(value, str) and key and value
         }
+        self.expression_map = _clean_string_map(expression_map)
 
     def frame_from_snapshot(self, snapshot: Mapping[str, object]) -> PresentationFrame:
         visual_actions = _visual_actions(snapshot.get("visual_actions"))
-        visual_motion = pixel_motion_override(visual_actions)
+        visual_motion = (
+            sprite_motion_override(visual_actions)
+            or _sprite_expression_motion(visual_actions, expression_map=self.expression_map)
+            or pixel_motion_override(visual_actions)
+        )
         motion = self.motion_map.get(visual_motion, visual_motion) if visual_motion else _snapshot_motion(snapshot)
         return PresentationFrame(
             backend=self.backend,
@@ -156,6 +165,20 @@ def _portrait_expression(
         if target:
             return target
     return fallback_expression
+
+
+def _sprite_expression_motion(
+    actions: tuple[VisualAction, ...],
+    *,
+    expression_map: Mapping[str, str],
+) -> str | None:
+    for action in actions:
+        if action.action_type != "expression":
+            continue
+        target = expression_map.get(action.action_id)
+        if target:
+            return target
+    return None
 
 
 def _clean_string_map(value: Mapping[str, str] | None) -> dict[str, str]:

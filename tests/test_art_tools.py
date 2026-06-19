@@ -97,6 +97,34 @@ def test_validate_atlas_accepts_manifest_declared_wide_sheet(tmp_path: Path):
     assert report.height == 1872
 
 
+def test_validate_atlas_accepts_manifest_declared_extra_rows(tmp_path: Path):
+    atlas = tmp_path / "spritesheet.png"
+    manifest = tmp_path / "motion_manifest.json"
+    Image.new("RGBA", (1536, 2080), (0, 0, 0, 0)).save(atlas)
+    manifest.write_text(
+        json.dumps(
+            {
+                "sheet_columns": 8,
+                "sheet_rows": 10,
+                "frame_width": 192,
+                "frame_height": 208,
+                "motions": {
+                    "Default": {"row": 0, "frame_count": 6, "fps": 4},
+                    "ConfusedShy": {"row": 9, "frame_count": 6, "fps": 5},
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    report = validate_atlas(atlas, manifest)
+
+    assert report.ok is True
+    assert report.errors == []
+    assert report.width == 1536
+    assert report.height == 2080
+
+
 def test_build_previews_writes_contact_sheet_and_gifs(tmp_path: Path):
     atlas = tmp_path / "spritesheet.png"
     manifest = tmp_path / "motion_manifest.json"

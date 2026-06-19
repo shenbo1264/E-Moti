@@ -21,6 +21,7 @@ SPRITE_MOTION_IDS = frozenset(
         "Sleep",
         "Raised",
         "Study",
+        "ConfusedShy",
     }
 )
 
@@ -41,6 +42,7 @@ TAG_ALIASES: dict[str, tuple[str, str]] = {
     "calm": ("calm", "Default"),
     "goofy": ("goofy", "Play"),
     "confused": ("confused", "Study"),
+    "shy": ("shy", "ConfusedShy"),
     "blink": ("blink", "Default"),
 }
 

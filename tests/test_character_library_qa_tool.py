@@ -108,6 +108,37 @@ def test_character_library_qa_accepts_local_character_root(tmp_path, monkeypatch
     assert Path(payload["desktop_pet_screenshot"]).is_file()
 
 
+def test_character_library_qa_accepts_private_fanwork_boundary(tmp_path, monkeypatch):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from tools.character_library_qa import run_character_library_qa
+
+    character_root = tmp_path / "character_packs"
+    _copy_bundled_pack_as(
+        character_root,
+        "private_fanwork_local",
+        distribution_boundary="private_local_fanwork",
+    )
+    report_path = tmp_path / "character-library-qa.json"
+    screenshot_dir = tmp_path / "screenshots"
+
+    report = run_character_library_qa(
+        character_id="private_fanwork_local",
+        report_path=report_path,
+        screenshot_dir=screenshot_dir,
+        character_root=character_root,
+        pet_seconds=0.1,
+    )
+
+    payload = json.loads(report_path.read_text(encoding="utf-8"))
+
+    assert report.ok is True
+    assert payload["ok"] is True
+    assert payload["candidate_source"] == "user"
+    assert payload["after_switch_character_id"] == "private_fanwork_local"
+    assert payload["errors"] == []
+
+
 def test_character_library_qa_cli_accepts_local_character_root(tmp_path):
     env = os.environ.copy()
     env["QT_QPA_PLATFORM"] = "offscreen"
@@ -175,7 +206,12 @@ def test_character_library_qa_character_root_takes_priority_over_bundled_duplica
     assert payload["after_switch_character_id"] == "xingxi_pixel_pet"
 
 
-def _copy_bundled_pack_as(character_root: Path, character_id: str) -> Path:
+def _copy_bundled_pack_as(
+    character_root: Path,
+    character_id: str,
+    *,
+    distribution_boundary: str = "shareable_after_review",
+) -> Path:
     source = REPO_ROOT / "assets" / "companion" / "xingxi_pixel_pet"
     target = character_root / character_id
     shutil.copytree(source, target)
@@ -184,5 +220,6 @@ def _copy_bundled_pack_as(character_root: Path, character_id: str) -> Path:
     payload["character_id"] = character_id
     payload["name"] = "QA Local"
     payload["title"] = "Local user-pack candidate"
+    payload["distribution_boundary"] = distribution_boundary
     character_path.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
     return target

@@ -10,3 +10,11 @@
 - Visual QA note: the earlier bright magenta edge halo was repaired; remaining dark edge pixels are accepted as pixel outline style. `waving` remains conservative but readable.
 
 This pack uses original Xingxi project assets and generated row candidates. It does not include third-party franchise art, downloaded fanwork, provider secrets, or copied reference-project assets.
+
+## ConfusedShy Row Promotion - 2026-06-19
+
+- Source: ignored P16 row candidate under `artifacts/pixel-pet-sequence-drafts/xingxi_pixel_pet_edge_style_v2/p16-confused-shy-row-20260618/`.
+- Review: user-approved contact sheet before runtime promotion.
+- Scope: one added motion row only; existing rows were not overwritten.
+- Runtime change: `ConfusedShy` added at row 9 with 6 frames; `confused` and `shy` expression cues map to this motion for `xingxi_pixel_pet`.
+- Boundary: optional official candidate asset for Xingxi only; `original_oc` remains the default pack.

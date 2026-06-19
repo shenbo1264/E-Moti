@@ -373,7 +373,10 @@ def _presentation_renderer_from_profile(renderer_profile, asset_dir):
             motion_map=renderer_profile.motion_map,
             expression_map=renderer_profile.expression_map,
         )
-    return SpritePresentationAdapter(motion_map=renderer_profile.motion_map)
+    return SpritePresentationAdapter(
+        motion_map=renderer_profile.motion_map,
+        expression_map=renderer_profile.expression_map,
+    )
 
 
 class CompanionWindow(QMainWindow):

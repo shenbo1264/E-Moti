@@ -43,8 +43,11 @@ def test_pixel_pet_emote_mapping_accepts_current_xingxi_pack() -> None:
     )
     assert report.missing_motion_ids == ()
     assert report.unsupported_expression_ids == ()
+    assert report.expression_motion_map["confused"] == "ConfusedShy"
+    assert report.expression_motion_map["shy"] == "ConfusedShy"
     assert "goofy" in report.supported_expression_ids
     assert "confused" in report.supported_expression_ids
+    assert "shy" in report.supported_expression_ids
     assert "focused" in report.supported_expression_ids
 
 

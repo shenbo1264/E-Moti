@@ -34,13 +34,14 @@ def _write_minimal_pack(
     icon_path="item_icons/snack.png",
     spritesheet="spritesheet.png",
     sheet_columns=8,
+    sheet_rows=9,
     default_frame_count=1,
     distribution_boundary="shareable_after_review",
 ):
     pack_dir = root / character_id
     (pack_dir / "item_icons").mkdir(parents=True)
     (pack_dir / "preview").mkdir()
-    Image.new("RGBA", (sheet_columns * 192, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
+    Image.new("RGBA", (sheet_columns * 192, sheet_rows * 208), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
     Image.new("RGBA", (32, 32), (255, 0, 0, 255)).save(pack_dir / "item_icons" / "snack.png")
     Image.new("RGBA", (64, 64), (255, 0, 0, 255)).save(pack_dir / "preview" / "contact-sheet.png")
     _write_json(
@@ -69,11 +70,11 @@ def _write_minimal_pack(
     )
     _write_json(
         pack_dir / "motion_manifest.json",
-        {
-            "sheet_columns": sheet_columns,
-            "sheet_rows": 9,
-            "frame_width": 192,
-            "frame_height": 208,
+            {
+                "sheet_columns": sheet_columns,
+                "sheet_rows": sheet_rows,
+                "frame_width": 192,
+                "frame_height": 208,
             "motions": {"Default": {"row": 0, "frame_count": default_frame_count, "fps": 4}},
         },
     )
@@ -150,7 +151,7 @@ def test_character_registry_lists_valid_packs_and_excludes_invalid_ones(tmp_path
     invalid_dir.mkdir()
     _write_json(invalid_dir / "character.json", {"character_id": "broken_pack"})
 
-    registry = CharacterRegistry(builtin_root=tmp_path)
+    registry = CharacterRegistry(builtin_root=tmp_path, user_root=tmp_path / "empty-user-packs")
 
     assert [pack.character_id for pack in registry.list_available_packs()] == ["custom_character"]
     assert registry.get_available_pack("custom_character").name == "澄光"
@@ -167,7 +168,7 @@ def test_character_registry_summary_reports_distribution_metadata_files(tmp_path
     (pack_dir / "portrait_assets_provenance.md").write_text("generated asset note", encoding="utf-8")
     (pack_dir / "LICENSE.md").write_text("pack license", encoding="utf-8")
 
-    registry = CharacterRegistry(builtin_root=tmp_path)
+    registry = CharacterRegistry(builtin_root=tmp_path, user_root=tmp_path / "empty-user-packs")
 
     summary = registry.get_available_pack("custom_character")
     assert [path.name for path in summary.provenance_paths] == ["portrait_assets_provenance.md"]
@@ -178,7 +179,7 @@ def test_character_registry_summary_reports_distribution_metadata_files(tmp_path
 def test_character_registry_summary_reads_distribution_boundary(tmp_path):
     _write_minimal_pack(tmp_path, "custom_character", distribution_boundary="local_ugc_only")
 
-    registry = CharacterRegistry(builtin_root=tmp_path)
+    registry = CharacterRegistry(builtin_root=tmp_path, user_root=tmp_path / "empty-user-packs")
 
     summary = registry.get_available_pack("custom_character")
     assert summary.distribution_boundary == "local_ugc_only"
@@ -197,7 +198,7 @@ def test_character_registry_summary_reports_video_provenance_file(tmp_path):
     pack_dir = _write_minimal_pack(tmp_path, "custom_character")
     (pack_dir / "portrait_video_provenance.md").write_text("video frame source note", encoding="utf-8")
 
-    registry = CharacterRegistry(builtin_root=tmp_path)
+    registry = CharacterRegistry(builtin_root=tmp_path, user_root=tmp_path / "empty-user-packs")
 
     summary = registry.get_available_pack("custom_character")
     assert [path.name for path in summary.provenance_paths] == ["portrait_video_provenance.md"]
@@ -227,6 +228,21 @@ def test_validate_character_pack_accepts_manifest_declared_wide_sheet(tmp_path):
         sheet_columns=15,
         default_frame_count=15,
     )
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert report.ok
+
+
+def test_validate_character_pack_accepts_manifest_declared_extra_rows(tmp_path):
+    pack_dir = _write_minimal_pack(
+        tmp_path,
+        sheet_rows=10,
+    )
+    manifest_path = pack_dir / "motion_manifest.json"
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest["motions"]["ConfusedShy"] = {"row": 9, "frame_count": 1, "fps": 5}
+    manifest_path.write_text(json.dumps(manifest, ensure_ascii=False), encoding="utf-8")
 
     report = validate_character_pack_dir(pack_dir)
 

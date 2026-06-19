@@ -8,11 +8,10 @@ from pathlib import Path
 from PIL import Image, UnidentifiedImageError
 
 
-EXPECTED_ROWS = 9
 EXPECTED_FRAME_WIDTH = 192
 EXPECTED_FRAME_HEIGHT = 208
-EXPECTED_HEIGHT = EXPECTED_ROWS * EXPECTED_FRAME_HEIGHT
 MAX_SHEET_COLUMNS = 32
+MAX_SHEET_ROWS = 32
 
 
 @dataclass(frozen=True, slots=True)
@@ -57,16 +56,18 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
     frame_height = payload.get("frame_height")
     if isinstance(sheet_columns, bool) or not isinstance(sheet_columns, int) or not 1 <= sheet_columns <= MAX_SHEET_COLUMNS:
         errors.append(f"sheet_columns must be between 1 and {MAX_SHEET_COLUMNS}, got {sheet_columns}")
-    if payload.get("sheet_rows") != EXPECTED_ROWS:
-        errors.append(f"sheet_rows must be 9, got {sheet_rows}")
+    valid_rows = isinstance(sheet_rows, int) and not isinstance(sheet_rows, bool) and 1 <= sheet_rows <= MAX_SHEET_ROWS
+    if not valid_rows:
+        errors.append(f"sheet_rows must be between 1 and {MAX_SHEET_ROWS}, got {sheet_rows}")
     if payload.get("frame_width") != EXPECTED_FRAME_WIDTH:
         errors.append(f"frame_width must be 192, got {frame_width}")
     if payload.get("frame_height") != EXPECTED_FRAME_HEIGHT:
         errors.append(f"frame_height must be 208, got {frame_height}")
-    if isinstance(sheet_columns, int) and not isinstance(sheet_columns, bool):
+    if isinstance(sheet_columns, int) and not isinstance(sheet_columns, bool) and valid_rows:
         expected_width = sheet_columns * EXPECTED_FRAME_WIDTH
-        if (width, height) != (expected_width, EXPECTED_HEIGHT):
-            errors.append(f"atlas size must be {expected_width}x1872, got {width}x{height}")
+        expected_height = sheet_rows * EXPECTED_FRAME_HEIGHT
+        if (width, height) != (expected_width, expected_height):
+            errors.append(f"atlas size must be {expected_width}x{expected_height}, got {width}x{height}")
     if mode != "RGBA":
         errors.append(f"atlas mode must be RGBA, got {mode}")
 
@@ -81,8 +82,9 @@ def validate_atlas(atlas_path: Path | str, manifest_path: Path | str) -> AtlasVa
             continue
         row = motion.get("row")
         frame_count = motion.get("frame_count")
-        if isinstance(row, bool) or not isinstance(row, int) or row < 0 or row >= EXPECTED_ROWS:
-            errors.append(f"{name}.row must be between 0 and 8, got {row}")
+        if isinstance(row, bool) or not isinstance(row, int) or row < 0 or not valid_rows or row >= sheet_rows:
+            max_row = sheet_rows - 1 if valid_rows else "sheet_rows - 1"
+            errors.append(f"{name}.row must be between 0 and {max_row}, got {row}")
         if (
             isinstance(frame_count, bool)
             or not isinstance(frame_count, int)

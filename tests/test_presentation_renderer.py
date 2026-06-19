@@ -63,6 +63,26 @@ def test_sprite_presentation_adapter_maps_expression_to_pixel_motion_without_mut
     assert snapshot["motion"] == "Default"
 
 
+def test_sprite_presentation_adapter_prefers_character_expression_map_for_pixel_motion():
+    snapshot = {
+        "motion": "Default",
+        "visual_actions": [
+            {
+                "type": "expression",
+                "id": "confused",
+                "ttl_ms": 3000,
+                "priority": 70,
+                "source": "llm",
+            }
+        ],
+    }
+
+    frame = SpritePresentationAdapter(expression_map={"confused": "ConfusedShy"}).frame_from_snapshot(snapshot)
+
+    assert frame.motion == "ConfusedShy"
+    assert snapshot["motion"] == "Default"
+
+
 def test_sprite_presentation_adapter_prefers_explicit_motion_over_expression():
     snapshot = {
         "motion": "Default",

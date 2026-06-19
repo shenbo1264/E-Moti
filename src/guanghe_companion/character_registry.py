@@ -10,11 +10,10 @@ from PIL import Image, UnidentifiedImageError
 from .character_session import is_safe_character_id
 from .runtime_paths import companion_assets_root, user_data_dir
 
-EXPECTED_SHEET_ROWS = 9
 EXPECTED_FRAME_WIDTH = 192
 EXPECTED_FRAME_HEIGHT = 208
 MAX_SHEET_COLUMNS = 32
-EXPECTED_ATLAS_HEIGHT = EXPECTED_SHEET_ROWS * EXPECTED_FRAME_HEIGHT
+MAX_SHEET_ROWS = 32
 REQUIRED_FILES = (
     "character.json",
     "dialogue_style.json",
@@ -493,8 +492,9 @@ def _validate_motion_manifest(
     frame_height = payload.get("frame_height")
     if isinstance(sheet_columns, bool) or not isinstance(sheet_columns, int) or not 1 <= sheet_columns <= MAX_SHEET_COLUMNS:
         errors.append(f"motion_manifest.sheet_columns must be between 1 and {MAX_SHEET_COLUMNS}")
-    if sheet_rows != EXPECTED_SHEET_ROWS:
-        errors.append("motion_manifest.sheet_rows must be 9")
+    valid_rows = isinstance(sheet_rows, int) and not isinstance(sheet_rows, bool) and 1 <= sheet_rows <= MAX_SHEET_ROWS
+    if not valid_rows:
+        errors.append(f"motion_manifest.sheet_rows must be between 1 and {MAX_SHEET_ROWS}")
     if frame_width != EXPECTED_FRAME_WIDTH:
         errors.append("motion_manifest.frame_width must be 192")
     if frame_height != EXPECTED_FRAME_HEIGHT:
@@ -510,7 +510,7 @@ def _validate_motion_manifest(
             row = motion.get("row")
             frame_count = motion.get("frame_count")
             fps = motion.get("fps")
-            if isinstance(row, bool) or not isinstance(row, int) or not 0 <= row < EXPECTED_SHEET_ROWS:
+            if isinstance(row, bool) or not isinstance(row, int) or not valid_rows or not 0 <= row < sheet_rows:
                 errors.append(f"motion_manifest.{motion_name}.row out of range")
             if (
                 isinstance(frame_count, bool)
@@ -550,10 +550,13 @@ def _validate_atlas(
         errors.append(f"spritesheet image invalid: {exc}")
         return
     sheet_columns = manifest.get("sheet_columns")
-    if isinstance(sheet_columns, int) and not isinstance(sheet_columns, bool):
+    sheet_rows = manifest.get("sheet_rows")
+    valid_rows = isinstance(sheet_rows, int) and not isinstance(sheet_rows, bool) and 1 <= sheet_rows <= MAX_SHEET_ROWS
+    if isinstance(sheet_columns, int) and not isinstance(sheet_columns, bool) and valid_rows:
         expected_width = sheet_columns * EXPECTED_FRAME_WIDTH
-        if size != (expected_width, EXPECTED_ATLAS_HEIGHT):
-            errors.append(f"spritesheet must be {expected_width}x1872, got {size[0]}x{size[1]}")
+        expected_height = sheet_rows * EXPECTED_FRAME_HEIGHT
+        if size != (expected_width, expected_height):
+            errors.append(f"spritesheet must be {expected_width}x{expected_height}, got {size[0]}x{size[1]}")
     if mode != "RGBA":
         errors.append(f"spritesheet mode must be RGBA, got {mode}")
 

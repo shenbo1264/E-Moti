@@ -1,8 +1,13 @@
 import json
+from pathlib import Path
 
+from PIL import Image
 import guanghe_companion.character_pack as character_pack_module
 import guanghe_companion.motion as motion_module
 from guanghe_companion.motion import MotionAnimator, load_default_motion_catalog, load_motion_catalog
+
+
+REPO_ROOT = Path(__file__).resolve().parents[1]
 
 
 def test_load_default_motion_catalog_reads_core_rows():
@@ -90,3 +95,18 @@ def test_motion_animator_falls_back_to_default_when_motion_missing():
 
     assert rect.y() == 0
     assert rect.width() == 192
+
+
+def test_xingxi_pixel_pet_manifest_includes_approved_confused_shy_motion():
+    pack_dir = REPO_ROOT / "assets" / "companion" / "xingxi_pixel_pet"
+    manifest = json.loads((pack_dir / "motion_manifest.json").read_text(encoding="utf-8"))
+
+    assert manifest["sheet_rows"] == 10
+    assert manifest["motions"]["ConfusedShy"] == {"row": 9, "frame_count": 6, "fps": 5}
+
+    with Image.open(pack_dir / "spritesheet.png") as image:
+        assert image.mode == "RGBA"
+        assert image.size == (
+            manifest["sheet_columns"] * manifest["frame_width"],
+            manifest["sheet_rows"] * manifest["frame_height"],
+        )

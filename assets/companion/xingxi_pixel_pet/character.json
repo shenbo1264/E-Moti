@@ -1,86 +1,89 @@
 {
-  "character_id": "xingxi_pixel_pet",
-  "name": "星汐 Pixel Pet",
-  "title": "像素桌面同伴候选",
-  "description": "星汐原创 OC 的 hatch-pet 风格像素宠序列帧候选包。该包作为内置候选用于角色库、QA 和后续默认资产决策，当前不替换 original_oc 默认包。",
-  "spritesheet": "spritesheet.png",
-  "motion_manifest": "motion_manifest.json",
-  "renderer": {
-    "backend": "sprite",
-    "motion_map": {
-      "Default": "Default",
-      "MoveRight": "MoveRight",
-      "MoveLeft": "MoveLeft",
-      "TouchHead": "TouchHead",
-      "Play": "Play",
-      "SwitchDown": "SwitchDown",
-      "Sleep": "Sleep",
-      "Raised": "Raised",
-      "Study": "Study",
-      "Comfort": "Comfort",
-      "Eat": "Eat",
-      "Gift": "Gift",
-      "Shop": "Shop",
-      "Tick": "Tick"
-    },
-    "expression_map": {
-      "calm": "Default",
-      "neutral": "Default",
-      "blink": "Default",
-      "joy": "TouchHead",
-      "happy": "TouchHead",
-      "excited": "Play",
-      "surprised": "Play",
-      "focused": "Study",
-      "sleepy": "Sleep",
-      "sadness": "SwitchDown",
-      "sad": "SwitchDown",
-      "confused": "Study",
-      "goofy": "Play"
-    }
-  },
-  "default_mode": "Calm",
-  "modes": [
-    "Glow",
-    "Calm",
-    "Frayed",
-    "Overload"
-  ],
-  "mode_descriptions": {
-    "Glow": "情绪稳定且主动亲近。",
-    "Calm": "频率平稳，适合日常互动。",
-    "Frayed": "开始疲惫或分心，需要轻一点的陪伴。",
-    "Overload": "进入保护状态，只接受安抚和休息。"
-  },
-  "motion_labels": {
-    "Default": "待机眨眼",
-    "MoveRight": "向右移动",
-    "MoveLeft": "向左移动",
-    "TouchHead": "招手回应",
-    "Play": "轻跳",
-    "SwitchDown": "低状态反馈",
-    "Sleep": "等待休息",
-    "Raised": "原地跑动",
-    "Study": "专注检查",
-    "Comfort": "安静陪伴",
-    "Eat": "接受投喂",
-    "Gift": "收到礼物",
-    "Shop": "资源补给",
-    "Tick": "时间流逝"
-  },
-  "distribution_boundary": "shareable_after_review",
-  "relationship_decorations": [
-    {
-      "unlock_id": "unlock_first_nickname",
-      "item_id": "star_hairpin",
-      "label": "星形发夹",
-      "icon": "item_icons/star_hairpin.png"
-    },
-    {
-      "unlock_id": "unlock_shared_ritual",
-      "item_id": "comet_ribbon",
-      "label": "彗尾丝带",
-      "icon": "item_icons/comet_ribbon.png"
-    }
-  ]
+    "character_id":  "xingxi_pixel_pet",
+    "name":  "星汐 Pixel Pet",
+    "title":  "像素桌面同伴候选",
+    "description":  "星汐原创 OC 的 hatch-pet 风格像素宠序列帧候选包。该包作为内置候选用于角色库、QA 和后续默认资产决策，当前不替换 original_oc 默认包。",
+    "spritesheet":  "spritesheet.png",
+    "motion_manifest":  "motion_manifest.json",
+    "renderer":  {
+                     "backend":  "sprite",
+                     "motion_map":  {
+                                        "Default":  "Default",
+                                        "MoveRight":  "MoveRight",
+                                        "MoveLeft":  "MoveLeft",
+                                        "TouchHead":  "TouchHead",
+                                        "Play":  "Play",
+                                        "SwitchDown":  "SwitchDown",
+                                        "Sleep":  "Sleep",
+                                        "Raised":  "Raised",
+                                        "Study":  "Study",
+                                        "ConfusedShy":  "ConfusedShy",
+                                        "Comfort":  "Comfort",
+                                        "Eat":  "Eat",
+                                        "Gift":  "Gift",
+                                        "Shop":  "Shop",
+                                        "Tick":  "Tick"
+                                    },
+                     "expression_map":  {
+                                            "calm":  "Default",
+                                            "neutral":  "Default",
+                                            "blink":  "Default",
+                                            "joy":  "TouchHead",
+                                            "happy":  "TouchHead",
+                                            "excited":  "Play",
+                                            "surprised":  "Play",
+                                            "focused":  "Study",
+                                            "sleepy":  "Sleep",
+                                            "sadness":  "SwitchDown",
+                                            "sad":  "SwitchDown",
+                                            "confused":  "ConfusedShy",
+                                            "shy":  "ConfusedShy",
+                                            "goofy":  "Play"
+                                        }
+                 },
+    "default_mode":  "Calm",
+    "modes":  [
+                  "Glow",
+                  "Calm",
+                  "Frayed",
+                  "Overload"
+              ],
+    "mode_descriptions":  {
+                              "Glow":  "情绪稳定且主动亲近。",
+                              "Calm":  "频率平稳，适合日常互动。",
+                              "Frayed":  "开始疲惫或分心，需要轻一点的陪伴。",
+                              "Overload":  "进入保护状态，只接受安抚和休息。"
+                          },
+    "motion_labels":  {
+                          "Default":  "待机眨眼",
+                          "MoveRight":  "向右移动",
+                          "MoveLeft":  "向左移动",
+                          "TouchHead":  "招手回应",
+                          "Play":  "轻跳",
+                          "SwitchDown":  "低状态反馈",
+                          "Sleep":  "等待休息",
+                          "Raised":  "原地跑动",
+                          "Study":  "专注检查",
+                          "Comfort":  "安静陪伴",
+                          "Eat":  "接受投喂",
+                          "Gift":  "收到礼物",
+                          "Shop":  "资源补给",
+                          "Tick":  "时间流逝",
+                          "ConfusedShy":  "Confused / shy"
+                      },
+    "distribution_boundary":  "shareable_after_review",
+    "relationship_decorations":  [
+                                     {
+                                         "unlock_id":  "unlock_first_nickname",
+                                         "item_id":  "star_hairpin",
+                                         "label":  "星形发夹",
+                                         "icon":  "item_icons/star_hairpin.png"
+                                     },
+                                     {
+                                         "unlock_id":  "unlock_shared_ritual",
+                                         "item_id":  "comet_ribbon",
+                                         "label":  "彗尾丝带",
+                                         "icon":  "item_icons/comet_ribbon.png"
+                                     }
+                                 ]
 }

@@ -42,7 +42,7 @@ def inspect_pixel_pet_emote_mapping(
 ) -> PixelPetEmoteMappingReport:
     pack_root = Path(character_pack)
     manifest_path = Path(motion_manifest_path) if motion_manifest_path is not None else pack_root / "motion_manifest.json"
-    expression_motion_map = dict(sorted(PIXEL_EXPRESSION_MOTION_IDS.items()))
+    expression_motion_map = _expression_motion_map(pack_root)
     required_motion_ids = tuple(sorted(set(expression_motion_map.values())))
     errors: list[str] = []
     warnings: list[str] = []
@@ -129,6 +129,33 @@ def _available_motion_ids(manifest_path: Path, errors: list[str]) -> tuple[str, 
         errors.append("motion_manifest.json motions object is empty")
         return ()
     return tuple(motion_ids)
+
+
+def _expression_motion_map(pack_root: Path) -> dict[str, str]:
+    character_path = pack_root / "character.json"
+    if not character_path.is_file():
+        return dict(sorted(PIXEL_EXPRESSION_MOTION_IDS.items()))
+    try:
+        payload = json.loads(character_path.read_text(encoding="utf-8-sig"))
+    except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+        return dict(sorted(PIXEL_EXPRESSION_MOTION_IDS.items()))
+    if not isinstance(payload, dict):
+        return dict(sorted(PIXEL_EXPRESSION_MOTION_IDS.items()))
+    renderer = payload.get("renderer")
+    if not isinstance(renderer, dict):
+        return dict(sorted(PIXEL_EXPRESSION_MOTION_IDS.items()))
+    expression_map = renderer.get("expression_map")
+    if not isinstance(expression_map, dict):
+        return dict(sorted(PIXEL_EXPRESSION_MOTION_IDS.items()))
+    cleaned = {
+        str(expression_id): str(motion_id)
+        for expression_id, motion_id in expression_map.items()
+        if isinstance(expression_id, str)
+        and expression_id
+        and isinstance(motion_id, str)
+        and motion_id
+    }
+    return dict(sorted(cleaned.items())) or dict(sorted(PIXEL_EXPRESSION_MOTION_IDS.items()))
 
 
 def _status(*, errors: list[str], missing_motion_ids: tuple[str, ...]) -> str:

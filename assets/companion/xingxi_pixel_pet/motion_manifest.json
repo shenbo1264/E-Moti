@@ -1,6 +1,6 @@
 {
   "sheet_columns": 8,
-  "sheet_rows": 9,
+  "sheet_rows": 10,
   "frame_width": 192,
   "frame_height": 208,
   "background": "transparent",
@@ -47,6 +47,11 @@
     },
     "Study": {
       "row": 8,
+      "frame_count": 6,
+      "fps": 5
+    },
+    "ConfusedShy": {
+      "row": 9,
       "frame_count": 6,
       "fps": 5
     },

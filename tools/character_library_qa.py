@@ -164,10 +164,11 @@ def _select_character(window: CompanionWindow, character_id: str, errors: list[s
 
 def _validate_character_detail(window: CompanionWindow, character_id: str, errors: list[str]) -> None:
     detail = window.character_detail_label.text()
-    if character_id not in window._character_pack_summaries:
+    pack = window._character_pack_summaries.get(character_id)
+    if pack is None:
         return
     required_fragments = (
-        "Distribution: shareable_after_review",
+        f"Distribution: {pack.distribution_boundary}",
         "Provenance: provenance.md",
         "License: LICENSE.md",
     )
