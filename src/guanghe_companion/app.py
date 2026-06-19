@@ -89,10 +89,10 @@ from .web_search import WebSearchService
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
 DESKTOP_DOCK_THRESHOLD_PX = 32
 CONTROL_PANEL_SPRITE_MIN_HEIGHT = 300
-DESKTOP_SPRITE_WIDTH = 288
-DESKTOP_SPRITE_HEIGHT = 312
-DESKTOP_WINDOW_WIDTH = 320
-DESKTOP_WINDOW_HEIGHT = 424
+DESKTOP_SPRITE_WIDTH = 192
+DESKTOP_SPRITE_HEIGHT = 208
+DESKTOP_WINDOW_WIDTH = 260
+DESKTOP_WINDOW_HEIGHT = 312
 MAX_QT_WIDGET_SIZE = 16_777_215
 CONTROL_PANEL_SPRITE_STYLE = (
     "QLabel { border: 1px solid #cbdde5; border-radius: 8px; "
@@ -1872,8 +1872,8 @@ class CompanionWindow(QMainWindow):
         rect = self.motion_animator.current_frame_rect()
         frame = self.spritesheet.copy(rect)
         scaled = frame.scaled(
-            288,
-            312,
+            DESKTOP_SPRITE_WIDTH,
+            DESKTOP_SPRITE_HEIGHT,
             Qt.AspectRatioMode.KeepAspectRatio,
             Qt.TransformationMode.SmoothTransformation,
         )

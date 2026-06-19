@@ -1426,6 +1426,62 @@ def test_desktop_mode_shows_primary_surface_with_dialogue_controls_after_layout(
     app.processEvents()
 
 
+def test_desktop_mode_uses_native_pixel_pet_surface_size(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import (
+        CompanionWindow,
+        DESKTOP_SPRITE_HEIGHT,
+        DESKTOP_SPRITE_WIDTH,
+        DESKTOP_WINDOW_HEIGHT,
+        DESKTOP_WINDOW_WIDTH,
+    )
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path), desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert (DESKTOP_SPRITE_WIDTH, DESKTOP_SPRITE_HEIGHT) == (192, 208)
+    assert (DESKTOP_WINDOW_WIDTH, DESKTOP_WINDOW_HEIGHT) == (260, 312)
+    assert (window.sprite_label.width(), window.sprite_label.height()) == (192, 208)
+    assert (window.width(), window.height()) == (260, 312)
+
+    window.close()
+    app.processEvents()
+
+
+def test_desktop_sprite_backend_renders_without_upscaling_pixel_frame(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow, DESKTOP_SPRITE_HEIGHT, DESKTOP_SPRITE_WIDTH
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        save_path=tmp_path / "save.json",
+        character_id="xingxi_pixel_pet",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller, desktop_mode=True)
+    window.show()
+    app.processEvents()
+
+    assert window.presentation_renderer.backend == "sprite"
+    pixmap = window.sprite_label.pixmap()
+    assert pixmap is not None
+    assert not pixmap.isNull()
+    assert pixmap.width() <= DESKTOP_SPRITE_WIDTH
+    assert pixmap.height() <= DESKTOP_SPRITE_HEIGHT
+
+    window.close()
+    app.processEvents()
+
+
 def test_desktop_pet_has_dialogue_input_and_send_button(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
