@@ -19,6 +19,7 @@ from PySide6.QtWidgets import (
 )
 
 from .capability_settings import CapabilitySettings
+from .voice_provider_catalog import asr_provider_ids, tts_provider_ids
 
 
 class CapabilitySettingsPanel(QWidget):
@@ -269,7 +270,7 @@ class VoiceSettingsPanel(QGroupBox):
 
         self.tts_enabled_check = QCheckBox("启用 TTS")
         self.tts_provider_combo = QComboBox()
-        self.tts_provider_combo.addItems(["windows_sapi", "http_qwen3tts"])
+        self.tts_provider_combo.addItems(list(tts_provider_ids()))
         self.tts_api_url_input = QLineEdit()
         self.tts_api_url_input.setPlaceholderText("http://127.0.0.1:9880/")
         self.tts_model_variant_combo = QComboBox()
@@ -283,7 +284,7 @@ class VoiceSettingsPanel(QGroupBox):
 
         self.asr_enabled_check = QCheckBox("启用 ASR")
         self.asr_provider_combo = QComboBox()
-        self.asr_provider_combo.addItems(["openai_compatible", "vosk"])
+        self.asr_provider_combo.addItems(list(asr_provider_ids()))
         self.asr_model_input = QLineEdit()
         self.asr_model_input.setPlaceholderText("whisper-1")
         self.asr_base_url_input = QLineEdit()

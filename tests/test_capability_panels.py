@@ -82,6 +82,24 @@ def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app)
     assert settings.asr.max_record_seconds == 22
 
 
+def test_voice_settings_panel_uses_catalog_provider_choices(qt_app):
+    from guanghe_companion.capability_panels import VoiceSettingsPanel
+
+    panel = VoiceSettingsPanel()
+
+    tts_values = [panel.tts_provider_combo.itemText(index) for index in range(panel.tts_provider_combo.count())]
+    asr_values = [panel.asr_provider_combo.itemText(index) for index in range(panel.asr_provider_combo.count())]
+
+    assert tts_values == ["edge_tts", "http_qwen3tts", "windows_sapi"]
+    assert asr_values == [
+        "openai_compatible",
+        "funasr_openai",
+        "sensevoice_openai",
+        "qwen3_asr_openai",
+        "vosk",
+    ]
+
+
 def test_capability_panels_emit_user_action_signals(qt_app):
     from guanghe_companion.capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
     from guanghe_companion.capability_settings import CapabilitySettings
