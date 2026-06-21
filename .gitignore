@@ -51,6 +51,7 @@ artifacts/release-readiness*.json
 artifacts/release-readiness*.md
 artifacts/final-acceptance-*/
 artifacts/final-package-qa/
+artifacts/voice-smoke/
 artifacts/portrait-video-source/
 artifacts/portrait-video-source-create-report*.json
 artifacts/portrait-video-source-batch-report*.json
