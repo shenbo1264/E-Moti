@@ -16,13 +16,13 @@ def test_load_default_motion_catalog_reads_core_rows():
     idle = catalog.resolve("Default")
     touch = catalog.resolve("TouchHead")
 
-    assert catalog.sheet_columns == 15
+    assert catalog.sheet_columns == 8
     assert catalog.frame_width == 192
     assert catalog.frame_height == 208
     assert idle.row == 0
-    assert idle.frame_count == 11
+    assert idle.frame_count == 6
     assert touch.row == 3
-    assert touch.frame_count == 7
+    assert touch.frame_count == 4
 
 
 def test_motion_catalog_uses_spritesheet_from_character_pack(tmp_path, monkeypatch):

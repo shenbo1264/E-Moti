@@ -30,12 +30,12 @@ def test_character_library_qa_reports_bundled_xingxi_pixel_candidate(monkeypatch
 
     assert report.ok is True
     assert payload["ok"] is True
-    assert payload["default_character_id"] == "original_oc"
+    assert payload["default_character_id"] == "xingxi_pixel_pet"
     assert payload["selected_character_id"] == "xingxi_pixel_pet"
     assert payload["after_switch_character_id"] == "xingxi_pixel_pet"
     assert payload["candidate_backend"] == "sprite"
     assert payload["desktop_backend"] == "sprite"
-    assert set(payload["available_character_ids"]) >= {"original_oc", "xingxi_pixel_pet"}
+    assert set(payload["available_character_ids"]) >= {"xingxi_pixel_pet"}
     assert payload["errors"] == []
     assert Path(payload["character_library_screenshot"]).is_file()
     assert Path(payload["desktop_pet_screenshot"]).is_file()

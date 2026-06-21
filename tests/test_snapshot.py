@@ -23,7 +23,7 @@ def test_controller_exposes_typed_snapshot_with_required_stage_one_fields(tmp_pa
     typed_snapshot = controller.get_typed_snapshot()
 
     assert isinstance(typed_snapshot, CompanionSnapshot)
-    assert typed_snapshot.character_id == "original_oc"
+    assert typed_snapshot.character_id == "xingxi_pixel_pet"
     assert typed_snapshot.character_name == "星汐"
     assert typed_snapshot.mode == "Calm"
     assert typed_snapshot.stats.focus == 72
@@ -57,7 +57,7 @@ def test_typed_snapshot_exports_controller_compatible_dict_without_ui_shape_chan
     snapshot = controller.get_snapshot()
     compatible = typed_snapshot.to_compatible_dict()
 
-    assert compatible["character_id"] == "original_oc"
+    assert compatible["character_id"] == "xingxi_pixel_pet"
     assert compatible["stats"] == {
         "focus": snapshot["focus"],
         "charge": snapshot["charge"],

@@ -12,11 +12,11 @@ SRC_ROOT = REPO_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
     sys.path.insert(0, str(SRC_ROOT))
 
+from guanghe_companion.character_pack import DEFAULT_CHARACTER_ID
 from guanghe_companion.character_registry import validate_character_pack_dir
 
 DEFAULT_APP_DIR = REPO_ROOT / "dist" / "E-Moti"
 DEFAULT_INSTALLER = REPO_ROOT / "dist" / "installer" / "E-Moti_Setup_0.1.0.exe"
-DEFAULT_CHARACTER_ID = "original_oc"
 COMMON_REQUIRED_BUNDLED_ASSETS = ("LICENSE.md", "preview", "item_icons")
 RENDERER_REQUIRED_BUNDLED_ASSETS = {
     "portrait": ("portrait_manifest.json", "portrait_assets_provenance.md", "portraits"),

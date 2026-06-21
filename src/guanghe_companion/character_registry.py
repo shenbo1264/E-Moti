@@ -83,6 +83,8 @@ class CharacterRegistry:
             summary = _summary_from_pack_dir(report.path, report.source)
             if summary is None:
                 continue
+            if _is_hidden_from_character_library(summary.path):
+                continue
             summaries.append(summary)
             seen.add(summary.character_id)
         return tuple(summaries)
@@ -618,7 +620,7 @@ def _summary_from_pack_dir(root: Path, source: str) -> CharacterPackSummary | No
         return None
     if not isinstance(payload, dict):
         return None
-    preview = root / "preview" / "contact-sheet.png"
+    preview = _preferred_preview_path(root)
     return CharacterPackSummary(
         character_id=str(payload["character_id"]),
         name=str(payload["name"]),
@@ -631,6 +633,18 @@ def _summary_from_pack_dir(root: Path, source: str) -> CharacterPackSummary | No
         provenance_paths=_existing_pack_files(root, PROVENANCE_FILENAMES),
         license_paths=_existing_pack_files(root, LICENSE_FILENAMES),
     )
+
+
+def _is_hidden_from_character_library(root: Path) -> bool:
+    payload = _read_json_object(root / "character.json", [], label="character.json")
+    return isinstance(payload, dict) and payload.get("hide_from_character_library") is True
+
+
+def _preferred_preview_path(root: Path) -> Path:
+    profile_preview = root / "preview" / "profile.png"
+    if profile_preview.is_file():
+        return profile_preview
+    return root / "preview" / "contact-sheet.png"
 
 
 def _existing_pack_files(root: Path, filenames: Iterable[str]) -> tuple[Path, ...]:

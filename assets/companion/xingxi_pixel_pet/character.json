@@ -1,8 +1,8 @@
 {
     "character_id":  "xingxi_pixel_pet",
-    "name":  "星汐 Pixel Pet",
-    "title":  "像素桌面同伴候选",
-    "description":  "星汐原创 OC 的 hatch-pet 风格像素宠序列帧候选包。该包作为内置候选用于角色库、QA 和后续默认资产决策，当前不替换 original_oc 默认包。",
+    "name":  "星汐",
+    "title":  "像素桌面同伴",
+    "description":  "星汐原创 OC 的 hatch-pet 风格像素宠序列帧包。该包现在作为默认桌宠形象使用，角色库详情使用独立 CG 角色卡，运行时仍使用像素序列帧。",
     "spritesheet":  "spritesheet.png",
     "motion_manifest":  "motion_manifest.json",
     "renderer":  {

@@ -4,11 +4,11 @@
 
 ### Default Official Pack
 
-`assets/companion/original_oc` is the runtime default. It is the stable fallback for demos, tests, and packaging.
+`assets/companion/xingxi_pixel_pet` is the runtime default. It is the visible bundled Xingxi pixel-pet pack for demos, tests, and packaging.
 
-### Optional Official Candidate
+### Hidden Official Fallback
 
-`assets/companion/xingxi_pixel_pet` is a QA-gated optional bundled candidate. It can be selected from the character library, but it does not replace the default pack unless a separate default-promotion package changes `DEFAULT_CHARACTER_ID` and passes release gates.
+`assets/companion/original_oc` is the older original-character pack. It remains bundled as a compatibility fallback, but it is hidden from the visible character library.
 
 ### Shareable After Review
 
@@ -24,8 +24,8 @@ A pack may use `distribution_boundary: "shareable_after_review"` only when prove
 
 ## Current Fanwork Representatives
 
-- Ikaros: local UGC/fanwork workflow representative only.
-- Nairong: local UGC/fanwork workflow representative only.
+- Ikaros: local UGC/fanwork workflow representative only; private preview package only unless rights are cleared.
+- Nairong: local UGC/fanwork workflow representative only; private preview package only unless rights are cleared.
 
 ## Release Rule
 

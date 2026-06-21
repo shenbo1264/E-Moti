@@ -54,14 +54,14 @@ def _summary_with(
 def test_character_pack_role_label_distinguishes_default_candidate_ugc_and_fanwork() -> None:
     assert character_pack_role_label(
         _summary_with(
-            character_id="original_oc",
+            character_id="xingxi_pixel_pet",
             source="builtin",
             distribution_boundary="shareable_after_review",
         )
     ) == "Default official"
     assert character_pack_role_label(
         _summary_with(
-            character_id="xingxi_pixel_pet",
+            character_id="original_oc",
             source="builtin",
             distribution_boundary="shareable_after_review",
         )
@@ -120,7 +120,7 @@ def test_character_pack_distribution_text_keeps_provenance_and_license_relative(
     text = character_pack_distribution_text(_summary())
 
     assert "Distribution" in text
-    assert "Role: Optional official candidate" in text
+    assert "Role: Default official" in text
     assert "Source: builtin" in text
     assert "Distribution: shareable_after_review" in text
     assert "Provenance: provenance.md" in text
@@ -131,7 +131,7 @@ def test_character_pack_distribution_text_keeps_provenance_and_license_relative(
 def test_character_pack_list_item_text_includes_role_label() -> None:
     text = character_pack_list_item_text(_summary())
 
-    assert text == "Xingxi Pixel Pet | Optional official candidate | Pixel desktop companion candidate"
+    assert text == "Xingxi Pixel Pet | Default official | Pixel desktop companion candidate"
 
 
 def test_character_pack_distribution_warning_marks_private_fanwork_not_for_distribution() -> None:

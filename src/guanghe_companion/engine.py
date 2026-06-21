@@ -19,7 +19,7 @@ BUYABLE_ITEMS: dict[str, ItemDefinition] = load_default_shop_items()
 def create_initial_state(
     now: int = 0,
     *,
-    character_id: str = "original_oc",
+    character_id: str = "xingxi_pixel_pet",
     character_name: str = CHARACTER_NAME,
     buyable_items: Mapping[str, ItemDefinition] | None = None,
 ) -> CompanionState:

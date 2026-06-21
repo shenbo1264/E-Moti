@@ -383,9 +383,9 @@ def test_control_panel_launches_separate_desktop_pet_window(monkeypatch, tmp_pat
     assert window.status_card.isVisibleTo(window)
     assert pet_window is not window
     assert pet_window.desktop_mode is True
-    assert pet_window.presentation_renderer.backend == "portrait"
-    assert pet_window.spirit_surface.isVisibleTo(pet_window)
-    assert not pet_window.sprite_label.isVisibleTo(pet_window)
+    assert pet_window.presentation_renderer.backend == "sprite"
+    assert pet_window.sprite_label.isVisibleTo(pet_window)
+    assert not pet_window.spirit_surface.isVisibleTo(pet_window)
     assert not pet_window.tick_timer.isActive()
 
     pet_window.close()
@@ -487,7 +487,7 @@ def test_control_panel_navigation_switches_right_hand_pages(monkeypatch, tmp_pat
 def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"
-    write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    write_ui_character_pack(assets_root, "xingxi_pixel_pet", name="星汐", title="像素桌面同伴")
     write_ui_character_pack(assets_root, "custom_character", name="澄光", title="桌面回声同伴")
     patch_ui_character_assets(monkeypatch, assets_root)
 
@@ -497,7 +497,7 @@ def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_p
 
     app = QApplication.instance() or QApplication([])
     controller = CompanionController(
-        character_id="original_oc",
+        character_id="xingxi_pixel_pet",
         user_data_root=tmp_path / "user-data",
         auto_load=False,
     )
@@ -511,7 +511,7 @@ def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_p
     assert window.character_list.count() == 2
     assert [window.character_list.item(index).text() for index in range(window.character_list.count())] == [
         "澄光 | 桌面回声同伴",
-        "星汐 | 桌面频率同伴",
+        "星汐 | 像素桌面同伴",
     ]
     assert "Optional official candidate" in window.character_list.item(0).toolTip()
     assert "Default official" in window.character_list.item(1).toolTip()
@@ -531,7 +531,7 @@ def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_p
 def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"
-    pack_dir = write_ui_character_pack(assets_root, "original_oc", name="Xingxi", title="Desktop companion")
+    pack_dir = write_ui_character_pack(assets_root, "xingxi_pixel_pet", name="Xingxi", title="Desktop companion")
     (pack_dir / "provenance.md").write_text("# Provenance\n\nOriginal local test pack.", encoding="utf-8")
     (pack_dir / "LICENSE").write_text("Test license.", encoding="utf-8")
     patch_ui_character_assets(monkeypatch, assets_root)
@@ -542,7 +542,7 @@ def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_pat
 
     app = QApplication.instance() or QApplication([])
     controller = CompanionController(
-        character_id="original_oc",
+        character_id="xingxi_pixel_pet",
         user_data_root=tmp_path / "user-data",
         auto_load=False,
     )
@@ -778,7 +778,7 @@ def test_character_library_import_confirmation_shows_distribution_metadata(monke
 def test_character_library_import_confirmation_warns_private_fanwork_not_for_distribution(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"
-    write_ui_character_pack(assets_root, "original_oc", name="Xingxi", title="Desktop companion")
+    write_ui_character_pack(assets_root, "xingxi_pixel_pet", name="Xingxi", title="Desktop companion")
     source_pack = write_ui_character_pack(
         tmp_path / "import-source",
         "private_fanwork_character",
@@ -806,7 +806,7 @@ def test_character_library_import_confirmation_warns_private_fanwork_not_for_dis
     monkeypatch.setattr(app_module.QMessageBox, "question", capture_question)
     app = QApplication.instance() or QApplication([])
     controller = CompanionController(
-        character_id="original_oc",
+        character_id="xingxi_pixel_pet",
         user_data_root=tmp_path / "user-data",
         auto_load=False,
     )
@@ -960,7 +960,7 @@ def test_window_started_with_custom_character_loads_matching_motion_assets(monke
 def test_window_applies_visual_action_motion_without_mutating_controller_state(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"
-    pack_dir = write_ui_character_pack(assets_root, "original_oc", name="星汐", title="桌面频率同伴")
+    pack_dir = write_ui_character_pack(assets_root, "xingxi_pixel_pet", name="星汐", title="桌面频率同伴")
     motion_manifest_path = pack_dir / "motion_manifest.json"
     motion_manifest = json.loads(motion_manifest_path.read_text(encoding="utf-8"))
     motion_manifest["motions"]["Raised"] = {"row": 7, "frame_count": 1, "fps": 4}
@@ -1411,11 +1411,9 @@ def test_desktop_mode_shows_primary_surface_with_dialogue_controls_after_layout(
     assert window.spirit_surface.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
     assert "border: none" in window.hero_card.styleSheet()
     assert "background: transparent" in window.sprite_label.styleSheet()
-    assert window.presentation_renderer.backend == "portrait"
-    assert window.spirit_surface.isVisibleTo(window)
-    assert window.spirit_surface.pixmap() is not None
-    assert not window.spirit_surface.pixmap().isNull()
-    assert not window.sprite_label.isVisibleTo(window)
+    assert window.presentation_renderer.backend == "sprite"
+    assert window.sprite_label.isVisibleTo(window)
+    assert not window.spirit_surface.isVisibleTo(window)
     assert window.mask().isEmpty()
     assert not window.character_label.isVisibleTo(window)
     assert not window.desktop_feedback_label.isVisibleTo(window)
@@ -1651,7 +1649,7 @@ def test_desktop_mode_feedback_overlay_updates_after_sprite_touch(monkeypatch, t
     text = window.snapshot_renderer.format_desktop_status_panel(window.controller.get_snapshot())
 
     assert "模式：Calm" in text
-    assert "靠近回应" in text
+    assert "招手回应" in text
     assert "靠近我的方式" in text
     assert window.controller.get_snapshot()["motion"] == "TouchHead"
 

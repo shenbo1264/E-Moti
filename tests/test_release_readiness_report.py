@@ -17,6 +17,13 @@ def _copy_original_pack(target: Path) -> Path:
     return destination
 
 
+def _copy_xingxi_pixel_pack(target: Path) -> Path:
+    source = REPO_ROOT / "assets" / "companion" / "xingxi_pixel_pet"
+    destination = target / "xingxi_pixel_pet"
+    shutil.copytree(source, destination)
+    return destination
+
+
 def test_source_character_pack_check_reports_ready_for_original_oc() -> None:
     from tools.readiness_checks import build_source_character_pack_check
 
@@ -32,8 +39,9 @@ def _write_frozen_build(root: Path, *, include_license: bool = True) -> tuple[Pa
     app_dir = root / "dist" / "E-Moti"
     character_dir = app_dir / "_internal" / "assets" / "companion"
     _copy_original_pack(character_dir)
+    _copy_xingxi_pixel_pack(character_dir)
     if not include_license:
-        (character_dir / "original_oc" / "LICENSE.md").unlink()
+        (character_dir / "xingxi_pixel_pet" / "LICENSE.md").unlink()
     app_dir.mkdir(parents=True, exist_ok=True)
     (app_dir / "E-Moti.exe").write_bytes(b"MZ" + b"0" * 128)
     installer = root / "dist" / "installer" / "E-Moti_Setup_0.1.0.exe"

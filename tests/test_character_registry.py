@@ -2,7 +2,11 @@ import json
 
 from PIL import Image
 
-from guanghe_companion.character_registry import CharacterRegistry, validate_character_pack_dir
+from guanghe_companion.character_registry import (
+    CharacterRegistry,
+    summarize_character_pack_dir,
+    validate_character_pack_dir,
+)
 
 
 REQUIRED_LIVE2D_EXPRESSION_MAP = {
@@ -530,3 +534,27 @@ def test_character_registry_can_merge_builtin_and_user_packs(tmp_path):
     assert packs["builtin_character"].source == "builtin"
     assert packs["user_character"].source == "user"
     assert packs["user_character"].preview_path.name == "contact-sheet.png"
+
+
+def test_character_registry_prefers_profile_preview_over_contact_sheet(tmp_path):
+    pack_dir = _write_minimal_pack(tmp_path, "profile_preview_character")
+    Image.new("RGBA", (512, 768), (30, 60, 90, 255)).save(pack_dir / "preview" / "profile.png")
+
+    summary = summarize_character_pack_dir(pack_dir)
+
+    assert summary is not None
+    assert summary.preview_path.name == "profile.png"
+
+
+def test_character_registry_hides_pack_from_library_when_manifest_marks_hidden(tmp_path):
+    hidden_pack = _write_minimal_pack(tmp_path, "hidden_character")
+    _write_minimal_pack(tmp_path, "visible_character")
+    payload = json.loads((hidden_pack / "character.json").read_text(encoding="utf-8"))
+    payload["hide_from_character_library"] = True
+    (hidden_pack / "character.json").write_text(json.dumps(payload), encoding="utf-8")
+
+    registry = CharacterRegistry(builtin_root=tmp_path, user_root=tmp_path / "missing-user-root")
+
+    pack_ids = {pack.character_id for pack in registry.list_available_packs()}
+    assert "hidden_character" not in pack_ids
+    assert "visible_character" in pack_ids

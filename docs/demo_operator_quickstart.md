@@ -15,8 +15,8 @@ This guide is for a reviewer or operator who wants to run the current E-Moti dem
 - It is not a productivity supervisor, course monitor, or mascot-only skin.
 - It does not let LLMs mutate saves, inventory, memory, relationship, goals, coins, or growth state.
 - It does not use background listening, wake words, mouse control, keyboard control, clipboard control, or window control.
-- It does not bundle third-party fanwork characters such as Ikaros or Nairong.
-- It does not make `xingxi_pixel_pet` the default pack.
+- It does not publish third-party fanwork characters such as Ikaros or Nairong in the open-source assets.
+- Public builds use `xingxi_pixel_pet` as the default pack; private preview builds may include local UGC packs under the user's data directory for switching QA.
 
 ## Five-Minute Demo Flow
 
@@ -24,7 +24,7 @@ This guide is for a reviewer or operator who wants to run the current E-Moti dem
 2. Check the status, action, shop, inventory, memory, dialogue, settings, and character library views.
 3. Switch to desktop pet mode.
 4. Hide and restore from the system tray.
-5. Switch between `original_oc` and `xingxi_pixel_pet` from the character library.
+5. Open the character library and confirm `xingxi_pixel_pet` is the default visible Xingxi pack. In a private preview package, switch to local UGC examples such as Ikaros or Nairong if present.
 6. If a valid provider key or local OpenAI-compatible provider is available, run the LLM provider test and one dialogue turn.
 
 ## Verification Commands
@@ -62,10 +62,10 @@ python tools\llm_expression_cue_probe.py --provider deepseek --timeout-seconds 4
 
 ## Expected Current State
 
-- `original_oc` is the default pack.
-- `xingxi_pixel_pet` is an optional official candidate.
+- `xingxi_pixel_pet` is the default visible bundled pack.
+- `original_oc` is a hidden compatibility fallback.
 - Live AI expression depends on a configured provider or local OpenAI-compatible server.
-- The latest generated confused/shy pixel row remains ignored QA evidence until visual approval and a separate promotion package.
+- The pixel pack includes a `ConfusedShy` motion row and maps `confused` / `shy` expression cues to it.
 - Runtime saves, API keys, local fanwork packs, and ignored smoke artifacts are not committed.
 
 ## Demo Talking Points

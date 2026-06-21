@@ -18,18 +18,16 @@ def test_character_profile_expression_context_returns_local_tool_results_only():
     context = provider()
 
     assert set(context) == {"tool_results"}
-    assert context["tool_results"] == [
-        {
-            "source": "local_character_pack",
-            "title": "星汐 | 桌面频率同伴",
-            "summary": "一个住在桌面上的原创类人伴侣。她通过状态、动作和结构化事件来回应玩家。",
-        },
-        {
-            "source": "local_character_pack",
-            "title": "modes",
-            "summary": "Glow: 情绪稳定且主动亲近。 / Calm: 频率平稳，适合日常互动。 / Frayed: 开始疲惫或分心，需要轻一点的陪伴。",
-        },
-    ]
+    assert context["tool_results"][0] == {
+        "source": "local_character_pack",
+        "title": f"{pack.name} | {pack.title}",
+        "summary": pack.description,
+    }
+    assert context["tool_results"][1]["source"] == "local_character_pack"
+    assert context["tool_results"][1]["title"] == "modes"
+    assert context["tool_results"][1]["summary"] == (
+        " / ".join(f"{mode}: {pack.mode_descriptions[mode]}" for mode in pack.modes[:3])
+    )
     assert "perception_summary" not in context
     assert "inventory" not in str(context)
     assert "coins" not in str(context)
@@ -314,7 +312,8 @@ def test_controller_routes_character_profile_context_without_snapshot_shape_chan
     request = captured["request"]
     assert isinstance(request, ExpressionRequest)
     assert request.tool_results[0]["source"] == "local_character_pack"
-    assert request.tool_results[0]["title"] == "星汐 | 桌面频率同伴"
+    default_pack = load_default_character_pack()
+    assert request.tool_results[0]["title"] == f"{default_pack.name} | {default_pack.title}"
     assert request.perception_summary == ""
     assert "tool_results" not in snapshot
     assert "perception_summary" not in snapshot

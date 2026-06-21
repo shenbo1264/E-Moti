@@ -2,7 +2,7 @@
 
 E-Moti is a Windows-first desktop AI companion pet demo built with Python and PySide6.
 
-The bundled companion is the original character Xingxi. The current near-term route is a hatch-pet-style pixel-pet sequence workflow: lock one canonical character base, generate one animation row at a time, review contact sheets, repair only failed rows, and only then promote a validated character pack. The repo now also includes `xingxi_pixel_pet` as an optional bundled sprite candidate; `original_oc` remains the default companion pack. Learning, resting, comforting, and playing are action states, not the product identity.
+The bundled companion is the original character Xingxi. The current near-term route is a hatch-pet-style pixel-pet sequence workflow: lock one canonical character base, generate one animation row at a time, review contact sheets, repair only failed rows, and only then promote a validated character pack. The repo now uses `xingxi_pixel_pet` as the default bundled pixel-pet companion pack; the older `original_oc` pack remains bundled as a hidden fallback for compatibility. Learning, resting, comforting, and playing are action states, not the product identity.
 
 This project is not a productivity coach, course supervisor, mascot skin, or chatbot-only shell.
 
@@ -14,8 +14,8 @@ This project is not a productivity coach, course supervisor, mascot skin, or cha
 - Character library support for switching bundled or user-imported complete character packs.
 - Local state machine for focus, charge, stability, mood, trust, coins, level, inventory, memories, and relationship unlocks.
 - Sprite atlas renderer kept as the tray-friendly baseline and regression-safe renderer.
-- Pixel-pet sequence workflow for future character packs, with a QA-gated Xingxi pixel-pet sprite candidate available as a separate bundled pack.
-- Portrait/Spirit renderer using bundled original Xingxi smoke assets, kept as a later presentation path rather than the active art-production route.
+- Pixel-pet sequence workflow for character packs, with the QA-gated Xingxi pixel-pet pack promoted as the default bundled companion.
+- Portrait/Spirit renderer kept as a later presentation path rather than the active art-production route.
 - Live2D Web renderer path for character packs that provide a safe `.model3.json`; sprite remains the fallback.
 - Optional LLM expression adapter that can turn validated local events into character speech, expression cues, motion cues, and read-only interaction intents.
 - Optional screen observation, web search, TTS, and ASR integrations behind explicit settings.
@@ -147,7 +147,7 @@ python tools\release_readiness_report.py --pixel-pet-emote-mapping-report artifa
 python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --fail-on-warnings
 ```
 
-This opens the real control panel with temporary user data, selects `xingxi_pixel_pet`, verifies the distribution/provenance/license detail, switches to the pack, opens desktop pet mode, saves screenshots, and writes a JSON report. It does not change the default `original_oc` pack.
+This opens the real control panel with temporary user data, selects `xingxi_pixel_pet`, verifies the distribution/provenance/license detail, switches to the pack, opens desktop pet mode, saves screenshots, and writes a JSON report. `xingxi_pixel_pet` is now the default bundled pack; `original_oc` remains only as a hidden compatibility fallback.
 `pixel_pet_visual_qa.py` is a read-only spritesheet gate for pixel-pet candidates. It reuses the atlas contract and counts suspicious purple/red edge pixels adjacent to transparency; `--preview` writes an overlay image for human QA. `pixel_pet_edge_style_brief.py` turns that report into a paste-ready regeneration/redraw brief and acceptance-gate checklist, including a base-only prompt lock that forbids sprite sheets, row strips, atlases, repeated copies, and animation frames for the first canonical base. `hatch_pet_imagegen_readiness.py` checks a hatch-pet run before provider calls and reports missing/invalid generation credentials without printing secrets. `hatch_pet_imagegen_route_preflight.py` combines the hatch-pet readiness result with an optional `codex --version` launcher check so invalid API keys and blocked native imagegen runners are recorded before retrying base generation. `hatch_pet_base_intake_preflight.py` checks a selected built-in `$imagegen` `ig_*.png` against the ready hatch-pet `base` job and base-review gate before suggesting the `record_imagegen_result.py` command; it rejects row-strip or atlas-shaped images as base candidates and does not copy files or modify `imagegen-jobs.json`. `pixel_pet_emote_mapping_check.py` verifies that the LLM expression-to-pixel-motion mapping can be served by a pack's `motion_manifest.json`; it is read-only and does not mutate state, saves, runtime manifests, or character assets. `release_readiness_report.py --pixel-pet-visual-qa-report`, `--pixel-pet-edge-style-brief-report`, `--hatch-pet-imagegen-readiness-report`, `--hatch-pet-imagegen-route-preflight-report`, `--hatch-pet-base-intake-report`, and `--pixel-pet-emote-mapping-report` roll those art gates, imagegen blockers, intake decisions, or LLM pixel-emote coverage checks into the aggregate release readiness summary. Warnings do not change runtime behavior, but `--fail-on-warnings` can block default-promotion packages.
 
 Import a complete validated character pack into a user pack root:
@@ -177,7 +177,7 @@ Current final gate:
 type docs\final_release_gate_2026-07.md
 ```
 
-The P12-P17 gate keeps `original_oc` as the default pack, keeps `xingxi_pixel_pet` as an optional bundled candidate, validates the live DeepSeek expression cue probe, and records the P16 confused/shy row as ignored QA evidence only. That row is not promoted into runtime assets until visual approval and a separate asset-promotion package.
+The current final gate promotes `xingxi_pixel_pet` as the default bundled pack, keeps `original_oc` as a hidden fallback, validates the live DeepSeek expression cue probe, and keeps Ikaros/Nairong as private local UGC workflow representatives rather than public bundled assets.
 
 Portrait candidate validation before manifest promotion:
 
@@ -371,8 +371,8 @@ See `docs/live2d_asset_pipeline.md` for the PSD layer checklist, Cubism export c
 ## Repository Notes
 
 - `src/guanghe_companion/` contains the application code.
-- `assets/companion/original_oc/` contains the bundled original character runtime assets, including portrait expressions and sprite fallback assets.
-- `assets/companion/xingxi_pixel_pet/` contains an optional bundled Xingxi pixel-pet sprite candidate; it is not the default pack.
+- `assets/companion/xingxi_pixel_pet/` contains the default bundled Xingxi pixel-pet companion pack. Its character-library detail card uses `preview/profile.png` for the polished profile CG; runtime animation still uses the sprite sheet.
+- `assets/companion/original_oc/` contains the older bundled original character runtime assets and remains available as a hidden compatibility fallback, not as a visible role-library option.
 - `tests/` contains the regression and smoke tests.
 - `packaging/` and `tools/` contain Windows build entry points and scripts.
 - `data/` contains local runtime saves and is intentionally ignored by git.

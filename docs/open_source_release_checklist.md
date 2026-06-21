@@ -7,16 +7,16 @@
 - `docs\demo_operator_quickstart.md` describes the current demo flow and limitations.
 - `git grep -n "sk-" -- . ":!artifacts" ":!dist"` contains only test placeholders or public documentation examples.
 - `data/companion_save.json`, `data/companion_demo_save.json`, and `data/dialogue_history.json` are not tracked.
-- `assets/companion/original_oc` remains the default pack unless a default-promotion package says otherwise.
-- `assets/companion/xingxi_pixel_pet` is described as an optional bundled candidate.
+- `assets/companion/xingxi_pixel_pet` is the default bundled Xingxi pixel-pet pack.
+- `assets/companion/original_oc` remains only as a hidden compatibility fallback.
 - P16 row candidates under `artifacts/pixel-pet-sequence-drafts/` are ignored QA evidence until human visual approval and a separate promotion package.
 - Ikaros and Nairong are not distributed as bundled assets.
 - Third-party reference projects are not copied into this repository.
 
 ## Public Asset Boundary
 
-- `original_oc`: default bundled original character pack.
-- `xingxi_pixel_pet`: optional bundled official candidate after QA.
+- `xingxi_pixel_pet`: default bundled original Xingxi pixel-pet pack after QA.
+- `original_oc`: hidden bundled compatibility fallback.
 - Ikaros: local UGC/fanwork workflow representative only.
 - Nairong: local UGC/fanwork workflow representative only.
 

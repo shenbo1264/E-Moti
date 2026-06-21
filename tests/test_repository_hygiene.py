@@ -98,8 +98,8 @@ def test_readme_names_pixel_pet_as_current_art_route() -> None:
     readme = (REPO_ROOT / "README.md").read_text(encoding="utf-8-sig")
 
     assert "hatch-pet-style pixel-pet sequence workflow" in readme
-    assert "`xingxi_pixel_pet` as an optional bundled sprite candidate" in readme
-    assert "`original_oc` remains the default companion pack" in readme
+    assert "`xingxi_pixel_pet` as the default bundled pixel-pet companion pack" in readme
+    assert "`original_oc` pack remains bundled as a hidden fallback" in readme
 
 
 def test_readme_links_demo_operator_quickstart() -> None:
@@ -113,8 +113,8 @@ def test_readme_links_demo_operator_quickstart() -> None:
 def test_final_release_gate_2026_07_records_boundaries_and_p16_candidate() -> None:
     final_gate = (REPO_ROOT / "docs" / "final_release_gate_2026-07.md").read_text(encoding="utf-8-sig")
 
-    assert "Default character: `original_oc`" in final_gate
-    assert "Optional bundled character: `xingxi_pixel_pet`" in final_gate
-    assert "P16 confused/shy row candidate" in final_gate
-    assert "not promoted into runtime assets" in final_gate
-    assert "Live DeepSeek cue probe: `ok=true`" in final_gate
+    assert "Default character: `xingxi_pixel_pet`" in final_gate
+    assert "Hidden fallback character: `original_oc`" in final_gate
+    assert "P16 confused/shy row remains part of the pixel-pet art QA history" in final_gate
+    assert "profile CG preview" in final_gate
+    assert "Live DeepSeek smoke: `ok=true`" in final_gate

@@ -8,7 +8,7 @@ from .runtime_paths import companion_assets_root
 
 
 ASSETS_ROOT = companion_assets_root()
-DEFAULT_CHARACTER_ID = "original_oc"
+DEFAULT_CHARACTER_ID = "xingxi_pixel_pet"
 
 
 @dataclass(frozen=True, slots=True)

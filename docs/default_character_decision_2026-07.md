@@ -2,37 +2,38 @@
 
 ## Decision
 
-Do not promote `xingxi_pixel_pet` to the default character in this package.
+Promote `xingxi_pixel_pet` to the default character in this package.
 
 ## Current Runtime Default
 
-- Default character: `original_oc`.
-- Optional bundled character: `xingxi_pixel_pet`.
-- No default constant, runtime manifest, packaging script, installer behavior, or install path was changed.
+- Default character: `xingxi_pixel_pet`.
+- Hidden fallback character: `original_oc`.
+- The default constant and initial runtime state now point at `xingxi_pixel_pet`.
+- Packaging scripts and installer paths are unchanged, but the Windows app and installer must be rebuilt so frozen artifacts contain the new default.
 
 ## Reasoning
 
-- `original_oc` is still the stable default presentation route for the open-source demo.
-- `xingxi_pixel_pet` is validated and useful as an optional sprite candidate, but default promotion is a separate product decision.
-- The P16 confused/shy row candidate exists only under ignored artifacts and has not received human visual approval for runtime promotion.
-- Ikaros and Nairong remain local UGC/fanwork workflow representatives only and cannot be bundled without rights clearance.
+- The course-facing product route is now pixel-pet first, and the older large `original_oc` route no longer matches the desired role-library presentation.
+- `xingxi_pixel_pet` is the validated original Xingxi pack that can be distributed in the public repository.
+- `original_oc` remains useful as a compatibility fallback for tests and older assets, but should not be the visible default role.
+- Ikaros and Nairong remain local UGC/fanwork workflow representatives only and cannot be publicly bundled without rights clearance.
 
-## Promotion Gate For A Future Package
+## Promotion Verification Gate
 
-Before changing the default to `xingxi_pixel_pet`, run a separate default-promotion package that:
+Changing the default to `xingxi_pixel_pet` requires:
 
-- updates the default character constant intentionally;
-- updates README and release docs that describe the runtime default;
-- reruns source tests and UI smoke tests;
-- rebuilds the Windows app and installer if default assets or packaging contents change;
-- records exact validation results in a new dated final gate.
+- an intentional default constant change;
+- README and release-doc updates that describe the runtime default;
+- source tests and UI smoke tests;
+- Windows app and installer rebuilds;
+- exact validation results recorded in a dated final gate.
 
-Required commands for that future package:
+Required commands:
 
 ```powershell
 python -m pytest tests\test_character_pack.py tests\test_character_registry.py tests\test_app.py tests\test_desktop_pet_smoke.py -q
 python -m pytest
 powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1
 powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild
-python tools\validate_windows_build.py --character-id xingxi_pixel_pet --report artifacts\windows-build-validation-xingxi-pixel-pet.json
+python tools\validate_windows_build.py --report artifacts\windows-build-validation-xingxi-pixel-pet.json
 ```

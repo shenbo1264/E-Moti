@@ -159,8 +159,11 @@ def _write_windows_build(root: Path, *, include_portraits: bool = True, include_
     app_dir = root / "dist" / "E-Moti"
     character_dir = app_dir / "_internal" / "assets" / "companion" / "original_oc"
     character_dir.mkdir(parents=True)
+    sprite_dir = app_dir / "_internal" / "assets" / "companion" / "xingxi_pixel_pet"
+    sprite_dir.mkdir(parents=True)
     (app_dir / "E-Moti.exe").write_bytes(b"MZ" + (b"0" * 128))
     _write_character_pack(character_dir)
+    _write_sprite_character_pack(sprite_dir)
     if not include_portraits:
         for path in (character_dir / "portraits").glob("*.png"):
             path.unlink()
@@ -172,11 +175,7 @@ def _write_windows_build(root: Path, *, include_portraits: bool = True, include_
 
 
 def _write_windows_build_with_sprite_pack(root: Path) -> tuple[Path, Path]:
-    app_dir, installer = _write_windows_build(root)
-    sprite_dir = app_dir / "_internal" / "assets" / "companion" / "xingxi_pixel_pet"
-    sprite_dir.mkdir(parents=True)
-    _write_sprite_character_pack(sprite_dir)
-    return app_dir, installer
+    return _write_windows_build(root)
 
 
 def test_validate_windows_build_accepts_complete_frozen_app_and_installer(tmp_path: Path):
@@ -189,7 +188,7 @@ def test_validate_windows_build_accepts_complete_frozen_app_and_installer(tmp_pa
     assert report.ok is True
     assert report.errors == ()
     assert report.app_exe == str(app_dir / "E-Moti.exe")
-    assert report.character_id == "original_oc"
+    assert report.character_id == "xingxi_pixel_pet"
     assert report.installer_path == str(installer)
 
 
@@ -214,7 +213,7 @@ def test_validate_windows_build_rejects_missing_portrait_assets(tmp_path: Path):
 
     app_dir, installer = _write_windows_build(tmp_path, include_portraits=False)
 
-    report = validate_windows_build(app_dir=app_dir, installer_path=installer)
+    report = validate_windows_build(app_dir=app_dir, installer_path=installer, character_id="original_oc")
 
     assert report.ok is False
     assert any("portrait image not found" in error for error in report.errors)
@@ -224,7 +223,7 @@ def test_validate_windows_build_rejects_missing_character_pack_license(tmp_path:
     from tools.validate_windows_build import validate_windows_build
 
     app_dir, installer = _write_windows_build(tmp_path)
-    license_path = app_dir / "_internal" / "assets" / "companion" / "original_oc" / "LICENSE.md"
+    license_path = app_dir / "_internal" / "assets" / "companion" / "xingxi_pixel_pet" / "LICENSE.md"
     license_path.unlink()
 
     report = validate_windows_build(app_dir=app_dir, installer_path=installer)
