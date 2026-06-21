@@ -7,8 +7,8 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QPoint, QSize, QTimer, Qt, Slot
-from PySide6.QtGui import QAction, QFont, QFontDatabase, QIcon, QPixmap
+from PySide6.QtCore import QEvent, QPoint, QRectF, QSize, QTimer, Qt, Slot
+from PySide6.QtGui import QAction, QColor, QFont, QFontDatabase, QIcon, QLinearGradient, QPainter, QPen, QPixmap
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -235,6 +235,124 @@ QListWidget::item:selected {
     color: #20333c;
 }
 """
+
+
+class CharacterProfilePreview(QWidget):
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._source_pixmap = QPixmap()
+        self._name = ""
+        self._title = ""
+        self._placeholder = ""
+        self.setMinimumHeight(CHARACTER_PROFILE_PREVIEW_HEIGHT)
+
+    def set_preview(self, pixmap: QPixmap, *, name: str, title: str) -> None:
+        self._source_pixmap = pixmap
+        self._name = name
+        self._title = title
+        self._placeholder = ""
+        self.update()
+
+    def setPixmap(self, pixmap: QPixmap) -> None:
+        self.set_preview(pixmap, name="", title="")
+
+    def pixmap(self) -> QPixmap | None:
+        return None if self._source_pixmap.isNull() else self._source_pixmap
+
+    def clear(self) -> None:
+        self._source_pixmap = QPixmap()
+        self._name = ""
+        self._title = ""
+        self._placeholder = ""
+        self.update()
+
+    def setText(self, text: str) -> None:
+        self._source_pixmap = QPixmap()
+        self._name = ""
+        self._title = ""
+        self._placeholder = text
+        self.update()
+
+    def paintEvent(self, event) -> None:  # noqa: N802
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+        painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform)
+        rect = self.rect().adjusted(0, 0, -1, -1)
+        painter.fillRect(rect, QColor("#f7fbfd"))
+
+        if not self._source_pixmap.isNull():
+            target = QRectF(rect)
+            source_rect = self._cover_source_rect(target.size())
+            painter.setOpacity(0.34)
+            painter.drawPixmap(target, self._source_pixmap, source_rect)
+            painter.setOpacity(1.0)
+
+            wash = QLinearGradient(target.topLeft(), target.topRight())
+            wash.setColorAt(0.0, QColor(247, 251, 253, 28))
+            wash.setColorAt(0.42, QColor(247, 251, 253, 78))
+            wash.setColorAt(1.0, QColor(247, 251, 253, 18))
+            painter.fillRect(target, wash)
+
+            foreground = self._source_pixmap.scaled(
+                CHARACTER_PROFILE_PREVIEW_SIZE,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
+            x = int(rect.left() + rect.width() * 0.58 - foreground.width() / 2)
+            y = int(rect.top() + (rect.height() - foreground.height()) / 2)
+            painter.drawPixmap(x, y, foreground)
+            self._draw_title_block(painter, rect)
+        elif self._placeholder:
+            painter.setPen(QColor("#5f7685"))
+            painter.drawText(rect, Qt.AlignmentFlag.AlignCenter, self._placeholder)
+
+        painter.setPen(QPen(QColor("#cbdde5"), 1))
+        painter.drawRoundedRect(rect, 8, 8)
+
+    def _cover_source_rect(self, target_size) -> QRectF:
+        source = self._source_pixmap.size()
+        if source.isEmpty():
+            return QRectF()
+        target_ratio = target_size.width() / max(target_size.height(), 1)
+        source_ratio = source.width() / max(source.height(), 1)
+        if source_ratio > target_ratio:
+            width = source.height() * target_ratio
+            x = (source.width() - width) / 2
+            return QRectF(x, 0, width, source.height())
+        height = source.width() / target_ratio
+        y = (source.height() - height) / 2
+        return QRectF(0, y, source.width(), height)
+
+    def _draw_title_block(self, painter: QPainter, rect) -> None:
+        if not self._name and not self._title:
+            return
+        painter.save()
+        panel = QRectF(rect.left() + 24, rect.top() + 24, max(150, rect.width() * 0.32), 82)
+        panel_gradient = QLinearGradient(panel.topLeft(), panel.topRight())
+        panel_gradient.setColorAt(0.0, QColor(247, 251, 253, 218))
+        panel_gradient.setColorAt(1.0, QColor(247, 251, 253, 72))
+        painter.fillRect(panel, panel_gradient)
+        name_font = QFont(painter.font())
+        name_font.setPointSize(max(13, name_font.pointSize() + 3))
+        name_font.setBold(True)
+        painter.setFont(name_font)
+        painter.setPen(QColor("#12344d"))
+        painter.drawText(
+            QRectF(panel.left() + 12, panel.top() + 8, panel.width() - 24, 28),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            self._name,
+        )
+        title_font = QFont(painter.font())
+        title_font.setPointSize(max(10, title_font.pointSize() - 2))
+        title_font.setBold(False)
+        painter.setFont(title_font)
+        painter.setPen(QColor("#1f7f93"))
+        painter.drawText(
+            QRectF(panel.left() + 12, panel.top() + 40, panel.width() - 24, 28),
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter,
+            self._title,
+        )
+        painter.restore()
 
 
 def _windows_font_dirs() -> tuple[Path, ...]:
@@ -790,12 +908,7 @@ class CompanionWindow(QMainWindow):
         detail_box = QGroupBox("角色详情")
         detail_layout = QVBoxLayout(detail_box)
         detail_layout.setSpacing(10)
-        self.character_preview_label = QLabel()
-        self.character_preview_label.setMinimumHeight(CHARACTER_PROFILE_PREVIEW_HEIGHT)
-        self.character_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.character_preview_label.setStyleSheet(
-            "QLabel { border: 1px solid #cbdde5; border-radius: 8px; background: #f7fbfd; }"
-        )
+        self.character_preview_label = CharacterProfilePreview()
         self.character_detail_label = QLabel("选择一个角色包。")
         self.character_detail_label.setWordWrap(True)
         self.character_detail_label.setAlignment(Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
@@ -878,13 +991,7 @@ class CompanionWindow(QMainWindow):
         )
         if pack.preview_path.is_file():
             preview = QPixmap(str(pack.preview_path))
-            self.character_preview_label.setPixmap(
-                preview.scaled(
-                    CHARACTER_PROFILE_PREVIEW_SIZE,
-                    Qt.AspectRatioMode.KeepAspectRatio,
-                    Qt.TransformationMode.SmoothTransformation,
-                )
-            )
+            self.character_preview_label.set_preview(preview, name=pack.name, title=pack.title)
         else:
             self.character_preview_label.setText("暂无预览")
         self.character_switch_button.setEnabled(not current)

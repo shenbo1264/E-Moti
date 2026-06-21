@@ -640,6 +640,47 @@ def test_character_library_profile_preview_uses_large_character_card(monkeypatch
     app.processEvents()
 
 
+def test_character_library_profile_preview_fills_wide_stage_with_art_backdrop(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    pack_dir = write_ui_character_pack(assets_root, "xingxi_pixel_pet", name="Xingxi", title="Desktop companion")
+    Image.new("RGB", (1024, 1536), (30, 78, 148)).save(pack_dir / "preview" / "profile.png")
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtGui import QColor
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="xingxi_pixel_pet",
+        user_data_root=tmp_path / "user-data",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.resize(1100, 740)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
+
+    preview = window.character_preview_label.grab().toImage()
+    assert preview.width() >= 420
+    mid_y = preview.height() // 2
+    edge_samples = (
+        QColor(preview.pixel(24, mid_y)),
+        QColor(preview.pixel(preview.width() - 24, mid_y)),
+    )
+    for sample in edge_samples:
+        assert sample.blue() > sample.red() + 12
+        assert sample.blue() > sample.green() + 4
+
+    window.close()
+    app.processEvents()
+
+
 def test_character_library_switches_user_character_pack(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     monkeypatch.setenv("E_MOTI_USER_DATA_DIR", str(tmp_path / "user-data"))
