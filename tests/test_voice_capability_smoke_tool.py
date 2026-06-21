@@ -43,6 +43,45 @@ def test_voice_smoke_tool_writes_tts_report_without_playback(tmp_path, monkeypat
     assert calls == [("星汐语音测试", "edge_tts", "zh-CN-XiaoxiaoNeural")]
 
 
+def test_voice_smoke_tool_can_skip_qt_playback_for_edge_tts(tmp_path, monkeypatch) -> None:
+    from guanghe_companion.voice_tts import TTSResult
+    from tools import voice_capability_smoke
+
+    constructed = {}
+
+    class FakeEdgeProvider:
+        def __init__(self, *, audio_player):
+            constructed["audio_player"] = audio_player
+
+        def speak(self, text, settings):
+            constructed["spoken"] = (text, settings.provider)
+            return TTSResult(True, "朗读完成", str(tmp_path / "out.mp3"))
+
+        def stop(self):
+            pass
+
+    monkeypatch.setattr(voice_capability_smoke, "EdgeNeuralTTSProvider", FakeEdgeProvider)
+    report = tmp_path / "report.json"
+
+    code = voice_capability_smoke.main(
+        [
+            "--tts-provider",
+            "edge_tts",
+            "--tts-text",
+            "星汐语音测试",
+            "--skip-playback",
+            "--report",
+            str(report),
+        ]
+    )
+
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert code == 0
+    assert payload["tts"]["ok"] is True
+    assert constructed["spoken"] == ("星汐语音测试", "edge_tts")
+    assert callable(constructed["audio_player"])
+
+
 def test_voice_smoke_tool_writes_asr_report_from_audio_file(tmp_path, monkeypatch) -> None:
     from guanghe_companion.voice_asr import ASRResult
     from tools import voice_capability_smoke

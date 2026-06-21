@@ -7,7 +7,7 @@ from typing import Sequence
 
 from guanghe_companion.capability_settings import ASRSettings, TTSSettings
 from guanghe_companion.voice_asr import default_asr_transcriber
-from guanghe_companion.voice_tts import default_tts_provider_factory
+from guanghe_companion.voice_tts import EdgeNeuralTTSProvider, HttpQwen3TTSProvider, default_tts_provider_factory
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -17,6 +17,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--tts-voice", default="")
     parser.add_argument("--tts-api-url", default="")
     parser.add_argument("--tts-model-variant", default="qwen3tts_1.6b")
+    parser.add_argument("--skip-playback", action="store_true")
     parser.add_argument("--asr-provider", default="")
     parser.add_argument("--asr-model", default="whisper-1")
     parser.add_argument("--asr-base-url", default="")
@@ -29,7 +30,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     exit_code = 0
 
     if args.tts_provider:
-        provider = default_tts_provider_factory(args.tts_provider)
+        provider = _tts_provider(args.tts_provider, skip_playback=args.skip_playback)
         if provider is None:
             report["tts"] = {"ok": False, "message": f"TTS provider 不可用：{args.tts_provider}"}
             exit_code = 1
@@ -81,6 +82,16 @@ def main(argv: Sequence[str] | None = None) -> int:
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
     return exit_code
+
+
+def _tts_provider(provider_id: str, *, skip_playback: bool):
+    if not skip_playback:
+        return default_tts_provider_factory(provider_id)
+    if provider_id == "edge_tts":
+        return EdgeNeuralTTSProvider(audio_player=lambda path: None)
+    if provider_id == "http_qwen3tts":
+        return HttpQwen3TTSProvider(audio_player=lambda path: None)
+    return default_tts_provider_factory(provider_id)
 
 
 if __name__ == "__main__":
