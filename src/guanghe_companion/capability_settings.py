@@ -27,6 +27,7 @@ TTS_PROVIDER_ALIASES = {
     "edge_neural": "edge_tts",
     "http_qwen3tts": "http_qwen3tts",
     "qwen3tts": "http_qwen3tts",
+    "qwen3_tts": "http_qwen3tts",
 }
 TTS_MODEL_VARIANT_ALIASES = {
     "1.6b": "qwen3tts_1.6b",
@@ -46,6 +47,12 @@ ASR_PROVIDER_ALIASES = {
     "openai": "openai_compatible",
     "openai_compatible": "openai_compatible",
     "whisper": "openai_compatible",
+    "funasr": "funasr_openai",
+    "funasr_openai": "funasr_openai",
+    "sensevoice": "sensevoice_openai",
+    "sensevoice_openai": "sensevoice_openai",
+    "qwen3_asr": "qwen3_asr_openai",
+    "qwen3_asr_openai": "qwen3_asr_openai",
     "vosk": "vosk",
 }
 

@@ -167,3 +167,13 @@ def test_tts_settings_accepts_edge_tts_provider_alias() -> None:
 
     assert settings.enabled is True
     assert settings.provider == "edge_tts"
+
+
+def test_capability_settings_accepts_voice_route_aliases() -> None:
+    from guanghe_companion.capability_settings import ASRSettings, TTSSettings
+
+    assert TTSSettings.from_dict({"provider": "edge"}).provider == "edge_tts"
+    assert TTSSettings.from_dict({"provider": "qwen3_tts"}).provider == "http_qwen3tts"
+    assert ASRSettings.from_dict({"provider": "funasr"}).provider == "funasr_openai"
+    assert ASRSettings.from_dict({"provider": "sensevoice"}).provider == "sensevoice_openai"
+    assert ASRSettings.from_dict({"provider": "qwen3_asr"}).provider == "qwen3_asr_openai"
