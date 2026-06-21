@@ -89,6 +89,8 @@ from .web_search import WebSearchService
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
 DESKTOP_DOCK_THRESHOLD_PX = 32
 CONTROL_PANEL_SPRITE_MIN_HEIGHT = 300
+CHARACTER_PROFILE_PREVIEW_HEIGHT = 320
+CHARACTER_PROFILE_PREVIEW_SIZE = QSize(280, 300)
 DESKTOP_SPRITE_WIDTH = 192
 DESKTOP_SPRITE_HEIGHT = 208
 DESKTOP_WINDOW_WIDTH = 260
@@ -789,7 +791,7 @@ class CompanionWindow(QMainWindow):
         detail_layout = QVBoxLayout(detail_box)
         detail_layout.setSpacing(10)
         self.character_preview_label = QLabel()
-        self.character_preview_label.setFixedHeight(148)
+        self.character_preview_label.setMinimumHeight(CHARACTER_PROFILE_PREVIEW_HEIGHT)
         self.character_preview_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.character_preview_label.setStyleSheet(
             "QLabel { border: 1px solid #cbdde5; border-radius: 8px; background: #f7fbfd; }"
@@ -878,8 +880,7 @@ class CompanionWindow(QMainWindow):
             preview = QPixmap(str(pack.preview_path))
             self.character_preview_label.setPixmap(
                 preview.scaled(
-                    220,
-                    132,
+                    CHARACTER_PROFILE_PREVIEW_SIZE,
                     Qt.AspectRatioMode.KeepAspectRatio,
                     Qt.TransformationMode.SmoothTransformation,
                 )
