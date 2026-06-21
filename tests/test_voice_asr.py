@@ -163,3 +163,22 @@ def test_vosk_transcriber_returns_clear_missing_model_error(tmp_path) -> None:
 
     assert result.ok is False
     assert "Vosk 模型路径不存在" in result.message
+
+
+def test_default_asr_transcriber_routes_named_openai_compatible_services() -> None:
+    from guanghe_companion.voice_asr import (
+        OPENAI_COMPATIBLE_ASR_PROVIDERS,
+        OpenAICompatibleASRTranscriber,
+        default_asr_transcriber,
+    )
+
+    assert OPENAI_COMPATIBLE_ASR_PROVIDERS == {
+        "openai_compatible",
+        "funasr_openai",
+        "sensevoice_openai",
+        "qwen3_asr_openai",
+    }
+    assert isinstance(default_asr_transcriber("openai_compatible"), OpenAICompatibleASRTranscriber)
+    assert isinstance(default_asr_transcriber("funasr_openai"), OpenAICompatibleASRTranscriber)
+    assert isinstance(default_asr_transcriber("sensevoice_openai"), OpenAICompatibleASRTranscriber)
+    assert isinstance(default_asr_transcriber("qwen3_asr_openai"), OpenAICompatibleASRTranscriber)

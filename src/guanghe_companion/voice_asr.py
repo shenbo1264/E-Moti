@@ -14,6 +14,15 @@ from typing import Protocol
 from .capability_settings import ASRSettings
 from .dialogue import MAX_DIALOGUE_INPUT_LENGTH
 
+OPENAI_COMPATIBLE_ASR_PROVIDERS = frozenset(
+    {
+        "openai_compatible",
+        "funasr_openai",
+        "sensevoice_openai",
+        "qwen3_asr_openai",
+    }
+)
+
 
 @dataclass(frozen=True, slots=True)
 class ASRResult:
@@ -215,6 +224,8 @@ class VoskASRTranscriber:
 def default_asr_transcriber(provider: str) -> ASRTranscriber:
     if provider == "vosk":
         return VoskASRTranscriber()
+    if provider in OPENAI_COMPATIBLE_ASR_PROVIDERS:
+        return OpenAICompatibleASRTranscriber()
     return OpenAICompatibleASRTranscriber()
 
 
