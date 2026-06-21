@@ -79,7 +79,7 @@ def test_character_pack_role_label_distinguishes_default_candidate_ugc_and_fanwo
             source="user",
             distribution_boundary="private_local_fanwork",
         )
-    ) == "Private fanwork"
+    ) == "Fanwork UGC"
 
 
 def test_character_pack_readiness_text_reports_qa_files(tmp_path: Path) -> None:
@@ -134,7 +134,7 @@ def test_character_pack_list_item_text_includes_role_label() -> None:
     assert text == "Xingxi Pixel Pet | Default official | Pixel desktop companion candidate"
 
 
-def test_character_pack_distribution_warning_marks_private_fanwork_not_for_distribution() -> None:
+def test_character_pack_distribution_warning_marks_private_fanwork_as_noncommercial_fanwork() -> None:
     pack = _summary_with(
         character_id="fanwork_pet",
         source="user",
@@ -144,13 +144,13 @@ def test_character_pack_distribution_warning_marks_private_fanwork_not_for_distr
     warning = character_pack_distribution_warning(pack)
     text = character_pack_distribution_text(pack)
 
-    assert "Private fanwork" in warning
-    assert "do not distribute" in warning.lower()
+    assert "Non-commercial fanwork" in warning
+    assert "source note" in warning.lower()
     assert warning in text
 
 
-def test_character_pack_import_review_text_warns_about_rights() -> None:
+def test_character_pack_import_review_text_keeps_source_note_guidance() -> None:
     text = character_pack_import_review_text(_summary())
 
     assert "Import character pack: xingxi_pixel_pet" in text
-    assert "Only import packs you have rights to use and distribute." in text
+    assert "Keep provenance and source notes with shared fanwork packs." in text

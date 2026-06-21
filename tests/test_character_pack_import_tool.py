@@ -170,8 +170,8 @@ def test_import_character_pack_tool_reports_private_fanwork_distribution_warning
     assert result.returncode == 0
     assert payload["ok"] is True
     assert payload["distribution_boundary"] == "private_local_fanwork"
-    assert "Private fanwork" in payload["distribution_warning"]
-    assert "must not be redistributed" in payload["distribution_warning"]
+    assert "Non-commercial fanwork" in payload["distribution_warning"]
+    assert "source note" in payload["distribution_warning"].lower()
 
 
 def test_import_character_pack_tool_rejects_generated_draft(tmp_path):

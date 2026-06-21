@@ -16,7 +16,7 @@ def character_pack_role_label(
     if pack.character_id == default_character_id and pack.source == "builtin":
         return "Default official"
     if pack.distribution_boundary == "private_local_fanwork":
-        return "Private fanwork"
+        return "Fanwork UGC"
     if pack.source in {"user", "import_source"} or pack.distribution_boundary == "local_ugc_only":
         return "Local UGC"
     if pack.source == "builtin":
@@ -65,7 +65,7 @@ def character_pack_import_review_text(pack: CharacterPackSummary) -> str:
             f"Import character pack: {pack.character_id}",
             f"{pack.name}\n{pack.title}",
             character_pack_distribution_text(pack),
-            "Only import packs you have rights to use and distribute.",
+            "Keep provenance and source notes with shared fanwork packs.",
         )
     )
 

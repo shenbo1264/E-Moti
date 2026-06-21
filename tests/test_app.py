@@ -851,7 +851,7 @@ def test_character_library_import_confirmation_shows_distribution_metadata(monke
     app.processEvents()
 
 
-def test_character_library_import_confirmation_warns_private_fanwork_not_for_distribution(monkeypatch, tmp_path):
+def test_character_library_import_confirmation_marks_fanwork_ugc_with_source_note(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"
     write_ui_character_pack(assets_root, "xingxi_pixel_pet", name="Xingxi", title="Desktop companion")
@@ -896,8 +896,8 @@ def test_character_library_import_confirmation_warns_private_fanwork_not_for_dis
     window.character_import_button.click()
     app.processEvents()
 
-    assert "Private fanwork" in confirmations[0]
-    assert "do not distribute" in confirmations[0].lower()
+    assert "Fanwork UGC" in confirmations[0]
+    assert "Keep provenance and source notes with shared fanwork packs." in confirmations[0]
     assert (tmp_path / "user-data" / "character_packs" / "private_fanwork_character").is_dir()
 
     window.close()

@@ -27,15 +27,15 @@ Use one of:
 - `local_ugc_only`
 - `private_local_fanwork`
 
-Use `private_local_fanwork` for Ikaros or Nairong experiments unless rights are cleared.
+Use `private_local_fanwork` for Ikaros, Nairong, or other fanwork packs when the pack intentionally follows a known third-party character.
 
 ## Local UGC Import Boundary
 
-- `shareable_after_review`: original or rights-cleared work that may be published after QA, provenance, license, and rights review.
-- `local_ugc_only`: user-created local pack; keep it local and do not bundle it without rights review.
-- `private_local_fanwork`: local fanwork or third-party-inspired pack; do not redistribute, publish, or bundle it without explicit rights.
+- `shareable_after_review`: original, remix, or fanwork pack that has basic QA, provenance/source notes, and runtime validation.
+- `local_ugc_only`: user-created pack; can still be shared in the non-commercial demo route after basic QA.
+- `private_local_fanwork`: fanwork or third-party-inspired pack; can be published for the non-commercial demo route when source notes and QA evidence are included.
 
-Importing a pack copies it into the local user character-pack folder only. Import confirmation and JSON reports surface the distribution warning, but they do not turn a local or fanwork pack into a publishable asset.
+Importing a pack copies it into the local user character-pack folder. Import confirmation and JSON reports surface the pack's source-note status, but they do not block local UGC or fanwork packs from later export.
 
 ## Validation Commands
 
@@ -48,4 +48,4 @@ python -m pytest tests\test_character_registry.py tests\test_character_session.p
 
 ## Import Rule
 
-Only import complete packs that pass validation. Do not copy ignored draft folders directly into `assets/companion/`.
+Only import complete packs that pass validation. Do not copy ignored draft folders directly into `assets/companion/`; export a validated pack folder with provenance/source notes instead.

@@ -199,7 +199,7 @@ def test_validate_character_pack_rejects_invalid_distribution_boundary(tmp_path)
     assert "character.json.distribution_boundary invalid" in report.errors
 
 
-def test_validate_character_pack_rejects_public_third_party_voice_profile(tmp_path):
+def test_validate_character_pack_accepts_public_noncommercial_third_party_voice_profile(tmp_path):
     pack_dir = _write_minimal_pack(
         tmp_path,
         tts_profile={
@@ -212,8 +212,7 @@ def test_validate_character_pack_rejects_public_third_party_voice_profile(tmp_pa
 
     report = validate_character_pack_dir(pack_dir)
 
-    assert not report.ok
-    assert any("third-party or cloned voice profiles must be local_only or blocked" in error for error in report.errors)
+    assert report.ok
 
 
 def test_validate_character_pack_rejects_unsafe_voice_reference_audio_path(tmp_path):
@@ -243,7 +242,7 @@ def test_validate_character_pack_accepts_private_local_fanwork_voice_profile(tmp
             "profile_id": "local_private_clone",
             "voice_source_type": "local_trained_clone",
             "training_status": "trained_local",
-            "distribution_policy": "local_only",
+            "distribution_policy": "public_ok",
             "reference_audio": ["voice/reference.wav"],
         },
     )

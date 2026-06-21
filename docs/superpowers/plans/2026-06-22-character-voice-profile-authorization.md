@@ -1,10 +1,10 @@
-# Character Voice Profile Authorization Implementation Plan
+# Character Voice Profile Implementation Plan
 
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
-**Goal:** Implement per-character voice profiles with explicit authorization boundaries for designed, licensed, local-generated, and locally trained voice routes.
+**Goal:** Implement per-character voice profiles with a unified non-commercial fanwork route for designed, generated, third-party-reference, and locally trained voice routes.
 
-**Architecture:** Character packs own a typed voice-profile contract, while the capability runtime only converts that profile into presentational `TTSSettings`. The registry validates licensing and path boundaries before a pack is listed, and TTS providers receive only sanitized runtime fields such as provider, voice, model variant, language, and Qwen style instruction.
+**Architecture:** Character packs own a typed voice-profile contract, while the capability runtime only converts that profile into presentational `TTSSettings`. The registry validates schema and safe local paths before a pack is listed, and TTS providers receive only sanitized runtime fields such as provider, voice, model variant, language, and Qwen style instruction.
 
 **Tech Stack:** PySide6 app, existing character pack registry, dataclass settings, local HTTP Qwen3-TTS route, pytest.
 
@@ -12,13 +12,13 @@
 
 ## Scope
 
-This package implements the infrastructure required for Xingxi and future local UGC characters to have distinct voice profiles. It does not bundle unlicensed Ikaros or Nairong cloned voices into the public repository; those packs must remain local-only until rights are cleared.
+This package implements the infrastructure required for Xingxi and future UGC/fanwork characters to have distinct voice profiles. The current route is a non-commercial course/demo workflow, so third-party-reference and locally trained fanwork profiles are allowed as publishable metadata when the pack keeps provenance/source notes and passes runtime validation.
 
 ## File Structure
 
 - Create `src/guanghe_companion/character_voice_profile.py`: typed profile parser, runtime projection, and authorization validation helpers.
 - Modify `src/guanghe_companion/character_pack.py`: store `CharacterVoiceProfile` instead of a loose dict.
-- Modify `src/guanghe_companion/character_registry.py`: validate `character.json.tts_profile` distribution and reference-audio paths.
+- Modify `src/guanghe_companion/character_registry.py`: validate `character.json.tts_profile` schema and reference-audio paths.
 - Modify `src/guanghe_companion/capability_settings.py`: add sanitized `profile_id` and `instruct` fields to `TTSSettings`.
 - Modify `src/guanghe_companion/capability_runtime.py`: overlay character voice profile fields onto global TTS settings without touching growth state.
 - Modify `src/guanghe_companion/voice_tts.py`: pass Qwen voice-profile metadata and style instruction through the HTTP payload.
@@ -53,7 +53,7 @@ This package implements the infrastructure required for Xingxi and future local 
 Allowed `voice_source_type` values:
 
 - `original_design`: original character voice direction designed from prompt/style only.
-- `licensed_voice`: trained or referenced voice with explicit rights.
+- `licensed_voice`: trained or referenced voice with an explicit source note.
 - `local_generated`: locally generated candidate with no third-party imitation claim.
 - `local_trained_clone`: clone or trained tone from local reference samples.
 - `third_party_reference`: fanwork or third-party character reference.
@@ -74,9 +74,9 @@ Allowed `distribution_policy` values:
 
 Rules:
 
-- `local_trained_clone` and `third_party_reference` must not use `public_ok`.
-- `private_local_fanwork` packs may reuse public-safe original or licensed voice routes, but cloned or third-party-reference voice profiles must use `local_only` or `blocked`.
-- `shareable_after_review` packs may use `public_ok` only when voice source is `original_design`, `licensed_voice`, or `local_generated`.
+- `local_trained_clone` and `third_party_reference` may use `public_ok` in the non-commercial course/demo route.
+- `distribution_policy` is metadata for reviewers and packaging, not a hard blocker.
+- Registry validation does not reject fanwork voice profiles merely because they reference third-party characters or trained local samples.
 - `reference_audio` paths must be relative files under `voice/` and must not be absolute or contain `..`.
 - Runtime projection is presentational only; it must not mutate state, memory, inventory, relationships, goals, or saves.
 
@@ -143,7 +143,7 @@ def test_voice_profile_parses_qwen_designed_profile():
     assert profile.to_runtime_dict()["instruct"] == "gentle companion tone"
 ```
 
-Also test unsafe reference-audio paths, public third-party clone rejection, and private local fanwork acceptance.
+Also test unsafe reference-audio paths, public third-party clone acceptance, and private local fanwork acceptance.
 
 - [ ] **Step 2: Verify tests fail**
 
@@ -196,9 +196,9 @@ Expected: PASS.
 
 Add tests that:
 
-- reject `third_party_reference` with `distribution_policy: public_ok`;
+- accept `third_party_reference` with `distribution_policy: public_ok`;
 - reject `reference_audio: ["../sample.wav"]`;
-- accept `private_local_fanwork` plus `local_trained_clone` plus `distribution_policy: local_only`.
+- accept `private_local_fanwork` plus `local_trained_clone` plus `distribution_policy: public_ok`.
 
 - [ ] **Step 2: Implement validation call**
 

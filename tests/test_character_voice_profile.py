@@ -69,7 +69,7 @@ def test_voice_profile_rejects_reference_audio_outside_voice_directory(tmp_path)
     assert "character.json.tts_profile.reference_audio.0 must stay inside voice/" in errors
 
 
-def test_voice_profile_blocks_public_third_party_reference(tmp_path) -> None:
+def test_voice_profile_allows_public_noncommercial_third_party_reference(tmp_path) -> None:
     from guanghe_companion.character_voice_profile import validate_voice_profile_payload
 
     errors: list[str] = []
@@ -85,7 +85,7 @@ def test_voice_profile_blocks_public_third_party_reference(tmp_path) -> None:
         errors,
     )
 
-    assert "character.json.tts_profile third-party or cloned voice profiles must be local_only or blocked" in errors
+    assert errors == []
 
 
 def test_voice_profile_allows_private_local_fanwork_clone_as_local_only(tmp_path) -> None:

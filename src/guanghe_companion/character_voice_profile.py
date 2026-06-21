@@ -22,10 +22,6 @@ ALLOWED_TRAINING_STATUSES = frozenset(
     {"not_trained", "designed", "candidate", "trained_local", "blocked_rights"}
 )
 ALLOWED_DISTRIBUTION_POLICIES = frozenset({"public_ok", "local_only", "blocked"})
-PUBLIC_DISTRIBUTABLE_VOICE_SOURCES = frozenset(
-    {"original_design", "licensed_voice", "local_generated"}
-)
-LOCAL_ONLY_VOICE_SOURCES = frozenset({"local_trained_clone", "third_party_reference"})
 VOICE_REFERENCE_SUFFIXES = frozenset({".wav", ".mp3", ".flac", ".ogg", ".m4a"})
 
 
@@ -151,19 +147,7 @@ def validate_voice_profile_payload(
         errors=errors,
     )
 
-    profile = CharacterVoiceProfile.from_payload(payload)
-    if (
-        profile.voice_source_type in LOCAL_ONLY_VOICE_SOURCES
-        and profile.distribution_policy == "public_ok"
-    ):
-        errors.append(
-            "character.json.tts_profile third-party or cloned voice profiles must be local_only or blocked"
-        )
-    if (
-        profile.distribution_policy == "public_ok"
-        and profile.voice_source_type not in PUBLIC_DISTRIBUTABLE_VOICE_SOURCES
-    ):
-        errors.append("character.json.tts_profile public voice source is not distributable")
+    _ = distribution_boundary
     _validate_reference_audio(root, payload.get("reference_audio"), errors)
 
 

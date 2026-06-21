@@ -1,4 +1,4 @@
-# Character Pack Distribution Policy
+# Character Pack Sharing Policy
 
 ## Pack Classes
 
@@ -12,21 +12,21 @@
 
 ### Shareable After Review
 
-A pack may use `distribution_boundary: "shareable_after_review"` only when provenance, license, manual QA, renderer assets, and validation reports are present.
+A pack may use `distribution_boundary: "shareable_after_review"` when it has provenance notes, basic QA, renderer assets, and a usable runtime manifest.
 
 ### Local UGC Only
 
-`local_ugc_only` packs may be imported locally but are not assumed to be safe for redistribution.
+`local_ugc_only` marks a user-created pack. In the current non-commercial demo route it can still be exported or shared after basic QA, but it should carry provenance/source notes so reviewers know what it is based on.
 
 ### Private Local Fanwork
 
-`private_local_fanwork` packs are for private workflow testing. They must not be committed into `assets/companion/`.
+`private_local_fanwork` marks a fanwork or third-party-inspired pack. In the current non-commercial demo route it is not blocked from public upload; keep a source note, generation notes, and QA evidence with the pack.
 
 ## Current Fanwork Representatives
 
-- Ikaros: local UGC/fanwork workflow representative only; private preview package only unless rights are cleared.
-- Nairong: local UGC/fanwork workflow representative only; private preview package only unless rights are cleared.
+- Ikaros: UGC/fanwork workflow representative for character switching, asset generation, and voice-profile testing.
+- Nairong: UGC/fanwork workflow representative for pet-style character switching, asset generation, and voice-profile testing.
 
 ## Release Rule
 
-No third-party character pack enters bundled assets without explicit rights review and an updated release checklist.
+For this non-commercial course demo, third-party/fanwork packs may be committed or exported when they pass the same runtime validation, basic QA, and provenance/source-note checks as original packs.
