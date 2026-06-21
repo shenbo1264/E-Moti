@@ -110,7 +110,7 @@ class HttpQwen3TTSProvider:
         endpoint = _tts_endpoint(settings.api_url)
         payload = _qwen3tts_payload(text, settings)
         try:
-            audio = self._post(endpoint, payload, 30)
+            audio = self._post(endpoint, payload, 180)
             if not audio:
                 return TTSResult(False, "HTTP TTS 未返回音频")
             self._cache_dir.mkdir(parents=True, exist_ok=True)
@@ -248,9 +248,9 @@ def _qwen3tts_payload(text: str, settings: TTSSettings) -> dict[str, object]:
 
 
 def _model_size_label(model_variant: str) -> str:
-    if model_variant == "qwen3tts_0.7b":
-        return "0.7B"
-    return "1.6B"
+    if model_variant == "qwen3tts_1.7b_customvoice":
+        return "1.7B-CustomVoice"
+    return "0.6B-CustomVoice"
 
 
 def _tts_endpoint(api_url: str) -> str:

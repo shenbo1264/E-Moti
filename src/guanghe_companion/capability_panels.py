@@ -274,7 +274,7 @@ class VoiceSettingsPanel(QGroupBox):
         self.tts_api_url_input = QLineEdit()
         self.tts_api_url_input.setPlaceholderText("http://127.0.0.1:9880/")
         self.tts_model_variant_combo = QComboBox()
-        self.tts_model_variant_combo.addItems(["qwen3tts_1.6b", "qwen3tts_0.7b"])
+        self.tts_model_variant_combo.addItems(["qwen3tts_0.6b_customvoice", "qwen3tts_1.7b_customvoice"])
         self.tts_auto_speak_check = QCheckBox("自动朗读星汐回复")
         self.tts_test_button = QPushButton("测试朗读")
         self.tts_test_button.clicked.connect(self.ttsTestRequested)

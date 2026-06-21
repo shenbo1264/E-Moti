@@ -103,7 +103,7 @@ def test_voice_smoke_tool_writes_asr_report_from_audio_file(tmp_path, monkeypatc
             "--asr-provider",
             "funasr_openai",
             "--asr-base-url",
-            "http://127.0.0.1:10095/v1",
+            "http://127.0.0.1:8899/v1",
             "--asr-api-key",
             "local",
             "--asr-audio",

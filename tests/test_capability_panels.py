@@ -62,7 +62,7 @@ def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app)
 
     panel.tts_enabled_check.setChecked(True)
     panel.asr_enabled_check.setChecked(True)
-    panel.tts_model_variant_combo.setCurrentText("qwen3tts_0.7b")
+    panel.tts_model_variant_combo.setCurrentText("qwen3tts_1.7b_customvoice")
     panel.asr_model_input.setText("whisper-large")
 
     settings = panel.collect_settings(base)
@@ -70,7 +70,7 @@ def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app)
     assert panel.tts_test_button.isEnabled() is True
     assert panel.asr_start_button.isEnabled() is True
     assert settings.tts.enabled is True
-    assert settings.tts.model_variant == "qwen3tts_0.7b"
+    assert settings.tts.model_variant == "qwen3tts_1.7b_customvoice"
     assert settings.tts.language == "ja"
     assert settings.tts.voice == "test-voice"
     assert settings.tts.rate == 3
@@ -90,12 +90,12 @@ def test_voice_settings_panel_uses_catalog_provider_choices(qt_app):
     tts_values = [panel.tts_provider_combo.itemText(index) for index in range(panel.tts_provider_combo.count())]
     asr_values = [panel.asr_provider_combo.itemText(index) for index in range(panel.asr_provider_combo.count())]
 
-    assert tts_values == ["edge_tts", "http_qwen3tts", "windows_sapi"]
+    assert tts_values == ["http_qwen3tts", "edge_tts", "windows_sapi"]
     assert asr_values == [
-        "openai_compatible",
-        "funasr_openai",
         "sensevoice_openai",
+        "funasr_openai",
         "qwen3_asr_openai",
+        "openai_compatible",
         "vosk",
     ]
 

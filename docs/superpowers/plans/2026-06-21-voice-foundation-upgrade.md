@@ -39,11 +39,21 @@ Existing implementation facts:
 
 Route decision:
 
-- Preview default: `edge_tts`, because it is already packaged and live-smoked for three roles.
-- Formal TTS route: Qwen3-TTS via HTTP/local-service adapter, not in-process model loading.
+- Formal TTS default: `http_qwen3tts`, backed by a local Qwen3-TTS service on `http://127.0.0.1:9880/`.
+- Preview/fallback TTS route: `edge_tts` remains selectable, but it is not the default formal route.
 - Voice cloning research route: GPT-SoVITS or CosyVoice behind an explicit local-service preset; do not distribute cloned fanwork voices.
-- ASR first implementation route: FunASR/SenseVoice through the existing OpenAI-compatible transcription adapter.
+- Formal ASR default: `sensevoice_openai`, backed by a local FunASR/SenseVoice OpenAI-compatible service on `http://127.0.0.1:8899/v1`.
 - ASR high-quality follow-up route: Qwen3-ASR through the same adapter shape when a local server or gateway is available.
+
+2026-06-21 hardening update:
+
+- Do not treat Edge TTS or Windows SAPI as the default voice route.
+- Do not call ASR complete unless a local SenseVoice/FunASR or Qwen3-ASR service has been started and exercised through `tools/voice_capability_smoke.py`.
+- Local model service launchers live under `tools/voice_services/`; they create ignored `.voice-services/` environments and do not vendor model weights into the repository.
+- The deployable FunASR entry point in the current Python package is `funasr-server`; E-Moti should request the `sensevoice` model against `http://127.0.0.1:8899/v1`.
+- The deployable Qwen3-TTS default model is `Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice` with default speaker `Vivian`; E-Moti language code `zh` is normalized to Qwen language `chinese` by the local service wrapper.
+- Live local smoke on 2026-06-21: Qwen3-TTS `/health` returned ok and `tools/voice_capability_smoke.py --tts-provider http_qwen3tts --skip-playback` generated a WAV; SenseVoice/FunASR opened `/docs` and `tools/voice_capability_smoke.py --asr-provider sensevoice_openai` returned recognized Chinese text from a local WAV sample.
+- First local runs download model weights and can be slow; generated reports and model/service environments stay under ignored local paths.
 
 ## Decoupling Principles
 
@@ -59,8 +69,8 @@ Route decision:
 
 - Create: `src/guanghe_companion/voice_provider_catalog.py`
   - Provider option dataclasses.
-  - TTS provider list: `edge_tts`, `http_qwen3tts`, `windows_sapi`.
-  - ASR provider list: `openai_compatible`, `funasr_openai`, `sensevoice_openai`, `qwen3_asr_openai`, `vosk`.
+  - TTS provider list: `http_qwen3tts`, `edge_tts`, `windows_sapi`.
+  - ASR provider list: `sensevoice_openai`, `funasr_openai`, `qwen3_asr_openai`, `openai_compatible`, `vosk`.
   - Helper functions for combo values, default models, default local endpoints, and public route notes.
 - Modify: `src/guanghe_companion/capability_settings.py`
   - Accept new provider aliases while preserving a stable canonical provider id.
@@ -74,6 +84,12 @@ Route decision:
 - Modify: `src/guanghe_companion/voice_asr.py`
   - Repair Chinese result messages.
   - Route `funasr_openai`, `sensevoice_openai`, and `qwen3_asr_openai` through `OpenAICompatibleASRTranscriber`.
+- Create: `tools/voice_services/qwen3_tts_local_server.py`
+  - Serves local Qwen3-TTS through E-Moti's `/tts` HTTP contract.
+- Create: `tools/voice_services/start_qwen3_tts_server.ps1`
+  - Starts or installs the local Qwen3-TTS service on port `9880`.
+- Create: `tools/voice_services/start_sensevoice_asr_server.ps1`
+  - Starts or installs the local FunASR/SenseVoice OpenAI-compatible ASR server on port `8899`.
 - Create: `tools/voice_capability_smoke.py`
   - A CLI smoke tool that can test TTS synthesis without playback and ASR transcription from a WAV file.
   - Writes JSON report under ignored `artifacts/voice-smoke/`.
@@ -107,24 +123,24 @@ from __future__ import annotations
 def test_voice_provider_catalog_exposes_formal_and_preview_tts_routes() -> None:
     from guanghe_companion.voice_provider_catalog import tts_provider_ids, tts_provider_option
 
-    assert tts_provider_ids() == ("edge_tts", "http_qwen3tts", "windows_sapi")
+    assert tts_provider_ids() == ("http_qwen3tts", "edge_tts", "windows_sapi")
     assert tts_provider_option("edge_tts").label == "Edge Neural TTS"
     assert tts_provider_option("http_qwen3tts").recommended_use == "formal_character_voice"
-    assert tts_provider_option("http_qwen3tts").default_model == "qwen3tts_1.6b"
+    assert tts_provider_option("http_qwen3tts").default_model == "qwen3tts_0.6b_customvoice"
 
 
 def test_voice_provider_catalog_exposes_openai_compatible_asr_routes() -> None:
     from guanghe_companion.voice_provider_catalog import asr_provider_ids, asr_provider_option
 
     assert asr_provider_ids() == (
-        "openai_compatible",
-        "funasr_openai",
         "sensevoice_openai",
+        "funasr_openai",
         "qwen3_asr_openai",
+        "openai_compatible",
         "vosk",
     )
     assert asr_provider_option("funasr_openai").transcriber_family == "openai_compatible"
-    assert asr_provider_option("sensevoice_openai").default_model == "iic/SenseVoiceSmall"
+    assert asr_provider_option("sensevoice_openai").default_model == "sensevoice"
     assert asr_provider_option("qwen3_asr_openai").recommended_use == "high_quality_asr"
 ```
 
@@ -198,7 +214,7 @@ TTS_PROVIDER_OPTIONS: tuple[TTSProviderOption, ...] = (
         provider_id="http_qwen3tts",
         label="Qwen3-TTS HTTP",
         recommended_use="formal_character_voice",
-        default_model="qwen3tts_1.6b",
+        default_model="qwen3tts_0.6b_customvoice",
         default_api_url="http://127.0.0.1:9880/",
         route_note="Formal route for original character voice through a local HTTP service.",
     ),
@@ -228,7 +244,7 @@ ASR_PROVIDER_OPTIONS: tuple[ASRProviderOption, ...] = (
         transcriber_family="openai_compatible",
         recommended_use="local_asr_first",
         default_model="paraformer-zh",
-        default_base_url="http://127.0.0.1:10095/v1",
+        default_base_url="http://127.0.0.1:8899/v1",
         route_note="Low-coupling first local ASR route; reuse existing multipart transcription adapter.",
     ),
     ASRProviderOption(
@@ -236,8 +252,8 @@ ASR_PROVIDER_OPTIONS: tuple[ASRProviderOption, ...] = (
         label="SenseVoice OpenAI-compatible",
         transcriber_family="openai_compatible",
         recommended_use="emotion_aware_asr",
-        default_model="iic/SenseVoiceSmall",
-        default_base_url="http://127.0.0.1:10095/v1",
+        default_model="sensevoice",
+        default_base_url="http://127.0.0.1:8899/v1",
         route_note="ASR route with emotion/language/event potential; transcript still enters only as player text.",
     ),
     ASRProviderOption(
@@ -638,7 +654,7 @@ def test_voice_smoke_tool_writes_asr_report_from_audio_file(tmp_path, monkeypatc
         "--asr-provider",
         "funasr_openai",
         "--asr-base-url",
-        "http://127.0.0.1:10095/v1",
+        "http://127.0.0.1:8899/v1",
         "--asr-api-key",
         "local",
         "--asr-audio",
@@ -687,7 +703,7 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--tts-text", default="")
     parser.add_argument("--tts-voice", default="")
     parser.add_argument("--tts-api-url", default="")
-    parser.add_argument("--tts-model-variant", default="qwen3tts_1.6b")
+    parser.add_argument("--tts-model-variant", default="qwen3tts_0.6b_customvoice")
     parser.add_argument("--asr-provider", default="")
     parser.add_argument("--asr-model", default="whisper-1")
     parser.add_argument("--asr-base-url", default="")
@@ -821,7 +837,7 @@ Expected:
 If a local FunASR/SenseVoice service exists:
 
 ```powershell
-python tools\voice_capability_smoke.py --asr-provider sensevoice_openai --asr-model iic/SenseVoiceSmall --asr-base-url http://127.0.0.1:10095/v1 --asr-api-key local --asr-audio artifacts\voice-smoke\sample.wav --report artifacts\voice-smoke\sensevoice-live.json
+python tools\voice_capability_smoke.py --asr-provider sensevoice_openai --asr-model sensevoice --asr-base-url http://127.0.0.1:8899/v1 --asr-api-key local --asr-audio artifacts\voice-smoke\sample.wav --report artifacts\voice-smoke\sensevoice-live.json
 python -m json.tool artifacts\voice-smoke\sensevoice-live.json
 ```
 

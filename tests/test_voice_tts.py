@@ -77,7 +77,7 @@ def test_http_qwen3tts_provider_posts_model_variant_and_writes_audio(tmp_path) -
             api_url="http://127.0.0.1:9880/",
             language="zh",
             voice="xingxi",
-            model_variant="qwen3tts_0.7b",
+            model_variant="qwen3tts_0.6b_customvoice",
         ),
     )
 
@@ -86,9 +86,9 @@ def test_http_qwen3tts_provider_posts_model_variant_and_writes_audio(tmp_path) -
     assert requests[0][1]["text"] == "测试文本"
     assert requests[0][1]["language"] == "zh"
     assert requests[0][1]["voice"] == "xingxi"
-    assert requests[0][1]["model"] == "qwen3tts_0.7b"
-    assert requests[0][1]["model_size"] == "0.7B"
-    assert requests[0][2] == 30
+    assert requests[0][1]["model"] == "qwen3tts_0.6b_customvoice"
+    assert requests[0][1]["model_size"] == "0.6B-CustomVoice"
+    assert requests[0][2] == 180
     assert played
     assert (tmp_path / "qwen3tts_latest.wav").read_bytes() == b"RIFFdemo-wave-bytes"
 

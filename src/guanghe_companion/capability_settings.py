@@ -7,9 +7,13 @@ from typing import Any, Mapping
 
 DEFAULT_SCREEN_OBSERVATION_PROVIDER = "openai_compatible"
 DEFAULT_WEB_SEARCH_ENGINE = "duckduckgo"
-DEFAULT_TTS_PROVIDER = "windows_sapi"
-DEFAULT_TTS_MODEL_VARIANT = "qwen3tts_1.6b"
-DEFAULT_ASR_PROVIDER = "openai_compatible"
+DEFAULT_TTS_PROVIDER = "http_qwen3tts"
+DEFAULT_TTS_API_URL = "http://127.0.0.1:9880/"
+DEFAULT_TTS_MODEL_VARIANT = "qwen3tts_0.6b_customvoice"
+DEFAULT_ASR_PROVIDER = "sensevoice_openai"
+DEFAULT_ASR_MODEL = "sensevoice"
+DEFAULT_ASR_BASE_URL = "http://127.0.0.1:8899/v1"
+DEFAULT_ASR_API_KEY = "local"
 
 SCREEN_OBSERVATION_PROVIDER_ALIASES = {
     "openai": "openai_compatible",
@@ -30,18 +34,30 @@ TTS_PROVIDER_ALIASES = {
     "qwen3_tts": "http_qwen3tts",
 }
 TTS_MODEL_VARIANT_ALIASES = {
-    "1.6b": "qwen3tts_1.6b",
-    "1_6b": "qwen3tts_1.6b",
-    "qwen3tts_1.6b": "qwen3tts_1.6b",
-    "qwen3tts_1_6b": "qwen3tts_1.6b",
-    "standard": "qwen3tts_1.6b",
-    "std": "qwen3tts_1.6b",
-    "0.7b": "qwen3tts_0.7b",
-    "0_7b": "qwen3tts_0.7b",
-    "qwen3tts_0.7b": "qwen3tts_0.7b",
-    "qwen3tts_0_7b": "qwen3tts_0.7b",
-    "low": "qwen3tts_0.7b",
-    "lite": "qwen3tts_0.7b",
+    "1.7b": "qwen3tts_1.7b_customvoice",
+    "1_7b": "qwen3tts_1.7b_customvoice",
+    "1.6b": "qwen3tts_1.7b_customvoice",
+    "1_6b": "qwen3tts_1.7b_customvoice",
+    "qwen3tts_1.7b": "qwen3tts_1.7b_customvoice",
+    "qwen3tts_1_7b": "qwen3tts_1.7b_customvoice",
+    "qwen3tts_1.7b_customvoice": "qwen3tts_1.7b_customvoice",
+    "qwen3tts_1_7b_customvoice": "qwen3tts_1.7b_customvoice",
+    "qwen3tts_1.6b": "qwen3tts_1.7b_customvoice",
+    "qwen3tts_1_6b": "qwen3tts_1.7b_customvoice",
+    "standard": "qwen3tts_1.7b_customvoice",
+    "std": "qwen3tts_1.7b_customvoice",
+    "0.6b": "qwen3tts_0.6b_customvoice",
+    "0_6b": "qwen3tts_0.6b_customvoice",
+    "0.7b": "qwen3tts_0.6b_customvoice",
+    "0_7b": "qwen3tts_0.6b_customvoice",
+    "qwen3tts_0.6b": "qwen3tts_0.6b_customvoice",
+    "qwen3tts_0_6b": "qwen3tts_0.6b_customvoice",
+    "qwen3tts_0.6b_customvoice": "qwen3tts_0.6b_customvoice",
+    "qwen3tts_0_6b_customvoice": "qwen3tts_0.6b_customvoice",
+    "qwen3tts_0.7b": "qwen3tts_0.6b_customvoice",
+    "qwen3tts_0_7b": "qwen3tts_0.6b_customvoice",
+    "low": "qwen3tts_0.6b_customvoice",
+    "lite": "qwen3tts_0.6b_customvoice",
 }
 ASR_PROVIDER_ALIASES = {
     "openai": "openai_compatible",
@@ -124,7 +140,7 @@ class WebSearchSettings:
 class TTSSettings:
     enabled: bool = False
     provider: str = DEFAULT_TTS_PROVIDER
-    api_url: str = "http://127.0.0.1:9880/"
+    api_url: str = DEFAULT_TTS_API_URL
     language: str = "zh"
     voice: str = ""
     model_variant: str = DEFAULT_TTS_MODEL_VARIANT
@@ -142,7 +158,7 @@ class TTSSettings:
                 default=DEFAULT_TTS_PROVIDER,
                 aliases=TTS_PROVIDER_ALIASES,
             ),
-            api_url=_clean_string(source.get("api_url"), max_length=240) or "http://127.0.0.1:9880/",
+            api_url=_clean_string(source.get("api_url"), max_length=240) or DEFAULT_TTS_API_URL,
             language=_clean_string(source.get("language"), max_length=16) or "zh",
             voice=_clean_string(source.get("voice"), max_length=120),
             model_variant=_clean_provider(
@@ -160,9 +176,9 @@ class TTSSettings:
 class ASRSettings:
     enabled: bool = False
     provider: str = DEFAULT_ASR_PROVIDER
-    model: str = "whisper-1"
-    base_url: str = ""
-    api_key: str = ""
+    model: str = DEFAULT_ASR_MODEL
+    base_url: str = DEFAULT_ASR_BASE_URL
+    api_key: str = DEFAULT_ASR_API_KEY
     language: str = "zh"
     vosk_model_path: str = ""
     auto_send: bool = False
@@ -171,16 +187,17 @@ class ASRSettings:
     @classmethod
     def from_dict(cls, data: object) -> "ASRSettings":
         source = _mapping(data)
+        provider = _clean_provider(
+            source.get("provider"),
+            default=DEFAULT_ASR_PROVIDER,
+            aliases=ASR_PROVIDER_ALIASES,
+        )
         return cls(
             enabled=_clean_bool(source.get("enabled")),
-            provider=_clean_provider(
-                source.get("provider"),
-                default=DEFAULT_ASR_PROVIDER,
-                aliases=ASR_PROVIDER_ALIASES,
-            ),
-            model=_clean_string(source.get("model"), max_length=120) or "whisper-1",
-            base_url=_clean_string(source.get("base_url"), max_length=240),
-            api_key=_clean_string(source.get("api_key"), max_length=400),
+            provider=provider,
+            model=_clean_string(source.get("model"), max_length=120) or _default_asr_model(provider),
+            base_url=_clean_string(source.get("base_url"), max_length=240) or _default_asr_base_url(provider),
+            api_key=_clean_string(source.get("api_key"), max_length=400) or _default_asr_api_key(provider),
             language=_clean_string(source.get("language"), max_length=16) or "zh",
             vosk_model_path=_clean_string(source.get("vosk_model_path"), max_length=500),
             auto_send=_clean_bool(source.get("auto_send")),
@@ -324,6 +341,32 @@ def _clean_string(value: object, *, max_length: int) -> str:
         return ""
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length]
+
+
+def _default_asr_model(provider: str) -> str:
+    if provider == "sensevoice_openai":
+        return "sensevoice"
+    if provider == "funasr_openai":
+        return "paraformer-zh"
+    if provider == "qwen3_asr_openai":
+        return "qwen3-asr"
+    if provider == "vosk":
+        return ""
+    return "whisper-1"
+
+
+def _default_asr_base_url(provider: str) -> str:
+    if provider in {"funasr_openai", "sensevoice_openai"}:
+        return "http://127.0.0.1:8899/v1"
+    if provider == "qwen3_asr_openai":
+        return "http://127.0.0.1:10096/v1"
+    return ""
+
+
+def _default_asr_api_key(provider: str) -> str:
+    if provider in {"funasr_openai", "sensevoice_openai", "qwen3_asr_openai"}:
+        return "local"
+    return ""
 
 
 def _clean_time_string(value: object, *, default: str) -> str:

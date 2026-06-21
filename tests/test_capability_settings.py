@@ -13,8 +13,13 @@ def test_default_capabilities_are_disabled() -> None:
     assert settings.web_search.enabled is False
     assert settings.tts.enabled is False
     assert settings.tts.auto_speak is False
-    assert settings.tts.model_variant == "qwen3tts_1.6b"
+    assert settings.tts.provider == "http_qwen3tts"
+    assert settings.tts.api_url == "http://127.0.0.1:9880/"
+    assert settings.tts.model_variant == "qwen3tts_0.6b_customvoice"
     assert settings.asr.enabled is False
+    assert settings.asr.provider == "sensevoice_openai"
+    assert settings.asr.model == "sensevoice"
+    assert settings.asr.base_url == "http://127.0.0.1:8899/v1"
     assert settings.asr.auto_send is False
     assert settings.proactive_companion.enabled is False
     assert settings.proactive_companion.interval_seconds == 900
@@ -82,7 +87,7 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
     assert settings.web_search.engine == "duckduckgo"
     assert settings.web_search.max_results == 5
     assert settings.tts.provider == "http_qwen3tts"
-    assert settings.tts.model_variant == "qwen3tts_0.7b"
+    assert settings.tts.model_variant == "qwen3tts_0.6b_customvoice"
     assert settings.tts.volume == 1.0
     assert settings.asr.provider == "openai_compatible"
     assert settings.asr.max_record_seconds == 30
@@ -136,7 +141,7 @@ def test_store_save_creates_parent_and_writes_normalized_json(tmp_path) -> None:
     assert saved.screen_observation.interval_seconds == 10
     assert reloaded.web_search.max_results == 1
     assert reloaded.tts.provider == "http_qwen3tts"
-    assert reloaded.tts.model_variant == "qwen3tts_1.6b"
+    assert reloaded.tts.model_variant == "qwen3tts_1.7b_customvoice"
     assert reloaded.tts.volume == 0.0
     assert reloaded.asr.max_record_seconds == 30
     assert reloaded.proactive_companion.interval_seconds == 60

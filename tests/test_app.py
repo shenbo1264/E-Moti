@@ -2995,7 +2995,7 @@ def test_voice_settings_page_marks_tts_and_asr_disabled(monkeypatch, tmp_path):
     assert "ASR 暂未启用" in window.voice_status_label.text()
     assert window.voice_tts_provider_label.text() == "tts_provider: disabled"
     assert window.voice_asr_provider_label.text() == "asr_provider: disabled"
-    assert window.tts_model_variant_combo.currentText() == "qwen3tts_1.6b"
+    assert window.tts_model_variant_combo.currentText() == "qwen3tts_0.6b_customvoice"
     assert not window.voice_tts_enable_button.isEnabled()
     assert not window.voice_asr_enable_button.isEnabled()
     assert window.controller.get_typed_snapshot().stats == before.stats
@@ -3051,7 +3051,7 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
     window.tts_manager = fake_tts
     window.tts_enabled_check.setChecked(True)
     window.tts_auto_speak_check.setChecked(True)
-    window.tts_model_variant_combo.setCurrentText("qwen3tts_0.7b")
+    window.tts_model_variant_combo.setCurrentText("qwen3tts_1.7b_customvoice")
     window.capability_save_button.click()
 
     snapshot = window.controller.perform_action("touch", include_ai_expression=True)
@@ -3062,7 +3062,7 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
 
     assert len(fake_tts.calls) == 1
     assert fake_tts.calls[0][0] == "LLM 连接成功"
-    assert fake_tts.calls[0][1].model_variant == "qwen3tts_0.7b"
+    assert fake_tts.calls[0][1].model_variant == "qwen3tts_1.7b_customvoice"
     assert fake_tts.calls[0][1].voice == "zh-CN-XiaoxiaoNeural"
     assert fake_tts.calls[0][1].rate == 1
     assert fake_tts.calls[0][1].volume == 0.92
