@@ -8,6 +8,7 @@ from typing import Iterable
 from PIL import Image, UnidentifiedImageError
 
 from .character_session import is_safe_character_id
+from .character_voice_profile import validate_voice_profile_payload
 from .runtime_paths import companion_assets_root, user_data_dir
 
 EXPECTED_FRAME_WIDTH = 192
@@ -218,6 +219,12 @@ def _validate_character_payload(root: Path, payload: dict[str, object], errors: 
         errors.append("character.json.motion_labels must be an object")
     _validate_distribution_boundary(payload, errors)
     _validate_renderer_payload(root, payload.get("renderer"), errors)
+    validate_voice_profile_payload(
+        root,
+        payload.get("tts_profile"),
+        _distribution_boundary_from_payload(payload),
+        errors,
+    )
 
 
 def _validate_distribution_boundary(payload: dict[str, object], errors: list[str]) -> None:

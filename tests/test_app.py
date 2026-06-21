@@ -3062,10 +3062,12 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
 
     assert len(fake_tts.calls) == 1
     assert fake_tts.calls[0][0] == "LLM 连接成功"
-    assert fake_tts.calls[0][1].model_variant == "qwen3tts_1.7b_customvoice"
-    assert fake_tts.calls[0][1].voice == "zh-CN-XiaoxiaoNeural"
+    assert fake_tts.calls[0][1].profile_id == "xingxi_pixel_pet_qwen_vivian_v1"
+    assert fake_tts.calls[0][1].model_variant == "qwen3tts_0.6b_customvoice"
+    assert fake_tts.calls[0][1].voice == "Vivian"
     assert fake_tts.calls[0][1].rate == 1
     assert fake_tts.calls[0][1].volume == 0.92
+    assert "Xingxi" in fake_tts.calls[0][1].instruct
     assert "STAT" not in fake_tts.calls[0][0]
     assert "web_search" not in fake_tts.calls[0][0]
     assert after.stats == before_tts.stats
@@ -3084,7 +3086,20 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
         "xingxi_pixel_pet",
         name="Xingxi",
         title="Desktop companion",
-        tts_profile={"voice": "Microsoft Huihui Desktop", "rate": 2, "volume": 0.8},
+        tts_profile={
+            "profile_id": "xingxi_qwen_vivian_v1",
+            "provider": "http-qwen3tts",
+            "api_url": "http://127.0.0.1:9880/",
+            "language": "zh",
+            "voice": "Vivian",
+            "model_variant": "0.6B",
+            "rate": 2,
+            "volume": 0.8,
+            "instruct": "gentle companion tone",
+            "voice_source_type": "original_design",
+            "training_status": "designed",
+            "distribution_policy": "public_ok",
+        },
     )
     patch_ui_character_assets(monkeypatch, assets_root)
 
@@ -3122,9 +3137,13 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
     window._handle_tts_test()
 
     assert fake_tts.calls
-    assert fake_tts.calls[0][1].voice == "Microsoft Huihui Desktop"
+    assert fake_tts.calls[0][1].profile_id == "xingxi_qwen_vivian_v1"
+    assert fake_tts.calls[0][1].provider == "http_qwen3tts"
+    assert fake_tts.calls[0][1].voice == "Vivian"
+    assert fake_tts.calls[0][1].model_variant == "qwen3tts_0.6b_customvoice"
     assert fake_tts.calls[0][1].rate == 2
     assert fake_tts.calls[0][1].volume == 0.8
+    assert fake_tts.calls[0][1].instruct == "gentle companion tone"
 
     window.close()
     app.processEvents()

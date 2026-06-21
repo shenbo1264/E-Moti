@@ -4,7 +4,12 @@ from collections.abc import Callable, Mapping
 from dataclasses import dataclass, replace
 from typing import TypeVar
 
-from .capability_settings import CapabilitySettings, TTSSettings
+from .capability_settings import (
+    CapabilitySettings,
+    TTSSettings,
+    TTS_MODEL_VARIANT_ALIASES,
+    TTS_PROVIDER_ALIASES,
+)
 from .dialogue import DialogueRequest
 from .screen_observation import ScreenObservationResult, ScreenObservationService
 from .voice_asr import ASRResult, ASRService
@@ -108,12 +113,24 @@ class CapabilityRuntime:
         profile = self.tts_profile_reader()
         if not profile:
             return settings
+        profile_id = _profile_string(profile.get("profile_id"), max_length=80)
+        provider = _profile_provider(profile.get("provider"), aliases=TTS_PROVIDER_ALIASES)
+        api_url = _profile_string(profile.get("api_url"), max_length=240)
+        language = _profile_string(profile.get("language"), max_length=16)
         voice = _profile_string(profile.get("voice"), max_length=120)
+        model_variant = _profile_provider(profile.get("model_variant"), aliases=TTS_MODEL_VARIANT_ALIASES)
+        instruct = _profile_string(profile.get("instruct"), max_length=360)
         rate = _profile_int(profile.get("rate"), minimum=-10, maximum=10)
         volume = _profile_float(profile.get("volume"), minimum=0.0, maximum=1.0)
         return replace(
             settings,
+            profile_id=profile_id if profile_id is not None else settings.profile_id,
+            provider=provider if provider is not None else settings.provider,
+            api_url=api_url if api_url is not None else settings.api_url,
+            language=language if language is not None else settings.language,
             voice=voice if voice is not None else settings.voice,
+            model_variant=model_variant if model_variant is not None else settings.model_variant,
+            instruct=instruct if instruct is not None else settings.instruct,
             rate=rate if rate is not None else settings.rate,
             volume=volume if volume is not None else settings.volume,
         )
@@ -144,6 +161,14 @@ def _profile_string(value: object, *, max_length: int) -> str | None:
         return None
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length] if cleaned else None
+
+
+def _profile_provider(value: object, *, aliases: Mapping[str, str]) -> str | None:
+    raw = _profile_string(value, max_length=80)
+    if raw is None:
+        return None
+    key = raw.lower().replace("-", "_").replace(" ", "_")
+    return aliases.get(key)
 
 
 def _profile_int(value: object, *, minimum: int, maximum: int) -> int | None:

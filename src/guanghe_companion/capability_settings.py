@@ -142,8 +142,10 @@ class TTSSettings:
     provider: str = DEFAULT_TTS_PROVIDER
     api_url: str = DEFAULT_TTS_API_URL
     language: str = "zh"
+    profile_id: str = ""
     voice: str = ""
     model_variant: str = DEFAULT_TTS_MODEL_VARIANT
+    instruct: str = ""
     rate: int = 0
     volume: float = 1.0
     auto_speak: bool = False
@@ -160,12 +162,14 @@ class TTSSettings:
             ),
             api_url=_clean_string(source.get("api_url"), max_length=240) or DEFAULT_TTS_API_URL,
             language=_clean_string(source.get("language"), max_length=16) or "zh",
+            profile_id=_clean_string(source.get("profile_id"), max_length=80),
             voice=_clean_string(source.get("voice"), max_length=120),
             model_variant=_clean_provider(
                 source.get("model_variant"),
                 default=DEFAULT_TTS_MODEL_VARIANT,
                 aliases=TTS_MODEL_VARIANT_ALIASES,
             ),
+            instruct=_clean_string(source.get("instruct"), max_length=360),
             rate=_clean_int(source.get("rate"), default=0, minimum=-10, maximum=10),
             volume=_clean_float(source.get("volume"), default=1.0, minimum=0.0, maximum=1.0),
             auto_speak=_clean_bool(source.get("auto_speak")),

@@ -14,8 +14,8 @@ def test_voice_service_deployment_scripts_exist_without_private_paths() -> None:
 
     for script in scripts:
         text = script.read_text(encoding="utf-8")
-        assert "D:\\" not in text
-        assert "学工文档" not in text
+        assert "D:" + "\\" not in text
+        assert "\u5b66\u5de5\u6587\u6863" not in text
         assert "$PSScriptRoot" in text
 
 

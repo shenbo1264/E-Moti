@@ -4,6 +4,7 @@ import json
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from .character_voice_profile import CharacterVoiceProfile
 from .runtime_paths import companion_assets_root
 
 
@@ -34,7 +35,7 @@ class CharacterPack:
     motion_labels: dict[str, str]
     relationship_decorations: tuple[dict[str, str], ...] = ()
     renderer: CharacterRendererProfile = field(default_factory=CharacterRendererProfile)
-    tts_profile: dict[str, object] = field(default_factory=dict)
+    tts_profile: CharacterVoiceProfile = field(default_factory=CharacterVoiceProfile)
 
 
 def load_default_character_pack() -> CharacterPack:
@@ -64,7 +65,7 @@ def load_character_pack_from_dir(asset_dir: Path | str) -> CharacterPack:
             if isinstance(entry, dict)
         ),
         renderer=_renderer_profile_from_payload(payload.get("renderer")),
-        tts_profile=_tts_profile_from_payload(payload.get("tts_profile")),
+        tts_profile=CharacterVoiceProfile.from_payload(payload.get("tts_profile")),
     )
 
 
@@ -102,44 +103,8 @@ def _string_map(value: object) -> dict[str, str]:
     return result
 
 
-def _tts_profile_from_payload(value: object) -> dict[str, object]:
-    if not isinstance(value, dict):
-        return {}
-    profile: dict[str, object] = {}
-    voice = _clean_string(value.get("voice"), max_length=120)
-    if voice:
-        profile["voice"] = voice
-    rate = _clean_int(value.get("rate"), minimum=-10, maximum=10)
-    if rate is not None:
-        profile["rate"] = rate
-    volume = _clean_float(value.get("volume"), minimum=0.0, maximum=1.0)
-    if volume is not None:
-        profile["volume"] = volume
-    return profile
-
-
 def _clean_string(value: object, *, max_length: int) -> str:
     if not isinstance(value, str):
         return ""
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length].strip()
-
-
-def _clean_int(value: object, *, minimum: int, maximum: int) -> int | None:
-    if isinstance(value, bool):
-        return None
-    try:
-        parsed = int(value)
-    except (TypeError, ValueError):
-        return None
-    return max(minimum, min(maximum, parsed))
-
-
-def _clean_float(value: object, *, minimum: float, maximum: float) -> float | None:
-    if isinstance(value, bool):
-        return None
-    try:
-        parsed = float(value)
-    except (TypeError, ValueError):
-        return None
-    return max(minimum, min(maximum, parsed))

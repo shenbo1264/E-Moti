@@ -73,9 +73,21 @@
                       },
     "distribution_boundary":  "shareable_after_review",
     "tts_profile":  {
-        "voice":  "zh-CN-XiaoxiaoNeural",
+        "profile_id":  "xingxi_pixel_pet_qwen_vivian_v1",
+        "display_name":  "Xingxi pixel pet designed Qwen voice",
+        "provider":  "http_qwen3tts",
+        "api_url":  "http://127.0.0.1:9880/",
+        "language":  "zh",
+        "voice":  "Vivian",
+        "model_variant":  "qwen3tts_0.6b_customvoice",
         "rate":  1,
-        "volume":  0.92
+        "volume":  0.92,
+        "instruct":  "Speak Mandarin Chinese as Xingxi: gentle, clear, slightly shy, warm desktop companion, short emotional lines.",
+        "voice_source_type":  "original_design",
+        "training_status":  "designed",
+        "distribution_policy":  "public_ok",
+        "rights_note":  "Original Xingxi voice direction; no third-party cloned voice material or reference audio is included.",
+        "reference_audio":  []
     },
     "relationship_decorations":  [
                                      {

@@ -1740,7 +1740,7 @@ class CompanionWindow(QMainWindow):
         self.voice_status_label.setText(result.message)
 
     def _current_character_tts_profile(self) -> dict[str, object]:
-        return dict(self.controller.character_pack.tts_profile)
+        return self.controller.character_pack.tts_profile.to_runtime_dict()
 
     def _handle_tts_stop(self) -> None:
         result = self.capability_runtime.stop_tts()

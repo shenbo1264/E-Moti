@@ -19,7 +19,11 @@ def test_load_default_character_pack_reads_xingxi_pixel_pet_manifest():
     assert pack.default_mode == "Calm"
     assert "Glow" in pack.modes
     assert pack.motion_labels["TouchHead"] == "招手回应"
-    assert pack.tts_profile["voice"] == "zh-CN-XiaoxiaoNeural"
+    assert pack.tts_profile.profile_id == "xingxi_pixel_pet_qwen_vivian_v1"
+    assert pack.tts_profile.provider == "http_qwen3tts"
+    assert pack.tts_profile.voice == "Vivian"
+    assert pack.tts_profile.voice_source_type == "original_design"
+    assert pack.tts_profile.distribution_policy == "public_ok"
 
 
 def test_load_default_character_pack_reads_spritesheet_filename():
@@ -48,9 +52,16 @@ def test_load_character_pack_reads_optional_tts_profile(tmp_path):
                 "mode_descriptions": {"Calm": "Calm"},
                 "motion_labels": {"Default": "Idle"},
                 "tts_profile": {
+                    "profile_id": "voice_pet_qwen_v1",
+                    "provider": "http-qwen3tts",
+                    "model_variant": "0.6B",
                     "voice": "Microsoft Huihui Desktop",
                     "rate": 2,
                     "volume": 0.8,
+                    "instruct": "soft test voice",
+                    "voice_source_type": "original_design",
+                    "training_status": "designed",
+                    "distribution_policy": "public_ok",
                 },
             }
         ),
@@ -59,10 +70,17 @@ def test_load_character_pack_reads_optional_tts_profile(tmp_path):
 
     pack = load_character_pack_from_dir(pack_dir)
 
-    assert pack.tts_profile == {
+    assert pack.tts_profile.to_runtime_dict() == {
+        "profile_id": "voice_pet_qwen_v1",
+        "provider": "http_qwen3tts",
         "voice": "Microsoft Huihui Desktop",
+        "model_variant": "qwen3tts_0.6b_customvoice",
         "rate": 2,
         "volume": 0.8,
+        "instruct": "soft test voice",
+        "voice_source_type": "original_design",
+        "training_status": "designed",
+        "distribution_policy": "public_ok",
     }
 
 

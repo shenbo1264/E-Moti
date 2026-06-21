@@ -53,6 +53,8 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
                     "enabled": True,
                     "provider": "http-qwen3tts",
                     "model_variant": "0.7B",
+                    "profile_id": " xingxi_profile ",
+                    "instruct": " gentle companion tone ",
                     "volume": 2.5,
                 },
                 "asr": {
@@ -88,6 +90,8 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
     assert settings.web_search.max_results == 5
     assert settings.tts.provider == "http_qwen3tts"
     assert settings.tts.model_variant == "qwen3tts_0.6b_customvoice"
+    assert settings.tts.profile_id == "xingxi_profile"
+    assert settings.tts.instruct == "gentle companion tone"
     assert settings.tts.volume == 1.0
     assert settings.asr.provider == "openai_compatible"
     assert settings.asr.max_record_seconds == 30

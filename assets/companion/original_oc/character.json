@@ -59,6 +59,23 @@
       "ask_preference": "ask_preference"
     }
   },
+  "tts_profile": {
+    "profile_id": "original_oc_qwen_vivian_v1",
+    "display_name": "Xingxi original fallback designed Qwen voice",
+    "provider": "http_qwen3tts",
+    "api_url": "http://127.0.0.1:9880/",
+    "language": "zh",
+    "voice": "Vivian",
+    "model_variant": "qwen3tts_0.6b_customvoice",
+    "rate": 1,
+    "volume": 0.92,
+    "instruct": "Speak Mandarin Chinese as Xingxi: soft, clear, careful, emotionally warm, never like a task bot.",
+    "voice_source_type": "original_design",
+    "training_status": "designed",
+    "distribution_policy": "public_ok",
+    "rights_note": "Original Xingxi voice direction; no third-party cloned voice material or reference audio is included.",
+    "reference_audio": []
+  },
   "relationship_decorations": [
     {
       "unlock_id": "unlock_first_nickname",

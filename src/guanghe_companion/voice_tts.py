@@ -244,6 +244,10 @@ def _qwen3tts_payload(text: str, settings: TTSSettings) -> dict[str, object]:
         "model": settings.model_variant,
         "model_size": _model_size_label(settings.model_variant),
     }
+    if settings.profile_id:
+        payload["profile_id"] = settings.profile_id
+    if settings.instruct:
+        payload["instruct"] = settings.instruct
     return payload
 
 

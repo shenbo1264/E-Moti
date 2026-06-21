@@ -41,6 +41,7 @@ def _write_minimal_pack(
     sheet_rows=9,
     default_frame_count=1,
     distribution_boundary="shareable_after_review",
+    tts_profile=None,
 ):
     pack_dir = root / character_id
     (pack_dir / "item_icons").mkdir(parents=True)
@@ -48,22 +49,22 @@ def _write_minimal_pack(
     Image.new("RGBA", (sheet_columns * 192, sheet_rows * 208), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
     Image.new("RGBA", (32, 32), (255, 0, 0, 255)).save(pack_dir / "item_icons" / "snack.png")
     Image.new("RGBA", (64, 64), (255, 0, 0, 255)).save(pack_dir / "preview" / "contact-sheet.png")
-    _write_json(
-        pack_dir / "character.json",
-        {
-            "character_id": character_id,
-            "name": "澄光",
-            "title": "桌面回声同伴",
-            "description": "一个原创桌面伴侣。",
-            "spritesheet": spritesheet,
-            "motion_manifest": "motion_manifest.json",
-            "default_mode": "Calm",
-            "modes": ["Calm"],
-            "mode_descriptions": {"Calm": "安静回应。"},
-            "motion_labels": {"Default": "待机"},
-            "distribution_boundary": distribution_boundary,
-        },
-    )
+    character_payload = {
+        "character_id": character_id,
+        "name": "澄光",
+        "title": "桌面回声同伴",
+        "description": "一个原创桌面伴侣。",
+        "spritesheet": spritesheet,
+        "motion_manifest": "motion_manifest.json",
+        "default_mode": "Calm",
+        "modes": ["Calm"],
+        "mode_descriptions": {"Calm": "安静回应。"},
+        "motion_labels": {"Default": "待机"},
+        "distribution_boundary": distribution_boundary,
+    }
+    if tts_profile is not None:
+        character_payload["tts_profile"] = tts_profile
+    _write_json(pack_dir / "character.json", character_payload)
     _write_json(
         pack_dir / "dialogue_style.json",
         {
@@ -196,6 +197,62 @@ def test_validate_character_pack_rejects_invalid_distribution_boundary(tmp_path)
 
     assert not report.ok
     assert "character.json.distribution_boundary invalid" in report.errors
+
+
+def test_validate_character_pack_rejects_public_third_party_voice_profile(tmp_path):
+    pack_dir = _write_minimal_pack(
+        tmp_path,
+        tts_profile={
+            "profile_id": "fanwork_public_voice",
+            "voice_source_type": "third_party_reference",
+            "training_status": "candidate",
+            "distribution_policy": "public_ok",
+        },
+    )
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("third-party or cloned voice profiles must be local_only or blocked" in error for error in report.errors)
+
+
+def test_validate_character_pack_rejects_unsafe_voice_reference_audio_path(tmp_path):
+    pack_dir = _write_minimal_pack(
+        tmp_path,
+        distribution_boundary="local_ugc_only",
+        tts_profile={
+            "profile_id": "unsafe_voice_reference",
+            "voice_source_type": "local_trained_clone",
+            "training_status": "trained_local",
+            "distribution_policy": "local_only",
+            "reference_audio": ["../reference.wav"],
+        },
+    )
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert not report.ok
+    assert any("reference_audio.0 must stay inside voice/" in error for error in report.errors)
+
+
+def test_validate_character_pack_accepts_private_local_fanwork_voice_profile(tmp_path):
+    pack_dir = _write_minimal_pack(
+        tmp_path,
+        distribution_boundary="private_local_fanwork",
+        tts_profile={
+            "profile_id": "local_private_clone",
+            "voice_source_type": "local_trained_clone",
+            "training_status": "trained_local",
+            "distribution_policy": "local_only",
+            "reference_audio": ["voice/reference.wav"],
+        },
+    )
+    (pack_dir / "voice").mkdir()
+    (pack_dir / "voice" / "reference.wav").write_bytes(b"RIFFdemo")
+
+    report = validate_character_pack_dir(pack_dir)
+
+    assert report.ok
 
 
 def test_character_registry_summary_reports_video_provenance_file(tmp_path):

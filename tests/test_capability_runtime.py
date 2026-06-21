@@ -203,6 +203,62 @@ def test_voice_runtime_applies_current_character_tts_profile_for_auto_speech():
     assert settings.tts.voice == "global"
 
 
+def test_voice_runtime_applies_character_voice_profile_route_and_style_instruction():
+    settings = CapabilitySettings(
+        tts=TTSSettings(
+            enabled=True,
+            auto_speak=True,
+            provider="edge_tts",
+            api_url="https://global-tts.example.invalid/",
+            language="en",
+            voice="global",
+            model_variant="qwen3tts_1.7b_customvoice",
+            rate=0,
+            volume=0.5,
+        )
+    )
+
+    class FakeTTSManager:
+        def __init__(self):
+            self.speak_calls = []
+
+        def speak(self, text, received_settings):
+            self.speak_calls.append((text, received_settings))
+            return TTSResult(True, "started")
+
+    manager = FakeTTSManager()
+    runtime = CapabilityRuntime(
+        settings_reader=lambda: settings,
+        tts_manager=manager,
+        tts_profile_reader=lambda: {
+            "profile_id": "xingxi_qwen_vivian_v1",
+            "provider": "http-qwen3tts",
+            "api_url": "http://127.0.0.1:9880/",
+            "language": "zh",
+            "voice": "Vivian",
+            "model_variant": "0.6B",
+            "rate": 1,
+            "volume": 0.92,
+            "instruct": "gentle companion tone",
+        },
+    )
+
+    result = runtime.speak_text("character profile route test")
+
+    received_settings = manager.speak_calls[0][1]
+    assert result.ok is True
+    assert received_settings.profile_id == "xingxi_qwen_vivian_v1"
+    assert received_settings.provider == "http_qwen3tts"
+    assert received_settings.api_url == "http://127.0.0.1:9880/"
+    assert received_settings.language == "zh"
+    assert received_settings.voice == "Vivian"
+    assert received_settings.model_variant == "qwen3tts_0.6b_customvoice"
+    assert received_settings.rate == 1
+    assert received_settings.volume == 0.92
+    assert received_settings.instruct == "gentle companion tone"
+    assert settings.tts.provider == "edge_tts"
+
+
 def test_asr_runtime_returns_dialogue_request_for_auto_send_without_submitting_to_controller():
     settings = CapabilitySettings(asr=ASRSettings(enabled=True, auto_send=True))
 
