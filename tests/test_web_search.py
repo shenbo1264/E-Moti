@@ -30,12 +30,14 @@ def test_fake_web_search_results_are_sanitized():
     assert result.tool_results[0]["url"] == "https://example.test/a"
 
 
-def test_web_search_disabled_and_dependency_missing_are_explicit():
+def test_web_search_disabled_and_dependency_missing_are_explicit(monkeypatch):
+    import guanghe_companion.web_search as web_search
     from guanghe_companion.web_search import WebSearchService
 
     disabled = WebSearchService(adapter=lambda query, max_results, timeout: []).search(
         "query", WebSearchSettings(enabled=False)
     )
+    monkeypatch.setattr(web_search, "_ddgs_adapter", lambda: None)
     missing = WebSearchService(adapter=None).search("query", WebSearchSettings(enabled=True))
 
     assert disabled.ok is False

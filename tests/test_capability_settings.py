@@ -158,3 +158,12 @@ def test_store_returns_defaults_for_invalid_or_missing_json(tmp_path) -> None:
 
     assert missing == invalid
     assert missing.web_search.enabled is False
+
+
+def test_tts_settings_accepts_edge_tts_provider_alias() -> None:
+    from guanghe_companion.capability_settings import TTSSettings
+
+    settings = TTSSettings.from_dict({"enabled": True, "provider": "edge-tts"})
+
+    assert settings.enabled is True
+    assert settings.provider == "edge_tts"

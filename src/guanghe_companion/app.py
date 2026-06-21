@@ -80,7 +80,7 @@ from .presentation_renderer import (
 from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
 from .spirit_stage import SpiritStageSurface, has_safe_portrait_manifest, load_portrait_manifest
-from .storage import DEMO_SAVE_PATH
+from .runtime_paths import USER_DATA_ENV, demo_save_path, user_data_dir
 from .tray_controller import TrayController
 from .voice_asr import ASRService
 from .voice_tts import TTSManager
@@ -528,6 +528,7 @@ class CompanionWindow(QMainWindow):
             web_search_service=lambda: self.web_search_service,
             tts_manager=lambda: self.tts_manager,
             asr_service=lambda: self.asr_service,
+            tts_profile_reader=self._current_character_tts_profile,
         )
         self._last_auto_tts_key: tuple[str, str] | None = None
         self.desktop_pet_window: CompanionWindow | None = None
@@ -1733,8 +1734,13 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_timer.start(settings.interval_seconds * 1000)
 
     def _handle_tts_test(self) -> None:
-        result = self.capability_runtime.run_tts_test("星汐在这里，语音测试正常。")
+        result = self.capability_runtime.run_tts_test(
+            f"{self.controller.character_pack.name} voice test."
+        )
         self.voice_status_label.setText(result.message)
+
+    def _current_character_tts_profile(self) -> dict[str, object]:
+        return dict(self.controller.character_pack.tts_profile)
 
     def _handle_tts_stop(self) -> None:
         result = self.capability_runtime.stop_tts()
@@ -2086,7 +2092,14 @@ def launch(argv: list[str] | None = None) -> int:
     args = sys.argv if argv is None else argv
     app = QApplication.instance() or QApplication(args)
     configure_application_style(app)
-    controller = CompanionController(save_path=DEMO_SAVE_PATH) if should_use_demo_save(args) else CompanionController()
+    controller_kwargs = {}
+    if os.environ.get(USER_DATA_ENV):
+        controller_kwargs["user_data_root"] = user_data_dir()
+    controller = (
+        CompanionController(save_path=demo_save_path(), **controller_kwargs)
+        if should_use_demo_save(args)
+        else CompanionController(**controller_kwargs)
+    )
     if should_reset_demo_save(args):
         controller.reset_demo_state(include_ai_expression=False)
     window = CompanionWindow(controller=controller, desktop_mode=should_use_desktop_mode(args))

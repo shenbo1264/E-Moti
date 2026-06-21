@@ -72,6 +72,11 @@
                           "ConfusedShy":  "Confused / shy"
                       },
     "distribution_boundary":  "shareable_after_review",
+    "tts_profile":  {
+        "voice":  "zh-CN-XiaoxiaoNeural",
+        "rate":  1,
+        "volume":  0.92
+    },
     "relationship_decorations":  [
                                      {
                                          "unlock_id":  "unlock_first_nickname",

@@ -22,6 +22,9 @@ WEB_SEARCH_ENGINE_ALIASES = {
 TTS_PROVIDER_ALIASES = {
     "windows_sapi": "windows_sapi",
     "sapi": "windows_sapi",
+    "edge": "edge_tts",
+    "edge_tts": "edge_tts",
+    "edge_neural": "edge_tts",
     "http_qwen3tts": "http_qwen3tts",
     "qwen3tts": "http_qwen3tts",
 }

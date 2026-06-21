@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import base64
 import json
 import re
@@ -164,6 +165,46 @@ class WindowsSapiTTSProvider:
         self._process = None
 
 
+class EdgeNeuralTTSProvider:
+    def __init__(
+        self,
+        *,
+        communicate_factory: Callable[..., object] | None = None,
+        cache_dir: Path | str | None = None,
+        audio_player: Callable[[Path], object] | None = None,
+    ) -> None:
+        self._communicate_factory = communicate_factory
+        self._cache_dir = Path(cache_dir) if cache_dir is not None else user_data_dir() / "cache" / "tts"
+        self._audio_player = audio_player or _QtAudioFilePlayer().play
+
+    def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+        factory = self._communicate_factory or _edge_tts_communicate_factory()
+        if factory is None:
+            return TTSResult(False, "edge-tts 未安装，无法使用在线神经语音")
+        voice = settings.voice or "zh-CN-XiaoxiaoNeural"
+        self._cache_dir.mkdir(parents=True, exist_ok=True)
+        output = self._cache_dir / "edge_tts_latest.mp3"
+        try:
+            communicate = factory(
+                text,
+                voice,
+            )
+            save = getattr(communicate, "save", None)
+            if not callable(save):
+                return TTSResult(False, "edge-tts provider 返回无效合成器")
+            asyncio.run(save(str(output)))
+            self._audio_player(output)
+            return TTSResult(True, "朗读完成", str(output))
+        except Exception as exc:
+            return TTSResult(False, f"edge-tts 朗读失败：{exc}")
+
+    def stop(self) -> None:
+        player = getattr(self._audio_player, "__self__", None)
+        stop = getattr(player, "stop", None)
+        if callable(stop):
+            stop()
+
+
 class _QtAudioFilePlayer:
     def __init__(self) -> None:
         self._player = None
@@ -190,6 +231,8 @@ def default_tts_provider_factory(provider: str) -> TTSProvider | None:
         return HttpQwen3TTSProvider()
     if provider == "windows_sapi":
         return WindowsSapiTTSProvider()
+    if provider == "edge_tts":
+        return EdgeNeuralTTSProvider()
     return None
 
 
@@ -229,6 +272,14 @@ def _post_json_bytes(url: str, payload: dict[str, object], timeout: int) -> byte
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
+
+
+def _edge_tts_communicate_factory() -> Callable[..., object] | None:
+    try:
+        from edge_tts import Communicate
+    except ImportError:
+        return None
+    return Communicate
 
 
 def _looks_like_source_json(line: str) -> bool:

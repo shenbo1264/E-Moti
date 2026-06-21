@@ -19,6 +19,9 @@ def test_pyinstaller_build_script_uses_onedir_windowed_app_bundle():
     assert "item_icons" in script
     assert "--onedir" in script
     assert "--windowed" in script
+    assert "--hidden-import" in script
+    assert "ddgs" in script
+    assert "edge_tts" in script
     assert "--add-data" in script
     assert "assets" in script
     assert "packaging\\launch_control_panel.py" in script

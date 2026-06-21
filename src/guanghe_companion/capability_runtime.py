@@ -1,10 +1,10 @@
 from __future__ import annotations
 
-from collections.abc import Callable
-from dataclasses import dataclass
+from collections.abc import Callable, Mapping
+from dataclasses import dataclass, replace
 from typing import TypeVar
 
-from .capability_settings import CapabilitySettings
+from .capability_settings import CapabilitySettings, TTSSettings
 from .dialogue import DialogueRequest
 from .screen_observation import ScreenObservationResult, ScreenObservationService
 from .voice_asr import ASRResult, ASRService
@@ -42,6 +42,7 @@ class CapabilityRuntime:
     web_search_service: ServiceRef[WebSearchService] | None = None
     tts_manager: ServiceRef[TTSManager] | None = None
     asr_service: ServiceRef[ASRService] | None = None
+    tts_profile_reader: Callable[[], Mapping[str, object]] = lambda: {}
 
     def run_screen_observation(self) -> ScreenObservationResult:
         settings = self.settings_saver()
@@ -64,11 +65,11 @@ class CapabilityRuntime:
 
     def run_tts_test(self, text: str) -> TTSResult:
         settings = self.settings_saver()
-        return self._tts_manager().speak(text, settings.tts)
+        return self._tts_manager().speak(text, self._character_tts_settings(settings.tts))
 
     def speak_text(self, text: str) -> TTSResult:
         settings = self.settings_reader()
-        return self._tts_manager().speak(text, settings.tts)
+        return self._tts_manager().speak(text, self._character_tts_settings(settings.tts))
 
     def stop_tts(self) -> TTSResult:
         settings = self.settings_reader()
@@ -103,6 +104,20 @@ class CapabilityRuntime:
     def _asr_service(self) -> ASRService:
         return _resolve_service(self.asr_service, ASRService)
 
+    def _character_tts_settings(self, settings: TTSSettings) -> TTSSettings:
+        profile = self.tts_profile_reader()
+        if not profile:
+            return settings
+        voice = _profile_string(profile.get("voice"), max_length=120)
+        rate = _profile_int(profile.get("rate"), minimum=-10, maximum=10)
+        volume = _profile_float(profile.get("volume"), minimum=0.0, maximum=1.0)
+        return replace(
+            settings,
+            voice=voice if voice is not None else settings.voice,
+            rate=rate if rate is not None else settings.rate,
+            volume=volume if volume is not None else settings.volume,
+        )
+
 
 def _format_web_search_display(result: WebSearchResult) -> str:
     if not result.tool_results:
@@ -122,3 +137,30 @@ def _resolve_service(service: ServiceRef[T] | None, factory: Callable[[], T]) ->
     if callable(service) and not hasattr(service, "__dataclass_fields__"):
         return service()
     return service
+
+
+def _profile_string(value: object, *, max_length: int) -> str | None:
+    if not isinstance(value, str):
+        return None
+    cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
+    return cleaned[:max_length] if cleaned else None
+
+
+def _profile_int(value: object, *, minimum: int, maximum: int) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = int(value)
+    except (TypeError, ValueError):
+        return None
+    return max(minimum, min(maximum, parsed))
+
+
+def _profile_float(value: object, *, minimum: float, maximum: float) -> float | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError):
+        return None
+    return max(minimum, min(maximum, parsed))

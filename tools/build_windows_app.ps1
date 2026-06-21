@@ -128,6 +128,8 @@ $Arguments = @(
     "--workpath", $BuildDir,
     "--specpath", $BuildDir,
     "--paths", $SrcPath,
+    "--hidden-import", "ddgs",
+    "--hidden-import", "edge_tts",
     "--add-data", $AddData,
     "packaging\launch_control_panel.py"
 )

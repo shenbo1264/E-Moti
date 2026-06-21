@@ -34,6 +34,7 @@ def write_ui_character_pack(
     name,
     title,
     distribution_boundary="shareable_after_review",
+    tts_profile=None,
 ):
     pack_dir = root / character_id
     (pack_dir / "item_icons").mkdir(parents=True)
@@ -41,23 +42,23 @@ def write_ui_character_pack(
     Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
     Image.new("RGBA", (32, 32), (40, 80, 120, 255)).save(pack_dir / "item_icons" / "snack.png")
     Image.new("RGBA", (64, 64), (40, 80, 120, 255)).save(pack_dir / "preview" / "contact-sheet.png")
+    character_payload = {
+        "character_id": character_id,
+        "name": name,
+        "title": title,
+        "description": f"{name} 是一个原创桌面伴侣。",
+        "distribution_boundary": distribution_boundary,
+        "spritesheet": "spritesheet.png",
+        "motion_manifest": "motion_manifest.json",
+        "default_mode": "Calm",
+        "modes": ["Calm"],
+        "mode_descriptions": {"Calm": "安静回应。"},
+        "motion_labels": {"Default": "安静待机", "Shop": "补给", "Eat": "收下点心"},
+    }
+    if tts_profile is not None:
+        character_payload["tts_profile"] = tts_profile
     (pack_dir / "character.json").write_text(
-        json.dumps(
-            {
-                "character_id": character_id,
-                "name": name,
-                "title": title,
-                "description": f"{name} 是一个原创桌面伴侣。",
-                "distribution_boundary": distribution_boundary,
-                "spritesheet": "spritesheet.png",
-                "motion_manifest": "motion_manifest.json",
-                "default_mode": "Calm",
-                "modes": ["Calm"],
-                "mode_descriptions": {"Calm": "安静回应。"},
-                "motion_labels": {"Default": "安静待机", "Shop": "补给", "Eat": "收下点心"},
-            },
-            ensure_ascii=False,
-        ),
+        json.dumps(character_payload, ensure_ascii=False),
         encoding="utf-8",
     )
     (pack_dir / "motion_manifest.json").write_text(
@@ -3059,13 +3060,71 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
     app.processEvents()
     after = window.controller.get_typed_snapshot()
 
-    assert fake_tts.calls == [("LLM 连接成功", window.controller.get_capability_settings().tts)]
+    assert len(fake_tts.calls) == 1
+    assert fake_tts.calls[0][0] == "LLM 连接成功"
     assert fake_tts.calls[0][1].model_variant == "qwen3tts_0.7b"
+    assert fake_tts.calls[0][1].voice == "zh-CN-XiaoxiaoNeural"
+    assert fake_tts.calls[0][1].rate == 1
+    assert fake_tts.calls[0][1].volume == 0.92
     assert "STAT" not in fake_tts.calls[0][0]
     assert "web_search" not in fake_tts.calls[0][0]
     assert after.stats == before_tts.stats
     assert after.inventory == before_tts.inventory
     assert after.memory_log == before_tts.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(
+        assets_root,
+        "xingxi_pixel_pet",
+        name="Xingxi",
+        title="Desktop companion",
+        tts_profile={"voice": "Microsoft Huihui Desktop", "rate": 2, "volume": 0.8},
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    class FakeTTSManager:
+        def __init__(self):
+            self.calls = []
+
+        def speak(self, text, settings):
+            from guanghe_companion.voice_tts import TTSResult
+
+            self.calls.append((text, settings))
+            return TTSResult(True, "started")
+
+        def stop(self, settings=None):
+            from guanghe_companion.voice_tts import TTSResult
+
+            return TTSResult(True, "stopped")
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="xingxi_pixel_pet",
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    fake_tts = FakeTTSManager()
+    window.tts_manager = fake_tts
+    window.tts_enabled_check.setChecked(True)
+
+    window._handle_tts_test()
+
+    assert fake_tts.calls
+    assert fake_tts.calls[0][1].voice == "Microsoft Huihui Desktop"
+    assert fake_tts.calls[0][1].rate == 2
+    assert fake_tts.calls[0][1].volume == 0.8
 
     window.close()
     app.processEvents()
@@ -3631,9 +3690,54 @@ def test_launch_reset_demo_save_uses_local_first_reset(monkeypatch):
     monkeypatch.setattr(app_module, "QApplication", FakeApplication)
     monkeypatch.setattr(app_module, "CompanionController", FakeController)
     monkeypatch.setattr(app_module, "CompanionWindow", FakeWindow)
+    monkeypatch.setattr(app_module, "configure_application_style", lambda app: True)
 
     result = app_module.launch(["demo", "--reset-demo-save"])
 
     assert result == 17
     assert captured["reset_kwargs"] == {"include_ai_expression": False}
+    assert captured["shown"] is True
+
+
+def test_launch_with_user_data_override_enables_user_character_packs(monkeypatch, tmp_path):
+    import guanghe_companion.app as app_module
+
+    captured = {}
+    user_data_root = tmp_path / "preview-data"
+    monkeypatch.setenv("E_MOTI_USER_DATA_DIR", str(user_data_root))
+
+    class FakeApplication:
+        def __init__(self, args):
+            captured["app_args"] = args
+
+        @staticmethod
+        def instance():
+            return None
+
+        def exec(self):
+            return 17
+
+    class FakeController:
+        def __init__(self, save_path=None, user_data_root=None):
+            captured["save_path"] = save_path
+            captured["user_data_root"] = user_data_root
+
+    class FakeWindow:
+        def __init__(self, controller, desktop_mode=False):
+            captured["window_controller"] = controller
+            captured["desktop_mode"] = desktop_mode
+
+        def show(self):
+            captured["shown"] = True
+
+    monkeypatch.setattr(app_module, "QApplication", FakeApplication)
+    monkeypatch.setattr(app_module, "CompanionController", FakeController)
+    monkeypatch.setattr(app_module, "CompanionWindow", FakeWindow)
+    monkeypatch.setattr(app_module, "configure_application_style", lambda app: True)
+
+    result = app_module.launch(["demo", "--demo-save"])
+
+    assert result == 17
+    assert captured["user_data_root"] == user_data_root
+    assert captured["save_path"] == user_data_root / "companion_demo_save.json"
     assert captured["shown"] is True

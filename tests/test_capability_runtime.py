@@ -166,6 +166,43 @@ def test_voice_runtime_reads_settings_for_validated_auto_speech():
     assert manager.speak_calls == [("已经通过事件验证的星汐台词", settings.tts)]
 
 
+def test_voice_runtime_applies_current_character_tts_profile_for_auto_speech():
+    settings = CapabilitySettings(
+        tts=TTSSettings(
+            enabled=True,
+            auto_speak=True,
+            provider="windows_sapi",
+            voice="global",
+            rate=0,
+            volume=0.5,
+        )
+    )
+
+    class FakeTTSManager:
+        def __init__(self):
+            self.speak_calls = []
+
+        def speak(self, text, received_settings):
+            self.speak_calls.append((text, received_settings))
+            return TTSResult(True, "started")
+
+    manager = FakeTTSManager()
+    runtime = CapabilityRuntime(
+        settings_reader=lambda: settings,
+        tts_manager=manager,
+        tts_profile_reader=lambda: {"voice": "Microsoft Huihui Desktop", "rate": 2, "volume": 0.8},
+    )
+
+    result = runtime.speak_text("character voice test")
+
+    assert result.ok is True
+    assert manager.speak_calls[0][0] == "character voice test"
+    assert manager.speak_calls[0][1].voice == "Microsoft Huihui Desktop"
+    assert manager.speak_calls[0][1].rate == 2
+    assert manager.speak_calls[0][1].volume == 0.8
+    assert settings.tts.voice == "global"
+
+
 def test_asr_runtime_returns_dialogue_request_for_auto_send_without_submitting_to_controller():
     settings = CapabilitySettings(asr=ASRSettings(enabled=True, auto_send=True))
 

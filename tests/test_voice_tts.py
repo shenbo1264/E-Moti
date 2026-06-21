@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 from guanghe_companion.capability_settings import TTSSettings
 
 
@@ -89,4 +91,69 @@ def test_http_qwen3tts_provider_posts_model_variant_and_writes_audio(tmp_path) -
     assert requests[0][2] == 30
     assert played
     assert (tmp_path / "qwen3tts_latest.wav").read_bytes() == b"RIFFdemo-wave-bytes"
+
+
+def test_edge_neural_tts_provider_uses_character_voice_profile(tmp_path) -> None:
+    from guanghe_companion.voice_tts import EdgeNeuralTTSProvider
+
+    requests: list[dict[str, object]] = []
+    played: list[str] = []
+
+    class FakeCommunicate:
+        def __init__(self, text: str, voice: str) -> None:
+            requests.append({"text": text, "voice": voice})
+
+        async def save(self, path: str) -> None:
+            Path(path).write_bytes(b"demo-edge-mp3")
+
+    provider = EdgeNeuralTTSProvider(
+        communicate_factory=FakeCommunicate,
+        cache_dir=tmp_path,
+        audio_player=lambda path: played.append(str(path)),
+    )
+
+    result = provider.speak(
+        "星汐语音测试",
+        TTSSettings(
+            enabled=True,
+            provider="edge_tts",
+            voice="zh-CN-XiaoxiaoNeural",
+            rate=2,
+            volume=0.7,
+        ),
+    )
+
+    assert result.ok is True
+    assert requests == [
+        {
+            "text": "星汐语音测试",
+            "voice": "zh-CN-XiaoxiaoNeural",
+        }
+    ]
+    assert played == [str(tmp_path / "edge_tts_latest.mp3")]
+    assert (tmp_path / "edge_tts_latest.mp3").read_bytes() == b"demo-edge-mp3"
+
+
+def test_edge_neural_tts_provider_returns_failure_for_provider_exception(tmp_path) -> None:
+    from guanghe_companion.voice_tts import EdgeNeuralTTSProvider
+
+    class ProviderFailure(Exception):
+        pass
+
+    class BrokenCommunicate:
+        def __init__(self, text: str, voice: str) -> None:
+            pass
+
+        async def save(self, path: str) -> None:
+            raise ProviderFailure("network unavailable")
+
+    provider = EdgeNeuralTTSProvider(communicate_factory=BrokenCommunicate, cache_dir=tmp_path)
+
+    result = provider.speak(
+        "星汐语音测试",
+        TTSSettings(enabled=True, provider="edge_tts", voice="zh-CN-XiaoxiaoNeural"),
+    )
+
+    assert result.ok is False
+    assert "edge-tts 朗读失败" in result.message
 

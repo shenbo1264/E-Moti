@@ -19,6 +19,7 @@ def test_load_default_character_pack_reads_xingxi_pixel_pet_manifest():
     assert pack.default_mode == "Calm"
     assert "Glow" in pack.modes
     assert pack.motion_labels["TouchHead"] == "招手回应"
+    assert pack.tts_profile["voice"] == "zh-CN-XiaoxiaoNeural"
 
 
 def test_load_default_character_pack_reads_spritesheet_filename():
@@ -28,6 +29,41 @@ def test_load_default_character_pack_reads_spritesheet_filename():
     assert pack.renderer.backend == "sprite"
     assert pack.renderer.motion_map["Play"] == "Play"
     assert pack.renderer.expression_map["joy"] == "TouchHead"
+
+
+def test_load_character_pack_reads_optional_tts_profile(tmp_path):
+    pack_dir = tmp_path / "voice_pet"
+    pack_dir.mkdir()
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": "voice_pet",
+                "name": "Voice Pet",
+                "title": "Voice profile test",
+                "description": "Character with a TTS profile.",
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "Calm"},
+                "motion_labels": {"Default": "Idle"},
+                "tts_profile": {
+                    "voice": "Microsoft Huihui Desktop",
+                    "rate": 2,
+                    "volume": 0.8,
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    pack = load_character_pack_from_dir(pack_dir)
+
+    assert pack.tts_profile == {
+        "voice": "Microsoft Huihui Desktop",
+        "rate": 2,
+        "volume": 0.8,
+    }
 
 
 def test_bundled_xingxi_pixel_pet_pack_is_valid_sprite_candidate():
