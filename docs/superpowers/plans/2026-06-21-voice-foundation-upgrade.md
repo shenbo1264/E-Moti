@@ -12,7 +12,7 @@
 
 ## Current Evidence
 
-Verified in `D:\学工文档\光核\电子宠物\E-Moti_demo\.worktrees\final-package-qa` on 2026-06-21:
+Verified in the `final-package-qa` worktree on 2026-06-21:
 
 - Branch: `codex/final-package-qa`
 - Baseline commit: `48779fb feat: package character-aware voice preview`
@@ -864,4 +864,3 @@ Expected: build validator `ok: true`.
 - Do not add background listening, wake word, startup persistence, or microphone always-on behavior.
 - Do not replace current character pack or renderer routes.
 - Do not make ASR complete unless a real local/cloud transcription endpoint is tested with a WAV or microphone capture.
-

@@ -35,6 +35,7 @@ data/companion_save.json
 data/companion_demo_save.json
 data/dialogue_history.json
 data/character_packs/
+data/cache/
 
 # Local-only notes that must never be swept into commits
 *.local.md
