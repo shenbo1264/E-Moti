@@ -47,8 +47,10 @@ def load_character_pack(character_id: str) -> CharacterPack:
 
 
 def load_character_pack_from_dir(asset_dir: Path | str) -> CharacterPack:
-    manifest_path = Path(asset_dir) / "character.json"
+    root = Path(asset_dir)
+    manifest_path = root / "character.json"
     payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    tts_profile = CharacterVoiceProfile.from_payload(payload.get("tts_profile")).with_resolved_reference_audio(root)
     return CharacterPack(
         character_id=payload["character_id"],
         name=payload["name"],
@@ -65,7 +67,7 @@ def load_character_pack_from_dir(asset_dir: Path | str) -> CharacterPack:
             if isinstance(entry, dict)
         ),
         renderer=_renderer_profile_from_payload(payload.get("renderer")),
-        tts_profile=CharacterVoiceProfile.from_payload(payload.get("tts_profile")),
+        tts_profile=tts_profile,
     )
 
 

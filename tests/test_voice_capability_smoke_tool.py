@@ -76,6 +76,8 @@ def test_voice_smoke_tool_uses_character_tts_profile_from_pack_dir(tmp_path, mon
     pack_dir = tmp_path / "custom_character"
     (pack_dir / "item_icons").mkdir(parents=True)
     (pack_dir / "preview").mkdir()
+    (pack_dir / "voice").mkdir()
+    (pack_dir / "voice" / "reference.wav").write_bytes(b"RIFFdemo")
     Image.new("RGBA", (1536, 1872), (0, 0, 0, 0)).save(pack_dir / "spritesheet.png")
     Image.new("RGBA", (16, 16), (255, 0, 0, 255)).save(pack_dir / "item_icons" / "snack.png")
     Image.new("RGBA", (16, 16), (255, 0, 0, 255)).save(pack_dir / "preview" / "contact-sheet.png")
@@ -99,13 +101,15 @@ def test_voice_smoke_tool_uses_character_tts_profile_from_pack_dir(tmp_path, mon
                     "api_url": "http://127.0.0.1:9880/",
                     "language": "zh",
                     "voice": "Serena",
-                    "model_variant": "0.6B",
+                    "model_variant": "qwen3tts_0.6b_base",
                     "rate": -1,
                     "volume": 0.75,
                     "instruct": "soft, clear, character-specific",
                     "voice_source_type": "local_generated",
                     "training_status": "candidate",
                     "distribution_policy": "public_ok",
+                    "reference_audio": ["voice/reference.wav"],
+                    "reference_text": "reference line",
                 },
             },
             ensure_ascii=False,
@@ -177,15 +181,19 @@ def test_voice_smoke_tool_uses_character_tts_profile_from_pack_dir(tmp_path, mon
     assert calls[0][1].profile_id == "custom_qwen_voice_v1"
     assert calls[0][1].provider == "http_qwen3tts"
     assert calls[0][1].voice == "Serena"
-    assert calls[0][1].model_variant == "qwen3tts_0.6b_customvoice"
+    assert calls[0][1].model_variant == "qwen3tts_0.6b_base"
     assert calls[0][1].rate == -1
     assert calls[0][1].volume == 0.75
     assert calls[0][1].instruct == "soft, clear, character-specific"
+    assert calls[0][1].reference_audio == (str((pack_dir / "voice" / "reference.wav").resolve()),)
+    assert calls[0][1].reference_text == "reference line"
     assert payload["tts"]["character_id"] == "custom_character"
     assert payload["tts"]["profile_id"] == "custom_qwen_voice_v1"
     assert payload["tts"]["voice"] == "Serena"
-    assert payload["tts"]["model_variant"] == "qwen3tts_0.6b_customvoice"
+    assert payload["tts"]["model_variant"] == "qwen3tts_0.6b_base"
     assert payload["tts"]["instruct_present"] is True
+    assert payload["tts"]["reference_audio_count"] == 1
+    assert payload["tts"]["reference_text_present"] is True
 
 
 def test_voice_smoke_tool_can_skip_qt_playback_for_edge_tts(tmp_path, monkeypatch) -> None:

@@ -79,6 +79,8 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "voice": tts_settings.voice,
                 "model_variant": tts_settings.model_variant,
                 "instruct_present": bool(tts_settings.instruct),
+                "reference_audio_count": len(tts_settings.reference_audio),
+                "reference_text_present": bool(tts_settings.reference_text),
             }
             if not result.ok:
                 exit_code = 1

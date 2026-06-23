@@ -49,6 +49,28 @@ def test_voice_profile_parses_qwen_designed_profile() -> None:
     }
 
 
+def test_voice_profile_exposes_reference_audio_and_text_for_runtime() -> None:
+    from guanghe_companion.character_voice_profile import CharacterVoiceProfile
+
+    profile = CharacterVoiceProfile.from_payload(
+        {
+            "profile_id": "local_clone",
+            "provider": "http-qwen3tts",
+            "model_variant": "qwen3tts_0.6b_base",
+            "voice_source_type": "local_trained_clone",
+            "training_status": "trained_local",
+            "distribution_policy": "local_only",
+            "reference_audio": ["voice/reference.wav"],
+            "reference_text": "这是一段用于复刻角色语气的参考台词。",
+        }
+    )
+
+    assert profile.reference_audio == ("voice/reference.wav",)
+    assert profile.reference_text == "这是一段用于复刻角色语气的参考台词。"
+    assert profile.to_runtime_dict()["reference_audio"] == ["voice/reference.wav"]
+    assert profile.to_runtime_dict()["reference_text"] == "这是一段用于复刻角色语气的参考台词。"
+
+
 def test_voice_profile_rejects_reference_audio_outside_voice_directory(tmp_path) -> None:
     from guanghe_companion.character_voice_profile import validate_voice_profile_payload
 

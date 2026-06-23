@@ -35,6 +35,15 @@ TTS_PROVIDER_ALIASES = {
     "qwen3_tts": "http_qwen3tts",
 }
 TTS_MODEL_VARIANT_ALIASES = {
+    "base": "qwen3tts_0.6b_base",
+    "0.6b_base": "qwen3tts_0.6b_base",
+    "0_6b_base": "qwen3tts_0.6b_base",
+    "qwen3tts_0.6b_base": "qwen3tts_0.6b_base",
+    "qwen3tts_0_6b_base": "qwen3tts_0.6b_base",
+    "1.7b_base": "qwen3tts_1.7b_base",
+    "1_7b_base": "qwen3tts_1.7b_base",
+    "qwen3tts_1.7b_base": "qwen3tts_1.7b_base",
+    "qwen3tts_1_7b_base": "qwen3tts_1.7b_base",
     "1.7b": "qwen3tts_1.7b_customvoice",
     "1_7b": "qwen3tts_1.7b_customvoice",
     "1.6b": "qwen3tts_1.7b_customvoice",
@@ -147,6 +156,8 @@ class TTSSettings:
     voice: str = ""
     model_variant: str = DEFAULT_TTS_MODEL_VARIANT
     instruct: str = ""
+    reference_audio: tuple[str, ...] = ()
+    reference_text: str = ""
     rate: int = 0
     volume: float = 1.0
     auto_speak: bool = False
@@ -171,6 +182,8 @@ class TTSSettings:
                 aliases=TTS_MODEL_VARIANT_ALIASES,
             ),
             instruct=_clean_string(source.get("instruct"), max_length=360),
+            reference_audio=_clean_string_sequence(source.get("reference_audio"), max_length=500),
+            reference_text=_clean_string(source.get("reference_text"), max_length=1000),
             rate=_clean_int(source.get("rate"), default=0, minimum=-10, maximum=10),
             volume=_clean_float(source.get("volume"), default=1.0, minimum=0.0, maximum=1.0),
             auto_speak=_clean_bool(source.get("auto_speak")),
@@ -351,6 +364,17 @@ def _clean_string(value: object, *, max_length: int) -> str:
         return ""
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length]
+
+
+def _clean_string_sequence(value: object, *, max_length: int) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        return ()
+    result: list[str] = []
+    for item in value:
+        cleaned = _clean_string(item, max_length=max_length)
+        if cleaned:
+            result.append(cleaned)
+    return tuple(result)
 
 
 def _default_asr_model(provider: str) -> str:

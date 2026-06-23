@@ -259,6 +259,38 @@ def test_voice_runtime_applies_character_voice_profile_route_and_style_instructi
     assert settings.tts.provider == "edge_tts"
 
 
+def test_voice_runtime_applies_character_reference_audio_for_local_clone():
+    settings = CapabilitySettings(tts=TTSSettings(enabled=True, auto_speak=True))
+
+    class FakeTTSManager:
+        def __init__(self):
+            self.speak_calls = []
+
+        def speak(self, text, received_settings):
+            self.speak_calls.append((text, received_settings))
+            return TTSResult(True, "started")
+
+    manager = FakeTTSManager()
+    runtime = CapabilityRuntime(
+        settings_reader=lambda: settings,
+        tts_manager=manager,
+        tts_profile_reader=lambda: {
+            "provider": "http-qwen3tts",
+            "model_variant": "qwen3tts_0.6b_base",
+            "reference_audio": ["D:/voice-packs/ikaros/reference.wav"],
+            "reference_text": "参考台词。",
+        },
+    )
+
+    result = runtime.speak_text("reference clone route test")
+
+    received_settings = manager.speak_calls[0][1]
+    assert result.ok is True
+    assert received_settings.model_variant == "qwen3tts_0.6b_base"
+    assert received_settings.reference_audio == ("D:/voice-packs/ikaros/reference.wav",)
+    assert received_settings.reference_text == "参考台词。"
+
+
 def test_asr_runtime_returns_dialogue_request_for_auto_send_without_submitting_to_controller():
     settings = CapabilitySettings(asr=ASRSettings(enabled=True, auto_send=True))
 

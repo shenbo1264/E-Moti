@@ -248,10 +248,18 @@ def _qwen3tts_payload(text: str, settings: TTSSettings) -> dict[str, object]:
         payload["profile_id"] = settings.profile_id
     if settings.instruct:
         payload["instruct"] = settings.instruct
+    if settings.reference_audio:
+        payload["ref_audio"] = settings.reference_audio[0] if len(settings.reference_audio) == 1 else list(settings.reference_audio)
+    if settings.reference_text:
+        payload["ref_text"] = settings.reference_text
     return payload
 
 
 def _model_size_label(model_variant: str) -> str:
+    if model_variant == "qwen3tts_1.7b_base":
+        return "1.7B-Base"
+    if model_variant == "qwen3tts_0.6b_base":
+        return "0.6B-Base"
     if model_variant == "qwen3tts_1.7b_customvoice":
         return "1.7B-CustomVoice"
     return "0.6B-CustomVoice"

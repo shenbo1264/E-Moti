@@ -97,6 +97,37 @@ def test_http_qwen3tts_provider_posts_model_variant_and_writes_audio(tmp_path) -
     assert (tmp_path / "qwen3tts_latest.wav").read_bytes() == b"RIFFdemo-wave-bytes"
 
 
+def test_http_qwen3tts_provider_posts_reference_audio_for_clone_route(tmp_path) -> None:
+    from guanghe_companion.voice_tts import HttpQwen3TTSProvider
+
+    requests: list[tuple[str, dict[str, object], int]] = []
+
+    def fake_post(url: str, payload: dict[str, object], timeout: int) -> bytes:
+        requests.append((url, payload, timeout))
+        return b"RIFFdemo-wave-bytes"
+
+    provider = HttpQwen3TTSProvider(
+        post=fake_post,
+        cache_dir=tmp_path,
+        audio_player=lambda path: None,
+    )
+
+    result = provider.speak(
+        "本地克隆试听",
+        TTSSettings(
+            enabled=True,
+            provider="http_qwen3tts",
+            model_variant="qwen3tts_0.6b_base",
+            reference_audio=("D:/voice-packs/nairong/reference.wav",),
+            reference_text="参考台词。",
+        ),
+    )
+
+    assert result.ok is True
+    assert requests[0][1]["ref_audio"] == "D:/voice-packs/nairong/reference.wav"
+    assert requests[0][1]["ref_text"] == "参考台词。"
+
+
 def test_edge_neural_tts_provider_uses_character_voice_profile(tmp_path) -> None:
     from guanghe_companion.voice_tts import EdgeNeuralTTSProvider
 

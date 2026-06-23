@@ -123,6 +123,8 @@ def apply_character_tts_profile(settings: TTSSettings, profile: Mapping[str, obj
     voice = _profile_string(profile.get("voice"), max_length=120)
     model_variant = _profile_provider(profile.get("model_variant"), aliases=TTS_MODEL_VARIANT_ALIASES)
     instruct = _profile_string(profile.get("instruct"), max_length=360)
+    reference_audio = _profile_string_sequence(profile.get("reference_audio"), max_length=500)
+    reference_text = _profile_string(profile.get("reference_text"), max_length=1000)
     rate = _profile_int(profile.get("rate"), minimum=-10, maximum=10)
     volume = _profile_float(profile.get("volume"), minimum=0.0, maximum=1.0)
     return replace(
@@ -134,6 +136,8 @@ def apply_character_tts_profile(settings: TTSSettings, profile: Mapping[str, obj
         voice=voice if voice is not None else settings.voice,
         model_variant=model_variant if model_variant is not None else settings.model_variant,
         instruct=instruct if instruct is not None else settings.instruct,
+        reference_audio=reference_audio if reference_audio is not None else settings.reference_audio,
+        reference_text=reference_text if reference_text is not None else settings.reference_text,
         rate=rate if rate is not None else settings.rate,
         volume=volume if volume is not None else settings.volume,
     )
@@ -164,6 +168,17 @@ def _profile_string(value: object, *, max_length: int) -> str | None:
         return None
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length] if cleaned else None
+
+
+def _profile_string_sequence(value: object, *, max_length: int) -> tuple[str, ...] | None:
+    if not isinstance(value, (list, tuple)):
+        return None
+    result: list[str] = []
+    for item in value:
+        cleaned = _profile_string(item, max_length=max_length)
+        if cleaned:
+            result.append(cleaned)
+    return tuple(result) if result else None
 
 
 def _profile_provider(value: object, *, aliases: Mapping[str, str]) -> str | None:

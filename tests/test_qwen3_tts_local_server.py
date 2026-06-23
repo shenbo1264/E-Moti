@@ -124,3 +124,45 @@ def test_qwen3_tts_local_server_falls_back_to_custom_voice_when_voice_design_is_
         ("design", "hello", "warm character voice", "chinese", True),
         ("custom", "hello", "Vivian", "chinese", True),
     ]
+
+
+def test_qwen3_tts_local_server_uses_voice_clone_when_reference_audio_is_supplied(monkeypatch) -> None:
+    from tools.voice_services import qwen3_tts_local_server
+
+    calls = []
+
+    class FakeQwen3Model:
+        def generate_voice_clone(
+            self,
+            *,
+            text,
+            language,
+            ref_audio,
+            ref_text,
+            non_streaming_mode,
+        ):
+            calls.append((text, language, ref_audio, ref_text, non_streaming_mode))
+            return [["audio-array"]], 24000
+
+    monkeypatch.setattr(qwen3_tts_local_server, "_audio_arrays_to_wav_bytes", lambda arrays, sample_rate: b"wav")
+
+    result = qwen3_tts_local_server._call_synthesizer(
+        FakeQwen3Model(),
+        "clone route",
+        "Vivian",
+        "zh",
+        "",
+        reference_audio="D:/voice-packs/ikaros/reference.wav",
+        reference_text="参考台词。",
+    )
+
+    assert result == b"wav"
+    assert calls == [
+        (
+            "clone route",
+            "chinese",
+            "D:/voice-packs/ikaros/reference.wav",
+            "参考台词。",
+            True,
+        )
+    ]

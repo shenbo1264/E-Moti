@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from .capability_settings import (
@@ -42,6 +42,7 @@ class CharacterVoiceProfile:
     distribution_policy: str = "public_ok"
     rights_note: str = ""
     reference_audio: tuple[str, ...] = ()
+    reference_text: str = ""
     defined: bool = False
 
     @classmethod
@@ -86,8 +87,18 @@ class CharacterVoiceProfile:
             ),
             rights_note=_clean_string(value.get("rights_note"), max_length=500),
             reference_audio=_reference_audio_tuple(value.get("reference_audio")),
+            reference_text=_clean_string(value.get("reference_text"), max_length=1000),
             defined=True,
         )
+
+    def with_resolved_reference_audio(self, root: Path) -> "CharacterVoiceProfile":
+        if not self.reference_audio:
+            return self
+        resolved: list[str] = []
+        for item in self.reference_audio:
+            path = Path(item)
+            resolved.append(str(path if path.is_absolute() else (root / path).resolve()))
+        return replace(self, reference_audio=tuple(resolved))
 
     def to_runtime_dict(self) -> dict[str, object]:
         if not self.defined:
@@ -113,6 +124,10 @@ class CharacterVoiceProfile:
             result["rate"] = self.rate
         if self.volume is not None:
             result["volume"] = self.volume
+        if self.reference_audio:
+            result["reference_audio"] = list(self.reference_audio)
+        if self.reference_text:
+            result["reference_text"] = self.reference_text
         return result
 
 

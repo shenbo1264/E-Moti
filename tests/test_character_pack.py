@@ -1,4 +1,4 @@
-import json
+﻿import json
 from pathlib import Path
 
 from PIL import Image
@@ -126,6 +126,44 @@ def test_bundled_submission_character_packs_are_valid_and_visible():
         assert pack.renderer.backend == "sprite"
         assert payload.get("hide_from_character_library") is not True
         assert (pack_dir / "preview" / "profile.png").is_file()
+
+def test_load_character_pack_resolves_voice_references_to_pack_directory(tmp_path):
+    pack_dir = tmp_path / "voice_clone_pet"
+    (pack_dir / "voice").mkdir(parents=True)
+    (pack_dir / "voice" / "reference.wav").write_bytes(b"RIFFdemo")
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": "voice_clone_pet",
+                "name": "Voice Clone Pet",
+                "title": "Voice clone test",
+                "description": "Character with a local reference voice.",
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "Calm"},
+                "motion_labels": {"Default": "Idle"},
+                "tts_profile": {
+                    "profile_id": "voice_clone_pet_local_v1",
+                    "provider": "http-qwen3tts",
+                    "model_variant": "qwen3tts_0.6b_base",
+                    "voice_source_type": "local_trained_clone",
+                    "training_status": "trained_local",
+                    "distribution_policy": "local_only",
+                    "reference_audio": ["voice/reference.wav"],
+                    "reference_text": "参考声音用于本地克隆。",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    pack = load_character_pack_from_dir(pack_dir)
+
+    assert pack.tts_profile.reference_audio == (str((pack_dir / "voice" / "reference.wav").resolve()),)
+    assert pack.tts_profile.reference_text == "参考声音用于本地克隆。"
+
 
 
 def test_load_character_pack_reads_live2d_renderer_model_path(tmp_path):
