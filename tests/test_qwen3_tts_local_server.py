@@ -139,9 +139,10 @@ def test_qwen3_tts_local_server_uses_voice_clone_when_reference_audio_is_supplie
             language,
             ref_audio,
             ref_text,
+            x_vector_only_mode,
             non_streaming_mode,
         ):
-            calls.append((text, language, ref_audio, ref_text, non_streaming_mode))
+            calls.append((text, language, ref_audio, ref_text, non_streaming_mode, x_vector_only_mode))
             return [["audio-array"]], 24000
 
     monkeypatch.setattr(qwen3_tts_local_server, "_audio_arrays_to_wav_bytes", lambda arrays, sample_rate: b"wav")
@@ -163,6 +164,51 @@ def test_qwen3_tts_local_server_uses_voice_clone_when_reference_audio_is_supplie
             "chinese",
             "D:/voice-packs/ikaros/reference.wav",
             "参考台词。",
+            True,
+            False,
+        )
+    ]
+
+
+def test_qwen3_tts_local_server_uses_xvector_clone_when_reference_text_is_missing(monkeypatch) -> None:
+    from tools.voice_services import qwen3_tts_local_server
+
+    calls = []
+
+    class FakeQwen3Model:
+        def generate_voice_clone(
+            self,
+            *,
+            text,
+            language,
+            ref_audio,
+            ref_text,
+            x_vector_only_mode,
+            non_streaming_mode,
+        ):
+            calls.append((text, language, ref_audio, ref_text, x_vector_only_mode, non_streaming_mode))
+            return [["audio-array"]], 24000
+
+    monkeypatch.setattr(qwen3_tts_local_server, "_audio_arrays_to_wav_bytes", lambda arrays, sample_rate: b"wav")
+
+    result = qwen3_tts_local_server._call_synthesizer(
+        FakeQwen3Model(),
+        "clone route",
+        "Vivian",
+        "zh",
+        "",
+        reference_audio="D:/voice-packs/ikaros/reference.wav",
+        reference_text=None,
+    )
+
+    assert result == b"wav"
+    assert calls == [
+        (
+            "clone route",
+            "chinese",
+            "D:/voice-packs/ikaros/reference.wav",
+            None,
+            True,
             True,
         )
     ]

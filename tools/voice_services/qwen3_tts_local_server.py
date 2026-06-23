@@ -159,6 +159,7 @@ def _call_synthesizer(
             language=qwen_language,
             ref_audio=reference_audio,
             ref_text=reference_text,
+            x_vector_only_mode=not bool(reference_text),
             non_streaming_mode=True,
         )
         return _audio_arrays_to_wav_bytes(arrays, sample_rate)
