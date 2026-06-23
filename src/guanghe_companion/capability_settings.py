@@ -14,6 +14,7 @@ DEFAULT_ASR_PROVIDER = "sensevoice_openai"
 DEFAULT_ASR_MODEL = "sensevoice"
 DEFAULT_ASR_BASE_URL = "http://127.0.0.1:8899/v1"
 DEFAULT_ASR_API_KEY = "local"
+DEFAULT_ASR_HOTKEY_SEQUENCE = "Ctrl+Alt+M"
 
 SCREEN_OBSERVATION_PROVIDER_ALIASES = {
     "openai": "openai_compatible",
@@ -186,6 +187,8 @@ class ASRSettings:
     language: str = "zh"
     vosk_model_path: str = ""
     auto_send: bool = False
+    hotkey_enabled: bool = False
+    hotkey_sequence: str = DEFAULT_ASR_HOTKEY_SEQUENCE
     max_record_seconds: int = 12
 
     @classmethod
@@ -205,6 +208,9 @@ class ASRSettings:
             language=_clean_string(source.get("language"), max_length=16) or "zh",
             vosk_model_path=_clean_string(source.get("vosk_model_path"), max_length=500),
             auto_send=_clean_bool(source.get("auto_send")),
+            hotkey_enabled=_clean_bool(source.get("hotkey_enabled")),
+            hotkey_sequence=_clean_string(source.get("hotkey_sequence"), max_length=80)
+            or DEFAULT_ASR_HOTKEY_SEQUENCE,
             max_record_seconds=_clean_int(source.get("max_record_seconds"), default=12, minimum=1, maximum=30),
         )
 

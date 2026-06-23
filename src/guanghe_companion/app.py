@@ -8,7 +8,19 @@ from collections.abc import Callable
 from pathlib import Path
 
 from PySide6.QtCore import QEvent, QPoint, QRectF, QSize, QTimer, Qt, Slot
-from PySide6.QtGui import QAction, QColor, QFont, QFontDatabase, QIcon, QLinearGradient, QPainter, QPen, QPixmap
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QFont,
+    QFontDatabase,
+    QIcon,
+    QKeySequence,
+    QLinearGradient,
+    QPainter,
+    QPen,
+    QPixmap,
+    QShortcut,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -519,6 +531,10 @@ class CompanionWindow(QMainWindow):
         self.web_search_service = WebSearchService()
         self.tts_manager = TTSManager()
         self.asr_service = ASRService()
+        self._asr_recording = False
+        self.asr_hotkey_shortcut = QShortcut(QKeySequence(), self)
+        self.asr_hotkey_shortcut.activated.connect(self._toggle_asr_recording)
+        self.asr_hotkey_shortcut.setEnabled(False)
         self.capability_runtime = CapabilityRuntime(
             settings_saver=self._save_capability_settings_from_ui,
             settings_reader=self.controller.get_capability_settings,
@@ -858,6 +874,8 @@ class CompanionWindow(QMainWindow):
             "asr_base_url_input",
             "asr_api_key_input",
             "asr_auto_send_check",
+            "asr_hotkey_enabled_check",
+            "asr_hotkey_input",
             "asr_start_button",
             "asr_stop_button",
             "voice_tts_enable_button",
@@ -1176,6 +1194,7 @@ class CompanionWindow(QMainWindow):
         self.dialogue_asr_button.setToolTip("ASR 服务接入后用于语音输入")
         self.dialogue_asr_button.setMinimumHeight(30)
         self.dialogue_asr_button.setEnabled(False)
+        self.dialogue_asr_button.clicked.connect(self._toggle_asr_recording)
         dialogue_layout.addWidget(self.dialogue_input, stretch=1)
         dialogue_layout.addWidget(self.dialogue_asr_button)
         dialogue_layout.addWidget(self.dialogue_send_button)
@@ -1748,15 +1767,42 @@ class CompanionWindow(QMainWindow):
 
     def _sync_voice_controls_enabled(self) -> None:
         self.voice_settings_card.sync_controls_enabled()
-        self.dialogue_asr_button.setEnabled(False)
+        settings = self.controller.get_capability_settings().asr
+        if not settings.enabled:
+            self._asr_recording = False
+        self.dialogue_asr_button.setEnabled(settings.enabled)
+        self.dialogue_asr_button.setText("Stop" if self._asr_recording else "Mic")
+        if settings.enabled and settings.hotkey_enabled:
+            self.dialogue_asr_button.setToolTip(f"ASR 语音输入；快捷键 {settings.hotkey_sequence}")
+        else:
+            self.dialogue_asr_button.setToolTip("ASR 语音输入")
+        self._sync_asr_hotkey(settings)
+
+    def _sync_asr_hotkey(self, settings) -> None:
+        sequence = QKeySequence(settings.hotkey_sequence)
+        self.asr_hotkey_shortcut.setKey(sequence)
+        self.asr_hotkey_shortcut.setEnabled(
+            bool(settings.enabled and settings.hotkey_enabled and not sequence.isEmpty())
+        )
 
     def _handle_asr_start(self) -> None:
         result = self.capability_runtime.start_asr()
         self.voice_status_label.setText(result.message)
+        if result.ok:
+            self._asr_recording = True
+            self._sync_voice_controls_enabled()
+
+    def _toggle_asr_recording(self) -> None:
+        if self._asr_recording:
+            self._handle_asr_stop()
+            return
+        self._handle_asr_start()
 
     def _handle_asr_stop(self) -> None:
         result = self.capability_runtime.stop_asr()
         self.voice_status_label.setText(result.message)
+        self._asr_recording = False
+        self._sync_voice_controls_enabled()
         if not result.text:
             return
         self.dialogue_input.setText(result.text)
@@ -1851,7 +1897,6 @@ class CompanionWindow(QMainWindow):
         settings = settings or self.controller.get_capability_settings()
         self.capability_settings_panel.load_settings(settings)
         self.voice_settings_card.load_settings(settings, self.controller.get_expression_settings())
-        self.dialogue_asr_button.setEnabled(False)
         self._sync_voice_controls_enabled()
         self._update_screen_observation_timer()
 

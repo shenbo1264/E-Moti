@@ -293,11 +293,15 @@ class VoiceSettingsPanel(QGroupBox):
         self.asr_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.asr_api_key_input.setPlaceholderText("ASR API Key")
         self.asr_auto_send_check = QCheckBox("识别后自动发送")
+        self.asr_hotkey_enabled_check = QCheckBox("启用 ASR 快捷键")
+        self.asr_hotkey_input = QLineEdit()
+        self.asr_hotkey_input.setPlaceholderText("Ctrl+Alt+M")
         self.asr_start_button = QPushButton("开始录音")
         self.asr_start_button.clicked.connect(self.asrStartRequested)
         self.asr_stop_button = QPushButton("停止并识别")
         self.asr_stop_button.clicked.connect(self.asrStopRequested)
         self.asr_enabled_check.toggled.connect(self.sync_controls_enabled)
+        self.asr_hotkey_enabled_check.toggled.connect(self.sync_controls_enabled)
 
         self.voice_tts_enable_button = QPushButton("启用 TTS")
         self.voice_tts_enable_button.setEnabled(False)
@@ -329,8 +333,11 @@ class VoiceSettingsPanel(QGroupBox):
         layout.addWidget(self.asr_auto_send_check, 11, 0)
         layout.addWidget(self.asr_start_button, 11, 1)
         layout.addWidget(self.asr_stop_button, 11, 2)
-        layout.addWidget(self.voice_tts_enable_button, 12, 0)
-        layout.addWidget(self.voice_asr_enable_button, 12, 1)
+        layout.addWidget(self.asr_hotkey_enabled_check, 12, 0)
+        layout.addWidget(QLabel("ASR 快捷键"), 12, 1)
+        layout.addWidget(self.asr_hotkey_input, 12, 2, 1, 2)
+        layout.addWidget(self.voice_tts_enable_button, 13, 0)
+        layout.addWidget(self.voice_asr_enable_button, 13, 1)
         self.load_settings(settings or CapabilitySettings.default(), expression_settings or {})
 
     def load_settings(self, settings: CapabilitySettings, expression_settings: Mapping[str, object]) -> None:
@@ -349,6 +356,8 @@ class VoiceSettingsPanel(QGroupBox):
         self.asr_base_url_input.setText(asr.base_url)
         self.asr_api_key_input.setText(asr.api_key)
         self.asr_auto_send_check.setChecked(asr.auto_send)
+        self.asr_hotkey_enabled_check.setChecked(asr.hotkey_enabled)
+        self.asr_hotkey_input.setText(asr.hotkey_sequence)
         self.sync_controls_enabled()
 
     def collect_settings(self, base: CapabilitySettings | None = None) -> CapabilitySettings:
@@ -369,6 +378,8 @@ class VoiceSettingsPanel(QGroupBox):
             base_url=self.asr_base_url_input.text(),
             api_key=self.asr_api_key_input.text(),
             auto_send=self.asr_auto_send_check.isChecked(),
+            hotkey_enabled=self.asr_hotkey_enabled_check.isChecked(),
+            hotkey_sequence=self.asr_hotkey_input.text(),
         )
         return replace(source, tts=tts, asr=asr)
 
@@ -379,6 +390,8 @@ class VoiceSettingsPanel(QGroupBox):
         asr_enabled = self.asr_enabled_check.isChecked()
         self.asr_start_button.setEnabled(asr_enabled)
         self.asr_stop_button.setEnabled(asr_enabled)
+        self.asr_hotkey_enabled_check.setEnabled(asr_enabled)
+        self.asr_hotkey_input.setEnabled(asr_enabled and self.asr_hotkey_enabled_check.isChecked())
 
     def set_status(self, text: str) -> None:
         self.voice_status_label.setText(text)

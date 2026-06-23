@@ -21,6 +21,8 @@ def test_default_capabilities_are_disabled() -> None:
     assert settings.asr.model == "sensevoice"
     assert settings.asr.base_url == "http://127.0.0.1:8899/v1"
     assert settings.asr.auto_send is False
+    assert settings.asr.hotkey_enabled is False
+    assert settings.asr.hotkey_sequence == "Ctrl+Alt+M"
     assert settings.proactive_companion.enabled is False
     assert settings.proactive_companion.interval_seconds == 900
     assert settings.proactive_companion.global_cooldown_seconds == 1800
@@ -62,6 +64,8 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
                     "provider": "OPENAI",
                     "api_key": "asr-secret",
                     "max_record_seconds": 99,
+                    "hotkey_enabled": True,
+                    "hotkey_sequence": " Ctrl+Alt+Space ",
                 },
                 "proactive_companion": {
                     "enabled": True,
@@ -95,6 +99,8 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
     assert settings.tts.volume == 1.0
     assert settings.asr.provider == "openai_compatible"
     assert settings.asr.max_record_seconds == 30
+    assert settings.asr.hotkey_enabled is True
+    assert settings.asr.hotkey_sequence == "Ctrl+Alt+Space"
     assert settings.proactive_companion.enabled is True
     assert settings.proactive_companion.interval_seconds == 60
     assert settings.proactive_companion.global_cooldown_seconds == 60

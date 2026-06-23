@@ -53,22 +53,31 @@ def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app)
 
     base = CapabilitySettings(
         tts=TTSSettings(language="ja", voice="test-voice", rate=3, volume=0.4),
-        asr=ASRSettings(language="en", vosk_model_path="models/vosk", max_record_seconds=22),
+        asr=ASRSettings(
+            language="en",
+            vosk_model_path="models/vosk",
+            max_record_seconds=22,
+            hotkey_enabled=True,
+            hotkey_sequence="Ctrl+Alt+Space",
+        ),
     )
     panel = VoiceSettingsPanel(base, {"tts_provider": "disabled", "asr_provider": "disabled"})
 
     assert panel.tts_test_button.isEnabled() is False
     assert panel.asr_start_button.isEnabled() is False
+    assert panel.asr_hotkey_input.isEnabled() is False
 
     panel.tts_enabled_check.setChecked(True)
     panel.asr_enabled_check.setChecked(True)
     panel.tts_model_variant_combo.setCurrentText("qwen3tts_1.7b_customvoice")
     panel.asr_model_input.setText("whisper-large")
+    panel.asr_hotkey_input.setText("Alt+M")
 
     settings = panel.collect_settings(base)
 
     assert panel.tts_test_button.isEnabled() is True
     assert panel.asr_start_button.isEnabled() is True
+    assert panel.asr_hotkey_input.isEnabled() is True
     assert settings.tts.enabled is True
     assert settings.tts.model_variant == "qwen3tts_1.7b_customvoice"
     assert settings.tts.language == "ja"
@@ -80,6 +89,8 @@ def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app)
     assert settings.asr.language == "en"
     assert settings.asr.vosk_model_path == "models/vosk"
     assert settings.asr.max_record_seconds == 22
+    assert settings.asr.hotkey_enabled is True
+    assert settings.asr.hotkey_sequence == "Alt+M"
 
 
 def test_voice_settings_panel_uses_catalog_provider_choices(qt_app):

@@ -3238,6 +3238,66 @@ def test_asr_auto_send_uses_dialogue_request_without_growth_mutation(monkeypatch
     app.processEvents()
 
 
+def test_asr_hotkey_toggles_recording_and_uses_dialogue_request(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtGui import QKeySequence
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class FakeASRService:
+        def __init__(self):
+            self.started = []
+            self.stopped = []
+
+        def start_recording(self, settings):
+            from guanghe_companion.voice_asr import ASRResult
+
+            self.started.append(settings)
+            return ASRResult(True, "录音中")
+
+        def stop_and_transcribe(self, settings):
+            from guanghe_companion.voice_asr import ASRResult
+
+            self.stopped.append(settings)
+            return ASRResult(True, "识别完成", "快捷键和星汐说话")
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    fake_asr = FakeASRService()
+    window.asr_service = fake_asr
+    window.asr_enabled_check.setChecked(True)
+    window.asr_auto_send_check.setChecked(True)
+    window.asr_hotkey_enabled_check.setChecked(True)
+    window.asr_hotkey_input.setText("Ctrl+Alt+Space")
+    window.capability_save_button.click()
+    before = window.controller.get_typed_snapshot()
+
+    assert window.asr_hotkey_shortcut.isEnabled() is True
+    assert (
+        window.asr_hotkey_shortcut.key().toString(QKeySequence.SequenceFormat.PortableText)
+        == "Ctrl+Alt+Space"
+    )
+
+    window.asr_hotkey_shortcut.activated.emit()
+    window.asr_hotkey_shortcut.activated.emit()
+    app.processEvents()
+    after = window.controller.get_typed_snapshot()
+    user_entries = [entry for entry in window.controller.dialogue_history if entry.role == "user"]
+
+    assert [settings.hotkey_sequence for settings in fake_asr.started] == ["Ctrl+Alt+Space"]
+    assert [settings.hotkey_sequence for settings in fake_asr.stopped] == ["Ctrl+Alt+Space"]
+    assert user_entries[-1].source == "asr"
+    assert user_entries[-1].text == "快捷键和星汐说话"
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_manual_screen_perception_trigger_shows_privacy_prompt_and_status(monkeypatch, tmp_path):
     from PySide6.QtWidgets import QMessageBox
 
