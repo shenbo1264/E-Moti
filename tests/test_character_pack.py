@@ -107,6 +107,27 @@ def test_bundled_original_oc_pack_remains_valid_fallback():
     assert pack.renderer.backend == "portrait"
 
 
+def test_bundled_submission_character_packs_are_valid_and_visible():
+    expected = {
+        "xingxi_pixel_pet": "星汐",
+        "ikaros_pixel_pet": "伊卡洛斯",
+        "nairong_pixel_pet": "奶龙",
+    }
+
+    for character_id, name in expected.items():
+        pack_dir = REPO_ROOT / "assets" / "companion" / character_id
+        report = validate_character_pack_dir(pack_dir)
+        pack = load_character_pack_from_dir(pack_dir)
+        payload = json.loads((pack_dir / "character.json").read_text(encoding="utf-8-sig"))
+
+        assert report.ok is True
+        assert pack.character_id == character_id
+        assert pack.name == name
+        assert pack.renderer.backend == "sprite"
+        assert payload.get("hide_from_character_library") is not True
+        assert (pack_dir / "preview" / "profile.png").is_file()
+
+
 def test_load_character_pack_reads_live2d_renderer_model_path(tmp_path):
     pack_dir = tmp_path / "live2d_character"
     (pack_dir / "live2d").mkdir(parents=True)

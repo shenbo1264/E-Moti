@@ -168,9 +168,10 @@ def _validate_character_detail(window: CompanionWindow, character_id: str, error
     if pack is None:
         return
     required_fragments = (
-        f"Distribution: {pack.distribution_boundary}",
-        "Provenance: provenance.md",
-        "License: LICENSE.md",
+        "角色包信息",
+        "交付状态:",
+        "来源记录: provenance.md",
+        "说明文件: LICENSE.md",
     )
     for fragment in required_fragments:
         if fragment not in detail:

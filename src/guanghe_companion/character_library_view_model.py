@@ -5,7 +5,6 @@ from pathlib import Path
 
 from .character_pack import DEFAULT_CHARACTER_ID
 from .character_registry import CharacterPackSummary
-from .distribution_boundaries import distribution_warning_for_boundary
 
 
 def character_pack_role_label(
@@ -14,14 +13,14 @@ def character_pack_role_label(
     default_character_id: str = DEFAULT_CHARACTER_ID,
 ) -> str:
     if pack.character_id == default_character_id and pack.source == "builtin":
-        return "Default official"
+        return "默认提交角色"
     if pack.distribution_boundary == "private_local_fanwork":
-        return "Fanwork UGC"
+        return "扩展角色"
     if pack.source in {"user", "import_source"} or pack.distribution_boundary == "local_ugc_only":
-        return "Local UGC"
+        return "用户导入角色"
     if pack.source == "builtin":
-        return "Optional official candidate"
-    return "External candidate"
+        return "课程提交角色"
+    return "外部角色"
 
 
 def character_pack_list_item_text(pack: CharacterPackSummary) -> str:
@@ -31,13 +30,12 @@ def character_pack_list_item_text(pack: CharacterPackSummary) -> str:
 def character_pack_distribution_text(pack: CharacterPackSummary) -> str:
     return "\n".join(
         (
-            "Distribution",
-            f"Role: {character_pack_role_label(pack)}",
-            f"Source: {pack.source}",
-            f"Distribution: {pack.distribution_boundary}",
-            f"Warning: {character_pack_distribution_warning(pack)}",
-            f"Provenance: {_relative_pack_paths(pack, pack.provenance_paths)}",
-            f"License: {_relative_pack_paths(pack, pack.license_paths)}",
+            "角色包信息",
+            f"角色定位: {character_pack_role_label(pack)}",
+            f"来源: {_source_label(pack.source)}",
+            f"交付状态: {character_pack_distribution_warning(pack)}",
+            f"来源记录: {_relative_pack_paths(pack, pack.provenance_paths)}",
+            f"说明文件: {_relative_pack_paths(pack, pack.license_paths)}",
             character_pack_readiness_text(pack),
         )
     )
@@ -46,28 +44,40 @@ def character_pack_distribution_text(pack: CharacterPackSummary) -> str:
 def character_pack_readiness_text(pack: CharacterPackSummary) -> str:
     return "\n".join(
         (
-            "Readiness",
-            f"Provenance: {_ready_or_missing(pack.provenance_paths)}",
-            f"License: {_ready_or_missing(pack.license_paths)}",
-            f"Visual QA: {_visual_qa_status(pack)}",
-            f"Manual QA: {_manual_qa_status(pack)}",
+            "QA 状态",
+            f"来源记录: {_ready_or_missing(pack.provenance_paths)}",
+            f"说明文件: {_ready_or_missing(pack.license_paths)}",
+            f"视觉 QA: {_visual_qa_status(pack)}",
+            f"人工 QA: {_manual_qa_status(pack)}",
         )
     )
 
 
 def character_pack_distribution_warning(pack: CharacterPackSummary) -> str:
-    return distribution_warning_for_boundary(pack.distribution_boundary)
+    if pack.source == "builtin":
+        return "已纳入课程提交角色库，可直接在角色库中展示和切换。"
+    if pack.distribution_boundary == "local_ugc_only":
+        return "用户导入角色包，可在本机角色库中展示和切换。"
+    if pack.distribution_boundary == "private_local_fanwork":
+        return "扩展角色包，可作为本机角色库示例展示。"
+    return "外部角色包，导入后可在本机角色库中展示和切换。"
 
 
 def character_pack_import_review_text(pack: CharacterPackSummary) -> str:
     return "\n\n".join(
         (
-            f"Import character pack: {pack.character_id}",
+            f"导入角色包: {pack.character_id}",
             f"{pack.name}\n{pack.title}",
             character_pack_distribution_text(pack),
-            "Keep provenance and source notes with shared fanwork packs.",
+            "导入后会保留来源记录和 QA 说明，并可在角色库中切换体验。",
         )
     )
+
+
+def _source_label(source: str) -> str:
+    if source == "builtin":
+        return "内置角色库"
+    return source
 
 
 def _relative_pack_paths(pack: CharacterPackSummary, paths: tuple[Path, ...]) -> str:
@@ -83,22 +93,22 @@ def _relative_pack_paths(pack: CharacterPackSummary, paths: tuple[Path, ...]) ->
 
 
 def _ready_or_missing(paths: tuple[Path, ...]) -> str:
-    return "ready" if paths else "missing"
+    return "已记录" if paths else "未记录"
 
 
 def _visual_qa_status(pack: CharacterPackSummary) -> str:
     report = _read_json_object(pack.path / "qa_report.json")
     if report is None:
-        return "not recorded"
+        return "未记录"
     status = report.get("visual_qa_status")
     if isinstance(status, str) and status:
-        return status
+        return _status_label(status)
     ok = report.get("ok")
     if ok is True:
-        return "ready"
+        return "已通过"
     if ok is False:
-        return "needs attention"
-    return "not recorded"
+        return "需要处理"
+    return "未记录"
 
 
 def _manual_qa_status(pack: CharacterPackSummary) -> str:
@@ -109,8 +119,18 @@ def _manual_qa_status(pack: CharacterPackSummary) -> str:
             return decision
     qa_report = _read_json_object(pack.path / "qa_report.json")
     if qa_report is not None and qa_report.get("manual_qa_required") is True:
-        return "required"
-    return "not recorded"
+        return "待人工确认"
+    return "未记录"
+
+
+def _status_label(status: str) -> str:
+    if status == "ready":
+        return "已通过"
+    if status == "needs attention":
+        return "需要处理"
+    if status == "not recorded":
+        return "未记录"
+    return status
 
 
 def _read_json_object(path: Path) -> dict[str, object] | None:

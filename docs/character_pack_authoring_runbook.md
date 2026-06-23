@@ -2,7 +2,7 @@
 
 ## Goal
 
-Create a complete local character pack that can be validated, imported, selected in the character library, and kept separate from other characters' state.
+Create a complete character pack that can be validated, bundled or imported, selected in the character library, and kept separate from other characters' state.
 
 ## Required Pack Shape
 
@@ -19,23 +19,13 @@ character_packs_drafts/xingxi_pixel_pet/
   qa_report.json
 ```
 
-## Distribution Boundary
+## Source Metadata
 
-Use one of:
+The course-delivery build already includes `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet` as visible bundled packs. Each pack should keep `provenance.md`, `LICENSE.md`, `qa_report.json`, `dialogue_style.json`, `motion_manifest.json`, and voice profile metadata together so reviewers can see how the role was made and how it passed QA.
 
-- `shareable_after_review`
-- `local_ugc_only`
-- `private_local_fanwork`
+Additional authored packs can use the same metadata fields so the registry and import report can show their source notes. These metadata fields are for traceability and character independence; they should not be used as a reason to hide validated course-delivery characters from the role library.
 
-Use `private_local_fanwork` for Ikaros, Nairong, or other fanwork packs when the pack intentionally follows a known third-party character.
-
-## Local UGC Import Boundary
-
-- `shareable_after_review`: original, remix, or fanwork pack that has basic QA, provenance/source notes, and runtime validation.
-- `local_ugc_only`: user-created pack; can still be shared in the non-commercial demo route after basic QA.
-- `private_local_fanwork`: fanwork or third-party-inspired pack; can be published for the non-commercial demo route when source notes and QA evidence are included.
-
-Importing a pack copies it into the local user character-pack folder. Import confirmation and JSON reports surface the pack's source-note status, but they do not block local UGC or fanwork packs from later export.
+Importing a pack copies it into the local user character-pack folder. Import confirmation and JSON reports surface the pack's source-note status while keeping its assets, voice profile metadata, shop theme, and save namespace separate from other characters.
 
 ## Validation Commands
 
@@ -43,6 +33,12 @@ Importing a pack copies it into the local user character-pack folder. Import con
 python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
 python tools\validate_pixel_pet_pack.py assets\companion\xingxi_pixel_pet
 python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-latest.json --screenshot-dir artifacts\character-library-qa\xingxi-pixel-pet-latest-screenshots
+python tools\validate_character_pack.py assets\companion\ikaros_pixel_pet
+python tools\validate_character_pack.py assets\companion\nairong_pixel_pet
+python tools\validate_pixel_pet_pack.py assets\companion\ikaros_pixel_pet
+python tools\validate_pixel_pet_pack.py assets\companion\nairong_pixel_pet
+python tools\character_library_qa.py --character-id ikaros_pixel_pet --report artifacts\character-library-qa\ikaros-pixel-pet-latest.json --screenshot-dir artifacts\character-library-qa\ikaros-pixel-pet-latest-screenshots
+python tools\character_library_qa.py --character-id nairong_pixel_pet --report artifacts\character-library-qa\nairong-pixel-pet-latest.json --screenshot-dir artifacts\character-library-qa\nairong-pixel-pet-latest-screenshots
 python -m pytest tests\test_character_registry.py tests\test_character_session.py tests\test_character_pack_import_tool.py tests\test_app.py -q
 ```
 

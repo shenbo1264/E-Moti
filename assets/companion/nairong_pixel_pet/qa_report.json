@@ -1,0 +1,21 @@
+{
+  "character_id": "nairong_pixel_pet",
+  "status": "approved",
+  "distribution_boundary": "official_candidate",
+  "manual_qa_required": true,
+  "notes": [
+    "Bundled as a visible course-delivery character pack for multi-character switching.",
+    "Runtime atlas is assembled from approved local v2 baseline and v5 goofy expression candidate.",
+    "Character pack validation passed after promotion into assets/companion."
+  ],
+  "edge_halo_cleanup": {
+    "method": "delete_suspicious_edge_halo_pixels_and_recolor_dark_purple_outline",
+    "changed_pixel_count": 6068,
+    "pass_changed_pixel_counts": [
+      6053,
+      15,
+      0
+    ],
+    "manual_qa_required": true
+  }
+}

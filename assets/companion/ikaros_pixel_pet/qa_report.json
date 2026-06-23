@@ -1,0 +1,11 @@
+{
+  "character_id": "ikaros_pixel_pet",
+  "status": "approved",
+  "distribution_boundary": "official_candidate",
+  "manual_qa_required": true,
+  "notes": [
+    "Bundled as a visible course-delivery character pack for multi-character switching.",
+    "Character pack validation passed after promotion into assets/companion.",
+    "Character library QA passed for selecting this pack and opening desktop pet mode."
+  ]
+}

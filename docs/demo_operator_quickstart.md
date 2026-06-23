@@ -1,6 +1,6 @@
 # Demo Operator Quickstart
 
-This guide is for a reviewer or operator who wants to run the current E-Moti demo without private development context.
+This guide is for a reviewer or operator who wants to run the current E-Moti demo without reading development chat context.
 
 ## What This Demo Shows
 
@@ -8,14 +8,14 @@ This guide is for a reviewer or operator who wants to run the current E-Moti dem
 - A control panel for status, actions, shop, inventory, relationship, memory, dialogue, settings, and character library.
 - A transparent desktop pet mode with tray-friendly hiding, restoring, pet-mode entry, and exit paths.
 - Optional AI expression that can produce speech, expression cues, motion cues, and read-only interaction intents through typed events.
-- Character switching between bundled or local packs, with provenance/source notes and distribution labels visible.
+- Character switching between the three bundled course-delivery packs plus any additional local packs.
 
 ## What This Demo Does Not Do
 
 - It is not a productivity supervisor, course monitor, or mascot-only skin.
 - It does not let LLMs mutate saves, inventory, memory, relationship, goals, coins, or growth state.
 - It does not use background listening, wake words, mouse control, keyboard control, clipboard control, or window control.
-- Public builds use `xingxi_pixel_pet` as the default pack. Non-commercial preview or course builds may include fanwork UGC packs such as Ikaros or Nairong for switching QA.
+- The course-delivery build includes `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet` directly in the character library.
 
 ## Five-Minute Demo Flow
 
@@ -23,7 +23,7 @@ This guide is for a reviewer or operator who wants to run the current E-Moti dem
 2. Check the status, action, shop, inventory, memory, dialogue, settings, and character library views.
 3. Switch to desktop pet mode.
 4. Hide and restore from the system tray.
-5. Open the character library and confirm `xingxi_pixel_pet` is the default visible Xingxi pack. In a preview/course package, switch to UGC examples such as Ikaros or Nairong if present.
+5. Open the character library and confirm all three visible packs are present: `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`; switch between them once.
 6. If a valid provider key or local OpenAI-compatible provider is available, run the LLM provider test and one dialogue turn.
 
 ## Verification Commands
@@ -45,6 +45,8 @@ Validate bundled character packs:
 ```powershell
 python tools\validate_character_pack.py assets\companion\original_oc
 python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
+python tools\validate_character_pack.py assets\companion\ikaros_pixel_pet
+python tools\validate_character_pack.py assets\companion\nairong_pixel_pet
 ```
 
 Check LLM provider configuration without making provider calls:
@@ -62,14 +64,15 @@ python tools\llm_expression_cue_probe.py --provider deepseek --timeout-seconds 4
 ## Expected Current State
 
 - `xingxi_pixel_pet` is the default visible bundled pack.
-- `original_oc` is a hidden compatibility fallback.
+- `ikaros_pixel_pet` and `nairong_pixel_pet` are visible bundled course-delivery packs for character-switching demonstration.
+- `original_oc` remains as older compatibility assets for historical renderer coverage.
 - Live AI expression depends on a configured provider or local OpenAI-compatible server.
 - The pixel pack includes a `ConfusedShy` motion row and maps `confused` / `shy` expression cues to it.
-- Runtime saves, API keys, and ignored smoke artifacts are not committed. Fanwork UGC packs can be included in non-commercial preview/course packages when validated.
+- Runtime saves, API keys, and ignored smoke artifacts are not committed.
 
 ## Demo Talking Points
 
 - E-Moti is a companion pet with local gameplay state, not an LLM-owned agent loop.
 - AI is used for expressive speech and presentation cues while typed event validation protects the pet state machine.
 - The active art-production route is a hatch-pet-style pixel-pet sequence workflow: one base, one row, contact-sheet QA, repair, then promotion.
-- Character packs keep assets, style, provenance/source notes, QA notes, distribution label, and save namespace separate.
+- Character packs keep assets, style, provenance/source notes, QA notes, voice profile metadata, and save namespace separate.

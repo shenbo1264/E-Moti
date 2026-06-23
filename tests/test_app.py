@@ -514,8 +514,8 @@ def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_p
         "澄光 | 桌面回声同伴",
         "星汐 | 像素桌面同伴",
     ]
-    assert "Optional official candidate" in window.character_list.item(0).toolTip()
-    assert "Default official" in window.character_list.item(1).toolTip()
+    assert "课程提交角色" in window.character_list.item(0).toolTip()
+    assert "默认提交角色" in window.character_list.item(1).toolTip()
     window.character_list.setCurrentRow(0)
     window.character_switch_button.click()
     app.processEvents()
@@ -555,15 +555,16 @@ def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_pat
     app.processEvents()
 
     details = window.character_detail_label.text()
-    assert "Role: Default official" in details
-    assert "Source: builtin" in details
-    assert "Distribution: shareable_after_review" in details
-    assert "Provenance: ready" in details
-    assert "License: ready" in details
-    assert "Visual QA: not recorded" in details
-    assert "Manual QA: not recorded" in details
-    assert "Provenance: provenance.md" in details
-    assert "License: LICENSE" in details
+    assert "角色定位: 默认提交角色" in details
+    assert "来源: 内置角色库" in details
+    assert "交付状态: 已纳入课程提交角色库" in details
+    assert "来源记录: 已记录" in details
+    assert "说明文件: 已记录" in details
+    assert "视觉 QA: 未记录" in details
+    assert "人工 QA: 未记录" in details
+    assert "来源记录: provenance.md" in details
+    assert "说明文件: LICENSE" in details
+    assert "Warning:" not in details
 
     window.close()
     app.processEvents()
@@ -599,9 +600,9 @@ def test_character_library_detail_metadata_is_scrollable(monkeypatch, tmp_path):
     assert window.character_detail_scroll_area.widget() is window.character_detail_label
     assert window.character_detail_label.wordWrap()
     assert window.character_detail_label.alignment() & Qt.AlignmentFlag.AlignTop
-    assert "Distribution: shareable_after_review" in window.character_detail_label.text()
-    assert "Provenance: provenance.md" in window.character_detail_label.text()
-    assert "License: LICENSE.md" in window.character_detail_label.text()
+    assert "交付状态: 已纳入课程提交角色库" in window.character_detail_label.text()
+    assert "来源记录: provenance.md" in window.character_detail_label.text()
+    assert "说明文件: LICENSE.md" in window.character_detail_label.text()
 
     window.close()
     app.processEvents()
@@ -842,10 +843,10 @@ def test_character_library_import_confirmation_shows_distribution_metadata(monke
     assert (tmp_path / "user-data" / "character_packs" / "imported_character").is_dir()
     assert len(confirmations) == 1
     assert "imported_character" in confirmations[0][1]
-    assert "Source: import_source" in confirmations[0][1]
-    assert "Distribution: local_ugc_only" in confirmations[0][1]
-    assert "Provenance: provenance.md" in confirmations[0][1]
-    assert "License: LICENSE" in confirmations[0][1]
+    assert "来源: import_source" in confirmations[0][1]
+    assert "交付状态: 用户导入角色包" in confirmations[0][1]
+    assert "来源记录: provenance.md" in confirmations[0][1]
+    assert "说明文件: LICENSE" in confirmations[0][1]
 
     window.close()
     app.processEvents()
@@ -896,8 +897,8 @@ def test_character_library_import_confirmation_marks_fanwork_ugc_with_source_not
     window.character_import_button.click()
     app.processEvents()
 
-    assert "Fanwork UGC" in confirmations[0]
-    assert "Keep provenance and source notes with shared fanwork packs." in confirmations[0]
+    assert "扩展角色" in confirmations[0]
+    assert "导入后会保留来源记录和 QA 说明" in confirmations[0]
     assert (tmp_path / "user-data" / "character_packs" / "private_fanwork_character").is_dir()
 
     window.close()
