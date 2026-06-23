@@ -126,13 +126,17 @@ def _call_synthesizer(synthesizer: object, text: str, voice: str, language: str,
     if instruct:
         generate_voice_design = getattr(synthesizer, "generate_voice_design", None)
         if callable(generate_voice_design):
-            arrays, sample_rate = generate_voice_design(
-                text=text,
-                instruct=instruct,
-                language=qwen_language,
-                non_streaming_mode=True,
-            )
-            return _audio_arrays_to_wav_bytes(arrays, sample_rate)
+            try:
+                arrays, sample_rate = generate_voice_design(
+                    text=text,
+                    instruct=instruct,
+                    language=qwen_language,
+                    non_streaming_mode=True,
+                )
+                return _audio_arrays_to_wav_bytes(arrays, sample_rate)
+            except Exception as exc:
+                if "does not support generate_voice_design" not in str(exc):
+                    raise
     generate_custom_voice = getattr(synthesizer, "generate_custom_voice", None)
     if callable(generate_custom_voice):
         arrays, sample_rate = generate_custom_voice(

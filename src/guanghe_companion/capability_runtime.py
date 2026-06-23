@@ -110,30 +110,33 @@ class CapabilityRuntime:
         return _resolve_service(self.asr_service, ASRService)
 
     def _character_tts_settings(self, settings: TTSSettings) -> TTSSettings:
-        profile = self.tts_profile_reader()
-        if not profile:
-            return settings
-        profile_id = _profile_string(profile.get("profile_id"), max_length=80)
-        provider = _profile_provider(profile.get("provider"), aliases=TTS_PROVIDER_ALIASES)
-        api_url = _profile_string(profile.get("api_url"), max_length=240)
-        language = _profile_string(profile.get("language"), max_length=16)
-        voice = _profile_string(profile.get("voice"), max_length=120)
-        model_variant = _profile_provider(profile.get("model_variant"), aliases=TTS_MODEL_VARIANT_ALIASES)
-        instruct = _profile_string(profile.get("instruct"), max_length=360)
-        rate = _profile_int(profile.get("rate"), minimum=-10, maximum=10)
-        volume = _profile_float(profile.get("volume"), minimum=0.0, maximum=1.0)
-        return replace(
-            settings,
-            profile_id=profile_id if profile_id is not None else settings.profile_id,
-            provider=provider if provider is not None else settings.provider,
-            api_url=api_url if api_url is not None else settings.api_url,
-            language=language if language is not None else settings.language,
-            voice=voice if voice is not None else settings.voice,
-            model_variant=model_variant if model_variant is not None else settings.model_variant,
-            instruct=instruct if instruct is not None else settings.instruct,
-            rate=rate if rate is not None else settings.rate,
-            volume=volume if volume is not None else settings.volume,
-        )
+        return apply_character_tts_profile(settings, self.tts_profile_reader())
+
+
+def apply_character_tts_profile(settings: TTSSettings, profile: Mapping[str, object]) -> TTSSettings:
+    if not profile:
+        return settings
+    profile_id = _profile_string(profile.get("profile_id"), max_length=80)
+    provider = _profile_provider(profile.get("provider"), aliases=TTS_PROVIDER_ALIASES)
+    api_url = _profile_string(profile.get("api_url"), max_length=240)
+    language = _profile_string(profile.get("language"), max_length=16)
+    voice = _profile_string(profile.get("voice"), max_length=120)
+    model_variant = _profile_provider(profile.get("model_variant"), aliases=TTS_MODEL_VARIANT_ALIASES)
+    instruct = _profile_string(profile.get("instruct"), max_length=360)
+    rate = _profile_int(profile.get("rate"), minimum=-10, maximum=10)
+    volume = _profile_float(profile.get("volume"), minimum=0.0, maximum=1.0)
+    return replace(
+        settings,
+        profile_id=profile_id if profile_id is not None else settings.profile_id,
+        provider=provider if provider is not None else settings.provider,
+        api_url=api_url if api_url is not None else settings.api_url,
+        language=language if language is not None else settings.language,
+        voice=voice if voice is not None else settings.voice,
+        model_variant=model_variant if model_variant is not None else settings.model_variant,
+        instruct=instruct if instruct is not None else settings.instruct,
+        rate=rate if rate is not None else settings.rate,
+        volume=volume if volume is not None else settings.volume,
+    )
 
 
 def _format_web_search_display(result: WebSearchResult) -> str:

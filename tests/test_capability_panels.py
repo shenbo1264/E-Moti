@@ -93,6 +93,36 @@ def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app)
     assert settings.asr.hotkey_sequence == "Alt+M"
 
 
+def test_voice_settings_panel_shows_current_character_voice_profile(qt_app):
+    from guanghe_companion.capability_panels import VoiceSettingsPanel
+    from guanghe_companion.capability_settings import CapabilitySettings
+
+    panel = VoiceSettingsPanel(
+        CapabilitySettings.default(),
+        {},
+        {
+            "profile_id": "xingxi_pixel_pet_qwen_vivian_v1",
+            "display_name": "Xingxi designed voice",
+            "provider": "http_qwen3tts",
+            "voice": "Vivian",
+            "model_variant": "qwen3tts_0.6b_customvoice",
+            "voice_source_type": "original_design",
+            "training_status": "designed",
+        },
+    )
+
+    text = panel.voice_character_profile_label.text()
+    assert "Xingxi designed voice" in text
+    assert "xingxi_pixel_pet_qwen_vivian_v1" in text
+    assert "http_qwen3tts" in text
+    assert "Vivian" in text
+    assert "designed" in text
+
+    panel.set_character_voice_profile({})
+
+    assert "not defined" in panel.voice_character_profile_label.text()
+
+
 def test_voice_settings_panel_uses_catalog_provider_choices(qt_app):
     from guanghe_companion.capability_panels import VoiceSettingsPanel
 

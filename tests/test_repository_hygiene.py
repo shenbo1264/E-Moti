@@ -40,6 +40,7 @@ REQUIRED_GITIGNORE_PATTERNS = (
     "data/companion_save.json",
     "data/companion_demo_save.json",
     "data/dialogue_history.json",
+    "data/characters/",
     "artifacts/simulation/",
     "artifacts/llm_smoke/",
     "artifacts/character-pack-status*.json",

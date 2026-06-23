@@ -93,3 +93,34 @@ def test_qwen3_tts_local_server_uses_voice_design_when_instruct_is_supplied(monk
 
     assert result == b"wav"
     assert calls == [("你好星汐", "温柔、清澈、像星光一样轻声说话", "chinese", True)]
+
+
+def test_qwen3_tts_local_server_falls_back_to_custom_voice_when_voice_design_is_unsupported(monkeypatch) -> None:
+    from tools.voice_services import qwen3_tts_local_server
+
+    calls = []
+
+    class FakeQwen3Model:
+        def generate_voice_design(self, *, text, instruct, language, non_streaming_mode):
+            calls.append(("design", text, instruct, language, non_streaming_mode))
+            raise RuntimeError("does not support generate_voice_design")
+
+        def generate_custom_voice(self, *, text, speaker, language, non_streaming_mode):
+            calls.append(("custom", text, speaker, language, non_streaming_mode))
+            return [["audio-array"]], 24000
+
+    monkeypatch.setattr(qwen3_tts_local_server, "_audio_arrays_to_wav_bytes", lambda arrays, sample_rate: b"wav")
+
+    result = qwen3_tts_local_server._call_synthesizer(
+        FakeQwen3Model(),
+        "hello",
+        "Vivian",
+        "zh",
+        "warm character voice",
+    )
+
+    assert result == b"wav"
+    assert calls == [
+        ("design", "hello", "warm character voice", "chinese", True),
+        ("custom", "hello", "Vivian", "chinese", True),
+    ]

@@ -804,6 +804,7 @@ class CompanionWindow(QMainWindow):
         self.voice_settings_card = VoiceSettingsPanel(
             self.controller.get_capability_settings(),
             self.controller.get_expression_settings(),
+            self._current_character_tts_profile(),
         )
         self.voice_settings_card.ttsTestRequested.connect(self._handle_tts_test)
         self.voice_settings_card.ttsStopRequested.connect(self._handle_tts_stop)
@@ -861,6 +862,7 @@ class CompanionWindow(QMainWindow):
             "voice_status_label",
             "voice_tts_provider_label",
             "voice_asr_provider_label",
+            "voice_character_profile_label",
             "tts_enabled_check",
             "tts_provider_combo",
             "tts_api_url_input",
@@ -1896,7 +1898,11 @@ class CompanionWindow(QMainWindow):
     def _load_capability_settings_into_ui(self, settings: CapabilitySettings | None = None) -> None:
         settings = settings or self.controller.get_capability_settings()
         self.capability_settings_panel.load_settings(settings)
-        self.voice_settings_card.load_settings(settings, self.controller.get_expression_settings())
+        self.voice_settings_card.load_settings(
+            settings,
+            self.controller.get_expression_settings(),
+            self._current_character_tts_profile(),
+        )
         self._sync_voice_controls_enabled()
         self._update_screen_observation_timer()
 
@@ -1955,6 +1961,8 @@ class CompanionWindow(QMainWindow):
             f"动作：{snapshot['motion_caption']}\n\n"
             f"{snapshot['character_description']}"
         )
+        if hasattr(self, "voice_settings_card"):
+            self.voice_settings_card.set_character_voice_profile(self._current_character_tts_profile())
         self.dialogue_input.setPlaceholderText(f"和{snapshot['character_name']}说点什么")
         self.mode_label.setText(f"当前模式：{snapshot['mode']}")
         self.resources_label.setText(

@@ -3150,6 +3150,77 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_character_switch_updates_voice_profile_summary(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(
+        assets_root,
+        "xingxi_pixel_pet",
+        name="Xingxi",
+        title="Desktop companion",
+        tts_profile={
+            "profile_id": "xingxi_voice_v1",
+            "display_name": "Xingxi designed voice",
+            "provider": "http_qwen3tts",
+            "voice": "Vivian",
+            "model_variant": "0.6B",
+            "voice_source_type": "original_design",
+            "training_status": "designed",
+            "distribution_policy": "public_ok",
+        },
+    )
+    write_ui_character_pack(
+        assets_root,
+        "custom_character",
+        name="Custom",
+        title="Voice companion",
+        tts_profile={
+            "profile_id": "custom_voice_v1",
+            "display_name": "Custom role voice",
+            "provider": "http_qwen3tts",
+            "voice": "Dylan",
+            "model_variant": "0.6B",
+            "voice_source_type": "local_generated",
+            "training_status": "candidate",
+            "distribution_policy": "public_ok",
+        },
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="xingxi_pixel_pet",
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    app.processEvents()
+
+    assert "Xingxi designed voice" in window.voice_character_profile_label.text()
+    assert "Vivian" in window.voice_character_profile_label.text()
+
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "custom_character":
+            window.character_list.setCurrentItem(item)
+            break
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert window.controller.state.character_id == "custom_character"
+    assert "Custom role voice" in window.voice_character_profile_label.text()
+    assert "Dylan" in window.voice_character_profile_label.text()
+
+    window.close()
+    app.processEvents()
+
+
 def test_asr_stop_button_fills_dialogue_input(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
