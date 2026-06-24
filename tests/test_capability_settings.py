@@ -189,6 +189,8 @@ def test_capability_settings_accepts_voice_route_aliases() -> None:
 
     assert TTSSettings.from_dict({"provider": "edge"}).provider == "edge_tts"
     assert TTSSettings.from_dict({"provider": "qwen3_tts"}).provider == "http_qwen3tts"
+    assert TTSSettings.from_dict({"provider": "gpt-sovits"}).provider == "http_gptsovits"
+    assert TTSSettings.from_dict({"provider": "http_gptsovits", "model_variant": "gptsovits-v2"}).model_variant == "gptsovits_v2"
     assert ASRSettings.from_dict({"provider": "funasr"}).provider == "funasr_openai"
     assert ASRSettings.from_dict({"provider": "sensevoice"}).provider == "sensevoice_openai"
     assert ASRSettings.from_dict({"provider": "qwen3_asr"}).provider == "qwen3_asr_openai"

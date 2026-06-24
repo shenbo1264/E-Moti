@@ -33,8 +33,13 @@ TTS_PROVIDER_ALIASES = {
     "http_qwen3tts": "http_qwen3tts",
     "qwen3tts": "http_qwen3tts",
     "qwen3_tts": "http_qwen3tts",
+    "http_gptsovits": "http_gptsovits",
+    "gptsovits": "http_gptsovits",
+    "gpt_sovits": "http_gptsovits",
 }
 TTS_MODEL_VARIANT_ALIASES = {
+    "gptsovits_v2": "gptsovits_v2",
+    "gpt_sovits_v2": "gptsovits_v2",
     "base": "qwen3tts_0.6b_base",
     "0.6b_base": "qwen3tts_0.6b_base",
     "0_6b_base": "qwen3tts_0.6b_base",

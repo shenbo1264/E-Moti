@@ -5,9 +5,70 @@ Date: 2026-06-23
 ## Current Verified State
 
 - The repository has per-character `tts_profile` metadata and working local Qwen3-TTS preset synthesis.
-- `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet` currently use Qwen preset speakers plus character-specific instruction text.
-- No `.wav`, `.mp3`, `.flac`, `.ogg`, or `.m4a` reference audio is present in the repository, so no character has been trained or cloned from real reference audio yet.
-- The project now supports passing character reference audio and reference text through the runtime TTS path into the local Qwen HTTP service.
+- `xingxi_pixel_pet` and `nairong_pixel_pet` currently keep the Qwen preset route.
+- `ikaros_pixel_pet` now uses `http_gptsovits` with profile `ikaros_pixel_pet_gptsovits_curated160_e4_v1`.
+- The Ikaros role package includes `assets/companion/ikaros_pixel_pet/voice/reference_generated.wav` plus matching Japanese `reference_text`.
+- The runtime TTS path now supports both Qwen-style reference cloning and GPT-SoVITS root-endpoint synthesis.
+- The command-line voice smoke tool supports `--tts-text-file`, so Japanese/Chinese smoke text can be read as UTF-8 instead of relying on Windows shell argument encoding.
+
+## 2026-06-24 Ikaros Training Record
+
+Training source:
+
+- Source folder: `%IKAROS_SOURCE_DIR%` (local user-provided Ikaros audio folder).
+- Probe result: 642 WAV files, 22050 Hz mono, about 2255.95 seconds total, median clip length about 3.379 seconds.
+- ASR labels were generated locally with faster-whisper and converted into GPT-SoVITS list format.
+- ASCII training workspace: `E:\E_Moti_voice`, used because `pyopenjtalk` and related Japanese text tooling failed under the Chinese project path.
+
+Environment:
+
+- GPT-SoVITS checkout: `E:\E_Moti_voice\GPT-SoVITS`.
+- Venv: `E:\E_Moti_voice\gptsovits-venv`.
+- GPU: RTX 5060, CUDA path verified through PyTorch.
+- Required Windows training patches were applied only to the local GPT-SoVITS checkout: single-GPU/Windows DataLoader settings, Lightning checkpoint access, and an API `librosa.load` fallback for `torchaudio`/`torchcodec` on Windows.
+
+Training outputs:
+
+```text
+E:\E_Moti_voice\GPT-SoVITS\SoVITS_weights_v2\ikaros_full642_v2_e3_s1926.pth
+E:\E_Moti_voice\GPT-SoVITS\GPT_weights_v2\ikaros_curated160_v2-e4.ckpt
+```
+
+Selection rationale:
+
+- SoVITS voice/acoustic side was trained on the full 642-file dataset for 3 epochs and exported as `ikaros_full642_v2_e3_s1926.pth`.
+- Full 642-file GPT semantic training completed, but e1/e2/e3 produced frequent early-EOS behavior in practical synthesis, with medium lines often collapsing to about 0.94 seconds.
+- A 160-line curated Japanese subset was selected from the same source using duration, text length, and Japanese-character-ratio filters. This subset is about 593.7 seconds.
+- Curated160 GPT training reached top_3_acc_epoch about 0.832 at epoch 5. A/B smoke chose e4 because it produced stable short and medium line durations while keeping the calm Ikaros-like delivery.
+- Provider sampling was tightened to `temperature=0.35`, `top_p=0.7`, `top_k=15`, and `rate=-1` maps to `speed=0.9`.
+
+Live smoke evidence:
+
+```text
+artifacts\voice-smoke\ikaros-character-profile-gptsovits-short-file-live.json
+artifacts\voice-smoke\ikaros-character-profile-gptsovits-short-file-live.wav
+artifacts\voice-smoke\ikaros-character-profile-gptsovits-medium-file-live.json
+artifacts\voice-smoke\ikaros-character-profile-gptsovits-medium-file-live.wav
+```
+
+Verified results:
+
+- Short line via `ikaros_pixel_pet` character profile: provider `http_gptsovits`, 32000 Hz mono WAV, about 2.48 seconds.
+- Medium line via `ikaros_pixel_pet` character profile: provider `http_gptsovits`, 32000 Hz mono WAV, about 6.66 seconds.
+- Header-only 44-byte WAV responses are now rejected by the provider instead of reported as successful speech.
+
+Start the local Ikaros GPT-SoVITS service:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\voice_services\start_ikaros_gptsovits_server.ps1 -NoWait
+```
+
+Smoke-test through the character pack:
+
+```powershell
+python tools\voice_capability_smoke.py --character-id ikaros_pixel_pet --tts-text-file artifacts\voice-smoke\ikaros_short_ja.txt --skip-playback --report artifacts\voice-smoke\ikaros-character-profile-gptsovits-short-file-live.json
+python tools\voice_capability_smoke.py --character-id ikaros_pixel_pet --tts-text-file artifacts\voice-smoke\ikaros_medium_ja.txt --skip-playback --report artifacts\voice-smoke\ikaros-character-profile-gptsovits-medium-file-live.json
+```
 
 ## External Route Check
 
@@ -148,4 +209,8 @@ python -m pytest
 
 ## Remaining Dependency
 
-Actual voice cloning cannot be completed until reference audio and matching transcript are available. The code path is ready to consume them, but the repo currently contains no usable reference audio.
+The Ikaros voice is trained and connected for the local course submission environment. Remaining voice work is now product hardening rather than basic feasibility:
+
+- Package or document the external GPT-SoVITS runtime bundle cleanly, because the 85 MB SoVITS weight, 155 MB GPT weight, and GPT-SoVITS dependency tree are not committed into the Git repository.
+- Run human listening QA for at least greeting, idle, comfort, and confused/shy lines.
+- Apply the same voice-training workflow to Nairong if a more accurate local voice is required before the final presentation.

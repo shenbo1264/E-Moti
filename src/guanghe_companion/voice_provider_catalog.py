@@ -34,6 +34,14 @@ TTS_PROVIDER_OPTIONS: tuple[TTSProviderOption, ...] = (
         route_note="Formal route for original character voice through a local HTTP service.",
     ),
     TTSProviderOption(
+        provider_id="http_gptsovits",
+        label="GPT-SoVITS HTTP",
+        recommended_use="trained_character_voice",
+        default_model="gptsovits_v2",
+        default_api_url="http://127.0.0.1:9882/",
+        route_note="Local trained-character route that uses reference audio and prompt text.",
+    ),
+    TTSProviderOption(
         provider_id="edge_tts",
         label="Edge Neural TTS",
         recommended_use="manual_fallback",

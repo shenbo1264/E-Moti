@@ -127,6 +127,22 @@ def test_bundled_submission_character_packs_are_valid_and_visible():
         assert payload.get("hide_from_character_library") is not True
         assert (pack_dir / "preview" / "profile.png").is_file()
 
+
+def test_bundled_ikaros_uses_trained_gptsovits_voice_profile():
+    pack_dir = REPO_ROOT / "assets" / "companion" / "ikaros_pixel_pet"
+
+    report = validate_character_pack_dir(pack_dir)
+    pack = load_character_pack_from_dir(pack_dir)
+
+    assert report.ok is True
+    assert pack.tts_profile.provider == "http_gptsovits"
+    assert pack.tts_profile.model_variant == "gptsovits_v2"
+    assert pack.tts_profile.language == "all_ja"
+    assert pack.tts_profile.training_status == "trained_local"
+    assert pack.tts_profile.reference_text
+    assert len(pack.tts_profile.reference_audio) == 1
+    assert Path(pack.tts_profile.reference_audio[0]).is_file()
+
 def test_load_character_pack_resolves_voice_references_to_pack_directory(tmp_path):
     pack_dir = tmp_path / "voice_clone_pet"
     (pack_dir / "voice").mkdir(parents=True)

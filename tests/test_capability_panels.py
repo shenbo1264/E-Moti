@@ -131,7 +131,7 @@ def test_voice_settings_panel_uses_catalog_provider_choices(qt_app):
     tts_values = [panel.tts_provider_combo.itemText(index) for index in range(panel.tts_provider_combo.count())]
     asr_values = [panel.asr_provider_combo.itemText(index) for index in range(panel.asr_provider_combo.count())]
 
-    assert tts_values == ["http_qwen3tts", "edge_tts", "windows_sapi"]
+    assert tts_values == ["http_qwen3tts", "http_gptsovits", "edge_tts", "windows_sapi"]
     assert asr_values == [
         "sensevoice_openai",
         "funasr_openai",

@@ -128,6 +128,111 @@ def test_http_qwen3tts_provider_posts_reference_audio_for_clone_route(tmp_path) 
     assert requests[0][1]["ref_text"] == "参考台词。"
 
 
+def test_http_gptsovits_provider_posts_reference_prompt_to_root_and_writes_audio(tmp_path) -> None:
+    from guanghe_companion.voice_tts import HttpGPTSoVITSProvider
+
+    requests: list[tuple[str, dict[str, object], int]] = []
+    played: list[str] = []
+
+    def fake_post(url: str, payload: dict[str, object], timeout: int) -> bytes:
+        requests.append((url, payload, timeout))
+        return b"RIFF" + (b"\x00" * 120)
+
+    provider = HttpGPTSoVITSProvider(
+        post=fake_post,
+        cache_dir=tmp_path,
+        audio_player=lambda path: played.append(str(path)),
+    )
+
+    result = provider.speak(
+        "master standby",
+        TTSSettings(
+            enabled=True,
+            provider="http_gptsovits",
+            api_url="http://127.0.0.1:9882/",
+            language="ja",
+            reference_audio=("E:/voice-packs/ikaros/reference.wav",),
+            reference_text="master, system check complete.",
+            rate=-1,
+        ),
+    )
+
+    assert result.ok is True
+    assert requests[0][0] == "http://127.0.0.1:9882/"
+    assert requests[0][1]["text"] == "master standby"
+    assert requests[0][1]["text_language"] == "ja"
+    assert requests[0][1]["refer_wav_path"] == "E:/voice-packs/ikaros/reference.wav"
+    assert requests[0][1]["prompt_text"] == "master, system check complete."
+    assert requests[0][1]["prompt_language"] == "ja"
+    assert requests[0][1]["top_p"] == 0.7
+    assert requests[0][1]["temperature"] == 0.35
+    assert requests[0][1]["speed"] == 0.9
+    assert requests[0][2] == 180
+    assert played
+    assert (tmp_path / "gptsovits_latest.wav").read_bytes() == b"RIFF" + (b"\x00" * 120)
+
+
+def test_http_gptsovits_provider_requires_reference_audio_and_prompt_text(tmp_path) -> None:
+    from guanghe_companion.voice_tts import HttpGPTSoVITSProvider
+
+    provider = HttpGPTSoVITSProvider(
+        post=lambda url, payload, timeout: b"RIFFshould-not-run",
+        cache_dir=tmp_path,
+        audio_player=lambda path: None,
+    )
+
+    missing_audio = provider.speak(
+        "master standby",
+        TTSSettings(
+            enabled=True,
+            provider="http_gptsovits",
+            api_url="http://127.0.0.1:9882/",
+            language="ja",
+            reference_text="reference line",
+        ),
+    )
+    missing_text = provider.speak(
+        "master standby",
+        TTSSettings(
+            enabled=True,
+            provider="http_gptsovits",
+            api_url="http://127.0.0.1:9882/",
+            language="ja",
+            reference_audio=("E:/voice-packs/ikaros/reference.wav",),
+        ),
+    )
+
+    assert missing_audio.ok is False
+    assert "reference_audio" in missing_audio.message
+    assert missing_text.ok is False
+    assert "reference_text" in missing_text.message
+
+
+def test_http_gptsovits_provider_rejects_header_only_wav(tmp_path) -> None:
+    from guanghe_companion.voice_tts import HttpGPTSoVITSProvider
+
+    provider = HttpGPTSoVITSProvider(
+        post=lambda url, payload, timeout: b"RIFF" + (b"\x00" * 40),
+        cache_dir=tmp_path,
+        audio_player=lambda path: None,
+    )
+
+    result = provider.speak(
+        "master standby",
+        TTSSettings(
+            enabled=True,
+            provider="http_gptsovits",
+            api_url="http://127.0.0.1:9882/",
+            language="ja",
+            reference_audio=("E:/voice-packs/ikaros/reference.wav",),
+            reference_text="reference line",
+        ),
+    )
+
+    assert result.ok is False
+    assert "invalid audio" in result.message
+
+
 def test_edge_neural_tts_provider_uses_character_voice_profile(tmp_path) -> None:
     from guanghe_companion.voice_tts import EdgeNeuralTTSProvider
 

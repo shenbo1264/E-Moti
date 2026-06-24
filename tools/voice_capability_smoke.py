@@ -14,13 +14,19 @@ from guanghe_companion.capability_runtime import apply_character_tts_profile
 from guanghe_companion.capability_settings import ASRSettings, TTSSettings
 from guanghe_companion.character_pack import load_character_pack, load_character_pack_from_dir
 from guanghe_companion.voice_asr import default_asr_transcriber
-from guanghe_companion.voice_tts import EdgeNeuralTTSProvider, HttpQwen3TTSProvider, default_tts_provider_factory
+from guanghe_companion.voice_tts import (
+    EdgeNeuralTTSProvider,
+    HttpGPTSoVITSProvider,
+    HttpQwen3TTSProvider,
+    default_tts_provider_factory,
+)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Smoke-test E-Moti voice providers.")
     parser.add_argument("--tts-provider", default="")
     parser.add_argument("--tts-text", default="")
+    parser.add_argument("--tts-text-file", default="")
     parser.add_argument("--tts-voice", default="")
     parser.add_argument("--tts-api-url", default="")
     parser.add_argument("--tts-model-variant", default="qwen3tts_0.6b_customvoice")
@@ -68,7 +74,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             report["tts"] = {"ok": False, "message": f"TTS provider unavailable: {tts_settings.provider}"}
             exit_code = 1
         else:
-            result = provider.speak(args.tts_text or _default_tts_text(character_pack), tts_settings)
+            result = provider.speak(_tts_text_from_args(args, character_pack), tts_settings)
             report["tts"] = {
                 "ok": result.ok,
                 "message": result.message,
@@ -123,7 +129,15 @@ def _tts_provider(provider_id: str, *, skip_playback: bool):
         return EdgeNeuralTTSProvider(audio_player=lambda path: None)
     if provider_id == "http_qwen3tts":
         return HttpQwen3TTSProvider(audio_player=lambda path: None)
+    if provider_id == "http_gptsovits":
+        return HttpGPTSoVITSProvider(audio_player=lambda path: None)
     return default_tts_provider_factory(provider_id)
+
+
+def _tts_text_from_args(args: argparse.Namespace, character_pack) -> str:
+    if args.tts_text_file:
+        return Path(args.tts_text_file).read_text(encoding="utf-8").strip()
+    return args.tts_text or _default_tts_text(character_pack)
 
 
 def _default_tts_text(character_pack) -> str:

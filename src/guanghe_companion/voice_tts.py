@@ -128,6 +128,46 @@ class HttpQwen3TTSProvider:
             stop()
 
 
+class HttpGPTSoVITSProvider:
+    def __init__(
+        self,
+        *,
+        post: Callable[[str, dict[str, object], int], bytes] | None = None,
+        cache_dir: Path | str | None = None,
+        audio_player: Callable[[Path], object] | None = None,
+    ) -> None:
+        self._post = post or _post_json_bytes
+        self._cache_dir = Path(cache_dir) if cache_dir is not None else user_data_dir() / "cache" / "tts"
+        self._audio_player = audio_player or _QtAudioFilePlayer().play
+
+    def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+        if not settings.reference_audio:
+            return TTSResult(False, "GPT-SoVITS reference_audio is required")
+        if not settings.reference_text:
+            return TTSResult(False, "GPT-SoVITS reference_text is required")
+        endpoint = _gptsovits_endpoint(settings.api_url)
+        payload = _gptsovits_payload(text, settings)
+        try:
+            audio = self._post(endpoint, payload, 180)
+            if not audio:
+                return TTSResult(False, "GPT-SoVITS returned empty audio")
+            if not _looks_like_gptsovits_audio(audio):
+                return TTSResult(False, "GPT-SoVITS returned invalid audio")
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
+            output = self._cache_dir / "gptsovits_latest.wav"
+            output.write_bytes(audio)
+            self._audio_player(output)
+            return TTSResult(True, "GPT-SoVITS speech complete", str(output))
+        except (OSError, ValueError, urllib.error.URLError, TimeoutError) as exc:
+            return TTSResult(False, f"GPT-SoVITS speech failed: {exc}")
+
+    def stop(self) -> None:
+        player = getattr(self._audio_player, "__self__", None)
+        stop = getattr(player, "stop", None)
+        if callable(stop):
+            stop()
+
+
 class WindowsSapiTTSProvider:
     def __init__(self, powershell_executable: str = "powershell") -> None:
         self._powershell_executable = powershell_executable
@@ -229,6 +269,8 @@ class _QtAudioFilePlayer:
 def default_tts_provider_factory(provider: str) -> TTSProvider | None:
     if provider == "http_qwen3tts":
         return HttpQwen3TTSProvider()
+    if provider == "http_gptsovits":
+        return HttpGPTSoVITSProvider()
     if provider == "windows_sapi":
         return WindowsSapiTTSProvider()
     if provider == "edge_tts":
@@ -255,6 +297,24 @@ def _qwen3tts_payload(text: str, settings: TTSSettings) -> dict[str, object]:
     return payload
 
 
+def _gptsovits_payload(text: str, settings: TTSSettings) -> dict[str, object]:
+    return {
+        "refer_wav_path": settings.reference_audio[0],
+        "prompt_text": settings.reference_text,
+        "prompt_language": settings.language,
+        "text": text,
+        "text_language": settings.language,
+        "top_k": 15,
+        "top_p": 0.7,
+        "temperature": 0.35,
+        "speed": _gptsovits_speed(settings.rate),
+    }
+
+
+def _gptsovits_speed(rate: int) -> float:
+    return round(max(0.5, min(1.5, 1.0 + (int(rate) * 0.1))), 2)
+
+
 def _model_size_label(model_variant: str) -> str:
     if model_variant == "qwen3tts_1.7b_base":
         return "1.7B-Base"
@@ -274,6 +334,13 @@ def _tts_endpoint(api_url: str) -> str:
     return f"{base}/tts"
 
 
+def _gptsovits_endpoint(api_url: str) -> str:
+    base = (api_url or "http://127.0.0.1:9882/").strip().rstrip("/")
+    if not base:
+        base = "http://127.0.0.1:9882"
+    return f"{base}/"
+
+
 def _post_json_bytes(url: str, payload: dict[str, object], timeout: int) -> bytes:
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     request = urllib.request.Request(
@@ -284,6 +351,10 @@ def _post_json_bytes(url: str, payload: dict[str, object], timeout: int) -> byte
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
+
+
+def _looks_like_gptsovits_audio(audio: bytes) -> bool:
+    return len(audio) > 44 and audio.startswith(b"RIFF")
 
 
 def _edge_tts_communicate_factory() -> Callable[..., object] | None:

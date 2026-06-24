@@ -67,6 +67,45 @@ def test_voice_smoke_tool_writes_tts_report_without_playback(tmp_path, monkeypat
     assert calls == [("星汐语音测试", "edge_tts", "zh-CN-XiaoxiaoNeural")]
 
 
+def test_voice_smoke_tool_reads_tts_text_from_utf8_file(tmp_path, monkeypatch) -> None:
+    from guanghe_companion.voice_tts import TTSResult
+    from tools import voice_capability_smoke
+
+    text_file = tmp_path / "tts.txt"
+    text = "\u30de\u30b9\u30bf\u30fc\u3001\u305d\u3070\u306b\u3044\u307e\u3059\u3002"
+    text_file.write_text(text, encoding="utf-8")
+    calls = []
+
+    class FakeProvider:
+        def speak(self, text, settings):
+            calls.append(text)
+            return TTSResult(True, "spoken", str(tmp_path / "out.wav"))
+
+        def stop(self):
+            pass
+
+    monkeypatch.setattr(
+        voice_capability_smoke,
+        "default_tts_provider_factory",
+        lambda provider: FakeProvider(),
+    )
+    report = tmp_path / "report.json"
+
+    code = voice_capability_smoke.main(
+        [
+            "--tts-provider",
+            "http_gptsovits",
+            "--tts-text-file",
+            str(text_file),
+            "--report",
+            str(report),
+        ]
+    )
+
+    assert code == 0
+    assert calls == [text]
+
+
 def test_voice_smoke_tool_uses_character_tts_profile_from_pack_dir(tmp_path, monkeypatch) -> None:
     from PIL import Image
 
@@ -232,6 +271,45 @@ def test_voice_smoke_tool_can_skip_qt_playback_for_edge_tts(tmp_path, monkeypatc
     assert code == 0
     assert payload["tts"]["ok"] is True
     assert constructed["spoken"] == ("星汐语音测试", "edge_tts")
+    assert callable(constructed["audio_player"])
+
+
+def test_voice_smoke_tool_can_skip_qt_playback_for_gptsovits(tmp_path, monkeypatch) -> None:
+    from guanghe_companion.voice_tts import TTSResult
+    from tools import voice_capability_smoke
+
+    constructed = {}
+
+    class FakeGPTSoVITSProvider:
+        def __init__(self, *, audio_player):
+            constructed["audio_player"] = audio_player
+
+        def speak(self, text, settings):
+            constructed["spoken"] = (text, settings.provider)
+            return TTSResult(True, "spoken", str(tmp_path / "out.wav"))
+
+        def stop(self):
+            pass
+
+    monkeypatch.setattr(voice_capability_smoke, "HttpGPTSoVITSProvider", FakeGPTSoVITSProvider)
+    report = tmp_path / "report.json"
+
+    code = voice_capability_smoke.main(
+        [
+            "--tts-provider",
+            "http_gptsovits",
+            "--tts-text",
+            "Ikaros voice smoke.",
+            "--skip-playback",
+            "--report",
+            str(report),
+        ]
+    )
+
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert code == 0
+    assert payload["tts"]["ok"] is True
+    assert constructed["spoken"] == ("Ikaros voice smoke.", "http_gptsovits")
     assert callable(constructed["audio_player"])
 
 
