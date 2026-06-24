@@ -3732,6 +3732,83 @@ def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_window_tick_refreshes_authorized_context_before_proactive_topic(monkeypatch, tmp_path):
+    from guanghe_companion.capability_settings import (
+        CapabilitySettings,
+        ProactiveCompanionSettings,
+        ScreenObservationSettings,
+        WebSearchSettings,
+    )
+    from guanghe_companion.screen_observation import ScreenObservationResult
+    from guanghe_companion.web_search import WebSearchResult
+
+    class FakeScreenObservationService:
+        def __init__(self):
+            self.calls = []
+
+        def observe(self, settings):
+            self.calls.append(settings)
+            return ScreenObservationResult(
+                True,
+                "screen ok",
+                "player is editing pixel pet blink frames",
+            )
+
+    class FakeWebSearchService:
+        def __init__(self):
+            self.calls = []
+
+        def search(self, query, settings):
+            self.calls.append((query, settings))
+            return WebSearchResult(
+                True,
+                "search ok",
+                [
+                    {
+                        "source": "web_search",
+                        "title": "Pixel pet animation",
+                        "summary": "Players like blink and breathing loops.",
+                    }
+                ],
+            )
+
+    app, window = make_window(monkeypatch, tmp_path)
+    screen_service = FakeScreenObservationService()
+    search_service = FakeWebSearchService()
+    window.screen_observation_service = screen_service
+    window.web_search_service = search_service
+    window.controller.update_capability_settings(
+        CapabilitySettings(
+            screen_observation=ScreenObservationSettings(enabled=True, auto_enabled=True),
+            web_search=WebSearchSettings(enabled=True),
+            proactive_companion=ProactiveCompanionSettings(
+                enabled=True,
+                allow_context_topic=True,
+                interval_seconds=60,
+                global_cooldown_seconds=60,
+            ),
+        )
+    )
+    window._load_capability_settings_into_ui()
+
+    window._handle_tick()
+    app.processEvents()
+
+    assert screen_service.calls == [window.controller.get_capability_settings().screen_observation]
+    assert search_service.calls == [
+        (
+            "player is editing pixel pet blink frames",
+            window.controller.get_capability_settings().web_search,
+        )
+    ]
+    snapshot = window.controller.get_snapshot()
+    assert snapshot["proactive_feedback"]["kind"] == "context_topic"
+    assert "Pixel pet animation" in snapshot["proactive_feedback"]["summary"]
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_can_reject_proactive_companionship_and_extend_cooldown(monkeypatch, tmp_path):
     from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
 

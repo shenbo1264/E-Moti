@@ -552,12 +552,14 @@ class CompanionWindow(QMainWindow):
             settings_reader=self.controller.get_capability_settings,
             set_perception_summary=self.controller.set_perception_summary,
             set_tool_results=self.controller.set_tool_results,
+            context_reader=self.controller.get_expression_context,
             screen_observation_service=lambda: self.screen_observation_service,
             web_search_service=lambda: self.web_search_service,
             tts_manager=lambda: self.tts_manager,
             asr_service=lambda: self.asr_service,
             tts_profile_reader=self._current_character_tts_profile,
         )
+        self._last_auto_context_refresh_at: int | None = None
         self._voice_async_signals = _VoiceAsyncSignals(self)
         self._voice_async_signals.finished.connect(self._handle_async_tts_finished)
         self.voice_async_runner = VoiceAsyncRunner(
@@ -1718,7 +1720,28 @@ class CompanionWindow(QMainWindow):
     @Slot()
     def _handle_tick(self) -> None:
         self._reset_countdown()
+        self._refresh_proactive_context_before_tick()
         self._apply_snapshot(self.controller.advance_tick(include_ai_expression=False))
+
+    def _refresh_proactive_context_before_tick(self) -> None:
+        settings = self.controller.get_capability_settings()
+        proactive = settings.proactive_companion
+        if not proactive.enabled or not proactive.allow_context_topic:
+            return
+        now = int(self.controller.now)
+        refresh_interval = max(60, proactive.interval_seconds)
+        if (
+            self._last_auto_context_refresh_at is not None
+            and now - self._last_auto_context_refresh_at < refresh_interval
+        ):
+            return
+        if settings.screen_observation.enabled and settings.screen_observation.auto_enabled:
+            self._run_screen_observation()
+        if settings.web_search.enabled:
+            result = self.capability_runtime.run_topic_scout()
+            if result.cards or result.message:
+                self.web_search_results_label.setText(result.display_text)
+        self._last_auto_context_refresh_at = now
 
     @Slot()
     def _advance_frame(self) -> None:

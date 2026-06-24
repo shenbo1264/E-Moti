@@ -495,6 +495,9 @@ class CompanionController:
     def set_tool_results(self, results: list[dict[str, object]]) -> None:
         self._tool_results = list(results) if isinstance(results, list) else []
 
+    def get_expression_context(self) -> dict[str, object]:
+        return self._expression_context()
+
     def upsert_long_term_memory(
         self,
         *,

@@ -47,6 +47,7 @@ def build_topic_search_query(*, context: Mapping[str, object], interests: Iterab
     parts: list[str] = []
     for interest in _safe_iter(interests):
         _append_part(parts, interest)
+    _append_part(parts, context.get("perception_summary"))
     for entry in _safe_iter(context.get("recent_dialogue")):
         if isinstance(entry, Mapping):
             _append_part(parts, entry.get("text"))

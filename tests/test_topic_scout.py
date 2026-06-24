@@ -86,6 +86,42 @@ def test_topic_scout_returns_clear_skip_without_search_signal():
     assert result.cards == []
 
 
+def test_topic_scout_uses_readonly_screen_observation_as_search_signal():
+    from guanghe_companion.capability_settings import WebSearchSettings
+    from guanghe_companion.topic_scout import TopicScout
+    from guanghe_companion.web_search import WebSearchResult
+
+    class FakeSearchService:
+        def __init__(self):
+            self.calls = []
+
+        def search(self, query, settings):
+            self.calls.append((query, settings))
+            return WebSearchResult(
+                ok=True,
+                message="ok",
+                tool_results=[
+                    {
+                        "source": "web_search",
+                        "title": "Pixel pet animation",
+                        "summary": "Players like blink and breathing loops.",
+                    }
+                ],
+            )
+
+    settings = WebSearchSettings(enabled=True)
+    service = FakeSearchService()
+
+    result = TopicScout(search_service=service).scout(
+        context={"perception_summary": "player is editing pixel pet blink frames"},
+        settings=settings,
+    )
+
+    assert result.ok is True
+    assert service.calls == [("player is editing pixel pet blink frames", settings)]
+    assert result.cards[0]["title"] == "Pixel pet animation"
+
+
 def test_topic_scout_bounds_results_and_sanitizes_opening_lines():
     from guanghe_companion.capability_settings import WebSearchSettings
     from guanghe_companion.topic_scout import TopicScout

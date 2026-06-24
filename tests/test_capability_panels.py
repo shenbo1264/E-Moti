@@ -47,6 +47,20 @@ def test_capability_settings_panel_preserves_hidden_fields(qt_app):
     assert settings.proactive_companion.enabled is True
 
 
+def test_capability_settings_panel_frames_context_as_authorized_companion_activity(qt_app):
+    from guanghe_companion.capability_panels import CapabilitySettingsPanel
+    from guanghe_companion.capability_settings import CapabilitySettings
+
+    panel = CapabilitySettingsPanel(CapabilitySettings.default())
+
+    assert "授权宠物看屏幕" in panel.screen_observation_enabled_check.text()
+    assert "自动观察" in panel.screen_observation_auto_check.text()
+    assert "联网找话题" in panel.web_search_enabled_check.text()
+    assert "手动补充搜索关键词" in panel.web_search_query_input.placeholderText()
+    assert "手动搜索一次" in panel.web_search_run_button.text()
+    assert "屏幕/搜索主动找话题" in panel.proactive_allow_context_topic_check.text()
+
+
 def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app):
     from guanghe_companion.capability_panels import VoiceSettingsPanel
     from guanghe_companion.capability_settings import ASRSettings, CapabilitySettings, TTSSettings
