@@ -44,7 +44,14 @@ def test_sensevoice_asr_deployment_script_uses_formal_local_route() -> None:
     assert "sensevoice" in script
     assert "-Port 8899" in script
     assert "Device" in script
+    assert "[string]$ServiceRoot" in script
+    assert "EMOTI_SENSEVOICE_SERVICE_ROOT" in script
+    assert "$env:LOCALAPPDATA" in script
     assert "--device" in script
     assert "InstallOnly" in script
-    assert "torch" in script
-    assert "torchaudio" in script
+    assert "[string]::IsNullOrWhiteSpace($ScriptsDir)" in script
+    assert "Invoke-CheckedCommand" in script
+    assert "$LASTEXITCODE" in script
+    assert "torch==2.11.0" in script
+    assert "torchaudio==2.11.0" in script
+    assert "https://download.pytorch.org/whl/cpu" in script

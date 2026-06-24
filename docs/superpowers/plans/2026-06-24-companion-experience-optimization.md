@@ -10,6 +10,34 @@
 
 ---
 
+## Execution Status On 2026-06-24
+
+This plan has been executed as a focused optimization package.
+
+Implemented:
+
+- deterministic TTS cache for Qwen3TTS and GPT-SoVITS;
+- non-blocking app-side TTS queue for test speech and auto-speech;
+- richer voice smoke reports with backend, synthesis language, synthesis preview, and elapsed seconds;
+- local voice-service preflight for Qwen3TTS, GPT-SoVITS, and SenseVoice ASR;
+- expanded Ikaros Chinese-display / Japanese-synthesis phrase map for common demo lines;
+- simulated three-character playthrough QA tool;
+- SenseVoice/FunASR ASR deployment hardening for Windows by supporting a short `%LOCALAPPDATA%` service root, checked external-command failures, and matched PyTorch CPU dependencies.
+
+Verified live results:
+
+- `python -m pytest` -> `961 passed`;
+- `python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py -q` -> `108 passed`;
+- `python tools\voice_services\preflight_voice_services.py --timeout 30` -> Qwen3TTS, GPT-SoVITS, and SenseVoice ASR all `ok=true`;
+- three-character TTS smoke reports all passed through `http_emoti_voice`, with repeated demo lines served from cache in about `0.007` seconds;
+- SenseVoice ASR live smoke accepted a locally generated wav and returned readable Chinese text;
+- Windows app and installer validation reports passed for `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`;
+- frozen `dist\E-Moti\E-Moti.exe` control panel and `--pet-mode` each survived a 5-second smoke run.
+
+Residual product work is no longer about basic channel viability. The next sensible package is a small launcher/preflight UI that starts or checks all three local voice services before a demo, plus real microphone ASR usability tuning.
+
+---
+
 ## Difficulty Judgment
 
 The residual limitation is manageable, not a fundamental blocker.
@@ -31,9 +59,9 @@ The plan therefore treats voice as a product hot path:
 4. broaden bilingual mapping in a bounded way;
 5. verify with an end-to-end simulated play script.
 
-## Current Verified State
+## Initial Verified State
 
-Verified on 2026-06-24 at the repository root:
+Verified on 2026-06-24 at the repository root before this optimization package:
 
 ```powershell
 git status --short --untracked-files=all
