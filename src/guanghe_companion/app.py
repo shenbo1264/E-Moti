@@ -7,7 +7,7 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QPoint, QRectF, QSize, QTimer, Qt, Slot
+from PySide6.QtCore import QEvent, QObject, QPoint, QRectF, QSize, QTimer, Qt, Signal, Slot
 from PySide6.QtGui import (
     QAction,
     QColor,
@@ -95,7 +95,8 @@ from .spirit_stage import SpiritStageSurface, has_safe_portrait_manifest, load_p
 from .runtime_paths import USER_DATA_ENV, demo_save_path, user_data_dir
 from .tray_controller import TrayController
 from .voice_asr import ASRService
-from .voice_tts import TTSManager
+from .voice_async import VoiceAsyncRunner
+from .voice_tts import TTSManager, TTSResult
 from .web_search import WebSearchService
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
@@ -511,6 +512,10 @@ def _presentation_renderer_from_profile(renderer_profile, asset_dir):
     )
 
 
+class _VoiceAsyncSignals(QObject):
+    finished = Signal(int, object)
+
+
 class CompanionWindow(QMainWindow):
     def __init__(
         self,
@@ -545,6 +550,12 @@ class CompanionWindow(QMainWindow):
             tts_manager=lambda: self.tts_manager,
             asr_service=lambda: self.asr_service,
             tts_profile_reader=self._current_character_tts_profile,
+        )
+        self._voice_async_signals = _VoiceAsyncSignals(self)
+        self._voice_async_signals.finished.connect(self._handle_async_tts_finished)
+        self.voice_async_runner = VoiceAsyncRunner(
+            speak=self.capability_runtime.speak_text,
+            on_finished=self._emit_async_tts_finished,
         )
         self._last_auto_tts_key: tuple[str, str] | None = None
         self.desktop_pet_window: CompanionWindow | None = None
@@ -634,6 +645,10 @@ class CompanionWindow(QMainWindow):
         self.tick_timer.stop()
         self.countdown_timer.stop()
         self.screen_observation_timer.stop()
+        try:
+            self.voice_async_runner.shutdown()
+        except Exception:
+            pass
         self._manual_perception_summary = ""
         if self.controller.expression_context_provider is self._manual_expression_context_provider:
             self.controller.expression_context_provider = self._base_expression_context_provider
@@ -1755,10 +1770,8 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_timer.start(settings.interval_seconds * 1000)
 
     def _handle_tts_test(self) -> None:
-        result = self.capability_runtime.run_tts_test(
-            f"{self.controller.character_pack.name} voice test."
-        )
-        self.voice_status_label.setText(result.message)
+        self._save_capability_settings_from_ui()
+        self._queue_tts_speech(f"{self.controller.character_pack.name} voice test.")
 
     def _current_character_tts_profile(self) -> dict[str, object]:
         return self.controller.character_pack.tts_profile.to_runtime_dict()
@@ -2026,8 +2039,22 @@ class CompanionWindow(QMainWindow):
         if key == self._last_auto_tts_key:
             return
         self._last_auto_tts_key = key
-        result = self.capability_runtime.speak_text(speech)
-        self.voice_status_label.setText(result.message)
+        self._queue_tts_speech(speech)
+
+    def _queue_tts_speech(self, speech: str) -> None:
+        self.voice_status_label.setText("TTS 正在后台合成...")
+        self.voice_async_runner.run(speech)
+
+    def _emit_async_tts_finished(self, job_id: int, result: TTSResult) -> None:
+        self._voice_async_signals.finished.emit(job_id, result)
+
+    @Slot(int, object)
+    def _handle_async_tts_finished(self, job_id: int, result: object) -> None:
+        _ = job_id
+        if isinstance(result, TTSResult):
+            self.voice_status_label.setText(result.message)
+            return
+        self.voice_status_label.setText("TTS 后台朗读失败")
 
     def _render_current_frame(self) -> None:
         self.live2d_surface.hide()

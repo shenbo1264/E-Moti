@@ -3046,10 +3046,24 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
 
             return TTSResult(True, "已停止朗读")
 
+    class InlineVoiceRunner:
+        def __init__(self, speak):
+            self.speak = speak
+            self.texts = []
+
+        def run(self, text):
+            self.texts.append(text)
+            self.speak(text)
+            return len(self.texts)
+
+        def shutdown(self):
+            pass
+
     app = QApplication.instance() or QApplication([])
     window = CompanionWindow(controller=make_controller(tmp_path, ai_expressor=CapturingExpressor()))
     fake_tts = FakeTTSManager()
     window.tts_manager = fake_tts
+    window.voice_async_runner = InlineVoiceRunner(window.capability_runtime.speak_text)
     window.tts_enabled_check.setChecked(True)
     window.tts_auto_speak_check.setChecked(True)
     window.tts_model_variant_combo.setCurrentText("qwen3tts_1.7b_customvoice")
@@ -3061,6 +3075,7 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
     app.processEvents()
     after = window.controller.get_typed_snapshot()
 
+    assert window.voice_async_runner.texts == ["LLM 连接成功"]
     assert len(fake_tts.calls) == 1
     assert fake_tts.calls[0][0] == "LLM 连接成功"
     assert fake_tts.calls[0][1].profile_id == "xingxi_pixel_pet_qwen_vivian_v1"
@@ -3124,6 +3139,19 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
 
             return TTSResult(True, "stopped")
 
+    class InlineVoiceRunner:
+        def __init__(self, speak):
+            self.speak = speak
+            self.texts = []
+
+        def run(self, text):
+            self.texts.append(text)
+            self.speak(text)
+            return len(self.texts)
+
+        def shutdown(self):
+            pass
+
     app = QApplication.instance() or QApplication([])
     controller = CompanionController(
         character_id="xingxi_pixel_pet",
@@ -3133,10 +3161,12 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
     window = CompanionWindow(controller=controller)
     fake_tts = FakeTTSManager()
     window.tts_manager = fake_tts
+    window.voice_async_runner = InlineVoiceRunner(window.capability_runtime.speak_text)
     window.tts_enabled_check.setChecked(True)
 
     window._handle_tts_test()
 
+    assert window.voice_async_runner.texts == ["Xingxi voice test."]
     assert fake_tts.calls
     assert fake_tts.calls[0][1].profile_id == "xingxi_qwen_vivian_v1"
     assert fake_tts.calls[0][1].provider == "http_qwen3tts"
@@ -3148,6 +3178,53 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
 
     window.close()
     app.processEvents()
+
+
+def test_tts_test_button_enqueues_background_speech_without_inline_synthesis(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class FakeVoiceRunner:
+        def __init__(self):
+            self.texts = []
+            self.shutdown_called = False
+
+        def run(self, text):
+            self.texts.append(text)
+            return len(self.texts)
+
+        def shutdown(self):
+            self.shutdown_called = True
+
+    class FakeTTSManager:
+        def speak(self, text, settings):
+            from guanghe_companion.voice_tts import TTSResult
+
+            return TTSResult(True, "inline synthesis should move to background")
+
+        def stop(self, settings=None):
+            from guanghe_companion.voice_tts import TTSResult
+
+            return TTSResult(True, "stopped")
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    fake_runner = FakeVoiceRunner()
+    window.voice_async_runner = fake_runner
+    window.tts_manager = FakeTTSManager()
+    window.tts_enabled_check.setChecked(True)
+
+    window._handle_tts_test()
+
+    assert fake_runner.texts == [f"{window.controller.character_pack.name} voice test."]
+    assert "后台" in window.voice_status_label.text()
+
+    window.close()
+    app.processEvents()
+    assert fake_runner.shutdown_called is True
 
 
 def test_character_switch_updates_voice_profile_summary(monkeypatch, tmp_path):
