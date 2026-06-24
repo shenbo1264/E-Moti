@@ -3732,6 +3732,48 @@ def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_window_can_reject_proactive_companionship_and_extend_cooldown(monkeypatch, tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    app, window = make_window(monkeypatch, tmp_path)
+    window.controller.update_capability_settings(
+        CapabilitySettings(
+            proactive_companion=ProactiveCompanionSettings(
+                enabled=True,
+                interval_seconds=60,
+                global_cooldown_seconds=60,
+            )
+        )
+    )
+    window.controller.state.charge = 25
+    window.controller.state.mood = 60
+    window.controller.state.focus = 70
+    window.controller.state.stability = 70
+
+    window._handle_tick()
+    app.processEvents()
+
+    assert window.proactive_reject_button.isVisible()
+    assert window.controller.get_snapshot()["proactive_feedback"]["kind"] == "low_charge"
+
+    window.proactive_reject_button.click()
+    app.processEvents()
+
+    rejected = window.controller.get_snapshot()
+    assert rejected["proactive_feedback"] is None
+    assert window.proactive_reject_button.isVisible() is False
+    assert "暂停" in rejected["feedback"]
+
+    window.controller.now += 75
+    window._handle_tick()
+    app.processEvents()
+
+    assert window.controller.get_snapshot()["proactive_feedback"] is None
+
+    window.close()
+    app.processEvents()
+
+
 def test_window_close_closes_controller(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 

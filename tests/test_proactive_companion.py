@@ -3,9 +3,12 @@ from dataclasses import replace
 from guanghe_companion.capability_settings import ProactiveCompanionSettings
 from guanghe_companion.engine import create_initial_state
 from guanghe_companion.proactive_companion import (
+    PROACTIVE_REJECTION_COOLDOWN_KEY,
+    GLOBAL_COOLDOWN_KEY,
     ProactiveCompanionDecision,
     ProactiveCompanionService,
     ProactiveFeedback,
+    proactive_rejection_cooldown_updates,
 )
 
 
@@ -144,3 +147,56 @@ def test_context_topic_can_be_disabled() -> None:
     ).select_feedback()
 
     assert feedback is None
+
+
+def test_rejection_feedback_extends_global_cooldown() -> None:
+    state = create_initial_state(now=0)
+    state.charge = 24
+    settings = ProactiveCompanionSettings(
+        enabled=True,
+        interval_seconds=60,
+        global_cooldown_seconds=60,
+    )
+
+    first = ProactiveCompanionService(
+        state=state,
+        previous_state=replace(state),
+        now=100,
+        settings=settings,
+        last_proactive_at={},
+        daily_counts={},
+    ).select_decision(motion="Tick")
+    assert first.feedback is not None
+
+    rejection_updates = proactive_rejection_cooldown_updates(
+        kind=first.feedback.kind,
+        now=100,
+    )
+
+    assert rejection_updates == {
+        "low_charge": 100,
+        GLOBAL_COOLDOWN_KEY: 100,
+        PROACTIVE_REJECTION_COOLDOWN_KEY: 100,
+    }
+    assert (
+        ProactiveCompanionService(
+            state=state,
+            previous_state=replace(state),
+            now=219,
+            settings=settings,
+            last_proactive_at=rejection_updates,
+            daily_counts={},
+        ).select_feedback()
+        is None
+    )
+    assert (
+        ProactiveCompanionService(
+            state=state,
+            previous_state=replace(state),
+            now=221,
+            settings=settings,
+            last_proactive_at=rejection_updates,
+            daily_counts={},
+        ).select_feedback()
+        is not None
+    )

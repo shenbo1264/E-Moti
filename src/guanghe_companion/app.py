@@ -1198,6 +1198,17 @@ class CompanionWindow(QMainWindow):
         )
         self.desktop_feedback_label.hide()
         layout.addWidget(self.desktop_feedback_label)
+        self.proactive_reject_button = QPushButton("稍后")
+        self.proactive_reject_button.setToolTip("暂停这次主动提醒，并延长下一次主动提醒的冷却时间")
+        self.proactive_reject_button.setMinimumHeight(28)
+        self.proactive_reject_button.setStyleSheet(
+            "QPushButton { border: 1px solid rgba(80, 112, 126, 150); border-radius: 8px; "
+            "padding: 4px 14px; background: rgba(255, 255, 255, 232); }"
+            "QPushButton:hover { background: rgba(236, 247, 250, 240); }"
+        )
+        self.proactive_reject_button.clicked.connect(self._handle_proactive_reject)
+        self.proactive_reject_button.hide()
+        layout.addWidget(self.proactive_reject_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         self.dialogue_bar = QFrame()
         self.dialogue_bar.setObjectName("DesktopDialogueBar")
         self.dialogue_bar.setStyleSheet(
@@ -1497,9 +1508,11 @@ class CompanionWindow(QMainWindow):
         self.hero_layout.setAlignment(self.live2d_surface, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.spirit_surface, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.desktop_feedback_label, Qt.AlignmentFlag.AlignHCenter)
+        self.hero_layout.setAlignment(self.proactive_reject_button, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.dialogue_bar, Qt.AlignmentFlag.AlignHCenter)
         self.character_label.hide()
         self.desktop_feedback_label.hide()
+        self.proactive_reject_button.hide()
         self.dialogue_bar.show()
         self.item_feedback_label.hide()
         self.sprite_label.setStyleSheet(DESKTOP_SPRITE_STYLE)
@@ -1746,6 +1759,10 @@ class CompanionWindow(QMainWindow):
     def _handle_demo_proactive(self, scenario: str) -> None:
         self._reset_countdown()
         self._apply_snapshot(self.controller.trigger_demo_proactive(scenario, include_ai_expression=False))
+
+    def _handle_proactive_reject(self) -> None:
+        self._apply_snapshot(self.controller.reject_proactive_request())
+        self.desktop_feedback_label.show()
 
     def _handle_demo_reset(self) -> None:
         self._reset_countdown()
@@ -2037,6 +2054,10 @@ class CompanionWindow(QMainWindow):
         self.memory_label.setText(self.snapshot_renderer.format_memory_log(snapshot["memory_log"]))
         desktop_speech = self.snapshot_renderer.snapshot_tts_speech(snapshot) or str(snapshot["feedback"])
         self.desktop_feedback_label.setText(str(snapshot["character_name"]) + ": " + desktop_speech)
+        if isinstance(snapshot.get("proactive_feedback"), dict) and snapshot.get("proactive_feedback"):
+            self.proactive_reject_button.show()
+        else:
+            self.proactive_reject_button.hide()
 
         actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
         for action_id, button in self.action_buttons.items():

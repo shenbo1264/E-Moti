@@ -8,6 +8,7 @@ from .companion_moments import companion_moment_candidates
 from .models import CompanionState
 
 GLOBAL_COOLDOWN_KEY = "__global__"
+PROACTIVE_REJECTION_COOLDOWN_KEY = "__rejection__"
 
 
 @dataclass(frozen=True, slots=True)
@@ -127,6 +128,9 @@ class ProactiveCompanionService:
             return False
         if self.daily_counts.get(daily_count_key(self.now), 0) >= self.settings.daily_limit:
             return False
+        last_rejection = self.last_proactive_at.get(PROACTIVE_REJECTION_COOLDOWN_KEY)
+        if last_rejection is not None and self.now - last_rejection < rejection_cooldown_seconds(self.settings):
+            return False
         last_global = self.last_proactive_at.get(GLOBAL_COOLDOWN_KEY)
         if last_global is not None and self.now - last_global < self.settings.global_cooldown_seconds:
             return False
@@ -138,6 +142,18 @@ class ProactiveCompanionService:
 
 def daily_count_key(now: int) -> str:
     return str(max(0, int(now)) // 86_400)
+
+
+def proactive_rejection_cooldown_updates(*, kind: str, now: int) -> dict[str, int]:
+    timestamp = max(0, int(now))
+    updates = {GLOBAL_COOLDOWN_KEY: timestamp, PROACTIVE_REJECTION_COOLDOWN_KEY: timestamp}
+    if kind:
+        updates[kind] = timestamp
+    return updates
+
+
+def rejection_cooldown_seconds(settings: ProactiveCompanionSettings) -> int:
+    return min(86_400, max(settings.interval_seconds, settings.global_cooldown_seconds * 2))
 
 
 def _is_quiet_time(now: int, quiet_start: str, quiet_end: str) -> bool:

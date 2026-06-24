@@ -57,7 +57,11 @@ from .memory import (
     memory_kind_for_inventory_usage,
 )
 from .models import CompanionState
-from .proactive_companion import ProactiveCompanionDecision, ProactiveCompanionService
+from .proactive_companion import (
+    ProactiveCompanionDecision,
+    ProactiveCompanionService,
+    proactive_rejection_cooldown_updates,
+)
 from .relationship import RelationshipService
 from .runtime_paths import (
     capability_settings_path as default_capability_settings_path,
@@ -857,6 +861,23 @@ class CompanionController:
         self._force_next_proactive = True
         self._force_next_proactive_kind = forced_kind
         return self.advance_tick(include_ai_expression=include_ai_expression)
+
+    def reject_proactive_request(self) -> dict[str, object]:
+        feedback = self.last_proactive_feedback
+        if feedback:
+            self._last_proactive_at.update(
+                proactive_rejection_cooldown_updates(
+                    kind=str(feedback.get("kind", "")),
+                    now=self.now,
+                )
+            )
+        self.last_proactive_feedback = None
+        self.last_feedback = "已暂停这次主动提醒。她会先安静陪着你。"
+        self.last_delta_text = "proactive postponed"
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_events = []
+        return self.get_snapshot()
 
     def _persist(self) -> None:
         self.save_manager.save(self.state)
