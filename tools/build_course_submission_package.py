@@ -11,6 +11,12 @@ from pathlib import Path
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_ROOT = REPO_ROOT / "src"
+if str(SRC_ROOT) not in sys.path:
+    sys.path.insert(0, str(SRC_ROOT))
+
+from guanghe_companion.expression_settings import ExpressionSettingsStore, expression_settings_readiness
+
 DEFAULT_PRIVATE_CONFIG_DIR = REPO_ROOT / "private_submission_config"
 DEFAULT_OUTPUT_DIR = REPO_ROOT / "dist" / "E-Moti-course-submission"
 DEFAULT_ZIP_PATH = REPO_ROOT / "dist" / "E-Moti-course-submission.zip"
@@ -35,6 +41,7 @@ class CourseSubmissionPackageReport:
     voice_runtime_included: bool
     private_config_dir: str
     private_config_files: tuple[str, ...]
+    ai_expression_settings: dict[str, object]
     warnings: tuple[str, ...]
     errors: tuple[str, ...]
 
@@ -48,6 +55,7 @@ class CourseSubmissionPackageReport:
             "voice_runtime_included": self.voice_runtime_included,
             "private_config_dir": self.private_config_dir,
             "private_config_files": list(self.private_config_files),
+            "ai_expression_settings": self.ai_expression_settings,
             "warnings": list(self.warnings),
             "errors": list(self.errors),
         }
@@ -68,6 +76,7 @@ def build_course_submission_package(
     warnings: list[str] = []
     errors: list[str] = []
     private_files: list[str] = []
+    ai_expression_settings: dict[str, object] = {}
 
     if not source_app_dir.is_dir():
         errors.append(f"app dir not found: {source_app_dir}")
@@ -88,6 +97,7 @@ def build_course_submission_package(
     if private_dir.exists():
         private_files, validation_errors = _validated_private_config_files(private_dir)
         errors.extend(validation_errors)
+        ai_expression_settings = _read_private_expression_settings(private_dir, private_files)
     else:
         warnings.append("private config directory not found")
 
@@ -100,6 +110,7 @@ def build_course_submission_package(
             include_voice_runtime=include_voice_runtime,
             private_dir=private_dir,
             private_files=private_files,
+            ai_expression_settings=ai_expression_settings,
             warnings=warnings,
             errors=errors,
         )
@@ -124,6 +135,7 @@ def build_course_submission_package(
         voice_runtime_included=voice_runtime_included,
         private_dir=private_dir,
         private_files=private_files,
+        ai_expression_settings=ai_expression_settings,
         warnings=warnings,
         errors=errors,
     )
@@ -151,6 +163,13 @@ def _validated_private_config_files(private_dir: Path) -> tuple[list[str], list[
             continue
         filenames.append(path.name)
     return filenames, errors
+
+
+def _read_private_expression_settings(private_dir: Path, private_files: Sequence[str]) -> dict[str, object]:
+    if "expression_settings.json" not in private_files:
+        return {}
+    settings = ExpressionSettingsStore(private_dir / "expression_settings.json").load()
+    return expression_settings_readiness(settings)
 
 
 def _prepare_output_dir(target_dir: Path) -> None:
@@ -199,6 +218,7 @@ def _report(
     private_files: Sequence[str],
     warnings: Sequence[str],
     errors: Sequence[str],
+    ai_expression_settings: dict[str, object] | None = None,
     voice_runtime_included: bool | None = None,
 ) -> CourseSubmissionPackageReport:
     return CourseSubmissionPackageReport(
@@ -210,6 +230,7 @@ def _report(
         voice_runtime_included=bool(voice_runtime_included),
         private_config_dir=str(private_dir),
         private_config_files=tuple(private_files),
+        ai_expression_settings=dict(ai_expression_settings or {}),
         warnings=tuple(warnings),
         errors=tuple(errors),
     )

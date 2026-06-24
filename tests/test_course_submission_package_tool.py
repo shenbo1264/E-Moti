@@ -16,7 +16,7 @@ def test_course_submission_package_excludes_voice_runtime_and_overlays_private_c
     private_config = tmp_path / "private_submission_config"
     private_config.mkdir()
     (private_config / "expression_settings.json").write_text(
-        '{"enabled": true, "provider": "deepseek", "api_key": "private"}',
+        '{"enabled": true, "provider": "deepseek", "api_key": "sk-very-secret"}',
         encoding="utf-8",
     )
 
@@ -30,6 +30,12 @@ def test_course_submission_package_excludes_voice_runtime_and_overlays_private_c
     output_dir = tmp_path / "dist" / "E-Moti-course-submission"
     assert report.ok is True
     assert report.private_config_files == ("expression_settings.json",)
+    assert report.ai_expression_settings["enabled"] is True
+    assert report.ai_expression_settings["provider"] == "deepseek"
+    assert report.ai_expression_settings["model"] == "deepseek-v4-flash"
+    assert report.ai_expression_settings["api_key_set"] is True
+    assert report.ai_expression_settings["ready"] is True
+    assert "sk-very-secret" not in json.dumps(report.to_dict(), ensure_ascii=False)
     assert (output_dir / "E-Moti.exe").is_file()
     assert not (output_dir / "voice_runtime").exists()
     assert (output_dir / "user_data" / "expression_settings.json").is_file()

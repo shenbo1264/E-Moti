@@ -71,6 +71,7 @@ from .dialogue import DialogueRequest
 from .desktop_shell import DesktopShell
 from .expression_settings import (
     EXPRESSION_PROVIDER_PRESETS,
+    expression_settings_status_text,
     normalize_expression_settings,
     provider_default_base_url,
     provider_default_model,
@@ -1347,6 +1348,7 @@ class CompanionWindow(QMainWindow):
         layout.setVerticalSpacing(8)
 
         settings = self.controller.get_expression_settings(include_api_key=True)
+        current_expression_settings = normalize_expression_settings(settings)
         self.expression_enabled_checkbox = QCheckBox("启用 LLM 表达增强")
         self.expression_enabled_checkbox.setChecked(bool(settings["enabled"]))
 
@@ -1378,7 +1380,7 @@ class CompanionWindow(QMainWindow):
         self.expression_save_button.clicked.connect(self._handle_expression_settings_save)
         self.expression_test_button = QPushButton("测试 LLM 回应")
         self.expression_test_button.clicked.connect(self._handle_expression_settings_test)
-        self.expression_settings_status_label = QLabel("LLM 表达：关闭" if not settings["enabled"] else "LLM 表达：已启用")
+        self.expression_settings_status_label = QLabel(expression_settings_status_text(current_expression_settings))
         self.expression_settings_status_label.setWordWrap(True)
         self.expression_provider_label = QLabel("服务商")
         self.expression_model_label = QLabel("模型 ID")
@@ -1851,8 +1853,8 @@ class CompanionWindow(QMainWindow):
             self.desktop_feedback_label.show()
 
     def _handle_expression_settings_save(self) -> None:
-        self._save_expression_settings_from_form()
-        self.expression_settings_status_label.setText("LLM 表达设置已保存")
+        settings = self._save_expression_settings_from_form()
+        self.expression_settings_status_label.setText(expression_settings_status_text(settings))
 
     def _handle_expression_settings_test(self) -> None:
         self._save_expression_settings_from_form()
@@ -1898,13 +1900,13 @@ class CompanionWindow(QMainWindow):
         if model:
             self.expression_model_input.setText(model)
 
-    def _save_expression_settings_from_form(self) -> dict[str, object]:
+    def _save_expression_settings_from_form(self):
         settings = normalize_expression_settings(self._expression_settings_payload_from_form())
         public_settings = self.controller.update_expression_settings(settings)
         self.expression_model_input.setText(str(public_settings["model"]))
         self.expression_base_url_input.setText(str(public_settings["base_url"]))
         self.expression_timeout_input.setValue(float(public_settings["timeout_seconds"]))
-        return public_settings
+        return settings
 
     def _expression_settings_payload_from_form(self) -> dict[str, object]:
         return {

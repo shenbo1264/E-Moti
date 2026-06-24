@@ -2677,7 +2677,11 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert window.expression_timeout_input.value() == 2.0
     assert window.expression_timeout_input.maximum() == 60.0
     assert window.expression_test_button.text() == "测试 LLM 回应"
-    assert window.expression_settings_status_label.text() == "LLM 表达：关闭"
+    initial_status = window.expression_settings_status_label.text()
+    assert "LLM 表达：关闭" in initial_status
+    assert "openai" in initial_status
+    assert "gpt-5.5" in initial_status
+    assert "Key" in initial_status
 
     window.expression_enabled_checkbox.setChecked(True)
     window.expression_model_input.setText("demo-model")
@@ -2694,7 +2698,60 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert settings["base_url"] == "https://example.test/v1/responses"
     assert settings["api_key_set"] is True
     assert settings["timeout_seconds"] == 0.5
-    assert window.expression_settings_status_label.text() == "LLM 表达设置已保存"
+    saved_status = window.expression_settings_status_label.text()
+    assert "LLM 表达：已启用" in saved_status
+    assert "openai" in saved_status
+    assert "demo-model" in saved_status
+    assert "Key" in saved_status
+    assert "test-key" not in saved_status
+
+    window.close()
+    app.processEvents()
+
+
+def test_expression_settings_status_shows_ai_readiness_without_secret_echo(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    controller = make_controller(tmp_path)
+    controller.update_expression_settings(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "deepseek",
+                "api_key": "sk-hidden-course-key",
+            }
+        )
+    )
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[6].click()
+    app.processEvents()
+
+    initial_status = window.expression_settings_status_label.text()
+    assert "deepseek" in initial_status
+    assert "deepseek-v4-flash" in initial_status
+    assert "Key" in initial_status
+    assert "sk-hidden-course-key" not in initial_status
+
+    window.expression_model_input.setText("course-model")
+    window.expression_api_key_input.setText("sk-hidden-form-key")
+    window.expression_save_button.click()
+    app.processEvents()
+
+    saved_status = window.expression_settings_status_label.text()
+    assert "deepseek" in saved_status
+    assert "course-model" in saved_status
+    assert "Key" in saved_status
+    assert "sk-hidden-form-key" not in saved_status
 
     window.close()
     app.processEvents()

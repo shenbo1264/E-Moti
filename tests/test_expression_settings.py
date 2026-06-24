@@ -151,3 +151,29 @@ def test_expression_settings_supports_provider_presets_for_openai_compatible_ser
 
     assert provider_api_key_required("openai") is True
     assert provider_api_key_required("custom") is False
+
+
+def test_expression_settings_readiness_marks_deepseek_ready_without_secret_echo():
+    from guanghe_companion.expression_settings import (
+        expression_settings_readiness,
+        normalize_expression_settings,
+    )
+
+    settings = normalize_expression_settings(
+        {
+            "enabled": True,
+            "provider": "deepseek",
+            "api_key": "sk-private-course-key",
+        }
+    )
+
+    readiness = expression_settings_readiness(settings)
+
+    assert readiness["enabled"] is True
+    assert readiness["provider"] == "deepseek"
+    assert readiness["model"] == "deepseek-v4-flash"
+    assert readiness["api_style"] == "chat_completions"
+    assert readiness["api_key_required"] is True
+    assert readiness["api_key_set"] is True
+    assert readiness["ready"] is True
+    assert "sk-private-course-key" not in str(readiness)
