@@ -18,13 +18,15 @@ Updated 2026-06-24:
 - [x] Task 2: lightweight course submission zip builder overlays ignored private config and excludes `voice_runtime` by default.
 - [x] Task 3: LLM default AI readiness is visible in the control panel and course package report without echoing secrets.
 - [x] Task 4: context builder for memory, history, screen, and search.
-- [ ] Task 5: TopicScout for web search and conversation hooks.
+- [x] Task 5: TopicScout for web search and conversation hooks.
 - [ ] Task 6: screen observation as read-only context.
 - [ ] Task 7: proactive interaction requests.
 
 Task 3 verification recorded `DeepSeek / deepseek-v4-flash / api_key_set=true / ready=true` in `artifacts/final-package-qa/course-submission-package.json`, live LLM smoke passed with no state mutation, and the regenerated `dist/E-Moti-course-submission.zip` remained about 279 MB.
 
 Task 4 added a bounded read-only AI context builder and wired recent dialogue into the typed LLM prompt without adding any growth-state write surface.
+
+Task 5 added a TopicScout service that turns read-only context into safe search queries and permission-style topic cards, then exposes it through `CapabilityRuntime.run_topic_scout`.
 
 ---
 

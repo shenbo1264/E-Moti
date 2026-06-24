@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from typing import TypeVar
 
@@ -12,6 +12,7 @@ from .capability_settings import (
 )
 from .dialogue import DialogueRequest
 from .screen_observation import ScreenObservationResult, ScreenObservationService
+from .topic_scout import TopicScout, TopicScoutResult
 from .voice_asr import ASRResult, ASRService
 from .voice_tts import TTSManager, TTSResult
 from .web_search import WebSearchResult, WebSearchService
@@ -22,6 +23,15 @@ class WebSearchRuntimeResult:
     ok: bool
     message: str
     tool_results: list[dict[str, str]]
+    display_text: str
+
+
+@dataclass(frozen=True, slots=True)
+class TopicScoutRuntimeResult:
+    ok: bool
+    message: str
+    query: str
+    cards: list[dict[str, str]]
     display_text: str
 
 
@@ -43,6 +53,7 @@ class CapabilityRuntime:
     settings_reader: Callable[[], CapabilitySettings] = CapabilitySettings.default
     set_perception_summary: Callable[[str], None] = lambda summary: None
     set_tool_results: Callable[[list[dict[str, object]]], None] = lambda results: None
+    context_reader: Callable[[], Mapping[str, object]] = lambda: {}
     screen_observation_service: ServiceRef[ScreenObservationService] | None = None
     web_search_service: ServiceRef[WebSearchService] | None = None
     tts_manager: ServiceRef[TTSManager] | None = None
@@ -66,6 +77,23 @@ class CapabilityRuntime:
             message=result.message,
             tool_results=result.tool_results,
             display_text=_format_web_search_display(result),
+        )
+
+    def run_topic_scout(self, interests: Iterable[object] = ()) -> TopicScoutRuntimeResult:
+        settings = self.settings_saver()
+        result = TopicScout(search_service=self._web_search_service()).scout(
+            context=self.context_reader(),
+            settings=settings.web_search,
+            interests=interests,
+        )
+        if result.cards:
+            self.set_tool_results(result.cards)
+        return TopicScoutRuntimeResult(
+            ok=result.ok,
+            message=_topic_scout_message(result),
+            query=result.query,
+            cards=result.cards,
+            display_text=_format_topic_scout_display(result),
         )
 
     def run_tts_test(self, text: str) -> TTSResult:
@@ -171,6 +199,25 @@ def _format_web_search_display(result: WebSearchResult) -> str:
         summary = item.get("summary", "")
         url = item.get("url", "")
         lines.append(f"{title} - {summary}" + (f" ({url})" if url else ""))
+    return "\n".join(lines)
+
+
+def _topic_scout_message(result: TopicScoutResult) -> str:
+    if result.ok:
+        return "话题已准备好，等待用户确认"
+    if result.reason == "empty_query":
+        return "暂时没有足够上下文生成话题"
+    if result.reason == "search_failed":
+        return "话题搜索失败"
+    return "没有找到可用话题"
+
+
+def _format_topic_scout_display(result: TopicScoutResult) -> str:
+    if not result.cards:
+        return _topic_scout_message(result)
+    lines = [_topic_scout_message(result)]
+    for card in result.cards:
+        lines.append(f"{card.get('title', '')} - {card.get('opening_line', '')}")
     return "\n".join(lines)
 
 

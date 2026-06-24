@@ -105,6 +105,54 @@ def test_web_search_runtime_writes_tool_results_and_formats_status_without_growt
     assert after.memory_log == before.memory_log
 
 
+def test_topic_scout_runtime_writes_permission_cards_without_growth_mutation(tmp_path):
+    settings = CapabilitySettings(web_search=WebSearchSettings(enabled=True, max_results=3))
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+
+    class FakeWebSearchService:
+        def __init__(self):
+            self.calls = []
+
+        def search(self, query, received_settings):
+            self.calls.append((query, received_settings))
+            return WebSearchResult(
+                True,
+                "ok",
+                [
+                    {
+                        "source": "web_search",
+                        "title": "AI companion topic",
+                        "summary": "A short hook for the player.",
+                    }
+                ],
+            )
+
+    service = FakeWebSearchService()
+    runtime = CapabilityRuntime(
+        settings_saver=lambda: settings,
+        settings_reader=lambda: settings,
+        set_tool_results=controller.set_tool_results,
+        web_search_service=service,
+        context_reader=lambda: {
+            "recent_dialogue": [
+                {"role": "user", "speaker": "player", "text": "desktop pet gossip"},
+            ]
+        },
+    )
+    before = controller.get_typed_snapshot()
+
+    result = runtime.run_topic_scout(interests=["AI companion"])
+
+    after = controller.get_typed_snapshot()
+    assert result.ok is True
+    assert service.calls == [("AI companion desktop pet gossip", settings.web_search)]
+    assert result.cards[0]["opening_line"] == "我刚看到一个关于 AI companion topic 的小话题，要听听吗？"
+    assert controller._expression_context()["tool_results"] == result.cards
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.memory_log == before.memory_log
+
+
 def test_voice_runtime_saves_settings_for_tts_test_and_reads_settings_for_stop():
     settings = CapabilitySettings(tts=TTSSettings(enabled=True, provider="http_qwen3tts"))
     saved_calls = []

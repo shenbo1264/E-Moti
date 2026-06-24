@@ -15,6 +15,7 @@ MAX_TOOL_SOURCE_LENGTH = 60
 MAX_TOOL_TITLE_LENGTH = 80
 MAX_TOOL_SUMMARY_LENGTH = 180
 MAX_TOOL_TIMESTAMP_LENGTH = 25
+MAX_TOOL_OPENING_LINE_LENGTH = 80
 
 
 @dataclass(frozen=True, slots=True)
@@ -187,6 +188,9 @@ def _sanitize_tool_result(entry: object) -> dict[str, str] | None:
     timestamp = entry.get("timestamp")
     if isinstance(timestamp, str) and timestamp.strip():
         result["timestamp"] = _sanitize_context_string(timestamp, MAX_TOOL_TIMESTAMP_LENGTH)
+    opening_line = entry.get("opening_line")
+    if isinstance(opening_line, str) and opening_line.strip():
+        result["opening_line"] = _sanitize_context_string(opening_line, MAX_TOOL_OPENING_LINE_LENGTH)
     return result
 
 
