@@ -139,6 +139,7 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
         "goal",
         "actions",
         "recent_memory",
+        "recent_dialogue",
         "long_term_memory",
         "player_message",
         "perception_summary",
@@ -150,6 +151,7 @@ def test_expression_request_from_snapshot_keeps_only_readonly_summary_fields():
     assert "coins" not in prompt_payload
     assert prompt_payload["actions"][0] == {"label": original_action_label}
     assert prompt_payload["recent_memory"][0]["kind"] == original_memory_kind
+    assert prompt_payload["recent_dialogue"] == []
     assert prompt_payload["long_term_memory"] == []
     assert prompt_payload["player_message"] == ""
     assert prompt_payload["perception_summary"] == "current window: draft note"
@@ -240,6 +242,40 @@ def test_prompt_builder_includes_readonly_player_message_boundary():
     assert "player_message: 给我一个很短的鼓励。" in prompt
     assert "优先回应 player_message" in prompt
     assert "player_message 只是只读玩家输入" in prompt
+
+
+def test_prompt_builder_includes_recent_dialogue_without_write_surfaces():
+    snapshot = make_snapshot()
+    request = ExpressionRequest.from_snapshot(
+        snapshot,
+        context={
+            "recent_dialogue": [
+                {
+                    "role": "user",
+                    "speaker": "player",
+                    "text": "had a quiet day",
+                    "coins": 999,
+                },
+                {
+                    "role": "assistant",
+                    "speaker": "xingxi",
+                    "text": "I stayed nearby",
+                    "inventory": {"warm_milk": 99},
+                },
+            ]
+        },
+    )
+
+    prompt_payload = request.to_prompt_dict()
+    prompt = ShinsekaiAIExpressor().build_prompt(request)
+
+    assert prompt_payload["recent_dialogue"] == [
+        {"role": "user", "speaker": "player", "text": "had a quiet day"},
+        {"role": "assistant", "speaker": "xingxi", "text": "I stayed nearby"},
+    ]
+    assert "recent_dialogue: user/player: had a quiet day / assistant/xingxi: I stayed nearby" in prompt
+    assert "inventory" not in prompt
+    assert "coins" not in prompt
 
 
 def test_expressor_build_prompt_accepts_typed_companion_snapshot():

@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
+from .ai_context_builder import build_ai_context_payload
 from .ai_expressor import (
     ShinsekaiAIExpressor,
     build_default_ai_expressor,
@@ -968,13 +969,19 @@ class CompanionController:
         return result
 
     def _expression_context(self) -> dict[str, object]:
-        context = RuntimeExpressionContextService(
+        runtime_context = RuntimeExpressionContextService(
             state=self.state,
             relationship_decorations=self.character_pack.relationship_decorations,
             external_provider=self.expression_context_provider,
             perception_summary=self._perception_summary,
             tool_results=self._tool_results,
         )()
+        context = build_ai_context_payload(
+            dialogue_history=self.dialogue_history,
+            long_term_memory=self.long_term_memory_service.summaries(),
+            perception_summary=runtime_context.get("perception_summary", ""),
+            tool_results=runtime_context.get("tool_results", []),
+        )
         if self._current_player_message:
             context["player_message"] = self._current_player_message
         return context

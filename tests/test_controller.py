@@ -861,7 +861,6 @@ def test_controller_builds_ai_expression_request_from_typed_snapshot_and_separat
                 "source": "character_pack",
                 "title": "voice",
                 "summary": "keep Starsea gentle",
-                "coins": "999",
             }
         ],
     }
