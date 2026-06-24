@@ -55,6 +55,25 @@ def test_frozen_save_paths_use_local_app_data(monkeypatch, tmp_path):
     assert demo_save_path() == local_app_data / "E-Moti" / "companion_demo_save.json"
 
 
+def test_frozen_user_data_prefers_packaged_sibling_user_data(monkeypatch, tmp_path):
+    from guanghe_companion.runtime_paths import expression_settings_path, user_data_dir
+
+    app_dir = tmp_path / "E-Moti"
+    app_dir.mkdir()
+    packaged_user_data = app_dir / "user_data"
+    packaged_user_data.mkdir()
+    exe_path = app_dir / "E-Moti.exe"
+    exe_path.write_text("", encoding="utf-8")
+    local_app_data = tmp_path / "LocalAppData"
+
+    monkeypatch.setenv("LOCALAPPDATA", str(local_app_data))
+    monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setattr("sys.executable", str(exe_path))
+
+    assert user_data_dir() == packaged_user_data
+    assert expression_settings_path() == packaged_user_data / "expression_settings.json"
+
+
 def test_user_data_dir_can_be_overridden_for_smoke_runs(monkeypatch, tmp_path):
     from guanghe_companion.runtime_paths import default_save_path, dialogue_history_path, user_data_dir
 

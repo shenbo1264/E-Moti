@@ -38,9 +38,18 @@ def user_data_dir() -> Path:
     override = os.environ.get(USER_DATA_ENV)
     if override:
         return Path(override).expanduser()
+    packaged = packaged_user_data_dir()
+    if is_frozen() and packaged.exists():
+        return packaged
     if is_frozen():
         return _local_app_data_root() / APP_DATA_DIR_NAME
     return repo_root() / "data"
+
+
+def packaged_user_data_dir() -> Path:
+    if not is_frozen():
+        return repo_root() / "data"
+    return Path(sys.executable).resolve().parent / "user_data"
 
 
 def default_save_path() -> Path:
