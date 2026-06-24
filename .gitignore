@@ -52,6 +52,7 @@ artifacts/character-pack-status*.json
 artifacts/character-pack-status*.md
 artifacts/release-readiness*.json
 artifacts/release-readiness*.md
+artifacts/qa/
 artifacts/final-acceptance-*/
 artifacts/final-package-qa/
 artifacts/voice-smoke/

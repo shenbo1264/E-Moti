@@ -47,6 +47,7 @@ REQUIRED_GITIGNORE_PATTERNS = (
     "artifacts/character-pack-status*.md",
     "artifacts/release-readiness*.json",
     "artifacts/release-readiness*.md",
+    "artifacts/qa/",
     "artifacts/portrait-video-retry-handoff/",
     "artifacts/portrait-video-retry-handoff-report*.json",
     "artifacts/portrait-video-frame-normalization*.json",
