@@ -13,3 +13,7 @@ def test_ikaros_gptsovits_start_script_documents_final_weights() -> None:
     assert "ikaros_full642_v2_e3_s1926.pth" in text
     assert "9882" in text
     assert "EMOTI_GPTSOVITS_ROOT" in text
+    assert "voice_runtime" in text
+    assert "PortableVoiceRoot" in text
+    assert "PortableGPTSoVITSRoot" in text
+    assert "PortableGPTSoVITSPython" in text

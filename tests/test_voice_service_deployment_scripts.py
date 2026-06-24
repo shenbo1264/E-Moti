@@ -31,6 +31,9 @@ def test_qwen3_tts_deployment_script_uses_local_http_contract() -> None:
     assert "Qwen/Qwen3-TTS-0.6B" not in script
     assert "Vivian" in script
     assert "sox" in script.lower()
+    assert "voice_runtime" in script
+    assert "PortableVoiceRoot" in script
+    assert "PortableServiceRoot" in script
 
 
 def test_sensevoice_asr_deployment_script_uses_formal_local_route() -> None:
@@ -47,6 +50,9 @@ def test_sensevoice_asr_deployment_script_uses_formal_local_route() -> None:
     assert "[string]$ServiceRoot" in script
     assert "EMOTI_SENSEVOICE_SERVICE_ROOT" in script
     assert "$env:LOCALAPPDATA" in script
+    assert "voice_runtime" in script
+    assert "PortableVoiceRoot" in script
+    assert "PortableServiceRoot" in script
     assert "--device" in script
     assert "InstallOnly" in script
     assert "[string]::IsNullOrWhiteSpace($ScriptsDir)" in script

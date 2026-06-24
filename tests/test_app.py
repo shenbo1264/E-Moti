@@ -3066,13 +3066,14 @@ def test_voice_service_launch_button_updates_status_without_state_mutation(monke
         VoiceServiceStatus("qwen3tts", "Qwen3TTS", True, "http://127.0.0.1:9880/tts", "HTTP 404"),
         VoiceServiceStatus("gptsovits", "GPT-SoVITS", False, "http://127.0.0.1:9882/", "down"),
     )
+    bundled_scripts = tmp_path / "_internal" / "voice_services"
     launches = []
 
     def fake_probe_voice_services(*, timeout: float = 1.0):
         return statuses
 
-    def fake_launch_missing_voice_services(repo_root, *, statuses):
-        launches.append((repo_root, statuses))
+    def fake_launch_missing_voice_services(repo_root, *, statuses, scripts_dir):
+        launches.append((repo_root, statuses, scripts_dir))
         return (
             VoiceServiceLaunchResult("qwen3tts", "Qwen3TTS", False, "已在运行"),
             VoiceServiceLaunchResult("gptsovits", "GPT-SoVITS", True, "启动命令已发送"),
@@ -3080,6 +3081,7 @@ def test_voice_service_launch_button_updates_status_without_state_mutation(monke
 
     monkeypatch.setattr(app_module, "probe_voice_services", fake_probe_voice_services)
     monkeypatch.setattr(app_module, "launch_missing_voice_services", fake_launch_missing_voice_services)
+    monkeypatch.setattr(app_module, "voice_services_root", lambda: bundled_scripts)
 
     app = QApplication.instance() or QApplication([])
     window = app_module.CompanionWindow(controller=make_controller(tmp_path))
@@ -3093,6 +3095,7 @@ def test_voice_service_launch_button_updates_status_without_state_mutation(monke
 
     assert len(launches) == 1
     assert launches[0][1] == statuses
+    assert launches[0][2] == bundled_scripts
     assert "语音服务启动请求已发送" in window.voice_service_status_label.text()
     assert "GPT-SoVITS" in window.voice_service_status_label.text()
     assert window.controller.get_typed_snapshot().stats == before.stats

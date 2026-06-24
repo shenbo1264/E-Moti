@@ -275,11 +275,11 @@ class VoiceSettingsPanel(QGroupBox):
         self.voice_asr_provider_label = QLabel("asr_provider: disabled")
         self.voice_character_profile_label = QLabel("")
         self.voice_character_profile_label.setWordWrap(True)
-        self.voice_service_status_label = QLabel("语音服务：未检查")
+        self.voice_service_status_label = QLabel("语音服务：未检查，优先使用 exe 随包脚本。")
         self.voice_service_status_label.setWordWrap(True)
         self.voice_service_preflight_button = QPushButton("检查语音服务")
         self.voice_service_preflight_button.clicked.connect(self.voiceServicePreflightRequested)
-        self.voice_service_launch_button = QPushButton("启动本地语音服务")
+        self.voice_service_launch_button = QPushButton("启动随包语音服务")
         self.voice_service_launch_button.clicked.connect(self.voiceServiceLaunchRequested)
 
         self.tts_enabled_check = QCheckBox("启用 TTS")

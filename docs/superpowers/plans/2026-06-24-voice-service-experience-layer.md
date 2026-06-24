@@ -169,3 +169,29 @@ git status --short --untracked-files=all
 git add docs/superpowers/plans/2026-06-24-voice-service-experience-layer.md src/guanghe_companion/voice_service_control.py tools/voice_services/preflight_voice_services.py src/guanghe_companion/capability_panels.py src/guanghe_companion/app.py tests/test_voice_service_control.py tests/test_voice_service_preflight_tool.py tests/test_capability_panels.py tests/test_app.py
 git commit -m "feat: add voice service experience controls"
 ```
+
+## Task 6: Portable Voice Service Packaging Follow-up
+
+- [x] **Step 1: Add frozen voice service runtime path tests**
+
+`tests/test_runtime_paths.py` verifies that frozen apps prefer `_MEIPASS/voice_services`.
+
+- [x] **Step 2: Add explicit bundled script directory support**
+
+`launch_missing_voice_services()` accepts `scripts_dir`, and the app passes `voice_services_root()` so frozen builds use `_internal/voice_services`.
+
+- [x] **Step 3: Bundle voice service launch scripts**
+
+`tools/build_windows_app.ps1` copies `tools/voice_services` into the PyInstaller data bundle. `tools/validate_windows_build.py` rejects frozen builds missing required voice-service scripts.
+
+- [x] **Step 4: Add optional portable runtime copy path**
+
+`tools/build_windows_app.ps1` and `tools/build_windows_installer.ps1` support `-VoiceRuntimePath`. When a prepared runtime directory is supplied, it is copied to `dist/E-Moti/voice_runtime`.
+
+- [x] **Step 5: Prefer portable voice runtime in launch scripts**
+
+Qwen3TTS and SenseVoice scripts prefer `voice_runtime/.voice-services/...` when present. GPT-SoVITS prefers `voice_runtime/GPT-SoVITS` and `voice_runtime/gptsovits-venv/Scripts/python.exe` before falling back to environment variables or local development paths.
+
+- [x] **Step 6: Verify package behavior**
+
+Verified with focused tests, full pytest, Windows app build, Windows installer build, build validator, and frozen control-panel / `--pet-mode` 5-second smoke.

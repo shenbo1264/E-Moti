@@ -1,6 +1,6 @@
 param(
-    [string]$GPTSoVITSRoot = $(if ($env:EMOTI_GPTSOVITS_ROOT) { $env:EMOTI_GPTSOVITS_ROOT } else { "E:\E_Moti_voice\GPT-SoVITS" }),
-    [string]$PythonPath = $(if ($env:EMOTI_GPTSOVITS_PYTHON) { $env:EMOTI_GPTSOVITS_PYTHON } else { "E:\E_Moti_voice\gptsovits-venv\Scripts\python.exe" }),
+    [string]$GPTSoVITSRoot = "",
+    [string]$PythonPath = "",
     [string]$GPTWeight = $(if ($env:EMOTI_IKAROS_GPT_WEIGHT) { $env:EMOTI_IKAROS_GPT_WEIGHT } else { "" }),
     [string]$SoVITSWeight = $(if ($env:EMOTI_IKAROS_SOVITS_WEIGHT) { $env:EMOTI_IKAROS_SOVITS_WEIGHT } else { "" }),
     [string]$HostAddress = "127.0.0.1",
@@ -10,6 +10,36 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+
+$ScriptDir = $PSScriptRoot
+$RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..")
+$PortableVoiceRoot = Join-Path $RepoRoot "voice_runtime"
+$PortableGPTSoVITSRoot = Join-Path $PortableVoiceRoot "GPT-SoVITS"
+$PortableGPTSoVITSPython = Join-Path $PortableVoiceRoot "gptsovits-venv\Scripts\python.exe"
+
+if (-not $GPTSoVITSRoot) {
+    if ($env:EMOTI_GPTSOVITS_ROOT) {
+        $GPTSoVITSRoot = $env:EMOTI_GPTSOVITS_ROOT
+    }
+    elseif (Test-Path -LiteralPath $PortableGPTSoVITSRoot) {
+        $GPTSoVITSRoot = $PortableGPTSoVITSRoot
+    }
+    else {
+        $GPTSoVITSRoot = "E:\E_Moti_voice\GPT-SoVITS"
+    }
+}
+
+if (-not $PythonPath) {
+    if ($env:EMOTI_GPTSOVITS_PYTHON) {
+        $PythonPath = $env:EMOTI_GPTSOVITS_PYTHON
+    }
+    elseif (Test-Path -LiteralPath $PortableGPTSoVITSPython) {
+        $PythonPath = $PortableGPTSoVITSPython
+    }
+    else {
+        $PythonPath = "E:\E_Moti_voice\gptsovits-venv\Scripts\python.exe"
+    }
+}
 
 if (-not $GPTWeight) {
     $GPTWeight = Join-Path $GPTSoVITSRoot "GPT_weights_v2\ikaros_curated160_v2-e4.ckpt"

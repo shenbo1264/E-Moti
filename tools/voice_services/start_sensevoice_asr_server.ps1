@@ -25,9 +25,14 @@ function Invoke-CheckedCommand {
 
 $ScriptDir = $PSScriptRoot
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..")
+$PortableVoiceRoot = Join-Path $RepoRoot "voice_runtime"
+$PortableServiceRoot = Join-Path $PortableVoiceRoot ".voice-services\sensevoice-asr"
 if ([string]::IsNullOrWhiteSpace($ServiceRoot)) {
     if ($env:EMOTI_SENSEVOICE_SERVICE_ROOT) {
         $ServiceRoot = $env:EMOTI_SENSEVOICE_SERVICE_ROOT
+    }
+    elseif (Test-Path -LiteralPath $PortableServiceRoot) {
+        $ServiceRoot = $PortableServiceRoot
     }
     elseif ($env:LOCALAPPDATA) {
         $ServiceRoot = Join-Path $env:LOCALAPPDATA "E-Moti\voice-services\sensevoice-asr"

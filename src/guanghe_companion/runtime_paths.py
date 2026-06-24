@@ -27,6 +27,13 @@ def companion_assets_root() -> Path:
     return assets_root() / "companion"
 
 
+def voice_services_root() -> Path:
+    for candidate in _voice_service_candidates():
+        if candidate.exists():
+            return candidate
+    return _voice_service_candidates()[0]
+
+
 def user_data_dir() -> Path:
     override = os.environ.get(USER_DATA_ENV)
     if override:
@@ -72,6 +79,17 @@ def _asset_candidates() -> list[Path]:
             candidates.append(Path(meipass) / "assets")
         candidates.append(Path(sys.executable).resolve().parent / "assets")
     candidates.append(repo_root() / "assets")
+    return candidates
+
+
+def _voice_service_candidates() -> list[Path]:
+    candidates: list[Path] = []
+    if is_frozen():
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            candidates.append(Path(meipass) / "voice_services")
+        candidates.append(Path(sys.executable).resolve().parent / "voice_services")
+    candidates.append(repo_root() / "tools" / "voice_services")
     return candidates
 
 

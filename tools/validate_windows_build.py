@@ -22,6 +22,13 @@ RENDERER_REQUIRED_BUNDLED_ASSETS = {
     "portrait": ("portrait_manifest.json", "portrait_assets_provenance.md", "portraits"),
     "sprite": ("provenance.md", "spritesheet.png", "motion_manifest.json"),
 }
+REQUIRED_VOICE_SERVICE_SCRIPTS = (
+    "preflight_voice_services.py",
+    "qwen3_tts_local_server.py",
+    "start_qwen3_tts_server.ps1",
+    "start_ikaros_gptsovits_server.ps1",
+    "start_sensevoice_asr_server.ps1",
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,6 +38,7 @@ class WindowsBuildValidationReport:
     app_exe: str
     character_dir: str
     character_id: str
+    voice_services_dir: str
     installer_path: str
     errors: tuple[str, ...]
 
@@ -41,6 +49,7 @@ class WindowsBuildValidationReport:
             "app_exe": self.app_exe,
             "character_dir": self.character_dir,
             "character_id": self.character_id,
+            "voice_services_dir": self.voice_services_dir,
             "installer_path": self.installer_path,
             "errors": list(self.errors),
         }
@@ -71,6 +80,11 @@ def validate_windows_build(
         if not (character_dir / required).exists():
             errors.append(f"frozen character pack missing required bundled asset: {required}")
 
+    voice_services_dir = _resolve_frozen_voice_services_dir(app_root)
+    for required in REQUIRED_VOICE_SERVICE_SCRIPTS:
+        if not (voice_services_dir / required).is_file():
+            errors.append(f"frozen voice services missing required bundled script: {required}")
+
     if installer is not None:
         if not installer.is_file():
             errors.append(f"installer not found: {installer}")
@@ -83,6 +97,7 @@ def validate_windows_build(
         app_exe=str(exe_path),
         character_dir=str(character_dir),
         character_id=pack_report.character_id,
+        voice_services_dir=str(voice_services_dir),
         installer_path=str(installer) if installer is not None else "",
         errors=tuple(errors),
     )
@@ -92,6 +107,17 @@ def _resolve_frozen_character_dir(app_dir: Path, character_id: str) -> Path:
     candidates = (
         app_dir / "_internal" / "assets" / "companion" / character_id,
         app_dir / "assets" / "companion" / character_id,
+    )
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
+def _resolve_frozen_voice_services_dir(app_dir: Path) -> Path:
+    candidates = (
+        app_dir / "_internal" / "voice_services",
+        app_dir / "voice_services",
     )
     for candidate in candidates:
         if candidate.exists():

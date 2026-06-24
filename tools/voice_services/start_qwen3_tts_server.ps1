@@ -12,7 +12,14 @@ $ErrorActionPreference = "Stop"
 
 $ScriptDir = $PSScriptRoot
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..")
-$ServiceRoot = Join-Path $RepoRoot ".voice-services\qwen3-tts"
+$PortableVoiceRoot = Join-Path $RepoRoot "voice_runtime"
+$PortableServiceRoot = Join-Path $PortableVoiceRoot ".voice-services\qwen3-tts"
+if (Test-Path -LiteralPath $PortableServiceRoot) {
+    $ServiceRoot = $PortableServiceRoot
+}
+else {
+    $ServiceRoot = Join-Path $RepoRoot ".voice-services\qwen3-tts"
+}
 $VenvDir = Join-Path $ServiceRoot ".venv"
 
 if ($Install) {

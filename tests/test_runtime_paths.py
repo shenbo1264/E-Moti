@@ -27,6 +27,22 @@ def test_frozen_assets_root_prefers_pyinstaller_meipass(monkeypatch, tmp_path):
     assert assets_root() == expected
 
 
+def test_frozen_voice_services_root_prefers_pyinstaller_meipass(monkeypatch, tmp_path):
+    from guanghe_companion.runtime_paths import voice_services_root
+
+    bundle_root = tmp_path / "_internal"
+    expected = bundle_root / "voice_services"
+    expected.mkdir(parents=True)
+    exe_path = tmp_path / "E-Moti.exe"
+    exe_path.write_text("", encoding="utf-8")
+
+    monkeypatch.setattr("sys.frozen", True, raising=False)
+    monkeypatch.setattr("sys._MEIPASS", str(bundle_root), raising=False)
+    monkeypatch.setattr("sys.executable", str(exe_path))
+
+    assert voice_services_root() == expected
+
+
 def test_frozen_save_paths_use_local_app_data(monkeypatch, tmp_path):
     from guanghe_companion.runtime_paths import default_save_path, demo_save_path, user_data_dir
 

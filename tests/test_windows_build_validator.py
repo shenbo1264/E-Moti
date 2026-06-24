@@ -155,6 +155,19 @@ def _write_sprite_character_pack(root: Path) -> None:
     (root / "LICENSE.md").write_text("fixture character pack license\n", encoding="utf-8")
 
 
+def _write_voice_services(root: Path) -> None:
+    voice_services = root / "_internal" / "voice_services"
+    voice_services.mkdir(parents=True)
+    for filename in (
+        "preflight_voice_services.py",
+        "qwen3_tts_local_server.py",
+        "start_qwen3_tts_server.ps1",
+        "start_ikaros_gptsovits_server.ps1",
+        "start_sensevoice_asr_server.ps1",
+    ):
+        (voice_services / filename).write_text(f"# {filename}\n", encoding="utf-8")
+
+
 def _write_windows_build(root: Path, *, include_portraits: bool = True, include_installer: bool = True) -> tuple[Path, Path]:
     app_dir = root / "dist" / "E-Moti"
     character_dir = app_dir / "_internal" / "assets" / "companion" / "original_oc"
@@ -164,6 +177,7 @@ def _write_windows_build(root: Path, *, include_portraits: bool = True, include_
     (app_dir / "E-Moti.exe").write_bytes(b"MZ" + (b"0" * 128))
     _write_character_pack(character_dir)
     _write_sprite_character_pack(sprite_dir)
+    _write_voice_services(app_dir)
     if not include_portraits:
         for path in (character_dir / "portraits").glob("*.png"):
             path.unlink()
@@ -230,6 +244,18 @@ def test_validate_windows_build_rejects_missing_character_pack_license(tmp_path:
 
     assert report.ok is False
     assert "frozen character pack missing required bundled asset: LICENSE.md" in report.errors
+
+
+def test_validate_windows_build_rejects_missing_voice_service_script(tmp_path: Path):
+    from tools.validate_windows_build import validate_windows_build
+
+    app_dir, installer = _write_windows_build(tmp_path)
+    (app_dir / "_internal" / "voice_services" / "start_sensevoice_asr_server.ps1").unlink()
+
+    report = validate_windows_build(app_dir=app_dir, installer_path=installer)
+
+    assert report.ok is False
+    assert "frozen voice services missing required bundled script: start_sensevoice_asr_server.ps1" in report.errors
 
 
 def test_validate_windows_build_cli_writes_report_from_repo_root(tmp_path: Path):

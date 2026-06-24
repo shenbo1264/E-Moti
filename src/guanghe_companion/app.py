@@ -92,7 +92,7 @@ from .presentation_renderer import (
 from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
 from .spirit_stage import SpiritStageSurface, has_safe_portrait_manifest, load_portrait_manifest
-from .runtime_paths import USER_DATA_ENV, demo_save_path, user_data_dir
+from .runtime_paths import USER_DATA_ENV, demo_save_path, repo_root, user_data_dir, voice_services_root
 from .tray_controller import TrayController
 from .voice_asr import ASRService
 from .voice_async import VoiceAsyncRunner
@@ -104,11 +104,6 @@ from .voice_service_control import (
 )
 from .voice_tts import TTSManager, TTSResult
 from .web_search import WebSearchService
-
-
-def _voice_service_repo_root() -> Path:
-    return Path(__file__).resolve().parents[2]
-
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
 DESKTOP_DOCK_THRESHOLD_PX = 32
@@ -1802,7 +1797,7 @@ class CompanionWindow(QMainWindow):
 
     def _handle_voice_service_launch(self) -> None:
         statuses = probe_voice_services(timeout=1.0)
-        results = launch_missing_voice_services(_voice_service_repo_root(), statuses=statuses)
+        results = launch_missing_voice_services(repo_root(), statuses=statuses, scripts_dir=voice_services_root())
         self.voice_settings_card.set_service_status(format_voice_service_launch_results(results))
 
     def _sync_voice_controls_enabled(self) -> None:

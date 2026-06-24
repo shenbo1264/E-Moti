@@ -13,9 +13,11 @@ def test_pyinstaller_build_script_uses_onedir_windowed_app_bundle():
 
     assert "PyInstaller" in script
     assert "[string]$PythonPath" in script
+    assert "[string]$VoiceRuntimePath" in script
     assert "Resolve-PythonInvocation" in script
     assert "RequestedPath $PythonPath" in script
     assert "runtime_assets" in script
+    assert "runtime_voice_services" in script
     assert "item_icons" in script
     assert "--onedir" in script
     assert "--windowed" in script
@@ -24,8 +26,10 @@ def test_pyinstaller_build_script_uses_onedir_windowed_app_bundle():
     assert "edge_tts" in script
     assert "--add-data" in script
     assert "assets" in script
+    assert "voice_services" in script
     assert "packaging\\launch_control_panel.py" in script
     assert "dist\\E-Moti\\E-Moti.exe" in script
+    assert "voice_runtime" in script
 
 
 def test_pyinstaller_build_script_copies_all_bundled_companion_packs():
@@ -40,6 +44,27 @@ def test_pyinstaller_build_script_copies_all_bundled_companion_packs():
     assert "portraits" in script
     assert "portrait_assets_provenance.md" in script
     assert "LICENSE.md" in script
+
+
+def test_pyinstaller_build_script_copies_voice_service_scripts():
+    script = read_text("tools/build_windows_app.ps1")
+
+    assert "$RuntimeVoiceServicesDir" in script
+    assert "$SourceVoiceServicesDir" in script
+    assert "Get-ChildItem -Force -LiteralPath $SourceVoiceServicesDir" in script
+    assert "preflight_voice_services.py" in script
+    assert "start_qwen3_tts_server.ps1" in script
+    assert "start_ikaros_gptsovits_server.ps1" in script
+    assert "start_sensevoice_asr_server.ps1" in script
+
+
+def test_pyinstaller_build_script_can_copy_optional_portable_voice_runtime():
+    script = read_text("tools/build_windows_app.ps1")
+
+    assert "$VoiceRuntimePath" in script
+    assert "$PortableVoiceRuntimeDir" in script
+    assert "Test-Path -LiteralPath $VoiceRuntimePath" in script
+    assert "Copy-Item -LiteralPath $VoiceRuntimePath" in script
 
 
 def test_pyinstaller_build_script_does_not_hardcode_bare_python():
@@ -68,7 +93,9 @@ def test_installer_build_script_calls_inno_and_verifies_artifact():
 
     assert "build_windows_app.ps1" in script
     assert "[string]$PythonPath" in script
+    assert "[string]$VoiceRuntimePath" in script
     assert "-PythonPath" in script
+    assert "-VoiceRuntimePath" in script
     assert "ISCC.exe" in script
     assert "packaging\\e-moti-installer.iss" in script
     assert "dist\\installer\\E-Moti_Setup_0.1.0.exe" in script

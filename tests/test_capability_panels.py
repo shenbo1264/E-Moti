@@ -129,8 +129,9 @@ def test_voice_settings_panel_exposes_service_status_controls(qt_app):
     panel = VoiceSettingsPanel()
 
     assert "语音服务：未检查" in panel.voice_service_status_label.text()
+    assert "随包脚本" in panel.voice_service_status_label.text()
     assert panel.voice_service_preflight_button.text() == "检查语音服务"
-    assert panel.voice_service_launch_button.text() == "启动本地语音服务"
+    assert panel.voice_service_launch_button.text() == "启动随包语音服务"
 
     panel.set_service_status("语音服务预检通过：Qwen3TTS: HTTP 404")
 

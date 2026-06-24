@@ -95,3 +95,34 @@ def test_launch_missing_voice_services_reports_missing_scripts(tmp_path) -> None
     assert results[0].started is False
     assert "启动脚本不存在" in results[0].message
     assert "Qwen3TTS" in format_voice_service_launch_results(results)
+
+
+def test_launch_missing_voice_services_uses_explicit_bundled_scripts_dir(tmp_path) -> None:
+    from guanghe_companion.voice_service_control import (
+        VoiceServiceStatus,
+        launch_missing_voice_services,
+    )
+
+    scripts_dir = tmp_path / "_internal" / "voice_services"
+    scripts_dir.mkdir(parents=True)
+    script = scripts_dir / "start_qwen3_tts_server.ps1"
+    script.write_text("# qwen", encoding="utf-8")
+    statuses = (
+        VoiceServiceStatus("qwen3tts", "Qwen3TTS", False, "http://127.0.0.1:9880/tts", "down"),
+    )
+    commands: list[tuple[str, ...]] = []
+
+    def fake_starter(command: tuple[str, ...], cwd: str) -> tuple[bool, str]:
+        commands.append(command)
+        return True, "started"
+
+    results = launch_missing_voice_services(
+        tmp_path,
+        statuses=statuses,
+        scripts_dir=scripts_dir,
+        starter=fake_starter,
+    )
+
+    assert results[0].started is True
+    assert len(commands) == 1
+    assert str(script) in commands[0]

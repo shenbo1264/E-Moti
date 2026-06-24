@@ -91,6 +91,7 @@ def launch_missing_voice_services(
     repo_root: Path,
     *,
     statuses: Sequence[VoiceServiceStatus] | None = None,
+    scripts_dir: Path | None = None,
     starter: StarterFn | None = None,
 ) -> tuple[VoiceServiceLaunchResult, ...]:
     current_statuses = tuple(statuses) if statuses is not None else probe_voice_services(timeout=1.0)
@@ -107,14 +108,14 @@ def launch_missing_voice_services(
                 )
             )
             continue
-        command = _start_command(repo_root, status.service_id)
+        command = _start_command(repo_root, status.service_id, scripts_dir=scripts_dir)
         if command is None:
             results.append(
                 VoiceServiceLaunchResult(
                     status.service_id,
                     status.label,
                     False,
-                    f"启动脚本不存在：{_script_path(repo_root, status.service_id)}",
+                    f"启动脚本不存在：{_script_path(repo_root, status.service_id, scripts_dir=scripts_dir)}",
                 )
             )
             continue
@@ -154,27 +155,29 @@ def _probe_http(url: str, timeout: float) -> tuple[bool, str]:
         return False, str(exc)
 
 
-def _start_command(repo_root: Path, service_id: str) -> tuple[str, ...] | None:
-    script = _script_path(repo_root, service_id)
+def _start_command(repo_root: Path, service_id: str, *, scripts_dir: Path | None = None) -> tuple[str, ...] | None:
+    script = _script_path(repo_root, service_id, scripts_dir=scripts_dir)
     if not script.exists():
         return None
-    script_name, args = _START_SCRIPT_SPECS[service_id]
+    _, args = _START_SCRIPT_SPECS[service_id]
     return (
         "powershell",
         "-NoProfile",
         "-ExecutionPolicy",
         "Bypass",
         "-File",
-        str(repo_root / "tools" / "voice_services" / script_name),
+        str(script),
         *args,
     )
 
 
-def _script_path(repo_root: Path, service_id: str) -> Path:
+def _script_path(repo_root: Path, service_id: str, *, scripts_dir: Path | None = None) -> Path:
     spec = _START_SCRIPT_SPECS.get(service_id)
     if spec is None:
-        return repo_root / "tools" / "voice_services" / f"{service_id}.ps1"
-    return repo_root / "tools" / "voice_services" / spec[0]
+        filename = f"{service_id}.ps1"
+    else:
+        filename = spec[0]
+    return (scripts_dir or repo_root / "tools" / "voice_services") / filename
 
 
 def _start_process(command: tuple[str, ...], cwd: str) -> tuple[bool, str]:
