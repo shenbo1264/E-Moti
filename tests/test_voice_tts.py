@@ -97,6 +97,42 @@ def test_http_qwen3tts_provider_posts_model_variant_and_writes_audio(tmp_path) -
     assert (tmp_path / "qwen3tts_latest.wav").read_bytes() == b"RIFFdemo-wave-bytes"
 
 
+def test_http_qwen3tts_provider_reuses_cached_audio_for_same_voice_request(tmp_path) -> None:
+    from guanghe_companion.voice_tts import HttpQwen3TTSProvider
+
+    posts: list[dict[str, object]] = []
+    played: list[str] = []
+
+    def fake_post(url: str, payload: dict[str, object], timeout: int) -> bytes:
+        posts.append(payload)
+        return b"RIFFdemo-qwen-audio"
+
+    provider = HttpQwen3TTSProvider(
+        post=fake_post,
+        cache_dir=tmp_path,
+        audio_player=lambda path: played.append(str(path)),
+    )
+    settings = TTSSettings(
+        enabled=True,
+        provider="http_qwen3tts",
+        api_url="http://127.0.0.1:9880/",
+        language="zh",
+        voice="Vivian",
+        model_variant="qwen3tts_0.6b_customvoice",
+        instruct="warm companion voice",
+    )
+
+    first = provider.speak("星汐在这里。", settings)
+    second = provider.speak("星汐在这里。", settings)
+
+    assert first.ok is True
+    assert second.ok is True
+    assert "缓存" in second.message
+    assert len(posts) == 1
+    assert len(played) == 2
+    assert played[0] == played[1]
+
+
 def test_http_qwen3tts_provider_posts_reference_audio_for_clone_route(tmp_path) -> None:
     from guanghe_companion.voice_tts import HttpQwen3TTSProvider
 
@@ -170,6 +206,45 @@ def test_http_gptsovits_provider_posts_reference_prompt_to_root_and_writes_audio
     assert requests[0][2] == 180
     assert played
     assert (tmp_path / "gptsovits_latest.wav").read_bytes() == b"RIFF" + (b"\x00" * 120)
+
+
+def test_http_gptsovits_provider_reuses_cached_audio_for_same_voice_request(tmp_path) -> None:
+    from guanghe_companion.voice_tts import HttpGPTSoVITSProvider
+
+    posts: list[dict[str, object]] = []
+    played: list[str] = []
+
+    def fake_post(url: str, payload: dict[str, object], timeout: int) -> bytes:
+        posts.append(payload)
+        return b"RIFF" + (b"\x00" * 120)
+
+    provider = HttpGPTSoVITSProvider(
+        post=fake_post,
+        cache_dir=tmp_path,
+        audio_player=lambda path: played.append(str(path)),
+    )
+    settings = TTSSettings(
+        enabled=True,
+        provider="http_gptsovits",
+        api_url="http://127.0.0.1:9882/",
+        language="all_ja",
+        voice="ikaros_curated160_e4",
+        model_variant="gptsovits_v2",
+        reference_audio=("D:/voice-packs/ikaros/reference.wav",),
+        reference_text="マスター、私はここにいます。",
+        rate=-1,
+        volume=0.88,
+    )
+
+    first = provider.speak("マスター、私はここにいます。", settings)
+    second = provider.speak("マスター、私はここにいます。", settings)
+
+    assert first.ok is True
+    assert second.ok is True
+    assert "缓存" in second.message
+    assert len(posts) == 1
+    assert len(played) == 2
+    assert played[0] == played[1]
 
 
 def test_http_gptsovits_provider_requires_reference_audio_and_prompt_text(tmp_path) -> None:

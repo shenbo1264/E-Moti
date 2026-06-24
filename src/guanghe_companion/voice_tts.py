@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import json
 import re
 import subprocess
@@ -110,12 +111,18 @@ class HttpQwen3TTSProvider:
         endpoint = _tts_endpoint(settings.api_url)
         payload = _qwen3tts_payload(text, settings)
         try:
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
+            output = _tts_cache_path(self._cache_dir, "qwen3tts", text, settings, ".wav")
+            latest_output = self._cache_dir / "qwen3tts_latest.wav"
+            if output.exists() and output.stat().st_size > 0:
+                _write_latest_audio(latest_output, output.read_bytes())
+                self._audio_player(output)
+                return TTSResult(True, "朗读完成（缓存）", str(output))
             audio = self._post(endpoint, payload, 180)
             if not audio:
                 return TTSResult(False, "HTTP TTS 未返回音频")
-            self._cache_dir.mkdir(parents=True, exist_ok=True)
-            output = self._cache_dir / "qwen3tts_latest.wav"
             output.write_bytes(audio)
+            _write_latest_audio(latest_output, audio)
             self._audio_player(output)
             return TTSResult(True, "朗读完成", str(output))
         except (OSError, ValueError, urllib.error.URLError, TimeoutError) as exc:
@@ -148,14 +155,22 @@ class HttpGPTSoVITSProvider:
         endpoint = _gptsovits_endpoint(settings.api_url)
         payload = _gptsovits_payload(text, settings)
         try:
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
+            output = _tts_cache_path(self._cache_dir, "gptsovits", text, settings, ".wav")
+            latest_output = self._cache_dir / "gptsovits_latest.wav"
+            if output.exists():
+                cached_audio = output.read_bytes()
+                if _looks_like_gptsovits_audio(cached_audio):
+                    _write_latest_audio(latest_output, cached_audio)
+                    self._audio_player(output)
+                    return TTSResult(True, "GPT-SoVITS speech complete（缓存）", str(output))
             audio = self._post(endpoint, payload, 180)
             if not audio:
                 return TTSResult(False, "GPT-SoVITS returned empty audio")
             if not _looks_like_gptsovits_audio(audio):
                 return TTSResult(False, "GPT-SoVITS returned invalid audio")
-            self._cache_dir.mkdir(parents=True, exist_ok=True)
-            output = self._cache_dir / "gptsovits_latest.wav"
             output.write_bytes(audio)
+            _write_latest_audio(latest_output, audio)
             self._audio_player(output)
             return TTSResult(True, "GPT-SoVITS speech complete", str(output))
         except (OSError, ValueError, urllib.error.URLError, TimeoutError) as exc:
@@ -376,6 +391,30 @@ def select_synthesis_text(text: str, settings: TTSSettings) -> str:
         if mapped:
             return mapped
     return text
+
+
+def _tts_cache_path(cache_dir: Path, prefix: str, text: str, settings: TTSSettings, suffix: str) -> Path:
+    payload = {
+        "api_url": settings.api_url,
+        "instruct": settings.instruct,
+        "language": settings.language,
+        "model_variant": settings.model_variant,
+        "profile_id": settings.profile_id,
+        "provider": settings.provider,
+        "rate": settings.rate,
+        "reference_audio": list(settings.reference_audio),
+        "reference_text": settings.reference_text,
+        "text": text,
+        "voice": settings.voice,
+        "volume": settings.volume,
+    }
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+    return cache_dir / f"{prefix}_{digest}{suffix}"
+
+
+def _write_latest_audio(path: Path, audio: bytes) -> None:
+    path.write_bytes(audio)
 
 
 def _model_size_label(model_variant: str) -> str:
