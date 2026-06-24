@@ -157,6 +157,25 @@ def test_bundled_ikaros_keeps_trained_gptsovits_backend_voice_profile():
     assert len(pack.tts_profile.reference_audio) == 1
     assert Path(pack.tts_profile.reference_audio[0]).is_file()
 
+
+def test_ikaros_bilingual_phrase_map_covers_demo_flow_lines():
+    pack_dir = REPO_ROOT / "assets" / "companion" / "ikaros_pixel_pet"
+
+    pack = load_character_pack_from_dir(pack_dir)
+
+    expected_lines = {
+        "我在这里。",
+        "伊卡洛斯，和导师打个招呼。",
+        "伊卡洛斯，陪我安静一会儿。",
+        "我会陪着你。",
+        "需要我待在这里吗？",
+        "我明白了，Master。",
+    }
+    assert expected_lines.issubset(set(pack.tts_profile.synthesis_text_map))
+    for line in expected_lines:
+        assert "マスター" in pack.tts_profile.synthesis_text_map[line]
+
+
 def test_load_character_pack_resolves_voice_references_to_pack_directory(tmp_path):
     pack_dir = tmp_path / "voice_clone_pet"
     (pack_dir / "voice").mkdir(parents=True)
