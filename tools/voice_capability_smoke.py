@@ -4,6 +4,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
+from time import perf_counter
 from typing import Sequence
 
 SRC_ROOT = Path(__file__).resolve().parents[1] / "src"
@@ -20,6 +21,7 @@ from guanghe_companion.voice_tts import (
     HttpGPTSoVITSProvider,
     HttpQwen3TTSProvider,
     default_tts_provider_factory,
+    select_synthesis_text,
 )
 
 
@@ -75,7 +77,11 @@ def main(argv: Sequence[str] | None = None) -> int:
             report["tts"] = {"ok": False, "message": f"TTS provider unavailable: {tts_settings.provider}"}
             exit_code = 1
         else:
-            result = provider.speak(_tts_text_from_args(args, character_pack), tts_settings)
+            display_text = _tts_text_from_args(args, character_pack)
+            synthesis_text = select_synthesis_text(display_text, tts_settings)
+            started = perf_counter()
+            result = provider.speak(display_text, tts_settings)
+            elapsed_seconds = round(perf_counter() - started, 3)
             report["tts"] = {
                 "ok": result.ok,
                 "message": result.message,
@@ -83,8 +89,14 @@ def main(argv: Sequence[str] | None = None) -> int:
                 "character_id": character_pack.character_id if character_pack is not None else "",
                 "profile_id": tts_settings.profile_id,
                 "provider": tts_settings.provider,
+                "backend_provider": tts_settings.backend_provider,
+                "backend_model_variant": tts_settings.backend_model_variant,
                 "voice": tts_settings.voice,
                 "model_variant": tts_settings.model_variant,
+                "display_language": tts_settings.display_language,
+                "synthesis_language": tts_settings.synthesis_language,
+                "synthesis_text_preview": synthesis_text[:80],
+                "elapsed_seconds": elapsed_seconds,
                 "instruct_present": bool(tts_settings.instruct),
                 "reference_audio_count": len(tts_settings.reference_audio),
                 "reference_text_present": bool(tts_settings.reference_text),

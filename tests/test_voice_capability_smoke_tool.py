@@ -314,6 +314,7 @@ def test_voice_smoke_tool_can_skip_qt_playback_for_gptsovits(tmp_path, monkeypat
 
 
 def test_voice_smoke_tool_can_skip_qt_playback_for_emoti_voice_gateway(tmp_path, monkeypatch) -> None:
+    from guanghe_companion.capability_settings import TTSSettings
     from guanghe_companion.voice_tts import TTSResult
     from tools import voice_capability_smoke
 
@@ -330,7 +331,28 @@ def test_voice_smoke_tool_can_skip_qt_playback_for_emoti_voice_gateway(tmp_path,
         def stop(self):
             pass
 
+    def fake_apply_character_tts_profile(settings, profile):
+        return TTSSettings(
+            enabled=True,
+            provider="http_emoti_voice",
+            language="zh",
+            voice="ikaros_curated160_e4",
+            model_variant="gptsovits_v2",
+            backend_provider="http_gptsovits",
+            backend_api_url="http://127.0.0.1:9882/",
+            backend_model_variant="gptsovits_v2",
+            display_language="zh",
+            synthesis_language="all_ja",
+            synthesis_text_mode="profile_static_map",
+            synthesis_text_map={"我在这里。": "マスター、私はここにいます。"},
+        )
+
     monkeypatch.setattr(voice_capability_smoke, "EmotiVoiceGatewayProvider", FakeGatewayProvider)
+    monkeypatch.setattr(
+        voice_capability_smoke,
+        "apply_character_tts_profile",
+        fake_apply_character_tts_profile,
+    )
     report = tmp_path / "report.json"
 
     code = voice_capability_smoke.main(
@@ -338,7 +360,7 @@ def test_voice_smoke_tool_can_skip_qt_playback_for_emoti_voice_gateway(tmp_path,
             "--tts-provider",
             "http_emoti_voice",
             "--tts-text",
-            "Unified gateway smoke.",
+            "我在这里。",
             "--skip-playback",
             "--report",
             str(report),
@@ -348,7 +370,13 @@ def test_voice_smoke_tool_can_skip_qt_playback_for_emoti_voice_gateway(tmp_path,
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert code == 0
     assert payload["tts"]["ok"] is True
-    assert constructed["spoken"] == ("Unified gateway smoke.", "http_emoti_voice")
+    assert payload["tts"]["elapsed_seconds"] >= 0
+    assert payload["tts"]["backend_provider"] == "http_gptsovits"
+    assert payload["tts"]["backend_model_variant"] == "gptsovits_v2"
+    assert payload["tts"]["display_language"] == "zh"
+    assert payload["tts"]["synthesis_language"] == "all_ja"
+    assert payload["tts"]["synthesis_text_preview"] == "マスター、私はここにいます。"
+    assert constructed["spoken"] == ("我在这里。", "http_emoti_voice")
     assert callable(constructed["audio_player"])
 
 
