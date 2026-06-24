@@ -27,6 +27,17 @@ $ScriptDir = $PSScriptRoot
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..")
 $PortableVoiceRoot = Join-Path $RepoRoot "voice_runtime"
 $PortableServiceRoot = Join-Path $PortableVoiceRoot ".voice-services\sensevoice-asr"
+$PortableModelCacheRoot = Join-Path $PortableVoiceRoot "model_cache"
+$PortableHuggingFaceCache = Join-Path $PortableModelCacheRoot "huggingface"
+$PortableModelScopeCache = Join-Path $PortableModelCacheRoot "modelscope"
+if (Test-Path -LiteralPath $PortableHuggingFaceCache) {
+    $env:HF_HOME = $PortableHuggingFaceCache
+    $env:HUGGINGFACE_HUB_CACHE = Join-Path $PortableHuggingFaceCache "hub"
+}
+if (Test-Path -LiteralPath $PortableModelScopeCache) {
+    $env:MODELSCOPE_CACHE = $PortableModelScopeCache
+    $env:MODELSCOPE_HOME = $PortableModelScopeCache
+}
 if ([string]::IsNullOrWhiteSpace($ServiceRoot)) {
     if ($env:EMOTI_SENSEVOICE_SERVICE_ROOT) {
         $ServiceRoot = $env:EMOTI_SENSEVOICE_SERVICE_ROOT

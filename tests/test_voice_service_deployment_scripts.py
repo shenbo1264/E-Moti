@@ -34,6 +34,9 @@ def test_qwen3_tts_deployment_script_uses_local_http_contract() -> None:
     assert "voice_runtime" in script
     assert "PortableVoiceRoot" in script
     assert "PortableServiceRoot" in script
+    assert "PortableHuggingFaceCache" in script
+    assert "$env:HF_HOME" in script
+    assert "$env:HUGGINGFACE_HUB_CACHE" in script
 
 
 def test_sensevoice_asr_deployment_script_uses_formal_local_route() -> None:
@@ -53,6 +56,11 @@ def test_sensevoice_asr_deployment_script_uses_formal_local_route() -> None:
     assert "voice_runtime" in script
     assert "PortableVoiceRoot" in script
     assert "PortableServiceRoot" in script
+    assert "PortableHuggingFaceCache" in script
+    assert "PortableModelScopeCache" in script
+    assert "$env:HF_HOME" in script
+    assert "$env:HUGGINGFACE_HUB_CACHE" in script
+    assert "$env:MODELSCOPE_CACHE" in script
     assert "--device" in script
     assert "InstallOnly" in script
     assert "[string]::IsNullOrWhiteSpace($ScriptsDir)" in script
@@ -61,3 +69,16 @@ def test_sensevoice_asr_deployment_script_uses_formal_local_route() -> None:
     assert "torch==2.11.0" in script
     assert "torchaudio==2.11.0" in script
     assert "https://download.pytorch.org/whl/cpu" in script
+
+
+def test_gptsovits_deployment_script_prefers_portable_runtime_without_private_drive_defaults() -> None:
+    script = (REPO_ROOT / "tools" / "voice_services" / "start_ikaros_gptsovits_server.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert "PortableGPTSoVITSRoot" in script
+    assert "PortableGPTSoVITSPython" in script
+    assert "EMOTI_GPTSOVITS_ROOT" in script
+    assert "EMOTI_GPTSOVITS_PYTHON" in script
+    assert "$env:LOCALAPPDATA" in script
+    assert "E:\\E_Moti_voice" not in script

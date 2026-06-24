@@ -16,6 +16,15 @@ $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..")
 $PortableVoiceRoot = Join-Path $RepoRoot "voice_runtime"
 $PortableGPTSoVITSRoot = Join-Path $PortableVoiceRoot "GPT-SoVITS"
 $PortableGPTSoVITSPython = Join-Path $PortableVoiceRoot "gptsovits-venv\Scripts\python.exe"
+$FallbackVoiceRoot = Join-Path $RepoRoot ".voice-services"
+if ($env:LOCALAPPDATA) {
+    $LocalVoiceRoot = Join-Path $env:LOCALAPPDATA "E-Moti\voice-services"
+    if (Test-Path -LiteralPath $LocalVoiceRoot) {
+        $FallbackVoiceRoot = $LocalVoiceRoot
+    }
+}
+$FallbackGPTSoVITSRoot = Join-Path $FallbackVoiceRoot "GPT-SoVITS"
+$FallbackGPTSoVITSPython = Join-Path $FallbackVoiceRoot "gptsovits-venv\Scripts\python.exe"
 
 if (-not $GPTSoVITSRoot) {
     if ($env:EMOTI_GPTSOVITS_ROOT) {
@@ -25,7 +34,7 @@ if (-not $GPTSoVITSRoot) {
         $GPTSoVITSRoot = $PortableGPTSoVITSRoot
     }
     else {
-        $GPTSoVITSRoot = "E:\E_Moti_voice\GPT-SoVITS"
+        $GPTSoVITSRoot = $FallbackGPTSoVITSRoot
     }
 }
 
@@ -37,7 +46,7 @@ if (-not $PythonPath) {
         $PythonPath = $PortableGPTSoVITSPython
     }
     else {
-        $PythonPath = "E:\E_Moti_voice\gptsovits-venv\Scripts\python.exe"
+        $PythonPath = $FallbackGPTSoVITSPython
     }
 }
 
