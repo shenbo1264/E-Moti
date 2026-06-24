@@ -47,17 +47,24 @@ def openai_vision_transport(payload: dict[str, Any], timeout: int) -> dict[str, 
     endpoint = base_url if base_url.endswith("/chat/completions") else f"{base_url}/chat/completions"
     request_payload = {key: value for key, value in payload.items() if not key.startswith("_")}
     data = json.dumps(request_payload, ensure_ascii=False).encode("utf-8")
+    auth_header = _vision_auth_headers(base_url, api_key)
     request = urllib.request.Request(
         endpoint,
         data=data,
         method="POST",
         headers={
-            "Authorization": f"Bearer {api_key}",
             "Content-Type": "application/json",
+            **auth_header,
         },
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return json.loads(response.read().decode("utf-8"))
+
+
+def _vision_auth_headers(base_url: str, api_key: str) -> dict[str, str]:
+    if "xiaomimimo.com" in base_url.lower():
+        return {"api-key": api_key}
+    return {"Authorization": f"Bearer {api_key}"}
 
 
 class ScreenObservationService:
@@ -89,7 +96,7 @@ class ScreenObservationService:
 
 
 def _build_vision_payload(settings: ScreenObservationSettings, data_url: str) -> dict[str, Any]:
-    return {
+    payload = {
         "_base_url": settings.vision_base_url,
         "_api_key": settings.vision_api_key,
         "model": settings.vision_model,
@@ -111,6 +118,11 @@ def _build_vision_payload(settings: ScreenObservationSettings, data_url: str) ->
         "temperature": 0.2,
         "max_tokens": 120,
     }
+    if _is_mimo_base_url(settings.vision_base_url):
+        payload.pop("max_tokens", None)
+        payload["max_completion_tokens"] = 180
+        payload["thinking"] = {"type": "disabled"}
+    return payload
 
 
 def _extract_summary(response: dict[str, Any]) -> str:
@@ -124,3 +136,7 @@ def _extract_summary(response: dict[str, Any]) -> str:
     if not isinstance(message, dict):
         return ""
     return _sanitize_perception_summary(message.get("content"))
+
+
+def _is_mimo_base_url(base_url: str) -> bool:
+    return "xiaomimimo.com" in str(base_url).lower()

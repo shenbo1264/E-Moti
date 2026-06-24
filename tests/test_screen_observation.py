@@ -60,6 +60,68 @@ def test_observation_service_sends_image_to_vision_and_sanitizes_summary():
     assert content[1]["image_url"]["url"].startswith("data:image/png;base64,")
 
 
+def test_openai_vision_transport_uses_mimo_token_plan_api_key_header(monkeypatch):
+    import json
+
+    import guanghe_companion.screen_observation as screen_observation
+
+    captured = {}
+
+    class FakeResponse:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def read(self):
+            return json.dumps({"choices": [{"message": {"content": "ok"}}]}).encode("utf-8")
+
+    def fake_urlopen(request, timeout):
+        captured["url"] = request.full_url
+        captured["headers"] = dict(request.header_items())
+        captured["data"] = json.loads(request.data.decode("utf-8"))
+        captured["timeout"] = timeout
+        return FakeResponse()
+
+    monkeypatch.setattr(screen_observation.urllib.request, "urlopen", fake_urlopen)
+
+    response = screen_observation.openai_vision_transport(
+        {
+            "_base_url": "https://token-plan-cn.xiaomimimo.com/v1",
+            "_api_key": "tp-test",
+            "model": "mimo-v2.5",
+            "messages": [{"role": "user", "content": "hello"}],
+        },
+        timeout=11,
+    )
+
+    assert response["choices"][0]["message"]["content"] == "ok"
+    assert captured["url"] == "https://token-plan-cn.xiaomimimo.com/v1/chat/completions"
+    assert captured["headers"]["Api-key"] == "tp-test"
+    assert "Authorization" not in captured["headers"]
+    assert captured["data"]["model"] == "mimo-v2.5"
+    assert captured["timeout"] == 11
+
+
+def test_mimo_vision_payload_disables_thinking_for_short_screen_summary():
+    from guanghe_companion.screen_observation import _build_vision_payload
+
+    payload = _build_vision_payload(
+        ScreenObservationSettings(
+            enabled=True,
+            vision_base_url="https://token-plan-cn.xiaomimimo.com/v1",
+            vision_api_key="tp-test",
+            vision_model="mimo-v2.5",
+        ),
+        "data:image/png;base64,abc",
+    )
+
+    assert payload["thinking"] == {"type": "disabled"}
+    assert payload["max_completion_tokens"] == 180
+    assert "max_tokens" not in payload
+
+
 def test_observation_disabled_or_missing_config_returns_reason():
     from guanghe_companion.screen_observation import ScreenObservationService
 
