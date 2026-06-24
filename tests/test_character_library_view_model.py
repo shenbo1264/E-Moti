@@ -58,28 +58,28 @@ def test_character_pack_role_label_distinguishes_default_candidate_ugc_and_fanwo
             source="builtin",
             distribution_boundary="shareable_after_review",
         )
-    ) == "Default official"
+    ) == "默认提交角色"
     assert character_pack_role_label(
         _summary_with(
             character_id="original_oc",
             source="builtin",
             distribution_boundary="shareable_after_review",
         )
-    ) == "Optional official candidate"
+    ) == "课程提交角色"
     assert character_pack_role_label(
         _summary_with(
             character_id="local_pet",
             source="user",
             distribution_boundary="local_ugc_only",
         )
-    ) == "Local UGC"
+    ) == "用户导入角色"
     assert character_pack_role_label(
         _summary_with(
             character_id="fanwork_pet",
             source="user",
             distribution_boundary="private_local_fanwork",
         )
-    ) == "Fanwork UGC"
+    ) == "扩展角色"
 
 
 def test_character_pack_readiness_text_reports_qa_files(tmp_path: Path) -> None:
@@ -110,28 +110,29 @@ def test_character_pack_readiness_text_reports_qa_files(tmp_path: Path) -> None:
 
     text = character_pack_readiness_text(pack)
 
-    assert "Provenance: ready" in text
-    assert "License: ready" in text
-    assert "Visual QA: ready" in text
-    assert "Manual QA: promotion_gate_candidate_clean_edge_optional_bundled" in text
+    assert "来源记录: 已记录" in text
+    assert "说明文件: 已记录" in text
+    assert "视觉 QA: 已通过" in text
+    assert "人工 QA: promotion_gate_candidate_clean_edge_optional_bundled" in text
 
 
 def test_character_pack_distribution_text_keeps_provenance_and_license_relative() -> None:
     text = character_pack_distribution_text(_summary())
 
-    assert "Distribution" in text
-    assert "Role: Default official" in text
-    assert "Source: builtin" in text
-    assert "Distribution: shareable_after_review" in text
-    assert "Provenance: provenance.md" in text
-    assert "License: LICENSE.md" in text
-    assert "Readiness" in text
+    assert "角色包信息" in text
+    assert "角色定位: 默认提交角色" in text
+    assert "来源: 内置角色库" in text
+    assert "交付状态: 已纳入课程提交角色库" in text
+    assert "来源记录: provenance.md" in text
+    assert "说明文件: LICENSE.md" in text
+    assert "QA 状态" in text
+    assert "Warning:" not in text
 
 
 def test_character_pack_list_item_text_includes_role_label() -> None:
     text = character_pack_list_item_text(_summary())
 
-    assert text == "Xingxi Pixel Pet | Default official | Pixel desktop companion candidate"
+    assert text == "Xingxi Pixel Pet | 默认提交角色 | Pixel desktop companion candidate"
 
 
 def test_character_pack_distribution_warning_marks_private_fanwork_as_noncommercial_fanwork() -> None:
@@ -144,13 +145,13 @@ def test_character_pack_distribution_warning_marks_private_fanwork_as_noncommerc
     warning = character_pack_distribution_warning(pack)
     text = character_pack_distribution_text(pack)
 
-    assert "Non-commercial fanwork" in warning
-    assert "source note" in warning.lower()
+    assert "扩展角色包" in warning
+    assert "本机角色库示例" in warning
     assert warning in text
 
 
 def test_character_pack_import_review_text_keeps_source_note_guidance() -> None:
     text = character_pack_import_review_text(_summary())
 
-    assert "Import character pack: xingxi_pixel_pet" in text
-    assert "Keep provenance and source notes with shared fanwork packs." in text
+    assert "导入角色包: xingxi_pixel_pet" in text
+    assert "导入后会保留来源记录和 QA 说明" in text

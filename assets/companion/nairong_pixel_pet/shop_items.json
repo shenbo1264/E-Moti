@@ -1,0 +1,24 @@
+[
+  {
+    "item_id": "butter_cookie",
+    "name": "黄油饼干",
+    "category": "food",
+    "icon": "item_icons/butter_cookie.png",
+    "price": 12,
+    "effects": {
+      "charge": 8,
+      "mood": 5
+    }
+  },
+  {
+    "item_id": "tiny_sticker",
+    "name": "小贴纸",
+    "category": "gift",
+    "icon": "item_icons/tiny_sticker.png",
+    "price": 18,
+    "effects": {
+      "mood": 6,
+      "trust": 3
+    }
+  }
+]

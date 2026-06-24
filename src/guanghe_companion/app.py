@@ -7,8 +7,20 @@ import sys
 from collections.abc import Callable
 from pathlib import Path
 
-from PySide6.QtCore import QEvent, QPoint, QRectF, QSize, QTimer, Qt, Slot
-from PySide6.QtGui import QAction, QColor, QFont, QFontDatabase, QIcon, QLinearGradient, QPainter, QPen, QPixmap
+from PySide6.QtCore import QEvent, QObject, QPoint, QRectF, QSize, QTimer, Qt, Signal, Slot
+from PySide6.QtGui import (
+    QAction,
+    QColor,
+    QFont,
+    QFontDatabase,
+    QIcon,
+    QKeySequence,
+    QLinearGradient,
+    QPainter,
+    QPen,
+    QPixmap,
+    QShortcut,
+)
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -59,6 +71,7 @@ from .dialogue import DialogueRequest
 from .desktop_shell import DesktopShell
 from .expression_settings import (
     EXPRESSION_PROVIDER_PRESETS,
+    expression_settings_status_text,
     normalize_expression_settings,
     provider_default_base_url,
     provider_default_model,
@@ -80,10 +93,17 @@ from .presentation_renderer import (
 from .screen_observation import ScreenObservationService
 from .snapshot_renderer import SnapshotRenderer
 from .spirit_stage import SpiritStageSurface, has_safe_portrait_manifest, load_portrait_manifest
-from .runtime_paths import USER_DATA_ENV, demo_save_path, user_data_dir
+from .runtime_paths import USER_DATA_ENV, demo_save_path, repo_root, user_data_dir, voice_services_root
 from .tray_controller import TrayController
 from .voice_asr import ASRService
-from .voice_tts import TTSManager
+from .voice_async import VoiceAsyncRunner
+from .voice_service_control import (
+    format_voice_service_launch_results,
+    format_voice_service_statuses,
+    launch_missing_voice_services,
+    probe_voice_services,
+)
+from .voice_tts import TTSManager, TTSResult
 from .web_search import WebSearchService
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
@@ -499,6 +519,10 @@ def _presentation_renderer_from_profile(renderer_profile, asset_dir):
     )
 
 
+class _VoiceAsyncSignals(QObject):
+    finished = Signal(int, object)
+
+
 class CompanionWindow(QMainWindow):
     def __init__(
         self,
@@ -519,6 +543,10 @@ class CompanionWindow(QMainWindow):
         self.web_search_service = WebSearchService()
         self.tts_manager = TTSManager()
         self.asr_service = ASRService()
+        self._asr_recording = False
+        self.asr_hotkey_shortcut = QShortcut(QKeySequence(), self)
+        self.asr_hotkey_shortcut.activated.connect(self._toggle_asr_recording)
+        self.asr_hotkey_shortcut.setEnabled(False)
         self.capability_runtime = CapabilityRuntime(
             settings_saver=self._save_capability_settings_from_ui,
             settings_reader=self.controller.get_capability_settings,
@@ -529,6 +557,12 @@ class CompanionWindow(QMainWindow):
             tts_manager=lambda: self.tts_manager,
             asr_service=lambda: self.asr_service,
             tts_profile_reader=self._current_character_tts_profile,
+        )
+        self._voice_async_signals = _VoiceAsyncSignals(self)
+        self._voice_async_signals.finished.connect(self._handle_async_tts_finished)
+        self.voice_async_runner = VoiceAsyncRunner(
+            speak=self.capability_runtime.speak_text,
+            on_finished=self._emit_async_tts_finished,
         )
         self._last_auto_tts_key: tuple[str, str] | None = None
         self.desktop_pet_window: CompanionWindow | None = None
@@ -618,6 +652,10 @@ class CompanionWindow(QMainWindow):
         self.tick_timer.stop()
         self.countdown_timer.stop()
         self.screen_observation_timer.stop()
+        try:
+            self.voice_async_runner.shutdown()
+        except Exception:
+            pass
         self._manual_perception_summary = ""
         if self.controller.expression_context_provider is self._manual_expression_context_provider:
             self.controller.expression_context_provider = self._base_expression_context_provider
@@ -788,11 +826,14 @@ class CompanionWindow(QMainWindow):
         self.voice_settings_card = VoiceSettingsPanel(
             self.controller.get_capability_settings(),
             self.controller.get_expression_settings(),
+            self._current_character_tts_profile(),
         )
         self.voice_settings_card.ttsTestRequested.connect(self._handle_tts_test)
         self.voice_settings_card.ttsStopRequested.connect(self._handle_tts_stop)
         self.voice_settings_card.asrStartRequested.connect(self._handle_asr_start)
         self.voice_settings_card.asrStopRequested.connect(self._handle_asr_stop)
+        self.voice_settings_card.voiceServicePreflightRequested.connect(self._handle_voice_service_preflight)
+        self.voice_settings_card.voiceServiceLaunchRequested.connect(self._handle_voice_service_launch)
         self._alias_voice_settings_panel_widgets()
         voice_layout.addWidget(self.voice_settings_card)
         voice_layout.addStretch(1)
@@ -845,6 +886,10 @@ class CompanionWindow(QMainWindow):
             "voice_status_label",
             "voice_tts_provider_label",
             "voice_asr_provider_label",
+            "voice_character_profile_label",
+            "voice_service_status_label",
+            "voice_service_preflight_button",
+            "voice_service_launch_button",
             "tts_enabled_check",
             "tts_provider_combo",
             "tts_api_url_input",
@@ -858,6 +903,8 @@ class CompanionWindow(QMainWindow):
             "asr_base_url_input",
             "asr_api_key_input",
             "asr_auto_send_check",
+            "asr_hotkey_enabled_check",
+            "asr_hotkey_input",
             "asr_start_button",
             "asr_stop_button",
             "voice_tts_enable_button",
@@ -1151,6 +1198,17 @@ class CompanionWindow(QMainWindow):
         )
         self.desktop_feedback_label.hide()
         layout.addWidget(self.desktop_feedback_label)
+        self.proactive_reject_button = QPushButton("稍后")
+        self.proactive_reject_button.setToolTip("暂停这次主动提醒，并延长下一次主动提醒的冷却时间")
+        self.proactive_reject_button.setMinimumHeight(28)
+        self.proactive_reject_button.setStyleSheet(
+            "QPushButton { border: 1px solid rgba(80, 112, 126, 150); border-radius: 8px; "
+            "padding: 4px 14px; background: rgba(255, 255, 255, 232); }"
+            "QPushButton:hover { background: rgba(236, 247, 250, 240); }"
+        )
+        self.proactive_reject_button.clicked.connect(self._handle_proactive_reject)
+        self.proactive_reject_button.hide()
+        layout.addWidget(self.proactive_reject_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         self.dialogue_bar = QFrame()
         self.dialogue_bar.setObjectName("DesktopDialogueBar")
         self.dialogue_bar.setStyleSheet(
@@ -1176,6 +1234,7 @@ class CompanionWindow(QMainWindow):
         self.dialogue_asr_button.setToolTip("ASR 服务接入后用于语音输入")
         self.dialogue_asr_button.setMinimumHeight(30)
         self.dialogue_asr_button.setEnabled(False)
+        self.dialogue_asr_button.clicked.connect(self._toggle_asr_recording)
         dialogue_layout.addWidget(self.dialogue_input, stretch=1)
         dialogue_layout.addWidget(self.dialogue_asr_button)
         dialogue_layout.addWidget(self.dialogue_send_button)
@@ -1300,6 +1359,7 @@ class CompanionWindow(QMainWindow):
         layout.setVerticalSpacing(8)
 
         settings = self.controller.get_expression_settings(include_api_key=True)
+        current_expression_settings = normalize_expression_settings(settings)
         self.expression_enabled_checkbox = QCheckBox("启用 LLM 表达增强")
         self.expression_enabled_checkbox.setChecked(bool(settings["enabled"]))
 
@@ -1331,7 +1391,7 @@ class CompanionWindow(QMainWindow):
         self.expression_save_button.clicked.connect(self._handle_expression_settings_save)
         self.expression_test_button = QPushButton("测试 LLM 回应")
         self.expression_test_button.clicked.connect(self._handle_expression_settings_test)
-        self.expression_settings_status_label = QLabel("LLM 表达：关闭" if not settings["enabled"] else "LLM 表达：已启用")
+        self.expression_settings_status_label = QLabel(expression_settings_status_text(current_expression_settings))
         self.expression_settings_status_label.setWordWrap(True)
         self.expression_provider_label = QLabel("服务商")
         self.expression_model_label = QLabel("模型 ID")
@@ -1448,9 +1508,11 @@ class CompanionWindow(QMainWindow):
         self.hero_layout.setAlignment(self.live2d_surface, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.spirit_surface, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.desktop_feedback_label, Qt.AlignmentFlag.AlignHCenter)
+        self.hero_layout.setAlignment(self.proactive_reject_button, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.dialogue_bar, Qt.AlignmentFlag.AlignHCenter)
         self.character_label.hide()
         self.desktop_feedback_label.hide()
+        self.proactive_reject_button.hide()
         self.dialogue_bar.show()
         self.item_feedback_label.hide()
         self.sprite_label.setStyleSheet(DESKTOP_SPRITE_STYLE)
@@ -1698,6 +1760,10 @@ class CompanionWindow(QMainWindow):
         self._reset_countdown()
         self._apply_snapshot(self.controller.trigger_demo_proactive(scenario, include_ai_expression=False))
 
+    def _handle_proactive_reject(self) -> None:
+        self._apply_snapshot(self.controller.reject_proactive_request())
+        self.desktop_feedback_label.show()
+
     def _handle_demo_reset(self) -> None:
         self._reset_countdown()
         self._apply_snapshot(self.controller.reset_demo_state(include_ai_expression=False))
@@ -1734,10 +1800,8 @@ class CompanionWindow(QMainWindow):
         self.screen_observation_timer.start(settings.interval_seconds * 1000)
 
     def _handle_tts_test(self) -> None:
-        result = self.capability_runtime.run_tts_test(
-            f"{self.controller.character_pack.name} voice test."
-        )
-        self.voice_status_label.setText(result.message)
+        self._save_capability_settings_from_ui()
+        self._queue_tts_speech(f"{self.controller.character_pack.name} voice test.")
 
     def _current_character_tts_profile(self) -> dict[str, object]:
         return self.controller.character_pack.tts_profile.to_runtime_dict()
@@ -1746,17 +1810,53 @@ class CompanionWindow(QMainWindow):
         result = self.capability_runtime.stop_tts()
         self.voice_status_label.setText(result.message)
 
+    def _handle_voice_service_preflight(self) -> None:
+        statuses = probe_voice_services(timeout=2.0)
+        self.voice_settings_card.set_service_status(format_voice_service_statuses(statuses))
+
+    def _handle_voice_service_launch(self) -> None:
+        statuses = probe_voice_services(timeout=1.0)
+        results = launch_missing_voice_services(repo_root(), statuses=statuses, scripts_dir=voice_services_root())
+        self.voice_settings_card.set_service_status(format_voice_service_launch_results(results))
+
     def _sync_voice_controls_enabled(self) -> None:
         self.voice_settings_card.sync_controls_enabled()
-        self.dialogue_asr_button.setEnabled(False)
+        settings = self.controller.get_capability_settings().asr
+        if not settings.enabled:
+            self._asr_recording = False
+        self.dialogue_asr_button.setEnabled(settings.enabled)
+        self.dialogue_asr_button.setText("Stop" if self._asr_recording else "Mic")
+        if settings.enabled and settings.hotkey_enabled:
+            self.dialogue_asr_button.setToolTip(f"ASR 语音输入；快捷键 {settings.hotkey_sequence}")
+        else:
+            self.dialogue_asr_button.setToolTip("ASR 语音输入")
+        self._sync_asr_hotkey(settings)
+
+    def _sync_asr_hotkey(self, settings) -> None:
+        sequence = QKeySequence(settings.hotkey_sequence)
+        self.asr_hotkey_shortcut.setKey(sequence)
+        self.asr_hotkey_shortcut.setEnabled(
+            bool(settings.enabled and settings.hotkey_enabled and not sequence.isEmpty())
+        )
 
     def _handle_asr_start(self) -> None:
         result = self.capability_runtime.start_asr()
         self.voice_status_label.setText(result.message)
+        if result.ok:
+            self._asr_recording = True
+            self._sync_voice_controls_enabled()
+
+    def _toggle_asr_recording(self) -> None:
+        if self._asr_recording:
+            self._handle_asr_stop()
+            return
+        self._handle_asr_start()
 
     def _handle_asr_stop(self) -> None:
         result = self.capability_runtime.stop_asr()
         self.voice_status_label.setText(result.message)
+        self._asr_recording = False
+        self._sync_voice_controls_enabled()
         if not result.text:
             return
         self.dialogue_input.setText(result.text)
@@ -1770,8 +1870,8 @@ class CompanionWindow(QMainWindow):
             self.desktop_feedback_label.show()
 
     def _handle_expression_settings_save(self) -> None:
-        self._save_expression_settings_from_form()
-        self.expression_settings_status_label.setText("LLM 表达设置已保存")
+        settings = self._save_expression_settings_from_form()
+        self.expression_settings_status_label.setText(expression_settings_status_text(settings))
 
     def _handle_expression_settings_test(self) -> None:
         self._save_expression_settings_from_form()
@@ -1817,13 +1917,13 @@ class CompanionWindow(QMainWindow):
         if model:
             self.expression_model_input.setText(model)
 
-    def _save_expression_settings_from_form(self) -> dict[str, object]:
+    def _save_expression_settings_from_form(self):
         settings = normalize_expression_settings(self._expression_settings_payload_from_form())
         public_settings = self.controller.update_expression_settings(settings)
         self.expression_model_input.setText(str(public_settings["model"]))
         self.expression_base_url_input.setText(str(public_settings["base_url"]))
         self.expression_timeout_input.setValue(float(public_settings["timeout_seconds"]))
-        return public_settings
+        return settings
 
     def _expression_settings_payload_from_form(self) -> dict[str, object]:
         return {
@@ -1850,8 +1950,11 @@ class CompanionWindow(QMainWindow):
     def _load_capability_settings_into_ui(self, settings: CapabilitySettings | None = None) -> None:
         settings = settings or self.controller.get_capability_settings()
         self.capability_settings_panel.load_settings(settings)
-        self.voice_settings_card.load_settings(settings, self.controller.get_expression_settings())
-        self.dialogue_asr_button.setEnabled(False)
+        self.voice_settings_card.load_settings(
+            settings,
+            self.controller.get_expression_settings(),
+            self._current_character_tts_profile(),
+        )
         self._sync_voice_controls_enabled()
         self._update_screen_observation_timer()
 
@@ -1910,6 +2013,8 @@ class CompanionWindow(QMainWindow):
             f"动作：{snapshot['motion_caption']}\n\n"
             f"{snapshot['character_description']}"
         )
+        if hasattr(self, "voice_settings_card"):
+            self.voice_settings_card.set_character_voice_profile(self._current_character_tts_profile())
         self.dialogue_input.setPlaceholderText(f"和{snapshot['character_name']}说点什么")
         self.mode_label.setText(f"当前模式：{snapshot['mode']}")
         self.resources_label.setText(
@@ -1949,6 +2054,10 @@ class CompanionWindow(QMainWindow):
         self.memory_label.setText(self.snapshot_renderer.format_memory_log(snapshot["memory_log"]))
         desktop_speech = self.snapshot_renderer.snapshot_tts_speech(snapshot) or str(snapshot["feedback"])
         self.desktop_feedback_label.setText(str(snapshot["character_name"]) + ": " + desktop_speech)
+        if isinstance(snapshot.get("proactive_feedback"), dict) and snapshot.get("proactive_feedback"):
+            self.proactive_reject_button.show()
+        else:
+            self.proactive_reject_button.hide()
 
         actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
         for action_id, button in self.action_buttons.items():
@@ -1973,8 +2082,22 @@ class CompanionWindow(QMainWindow):
         if key == self._last_auto_tts_key:
             return
         self._last_auto_tts_key = key
-        result = self.capability_runtime.speak_text(speech)
-        self.voice_status_label.setText(result.message)
+        self._queue_tts_speech(speech)
+
+    def _queue_tts_speech(self, speech: str) -> None:
+        self.voice_status_label.setText("TTS 正在后台合成...")
+        self.voice_async_runner.run(speech)
+
+    def _emit_async_tts_finished(self, job_id: int, result: TTSResult) -> None:
+        self._voice_async_signals.finished.emit(job_id, result)
+
+    @Slot(int, object)
+    def _handle_async_tts_finished(self, job_id: int, result: object) -> None:
+        _ = job_id
+        if isinstance(result, TTSResult):
+            self.voice_status_label.setText(result.message)
+            return
+        self.voice_status_label.setText("TTS 后台朗读失败")
 
     def _render_current_frame(self) -> None:
         self.live2d_surface.hide()

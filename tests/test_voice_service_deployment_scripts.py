@@ -31,6 +31,12 @@ def test_qwen3_tts_deployment_script_uses_local_http_contract() -> None:
     assert "Qwen/Qwen3-TTS-0.6B" not in script
     assert "Vivian" in script
     assert "sox" in script.lower()
+    assert "voice_runtime" in script
+    assert "PortableVoiceRoot" in script
+    assert "PortableServiceRoot" in script
+    assert "PortableHuggingFaceCache" in script
+    assert "$env:HF_HOME" in script
+    assert "$env:HUGGINGFACE_HUB_CACHE" in script
 
 
 def test_sensevoice_asr_deployment_script_uses_formal_local_route() -> None:
@@ -44,7 +50,35 @@ def test_sensevoice_asr_deployment_script_uses_formal_local_route() -> None:
     assert "sensevoice" in script
     assert "-Port 8899" in script
     assert "Device" in script
+    assert "[string]$ServiceRoot" in script
+    assert "EMOTI_SENSEVOICE_SERVICE_ROOT" in script
+    assert "$env:LOCALAPPDATA" in script
+    assert "voice_runtime" in script
+    assert "PortableVoiceRoot" in script
+    assert "PortableServiceRoot" in script
+    assert "PortableHuggingFaceCache" in script
+    assert "PortableModelScopeCache" in script
+    assert "$env:HF_HOME" in script
+    assert "$env:HUGGINGFACE_HUB_CACHE" in script
+    assert "$env:MODELSCOPE_CACHE" in script
     assert "--device" in script
     assert "InstallOnly" in script
-    assert "torch" in script
-    assert "torchaudio" in script
+    assert "[string]::IsNullOrWhiteSpace($ScriptsDir)" in script
+    assert "Invoke-CheckedCommand" in script
+    assert "$LASTEXITCODE" in script
+    assert "torch==2.11.0" in script
+    assert "torchaudio==2.11.0" in script
+    assert "https://download.pytorch.org/whl/cpu" in script
+
+
+def test_gptsovits_deployment_script_prefers_portable_runtime_without_private_drive_defaults() -> None:
+    script = (REPO_ROOT / "tools" / "voice_services" / "start_ikaros_gptsovits_server.ps1").read_text(
+        encoding="utf-8"
+    )
+
+    assert "PortableGPTSoVITSRoot" in script
+    assert "PortableGPTSoVITSPython" in script
+    assert "EMOTI_GPTSOVITS_ROOT" in script
+    assert "EMOTI_GPTSOVITS_PYTHON" in script
+    assert "$env:LOCALAPPDATA" in script
+    assert "E:\\E_Moti_voice" not in script

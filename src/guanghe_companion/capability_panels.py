@@ -251,13 +251,19 @@ class VoiceSettingsPanel(QGroupBox):
     ttsStopRequested = Signal()
     asrStartRequested = Signal()
     asrStopRequested = Signal()
+    voiceServicePreflightRequested = Signal()
+    voiceServiceLaunchRequested = Signal()
 
     def __init__(
         self,
         settings: CapabilitySettings | None = None,
         expression_settings: Mapping[str, object] | None = None,
+        character_voice_profile: Mapping[str, object] | QWidget | None = None,
         parent: QWidget | None = None,
     ) -> None:
+        if isinstance(character_voice_profile, QWidget) and parent is None:
+            parent = character_voice_profile
+            character_voice_profile = None
         super().__init__("语音", parent)
         layout = QGridLayout(self)
         layout.setHorizontalSpacing(10)
@@ -267,6 +273,14 @@ class VoiceSettingsPanel(QGroupBox):
         self.voice_status_label.setWordWrap(True)
         self.voice_tts_provider_label = QLabel("tts_provider: disabled")
         self.voice_asr_provider_label = QLabel("asr_provider: disabled")
+        self.voice_character_profile_label = QLabel("")
+        self.voice_character_profile_label.setWordWrap(True)
+        self.voice_service_status_label = QLabel("语音服务：未检查，优先使用 exe 随包脚本。")
+        self.voice_service_status_label.setWordWrap(True)
+        self.voice_service_preflight_button = QPushButton("检查语音服务")
+        self.voice_service_preflight_button.clicked.connect(self.voiceServicePreflightRequested)
+        self.voice_service_launch_button = QPushButton("启动随包语音服务")
+        self.voice_service_launch_button.clicked.connect(self.voiceServiceLaunchRequested)
 
         self.tts_enabled_check = QCheckBox("启用 TTS")
         self.tts_provider_combo = QComboBox()
@@ -274,7 +288,9 @@ class VoiceSettingsPanel(QGroupBox):
         self.tts_api_url_input = QLineEdit()
         self.tts_api_url_input.setPlaceholderText("http://127.0.0.1:9880/")
         self.tts_model_variant_combo = QComboBox()
-        self.tts_model_variant_combo.addItems(["qwen3tts_0.6b_customvoice", "qwen3tts_1.7b_customvoice"])
+        self.tts_model_variant_combo.addItems(
+            ["qwen3tts_0.6b_customvoice", "qwen3tts_1.7b_customvoice", "gptsovits_v2"]
+        )
         self.tts_auto_speak_check = QCheckBox("自动朗读星汐回复")
         self.tts_test_button = QPushButton("测试朗读")
         self.tts_test_button.clicked.connect(self.ttsTestRequested)
@@ -293,11 +309,15 @@ class VoiceSettingsPanel(QGroupBox):
         self.asr_api_key_input.setEchoMode(QLineEdit.EchoMode.Password)
         self.asr_api_key_input.setPlaceholderText("ASR API Key")
         self.asr_auto_send_check = QCheckBox("识别后自动发送")
+        self.asr_hotkey_enabled_check = QCheckBox("启用 ASR 快捷键")
+        self.asr_hotkey_input = QLineEdit()
+        self.asr_hotkey_input.setPlaceholderText("Ctrl+Alt+M")
         self.asr_start_button = QPushButton("开始录音")
         self.asr_start_button.clicked.connect(self.asrStartRequested)
         self.asr_stop_button = QPushButton("停止并识别")
         self.asr_stop_button.clicked.connect(self.asrStopRequested)
         self.asr_enabled_check.toggled.connect(self.sync_controls_enabled)
+        self.asr_hotkey_enabled_check.toggled.connect(self.sync_controls_enabled)
 
         self.voice_tts_enable_button = QPushButton("启用 TTS")
         self.voice_tts_enable_button.setEnabled(False)
@@ -307,37 +327,54 @@ class VoiceSettingsPanel(QGroupBox):
         layout.addWidget(self.voice_status_label, 0, 0, 1, 4)
         layout.addWidget(self.voice_tts_provider_label, 1, 0, 1, 2)
         layout.addWidget(self.voice_asr_provider_label, 1, 2, 1, 2)
-        layout.addWidget(self.tts_enabled_check, 2, 0)
-        layout.addWidget(QLabel("TTS provider"), 3, 0)
-        layout.addWidget(self.tts_provider_combo, 3, 1)
-        layout.addWidget(QLabel("TTS API URL"), 4, 0)
-        layout.addWidget(self.tts_api_url_input, 4, 1, 1, 3)
-        layout.addWidget(QLabel("Qwen3TTS model"), 5, 0)
-        layout.addWidget(self.tts_model_variant_combo, 5, 1)
-        layout.addWidget(self.tts_auto_speak_check, 6, 0)
-        layout.addWidget(self.tts_test_button, 6, 1)
-        layout.addWidget(self.tts_stop_button, 6, 2)
-        layout.addWidget(self.asr_enabled_check, 7, 0)
-        layout.addWidget(QLabel("ASR provider"), 8, 0)
-        layout.addWidget(self.asr_provider_combo, 8, 1)
-        layout.addWidget(QLabel("ASR model"), 8, 2)
-        layout.addWidget(self.asr_model_input, 8, 3)
-        layout.addWidget(QLabel("ASR Base URL"), 9, 0)
-        layout.addWidget(self.asr_base_url_input, 9, 1, 1, 3)
-        layout.addWidget(QLabel("ASR API Key"), 10, 0)
-        layout.addWidget(self.asr_api_key_input, 10, 1, 1, 3)
-        layout.addWidget(self.asr_auto_send_check, 11, 0)
-        layout.addWidget(self.asr_start_button, 11, 1)
-        layout.addWidget(self.asr_stop_button, 11, 2)
-        layout.addWidget(self.voice_tts_enable_button, 12, 0)
-        layout.addWidget(self.voice_asr_enable_button, 12, 1)
-        self.load_settings(settings or CapabilitySettings.default(), expression_settings or {})
+        layout.addWidget(self.voice_character_profile_label, 2, 0, 1, 4)
+        layout.addWidget(self.tts_enabled_check, 3, 0)
+        layout.addWidget(QLabel("TTS provider"), 4, 0)
+        layout.addWidget(self.tts_provider_combo, 4, 1)
+        layout.addWidget(QLabel("TTS API URL"), 5, 0)
+        layout.addWidget(self.tts_api_url_input, 5, 1, 1, 3)
+        layout.addWidget(QLabel("TTS model/profile"), 6, 0)
+        layout.addWidget(self.tts_model_variant_combo, 6, 1)
+        layout.addWidget(self.tts_auto_speak_check, 7, 0)
+        layout.addWidget(self.tts_test_button, 7, 1)
+        layout.addWidget(self.tts_stop_button, 7, 2)
+        layout.addWidget(self.asr_enabled_check, 8, 0)
+        layout.addWidget(QLabel("ASR provider"), 9, 0)
+        layout.addWidget(self.asr_provider_combo, 9, 1)
+        layout.addWidget(QLabel("ASR model"), 9, 2)
+        layout.addWidget(self.asr_model_input, 9, 3)
+        layout.addWidget(QLabel("ASR Base URL"), 10, 0)
+        layout.addWidget(self.asr_base_url_input, 10, 1, 1, 3)
+        layout.addWidget(QLabel("ASR API Key"), 11, 0)
+        layout.addWidget(self.asr_api_key_input, 11, 1, 1, 3)
+        layout.addWidget(self.asr_auto_send_check, 12, 0)
+        layout.addWidget(self.asr_start_button, 12, 1)
+        layout.addWidget(self.asr_stop_button, 12, 2)
+        layout.addWidget(self.asr_hotkey_enabled_check, 13, 0)
+        layout.addWidget(QLabel("ASR 快捷键"), 13, 1)
+        layout.addWidget(self.asr_hotkey_input, 13, 2, 1, 2)
+        layout.addWidget(self.voice_tts_enable_button, 14, 0)
+        layout.addWidget(self.voice_asr_enable_button, 14, 1)
+        layout.addWidget(self.voice_service_status_label, 15, 0, 1, 2)
+        layout.addWidget(self.voice_service_preflight_button, 15, 2)
+        layout.addWidget(self.voice_service_launch_button, 15, 3)
+        self.load_settings(
+            settings or CapabilitySettings.default(),
+            expression_settings or {},
+            character_voice_profile if isinstance(character_voice_profile, Mapping) else None,
+        )
 
-    def load_settings(self, settings: CapabilitySettings, expression_settings: Mapping[str, object]) -> None:
+    def load_settings(
+        self,
+        settings: CapabilitySettings,
+        expression_settings: Mapping[str, object],
+        character_voice_profile: Mapping[str, object] | None = None,
+    ) -> None:
         tts = settings.tts
         asr = settings.asr
         self.voice_tts_provider_label.setText(f"tts_provider: {expression_settings.get('tts_provider', 'disabled')}")
         self.voice_asr_provider_label.setText(f"asr_provider: {expression_settings.get('asr_provider', 'disabled')}")
+        self.set_character_voice_profile(character_voice_profile or {})
         self.tts_enabled_check.setChecked(tts.enabled)
         _set_combo_current_text(self.tts_provider_combo, tts.provider)
         self.tts_api_url_input.setText(tts.api_url)
@@ -349,6 +386,8 @@ class VoiceSettingsPanel(QGroupBox):
         self.asr_base_url_input.setText(asr.base_url)
         self.asr_api_key_input.setText(asr.api_key)
         self.asr_auto_send_check.setChecked(asr.auto_send)
+        self.asr_hotkey_enabled_check.setChecked(asr.hotkey_enabled)
+        self.asr_hotkey_input.setText(asr.hotkey_sequence)
         self.sync_controls_enabled()
 
     def collect_settings(self, base: CapabilitySettings | None = None) -> CapabilitySettings:
@@ -369,6 +408,8 @@ class VoiceSettingsPanel(QGroupBox):
             base_url=self.asr_base_url_input.text(),
             api_key=self.asr_api_key_input.text(),
             auto_send=self.asr_auto_send_check.isChecked(),
+            hotkey_enabled=self.asr_hotkey_enabled_check.isChecked(),
+            hotkey_sequence=self.asr_hotkey_input.text(),
         )
         return replace(source, tts=tts, asr=asr)
 
@@ -379,9 +420,17 @@ class VoiceSettingsPanel(QGroupBox):
         asr_enabled = self.asr_enabled_check.isChecked()
         self.asr_start_button.setEnabled(asr_enabled)
         self.asr_stop_button.setEnabled(asr_enabled)
+        self.asr_hotkey_enabled_check.setEnabled(asr_enabled)
+        self.asr_hotkey_input.setEnabled(asr_enabled and self.asr_hotkey_enabled_check.isChecked())
 
     def set_status(self, text: str) -> None:
         self.voice_status_label.setText(text)
+
+    def set_service_status(self, text: str) -> None:
+        self.voice_service_status_label.setText(text)
+
+    def set_character_voice_profile(self, profile: Mapping[str, object]) -> None:
+        self.voice_character_profile_label.setText(_voice_profile_summary(profile))
 
 
 def _set_combo_current_text(combo: QComboBox, value: str) -> None:
@@ -390,3 +439,32 @@ def _set_combo_current_text(combo: QComboBox, value: str) -> None:
         combo.addItem(value)
         index = combo.findText(value)
     combo.setCurrentIndex(max(0, index))
+
+
+def _voice_profile_summary(profile: Mapping[str, object]) -> str:
+    if not profile:
+        return "character_voice_profile: not defined"
+    display = _profile_text(profile.get("display_name"))
+    profile_id = _profile_text(profile.get("profile_id"))
+    label = display or profile_id or "unnamed profile"
+    details = [
+        label,
+        profile_id if profile_id and profile_id != label else "",
+        _profile_detail("provider", profile.get("provider")),
+        _profile_detail("voice", profile.get("voice")),
+        _profile_detail("model", profile.get("model_variant")),
+        _profile_detail("source", profile.get("voice_source_type")),
+        _profile_detail("training", profile.get("training_status")),
+    ]
+    return "character_voice_profile: " + " | ".join(item for item in details if item)
+
+
+def _profile_detail(label: str, value: object) -> str:
+    text = _profile_text(value)
+    return f"{label}: {text}" if text else ""
+
+
+def _profile_text(value: object) -> str:
+    if not isinstance(value, str):
+        return ""
+    return "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())[:120].strip()

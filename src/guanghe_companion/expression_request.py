@@ -11,6 +11,7 @@ MAX_PERCEPTION_SUMMARY_LENGTH = 240
 MAX_TOOL_RESULTS = 3
 MAX_ACTION_LABEL_LENGTH = 40
 MAX_RECENT_MEMORY = 3
+MAX_RECENT_DIALOGUE = 5
 MAX_CHARACTER_NAME_LENGTH = 40
 MAX_MODE_LENGTH = 40
 MAX_MOTION_LENGTH = 40
@@ -21,9 +22,13 @@ MAX_PLAYER_MESSAGE_LENGTH = 240
 MAX_MEMORY_KIND_LENGTH = 40
 MAX_MEMORY_SUMMARY_LENGTH = 160
 MAX_MEMORY_MOTION_LENGTH = 40
+MAX_DIALOGUE_ROLE_LENGTH = 16
+MAX_DIALOGUE_SPEAKER_LENGTH = 24
+MAX_DIALOGUE_TEXT_LENGTH = 240
 MAX_LONG_TERM_MEMORY_CATEGORY_LENGTH = 40
 MAX_LONG_TERM_MEMORY_SOURCE_LENGTH = 40
 MAX_TOOL_TIMESTAMP_LENGTH = 40
+ALLOWED_RECENT_DIALOGUE_ROLES = frozenset({"user", "assistant", "system"})
 
 
 @dataclass(frozen=True, slots=True)
@@ -41,6 +46,7 @@ class ExpressionRequest:
     goal: str
     actions: tuple[dict[str, str], ...]
     recent_memory: tuple[dict[str, str], ...]
+    recent_dialogue: tuple[dict[str, str], ...] = ()
     player_message: str = ""
     long_term_memory: tuple[dict[str, str], ...] = ()
     perception_summary: str = ""
@@ -58,6 +64,7 @@ class ExpressionRequest:
             source = {**source, **context_payload}
         actions = _sanitize_actions(source.get("actions", []))
         recent_memory = _sanitize_recent_memory(source.get("memory_log", []))
+        recent_dialogue = _sanitize_recent_dialogue(source.get("recent_dialogue", []))
         long_term_memory = _sanitize_long_term_memory(source.get("long_term_memory", []))
         return cls(
             character_name=_short_string(source.get("character_name", ""), MAX_CHARACTER_NAME_LENGTH),
@@ -74,6 +81,7 @@ class ExpressionRequest:
             player_message=_short_string(source.get("player_message", ""), MAX_PLAYER_MESSAGE_LENGTH),
             actions=actions,
             recent_memory=recent_memory,
+            recent_dialogue=recent_dialogue,
             long_term_memory=long_term_memory,
             perception_summary=_short_string(source.get("perception_summary", ""), MAX_PERCEPTION_SUMMARY_LENGTH),
             tool_results=_sanitize_tool_results(source.get("tool_results", [])),
@@ -95,6 +103,7 @@ class ExpressionRequest:
             "player_message": self.player_message,
             "actions": [dict(action) for action in self.actions],
             "recent_memory": [dict(entry) for entry in self.recent_memory],
+            "recent_dialogue": [dict(entry) for entry in self.recent_dialogue],
             "long_term_memory": [dict(entry) for entry in self.long_term_memory],
             "perception_summary": self.perception_summary,
             "tool_results": [dict(entry) for entry in self.tool_results],
@@ -135,7 +144,7 @@ def _expression_payload_from_context(context: Mapping[str, object] | None) -> di
     if not isinstance(context, Mapping):
         return {}
     payload: dict[str, object] = {}
-    for key in ("perception_summary", "tool_results", "player_message"):
+    for key in ("long_term_memory", "perception_summary", "recent_dialogue", "tool_results", "player_message"):
         if key in context:
             payload[key] = context[key]
     return payload
@@ -186,6 +195,20 @@ def _sanitize_recent_memory(value: object) -> tuple[dict[str, str], ...]:
         if len(memory) >= MAX_RECENT_MEMORY:
             break
     return tuple(memory)
+
+
+def _sanitize_recent_dialogue(value: object) -> tuple[dict[str, str], ...]:
+    dialogue: list[dict[str, str]] = []
+    for entry in _as_dict_list(value):
+        role = _short_string(entry.get("role", ""), MAX_DIALOGUE_ROLE_LENGTH)
+        speaker = _short_string(entry.get("speaker", ""), MAX_DIALOGUE_SPEAKER_LENGTH)
+        text = _short_string(entry.get("text", ""), MAX_DIALOGUE_TEXT_LENGTH)
+        if role not in ALLOWED_RECENT_DIALOGUE_ROLES or not speaker or not text:
+            continue
+        dialogue.append({"role": role, "speaker": speaker, "text": text})
+        if len(dialogue) >= MAX_RECENT_DIALOGUE:
+            break
+    return tuple(dialogue)
 
 
 def _sanitize_long_term_memory(value: object) -> tuple[dict[str, str], ...]:

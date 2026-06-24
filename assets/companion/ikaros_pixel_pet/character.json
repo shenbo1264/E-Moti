@@ -1,0 +1,115 @@
+{
+  "character_id": "ikaros_pixel_pet",
+  "name": "伊卡洛斯",
+  "title": "天使型桌面伴侣",
+  "description": "伊卡洛斯作为课程提交中的多角色切换展示包：安静、忠诚、低情绪起伏，会在陪伴中逐渐显露细微情绪。",
+  "spritesheet": "spritesheet.png",
+  "motion_manifest": "motion_manifest.json",
+  "renderer": {
+    "backend": "sprite",
+    "motion_map": {
+      "Default": "Default",
+      "MoveRight": "MoveRight",
+      "MoveLeft": "MoveLeft",
+      "TouchHead": "TouchHead",
+      "Play": "Play",
+      "SwitchDown": "SwitchDown",
+      "Sleep": "Sleep",
+      "Raised": "Raised",
+      "Study": "Study",
+      "Comfort": "Comfort",
+      "Eat": "Eat",
+      "Gift": "Gift",
+      "Shop": "Shop",
+      "Tick": "Tick"
+    },
+    "expression_map": {
+      "calm": "Default",
+      "neutral": "Default",
+      "blink": "Default",
+      "joy": "TouchHead",
+      "happy": "TouchHead",
+      "excited": "Play",
+      "surprised": "Play",
+      "focused": "Study",
+      "sleepy": "Sleep",
+      "sadness": "SwitchDown",
+      "sad": "SwitchDown",
+      "confused": "SwitchDown",
+      "shy": "Default",
+      "goofy": "Play"
+    }
+  },
+  "default_mode": "Calm",
+  "modes": [
+    "Glow",
+    "Calm",
+    "Frayed",
+    "Overload"
+  ],
+  "mode_descriptions": {
+    "Glow": "稳定而温柔地靠近。",
+    "Calm": "安静停留在桌面上。",
+    "Frayed": "有些困惑，需要直接安抚。",
+    "Overload": "进入保护性的沉默，只适合休息和陪伴。"
+  },
+  "motion_labels": {
+    "Default": "待机呼吸",
+    "MoveRight": "向右移动",
+    "MoveLeft": "向左移动",
+    "TouchHead": "亲近回应",
+    "Play": "轻轻跃动",
+    "SwitchDown": "低落反应",
+    "Sleep": "休息",
+    "Raised": "被提起",
+    "Study": "安静陪伴",
+    "Comfort": "沉默安抚",
+    "Eat": "接受食物",
+    "Gift": "收到礼物",
+    "Shop": "补给",
+    "Tick": "时间经过"
+  },
+  "distribution_boundary": "shareable_after_review",
+  "tts_profile": {
+    "profile_id": "ikaros_pixel_pet_gptsovits_curated160_e4_v1",
+    "display_name": "伊卡洛斯 GPT-SoVITS 安静声线",
+    "provider": "http_emoti_voice",
+    "api_url": "",
+    "language": "zh",
+    "voice": "ikaros_curated160_e4",
+    "model_variant": "gptsovits_v2",
+    "backend_provider": "http_gptsovits",
+    "backend_api_url": "http://127.0.0.1:9882/",
+    "backend_model_variant": "gptsovits_v2",
+    "display_language": "zh",
+    "synthesis_language": "all_ja",
+    "synthesis_text_mode": "profile_static_map",
+    "synthesis_text_map": {
+      "我在这里。": "マスター、私はここにいます。",
+      "伊卡洛斯，和导师打个招呼。": "マスター、こんにちは。私はイカロスです。",
+      "伊卡洛斯，陪我安静一会儿。": "マスター、静かにそばにいます。",
+      "我会陪着你。": "マスター、そばにいます。",
+      "需要我待在这里吗？": "マスター、ここで待機しますか。",
+      "我明白了，Master。": "マスター、了解しました。"
+    },
+    "rate": -1,
+    "volume": 0.88,
+    "instruct": "calm, quiet, loyal, low-emotion Ikaros-like companion voice",
+    "voice_source_type": "local_trained_clone",
+    "training_status": "trained_local",
+    "distribution_policy": "public_ok",
+    "rights_note": "Course demo voice profile trained from user-selected local references; runtime weights live in the voice bundle.",
+    "reference_audio": [
+      "voice/reference_generated.wav"
+    ],
+    "reference_text": "マスター、私はここにいます。必要なら、呼んでください。"
+  },
+  "relationship_decorations": [
+    {
+      "unlock_id": "unlock_first_nickname",
+      "item_id": "keepsake_badge",
+      "label": "纪念徽章",
+      "icon": "item_icons/keepsake_badge.png"
+    }
+  ]
+}

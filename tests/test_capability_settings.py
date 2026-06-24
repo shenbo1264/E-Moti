@@ -21,6 +21,8 @@ def test_default_capabilities_are_disabled() -> None:
     assert settings.asr.model == "sensevoice"
     assert settings.asr.base_url == "http://127.0.0.1:8899/v1"
     assert settings.asr.auto_send is False
+    assert settings.asr.hotkey_enabled is False
+    assert settings.asr.hotkey_sequence == "Ctrl+Alt+M"
     assert settings.proactive_companion.enabled is False
     assert settings.proactive_companion.interval_seconds == 900
     assert settings.proactive_companion.global_cooldown_seconds == 1800
@@ -62,6 +64,8 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
                     "provider": "OPENAI",
                     "api_key": "asr-secret",
                     "max_record_seconds": 99,
+                    "hotkey_enabled": True,
+                    "hotkey_sequence": " Ctrl+Alt+Space ",
                 },
                 "proactive_companion": {
                     "enabled": True,
@@ -95,6 +99,8 @@ def test_store_round_trips_bom_json_and_redacts_secrets(tmp_path) -> None:
     assert settings.tts.volume == 1.0
     assert settings.asr.provider == "openai_compatible"
     assert settings.asr.max_record_seconds == 30
+    assert settings.asr.hotkey_enabled is True
+    assert settings.asr.hotkey_sequence == "Ctrl+Alt+Space"
     assert settings.proactive_companion.enabled is True
     assert settings.proactive_companion.interval_seconds == 60
     assert settings.proactive_companion.global_cooldown_seconds == 60
@@ -183,6 +189,28 @@ def test_capability_settings_accepts_voice_route_aliases() -> None:
 
     assert TTSSettings.from_dict({"provider": "edge"}).provider == "edge_tts"
     assert TTSSettings.from_dict({"provider": "qwen3_tts"}).provider == "http_qwen3tts"
+    assert TTSSettings.from_dict({"provider": "gpt-sovits"}).provider == "http_gptsovits"
+    assert TTSSettings.from_dict({"provider": "http_gptsovits", "model_variant": "gptsovits-v2"}).model_variant == "gptsovits_v2"
+    unified = TTSSettings.from_dict(
+        {
+            "provider": "emoti-voice",
+            "backend_provider": "gpt-sovits",
+            "backend_api_url": " http://127.0.0.1:9882/ ",
+            "backend_model_variant": "gptsovits-v2",
+            "display_language": "zh",
+            "synthesis_language": "all_ja",
+            "synthesis_text_mode": "profile_static_map",
+            "synthesis_text_map": {"我在这里。": "マスター、私はここにいます。", "": "ignored"},
+        }
+    )
+    assert unified.provider == "http_emoti_voice"
+    assert unified.backend_provider == "http_gptsovits"
+    assert unified.backend_api_url == "http://127.0.0.1:9882/"
+    assert unified.backend_model_variant == "gptsovits_v2"
+    assert unified.display_language == "zh"
+    assert unified.synthesis_language == "all_ja"
+    assert unified.synthesis_text_mode == "profile_static_map"
+    assert unified.synthesis_text_map == {"我在这里。": "マスター、私はここにいます。"}
     assert ASRSettings.from_dict({"provider": "funasr"}).provider == "funasr_openai"
     assert ASRSettings.from_dict({"provider": "sensevoice"}).provider == "sensevoice_openai"
     assert ASRSettings.from_dict({"provider": "qwen3_asr"}).provider == "qwen3_asr_openai"

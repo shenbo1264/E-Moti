@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field, replace
 from pathlib import Path
 
 from .capability_settings import (
@@ -37,11 +37,19 @@ class CharacterVoiceProfile:
     rate: int | None = None
     volume: float | None = None
     instruct: str = ""
+    backend_provider: str = ""
+    backend_api_url: str = ""
+    backend_model_variant: str = ""
+    display_language: str = ""
+    synthesis_language: str = ""
+    synthesis_text_mode: str = ""
+    synthesis_text_map: dict[str, str] = field(default_factory=dict)
     voice_source_type: str = "original_design"
     training_status: str = "not_trained"
     distribution_policy: str = "public_ok"
     rights_note: str = ""
     reference_audio: tuple[str, ...] = ()
+    reference_text: str = ""
     defined: bool = False
 
     @classmethod
@@ -69,6 +77,21 @@ class CharacterVoiceProfile:
             rate=_clean_int(value.get("rate"), minimum=-10, maximum=10),
             volume=_clean_float(value.get("volume"), minimum=0.0, maximum=1.0),
             instruct=_clean_string(value.get("instruct"), max_length=360),
+            backend_provider=_clean_provider(
+                value.get("backend_provider"),
+                default="",
+                aliases=TTS_PROVIDER_ALIASES,
+            ),
+            backend_api_url=_clean_string(value.get("backend_api_url"), max_length=240),
+            backend_model_variant=_clean_provider(
+                value.get("backend_model_variant"),
+                default="",
+                aliases=TTS_MODEL_VARIANT_ALIASES,
+            ),
+            display_language=_clean_string(value.get("display_language"), max_length=16),
+            synthesis_language=_clean_string(value.get("synthesis_language"), max_length=16),
+            synthesis_text_mode=_clean_string(value.get("synthesis_text_mode"), max_length=40),
+            synthesis_text_map=_clean_string_map(value.get("synthesis_text_map"), max_length=160),
             voice_source_type=_clean_choice(
                 value.get("voice_source_type"),
                 allowed=ALLOWED_VOICE_SOURCE_TYPES,
@@ -86,8 +109,18 @@ class CharacterVoiceProfile:
             ),
             rights_note=_clean_string(value.get("rights_note"), max_length=500),
             reference_audio=_reference_audio_tuple(value.get("reference_audio")),
+            reference_text=_clean_string(value.get("reference_text"), max_length=1000),
             defined=True,
         )
+
+    def with_resolved_reference_audio(self, root: Path) -> "CharacterVoiceProfile":
+        if not self.reference_audio:
+            return self
+        resolved: list[str] = []
+        for item in self.reference_audio:
+            path = Path(item)
+            resolved.append(str(path if path.is_absolute() else (root / path).resolve()))
+        return replace(self, reference_audio=tuple(resolved))
 
     def to_runtime_dict(self) -> dict[str, object]:
         if not self.defined:
@@ -102,6 +135,12 @@ class CharacterVoiceProfile:
             "voice",
             "model_variant",
             "instruct",
+            "backend_provider",
+            "backend_api_url",
+            "backend_model_variant",
+            "display_language",
+            "synthesis_language",
+            "synthesis_text_mode",
             "voice_source_type",
             "training_status",
             "distribution_policy",
@@ -113,6 +152,12 @@ class CharacterVoiceProfile:
             result["rate"] = self.rate
         if self.volume is not None:
             result["volume"] = self.volume
+        if self.reference_audio:
+            result["reference_audio"] = list(self.reference_audio)
+        if self.reference_text:
+            result["reference_text"] = self.reference_text
+        if self.synthesis_text_map:
+            result["synthesis_text_map"] = dict(self.synthesis_text_map)
         return result
 
 
@@ -198,11 +243,31 @@ def _reference_audio_tuple(value: object) -> tuple[str, ...]:
     return tuple(result)
 
 
+def _clean_string_map(value: object, *, max_length: int) -> dict[str, str]:
+    if not isinstance(value, Mapping):
+        return {}
+    result: dict[str, str] = {}
+    for raw_key, raw_value in value.items():
+        if not isinstance(raw_key, str) or not isinstance(raw_value, str):
+            continue
+        if _has_control_character(raw_key) or _has_control_character(raw_value):
+            continue
+        key = _clean_string(raw_key, max_length=max_length)
+        mapped = _clean_string(raw_value, max_length=max_length)
+        if key and mapped:
+            result[key] = mapped
+    return result
+
+
 def _clean_string(value: object, *, max_length: int) -> str:
     if not isinstance(value, str):
         return ""
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length].strip()
+
+
+def _has_control_character(value: str) -> bool:
+    return any(ord(char) < 32 or ord(char) == 127 for char in value)
 
 
 def _clean_int(value: object, *, minimum: int, maximum: int) -> int | None:

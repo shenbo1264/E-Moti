@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import dataclass, replace
 from typing import TypeVar
 
@@ -12,6 +12,7 @@ from .capability_settings import (
 )
 from .dialogue import DialogueRequest
 from .screen_observation import ScreenObservationResult, ScreenObservationService
+from .topic_scout import TopicScout, TopicScoutResult
 from .voice_asr import ASRResult, ASRService
 from .voice_tts import TTSManager, TTSResult
 from .web_search import WebSearchResult, WebSearchService
@@ -22,6 +23,15 @@ class WebSearchRuntimeResult:
     ok: bool
     message: str
     tool_results: list[dict[str, str]]
+    display_text: str
+
+
+@dataclass(frozen=True, slots=True)
+class TopicScoutRuntimeResult:
+    ok: bool
+    message: str
+    query: str
+    cards: list[dict[str, str]]
     display_text: str
 
 
@@ -43,6 +53,7 @@ class CapabilityRuntime:
     settings_reader: Callable[[], CapabilitySettings] = CapabilitySettings.default
     set_perception_summary: Callable[[str], None] = lambda summary: None
     set_tool_results: Callable[[list[dict[str, object]]], None] = lambda results: None
+    context_reader: Callable[[], Mapping[str, object]] = lambda: {}
     screen_observation_service: ServiceRef[ScreenObservationService] | None = None
     web_search_service: ServiceRef[WebSearchService] | None = None
     tts_manager: ServiceRef[TTSManager] | None = None
@@ -66,6 +77,23 @@ class CapabilityRuntime:
             message=result.message,
             tool_results=result.tool_results,
             display_text=_format_web_search_display(result),
+        )
+
+    def run_topic_scout(self, interests: Iterable[object] = ()) -> TopicScoutRuntimeResult:
+        settings = self.settings_saver()
+        result = TopicScout(search_service=self._web_search_service()).scout(
+            context=self.context_reader(),
+            settings=settings.web_search,
+            interests=interests,
+        )
+        if result.cards:
+            self.set_tool_results(result.cards)
+        return TopicScoutRuntimeResult(
+            ok=result.ok,
+            message=_topic_scout_message(result),
+            query=result.query,
+            cards=result.cards,
+            display_text=_format_topic_scout_display(result),
         )
 
     def run_tts_test(self, text: str) -> TTSResult:
@@ -110,30 +138,56 @@ class CapabilityRuntime:
         return _resolve_service(self.asr_service, ASRService)
 
     def _character_tts_settings(self, settings: TTSSettings) -> TTSSettings:
-        profile = self.tts_profile_reader()
-        if not profile:
-            return settings
-        profile_id = _profile_string(profile.get("profile_id"), max_length=80)
-        provider = _profile_provider(profile.get("provider"), aliases=TTS_PROVIDER_ALIASES)
-        api_url = _profile_string(profile.get("api_url"), max_length=240)
-        language = _profile_string(profile.get("language"), max_length=16)
-        voice = _profile_string(profile.get("voice"), max_length=120)
-        model_variant = _profile_provider(profile.get("model_variant"), aliases=TTS_MODEL_VARIANT_ALIASES)
-        instruct = _profile_string(profile.get("instruct"), max_length=360)
-        rate = _profile_int(profile.get("rate"), minimum=-10, maximum=10)
-        volume = _profile_float(profile.get("volume"), minimum=0.0, maximum=1.0)
-        return replace(
-            settings,
-            profile_id=profile_id if profile_id is not None else settings.profile_id,
-            provider=provider if provider is not None else settings.provider,
-            api_url=api_url if api_url is not None else settings.api_url,
-            language=language if language is not None else settings.language,
-            voice=voice if voice is not None else settings.voice,
-            model_variant=model_variant if model_variant is not None else settings.model_variant,
-            instruct=instruct if instruct is not None else settings.instruct,
-            rate=rate if rate is not None else settings.rate,
-            volume=volume if volume is not None else settings.volume,
-        )
+        return apply_character_tts_profile(settings, self.tts_profile_reader())
+
+
+def apply_character_tts_profile(settings: TTSSettings, profile: Mapping[str, object]) -> TTSSettings:
+    if not profile:
+        return settings
+    profile_id = _profile_string(profile.get("profile_id"), max_length=80)
+    provider = _profile_provider(profile.get("provider"), aliases=TTS_PROVIDER_ALIASES)
+    api_url = _profile_string(profile.get("api_url"), max_length=240)
+    language = _profile_string(profile.get("language"), max_length=16)
+    voice = _profile_string(profile.get("voice"), max_length=120)
+    model_variant = _profile_provider(profile.get("model_variant"), aliases=TTS_MODEL_VARIANT_ALIASES)
+    instruct = _profile_string(profile.get("instruct"), max_length=360)
+    backend_provider = _profile_provider(profile.get("backend_provider"), aliases=TTS_PROVIDER_ALIASES)
+    backend_api_url = _profile_string(profile.get("backend_api_url"), max_length=240)
+    backend_model_variant = _profile_provider(
+        profile.get("backend_model_variant"),
+        aliases=TTS_MODEL_VARIANT_ALIASES,
+    )
+    display_language = _profile_string(profile.get("display_language"), max_length=16)
+    synthesis_language = _profile_string(profile.get("synthesis_language"), max_length=16)
+    synthesis_text_mode = _profile_string(profile.get("synthesis_text_mode"), max_length=40)
+    synthesis_text_map = _profile_string_map(profile.get("synthesis_text_map"), max_length=160)
+    reference_audio = _profile_string_sequence(profile.get("reference_audio"), max_length=500)
+    reference_text = _profile_string(profile.get("reference_text"), max_length=1000)
+    rate = _profile_int(profile.get("rate"), minimum=-10, maximum=10)
+    volume = _profile_float(profile.get("volume"), minimum=0.0, maximum=1.0)
+    return replace(
+        settings,
+        profile_id=profile_id if profile_id is not None else settings.profile_id,
+        provider=provider if provider is not None else settings.provider,
+        api_url=api_url if api_url is not None else settings.api_url,
+        language=language if language is not None else settings.language,
+        voice=voice if voice is not None else settings.voice,
+        model_variant=model_variant if model_variant is not None else settings.model_variant,
+        instruct=instruct if instruct is not None else settings.instruct,
+        backend_provider=backend_provider if backend_provider is not None else settings.backend_provider,
+        backend_api_url=backend_api_url if backend_api_url is not None else settings.backend_api_url,
+        backend_model_variant=backend_model_variant
+        if backend_model_variant is not None
+        else settings.backend_model_variant,
+        display_language=display_language if display_language is not None else settings.display_language,
+        synthesis_language=synthesis_language if synthesis_language is not None else settings.synthesis_language,
+        synthesis_text_mode=synthesis_text_mode if synthesis_text_mode is not None else settings.synthesis_text_mode,
+        synthesis_text_map=synthesis_text_map if synthesis_text_map is not None else settings.synthesis_text_map,
+        reference_audio=reference_audio if reference_audio is not None else settings.reference_audio,
+        reference_text=reference_text if reference_text is not None else settings.reference_text,
+        rate=rate if rate is not None else settings.rate,
+        volume=volume if volume is not None else settings.volume,
+    )
 
 
 def _format_web_search_display(result: WebSearchResult) -> str:
@@ -145,6 +199,25 @@ def _format_web_search_display(result: WebSearchResult) -> str:
         summary = item.get("summary", "")
         url = item.get("url", "")
         lines.append(f"{title} - {summary}" + (f" ({url})" if url else ""))
+    return "\n".join(lines)
+
+
+def _topic_scout_message(result: TopicScoutResult) -> str:
+    if result.ok:
+        return "话题已准备好，等待用户确认"
+    if result.reason == "empty_query":
+        return "暂时没有足够上下文生成话题"
+    if result.reason == "search_failed":
+        return "话题搜索失败"
+    return "没有找到可用话题"
+
+
+def _format_topic_scout_display(result: TopicScoutResult) -> str:
+    if not result.cards:
+        return _topic_scout_message(result)
+    lines = [_topic_scout_message(result)]
+    for card in result.cards:
+        lines.append(f"{card.get('title', '')} - {card.get('opening_line', '')}")
     return "\n".join(lines)
 
 
@@ -161,6 +234,37 @@ def _profile_string(value: object, *, max_length: int) -> str | None:
         return None
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length] if cleaned else None
+
+
+def _has_control_character(value: str) -> bool:
+    return any(ord(char) < 32 or ord(char) == 127 for char in value)
+
+
+def _profile_string_sequence(value: object, *, max_length: int) -> tuple[str, ...] | None:
+    if not isinstance(value, (list, tuple)):
+        return None
+    result: list[str] = []
+    for item in value:
+        cleaned = _profile_string(item, max_length=max_length)
+        if cleaned:
+            result.append(cleaned)
+    return tuple(result) if result else None
+
+
+def _profile_string_map(value: object, *, max_length: int) -> dict[str, str] | None:
+    if not isinstance(value, Mapping):
+        return None
+    result: dict[str, str] = {}
+    for raw_key, raw_value in value.items():
+        if not isinstance(raw_key, str) or not isinstance(raw_value, str):
+            continue
+        if _has_control_character(raw_key) or _has_control_character(raw_value):
+            continue
+        key = _profile_string(raw_key, max_length=max_length)
+        mapped = _profile_string(raw_value, max_length=max_length)
+        if key and mapped:
+            result[key] = mapped
+    return result if result else None
 
 
 def _profile_provider(value: object, *, aliases: Mapping[str, str]) -> str | None:

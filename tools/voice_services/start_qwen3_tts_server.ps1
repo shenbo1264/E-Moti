@@ -12,7 +12,20 @@ $ErrorActionPreference = "Stop"
 
 $ScriptDir = $PSScriptRoot
 $RepoRoot = Resolve-Path (Join-Path $ScriptDir "..\..")
-$ServiceRoot = Join-Path $RepoRoot ".voice-services\qwen3-tts"
+$PortableVoiceRoot = Join-Path $RepoRoot "voice_runtime"
+$PortableServiceRoot = Join-Path $PortableVoiceRoot ".voice-services\qwen3-tts"
+$PortableModelCacheRoot = Join-Path $PortableVoiceRoot "model_cache"
+$PortableHuggingFaceCache = Join-Path $PortableModelCacheRoot "huggingface"
+if (Test-Path -LiteralPath $PortableHuggingFaceCache) {
+    $env:HF_HOME = $PortableHuggingFaceCache
+    $env:HUGGINGFACE_HUB_CACHE = Join-Path $PortableHuggingFaceCache "hub"
+}
+if (Test-Path -LiteralPath $PortableServiceRoot) {
+    $ServiceRoot = $PortableServiceRoot
+}
+else {
+    $ServiceRoot = Join-Path $RepoRoot ".voice-services\qwen3-tts"
+}
 $VenvDir = Join-Path $ServiceRoot ".venv"
 
 if ($Install) {

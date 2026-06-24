@@ -2,13 +2,14 @@ from __future__ import annotations
 
 import asyncio
 import base64
+import hashlib
 import json
 import re
 import subprocess
 import urllib.error
 import urllib.request
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
@@ -110,12 +111,18 @@ class HttpQwen3TTSProvider:
         endpoint = _tts_endpoint(settings.api_url)
         payload = _qwen3tts_payload(text, settings)
         try:
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
+            output = _tts_cache_path(self._cache_dir, "qwen3tts", text, settings, ".wav")
+            latest_output = self._cache_dir / "qwen3tts_latest.wav"
+            if output.exists() and output.stat().st_size > 0:
+                _write_latest_audio(latest_output, output.read_bytes())
+                self._audio_player(output)
+                return TTSResult(True, "朗读完成（缓存）", str(output))
             audio = self._post(endpoint, payload, 180)
             if not audio:
                 return TTSResult(False, "HTTP TTS 未返回音频")
-            self._cache_dir.mkdir(parents=True, exist_ok=True)
-            output = self._cache_dir / "qwen3tts_latest.wav"
             output.write_bytes(audio)
+            _write_latest_audio(latest_output, audio)
             self._audio_player(output)
             return TTSResult(True, "朗读完成", str(output))
         except (OSError, ValueError, urllib.error.URLError, TimeoutError) as exc:
@@ -126,6 +133,107 @@ class HttpQwen3TTSProvider:
         stop = getattr(player, "stop", None)
         if callable(stop):
             stop()
+
+
+class HttpGPTSoVITSProvider:
+    def __init__(
+        self,
+        *,
+        post: Callable[[str, dict[str, object], int], bytes] | None = None,
+        cache_dir: Path | str | None = None,
+        audio_player: Callable[[Path], object] | None = None,
+    ) -> None:
+        self._post = post or _post_json_bytes
+        self._cache_dir = Path(cache_dir) if cache_dir is not None else user_data_dir() / "cache" / "tts"
+        self._audio_player = audio_player or _QtAudioFilePlayer().play
+
+    def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+        if not settings.reference_audio:
+            return TTSResult(False, "GPT-SoVITS reference_audio is required")
+        if not settings.reference_text:
+            return TTSResult(False, "GPT-SoVITS reference_text is required")
+        endpoint = _gptsovits_endpoint(settings.api_url)
+        payload = _gptsovits_payload(text, settings)
+        try:
+            self._cache_dir.mkdir(parents=True, exist_ok=True)
+            output = _tts_cache_path(self._cache_dir, "gptsovits", text, settings, ".wav")
+            latest_output = self._cache_dir / "gptsovits_latest.wav"
+            if output.exists():
+                cached_audio = output.read_bytes()
+                if _looks_like_gptsovits_audio(cached_audio):
+                    _write_latest_audio(latest_output, cached_audio)
+                    self._audio_player(output)
+                    return TTSResult(True, "GPT-SoVITS speech complete（缓存）", str(output))
+            audio = self._post(endpoint, payload, 180)
+            if not audio:
+                return TTSResult(False, "GPT-SoVITS returned empty audio")
+            if not _looks_like_gptsovits_audio(audio):
+                return TTSResult(False, "GPT-SoVITS returned invalid audio")
+            output.write_bytes(audio)
+            _write_latest_audio(latest_output, audio)
+            self._audio_player(output)
+            return TTSResult(True, "GPT-SoVITS speech complete", str(output))
+        except (OSError, ValueError, urllib.error.URLError, TimeoutError) as exc:
+            return TTSResult(False, f"GPT-SoVITS speech failed: {exc}")
+
+    def stop(self) -> None:
+        player = getattr(self._audio_player, "__self__", None)
+        stop = getattr(player, "stop", None)
+        if callable(stop):
+            stop()
+
+
+class EmotiVoiceGatewayProvider:
+    def __init__(
+        self,
+        *,
+        provider_factory: Callable[[str], TTSProvider | None] | None = None,
+        audio_player: Callable[[Path], object] | None = None,
+    ) -> None:
+        self._audio_player = audio_player
+        self._provider_factory = provider_factory or self._default_backend_provider
+        self._providers: dict[str, TTSProvider] = {}
+
+    def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+        backend_provider = settings.backend_provider
+        if not backend_provider or backend_provider == "http_emoti_voice":
+            return TTSResult(False, "E-Moti Voice backend_provider is required")
+        provider = self._backend_provider(backend_provider)
+        if provider is None:
+            return TTSResult(False, f"E-Moti Voice backend unavailable: {backend_provider}")
+        backend_settings = replace(
+            settings,
+            provider=backend_provider,
+            api_url=settings.backend_api_url or settings.api_url,
+            language=settings.synthesis_language or settings.language,
+            model_variant=settings.backend_model_variant or settings.model_variant,
+        )
+        return provider.speak(select_synthesis_text(text, settings), backend_settings)
+
+    def stop(self) -> None:
+        for provider in self._providers.values():
+            try:
+                provider.stop()
+            except Exception:
+                continue
+
+    def _backend_provider(self, provider_name: str) -> TTSProvider | None:
+        if provider_name not in self._providers:
+            provider = self._provider_factory(provider_name)
+            if provider is None:
+                return None
+            self._providers[provider_name] = provider
+        return self._providers[provider_name]
+
+    def _default_backend_provider(self, provider_name: str) -> TTSProvider | None:
+        if self._audio_player is not None:
+            if provider_name == "http_qwen3tts":
+                return HttpQwen3TTSProvider(audio_player=self._audio_player)
+            if provider_name == "http_gptsovits":
+                return HttpGPTSoVITSProvider(audio_player=self._audio_player)
+            if provider_name == "edge_tts":
+                return EdgeNeuralTTSProvider(audio_player=self._audio_player)
+        return default_tts_provider_factory(provider_name)
 
 
 class WindowsSapiTTSProvider:
@@ -227,8 +335,12 @@ class _QtAudioFilePlayer:
 
 
 def default_tts_provider_factory(provider: str) -> TTSProvider | None:
+    if provider == "http_emoti_voice":
+        return EmotiVoiceGatewayProvider()
     if provider == "http_qwen3tts":
         return HttpQwen3TTSProvider()
+    if provider == "http_gptsovits":
+        return HttpGPTSoVITSProvider()
     if provider == "windows_sapi":
         return WindowsSapiTTSProvider()
     if provider == "edge_tts":
@@ -248,10 +360,68 @@ def _qwen3tts_payload(text: str, settings: TTSSettings) -> dict[str, object]:
         payload["profile_id"] = settings.profile_id
     if settings.instruct:
         payload["instruct"] = settings.instruct
+    if settings.reference_audio:
+        payload["ref_audio"] = settings.reference_audio[0] if len(settings.reference_audio) == 1 else list(settings.reference_audio)
+    if settings.reference_text:
+        payload["ref_text"] = settings.reference_text
     return payload
 
 
+def _gptsovits_payload(text: str, settings: TTSSettings) -> dict[str, object]:
+    return {
+        "refer_wav_path": settings.reference_audio[0],
+        "prompt_text": settings.reference_text,
+        "prompt_language": settings.language,
+        "text": text,
+        "text_language": settings.language,
+        "top_k": 15,
+        "top_p": 0.7,
+        "temperature": 0.35,
+        "speed": _gptsovits_speed(settings.rate),
+    }
+
+
+def _gptsovits_speed(rate: int) -> float:
+    return round(max(0.5, min(1.5, 1.0 + (int(rate) * 0.1))), 2)
+
+
+def select_synthesis_text(text: str, settings: TTSSettings) -> str:
+    if settings.synthesis_text_mode == "profile_static_map":
+        mapped = settings.synthesis_text_map.get(text)
+        if mapped:
+            return mapped
+    return text
+
+
+def _tts_cache_path(cache_dir: Path, prefix: str, text: str, settings: TTSSettings, suffix: str) -> Path:
+    payload = {
+        "api_url": settings.api_url,
+        "instruct": settings.instruct,
+        "language": settings.language,
+        "model_variant": settings.model_variant,
+        "profile_id": settings.profile_id,
+        "provider": settings.provider,
+        "rate": settings.rate,
+        "reference_audio": list(settings.reference_audio),
+        "reference_text": settings.reference_text,
+        "text": text,
+        "voice": settings.voice,
+        "volume": settings.volume,
+    }
+    raw = json.dumps(payload, ensure_ascii=False, sort_keys=True, separators=(",", ":"))
+    digest = hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
+    return cache_dir / f"{prefix}_{digest}{suffix}"
+
+
+def _write_latest_audio(path: Path, audio: bytes) -> None:
+    path.write_bytes(audio)
+
+
 def _model_size_label(model_variant: str) -> str:
+    if model_variant == "qwen3tts_1.7b_base":
+        return "1.7B-Base"
+    if model_variant == "qwen3tts_0.6b_base":
+        return "0.6B-Base"
     if model_variant == "qwen3tts_1.7b_customvoice":
         return "1.7B-CustomVoice"
     return "0.6B-CustomVoice"
@@ -266,6 +436,13 @@ def _tts_endpoint(api_url: str) -> str:
     return f"{base}/tts"
 
 
+def _gptsovits_endpoint(api_url: str) -> str:
+    base = (api_url or "http://127.0.0.1:9882/").strip().rstrip("/")
+    if not base:
+        base = "http://127.0.0.1:9882"
+    return f"{base}/"
+
+
 def _post_json_bytes(url: str, payload: dict[str, object], timeout: int) -> bytes:
     data = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     request = urllib.request.Request(
@@ -276,6 +453,10 @@ def _post_json_bytes(url: str, payload: dict[str, object], timeout: int) -> byte
     )
     with urllib.request.urlopen(request, timeout=timeout) as response:
         return response.read()
+
+
+def _looks_like_gptsovits_audio(audio: bytes) -> bool:
+    return len(audio) > 44 and audio.startswith(b"RIFF")
 
 
 def _edge_tts_communicate_factory() -> Callable[..., object] | None:

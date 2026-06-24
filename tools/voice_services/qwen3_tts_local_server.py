@@ -69,6 +69,8 @@ class Qwen3TTSHandler(BaseHTTPRequestHandler):
                 str(payload.get("voice") or self.server.voice),
                 str(payload.get("language") or "zh"),
                 str(payload.get("instruct") or ""),
+                _reference_audio_payload(payload.get("ref_audio", payload.get("reference_audio"))),
+                _reference_text_payload(payload.get("ref_text", payload.get("reference_text"))),
             )
         except Exception as exc:
             self._json(503, {"ok": False, "message": f"qwen3-tts synthesis failed: {exc}"})
@@ -91,12 +93,28 @@ class Qwen3TTSHandler(BaseHTTPRequestHandler):
         self.wfile.write(data)
 
 
-def _synthesize(server: Qwen3TTSServer, text: str, voice: str, language: str, instruct: str) -> bytes:
+def _synthesize(
+    server: Qwen3TTSServer,
+    text: str,
+    voice: str,
+    language: str,
+    instruct: str,
+    reference_audio: object | None = None,
+    reference_text: object | None = None,
+) -> bytes:
     synthesizer = server.synthesizer
     if synthesizer is None:
         synthesizer = _load_qwen3_tts(server.model)
         server.synthesizer = synthesizer
-    result = _call_synthesizer(synthesizer, text, voice, language, instruct)
+    result = _call_synthesizer(
+        synthesizer,
+        text,
+        voice,
+        language,
+        instruct,
+        reference_audio=reference_audio,
+        reference_text=reference_text,
+    )
     if isinstance(result, bytes):
         return result
     if isinstance(result, str):
@@ -121,18 +139,44 @@ def _load_qwen3_tts(model: str) -> object:
     return Qwen3TTSModel.from_pretrained(model)
 
 
-def _call_synthesizer(synthesizer: object, text: str, voice: str, language: str, instruct: str) -> object:
+def _call_synthesizer(
+    synthesizer: object,
+    text: str,
+    voice: str,
+    language: str,
+    instruct: str,
+    *,
+    reference_audio: object | None = None,
+    reference_text: object | None = None,
+) -> object:
     qwen_language = _normalize_qwen_language(language)
+    if reference_audio:
+        generate_voice_clone = getattr(synthesizer, "generate_voice_clone", None)
+        if not callable(generate_voice_clone):
+            raise RuntimeError("qwen-tts synthesizer has no supported voice clone method")
+        arrays, sample_rate = generate_voice_clone(
+            text=text,
+            language=qwen_language,
+            ref_audio=reference_audio,
+            ref_text=reference_text,
+            x_vector_only_mode=not bool(reference_text),
+            non_streaming_mode=True,
+        )
+        return _audio_arrays_to_wav_bytes(arrays, sample_rate)
     if instruct:
         generate_voice_design = getattr(synthesizer, "generate_voice_design", None)
         if callable(generate_voice_design):
-            arrays, sample_rate = generate_voice_design(
-                text=text,
-                instruct=instruct,
-                language=qwen_language,
-                non_streaming_mode=True,
-            )
-            return _audio_arrays_to_wav_bytes(arrays, sample_rate)
+            try:
+                arrays, sample_rate = generate_voice_design(
+                    text=text,
+                    instruct=instruct,
+                    language=qwen_language,
+                    non_streaming_mode=True,
+                )
+                return _audio_arrays_to_wav_bytes(arrays, sample_rate)
+            except Exception as exc:
+                if "does not support generate_voice_design" not in str(exc):
+                    raise
     generate_custom_voice = getattr(synthesizer, "generate_custom_voice", None)
     if callable(generate_custom_voice):
         arrays, sample_rate = generate_custom_voice(
@@ -157,6 +201,28 @@ def _normalize_qwen_language(language: str) -> str:
     if not cleaned:
         return "auto"
     return QWEN_LANGUAGE_ALIASES.get(cleaned, cleaned)
+
+
+def _reference_audio_payload(value: object) -> object | None:
+    if isinstance(value, str):
+        cleaned = value.strip()
+        return cleaned or None
+    if isinstance(value, list):
+        refs = [str(item).strip() for item in value if str(item).strip()]
+        if not refs:
+            return None
+        return refs[0] if len(refs) == 1 else refs
+    return None
+
+
+def _reference_text_payload(value: object) -> object | None:
+    if isinstance(value, str):
+        cleaned = value.strip()
+        return cleaned or None
+    if isinstance(value, list):
+        texts = [str(item).strip() if item is not None else None for item in value]
+        return texts or None
+    return None
 
 
 def _audio_arrays_to_wav_bytes(arrays: object, sample_rate: int) -> bytes:

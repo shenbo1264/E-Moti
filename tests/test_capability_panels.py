@@ -53,22 +53,31 @@ def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app)
 
     base = CapabilitySettings(
         tts=TTSSettings(language="ja", voice="test-voice", rate=3, volume=0.4),
-        asr=ASRSettings(language="en", vosk_model_path="models/vosk", max_record_seconds=22),
+        asr=ASRSettings(
+            language="en",
+            vosk_model_path="models/vosk",
+            max_record_seconds=22,
+            hotkey_enabled=True,
+            hotkey_sequence="Ctrl+Alt+Space",
+        ),
     )
     panel = VoiceSettingsPanel(base, {"tts_provider": "disabled", "asr_provider": "disabled"})
 
     assert panel.tts_test_button.isEnabled() is False
     assert panel.asr_start_button.isEnabled() is False
+    assert panel.asr_hotkey_input.isEnabled() is False
 
     panel.tts_enabled_check.setChecked(True)
     panel.asr_enabled_check.setChecked(True)
     panel.tts_model_variant_combo.setCurrentText("qwen3tts_1.7b_customvoice")
     panel.asr_model_input.setText("whisper-large")
+    panel.asr_hotkey_input.setText("Alt+M")
 
     settings = panel.collect_settings(base)
 
     assert panel.tts_test_button.isEnabled() is True
     assert panel.asr_start_button.isEnabled() is True
+    assert panel.asr_hotkey_input.isEnabled() is True
     assert settings.tts.enabled is True
     assert settings.tts.model_variant == "qwen3tts_1.7b_customvoice"
     assert settings.tts.language == "ja"
@@ -80,6 +89,53 @@ def test_voice_settings_panel_preserves_hidden_fields_and_syncs_controls(qt_app)
     assert settings.asr.language == "en"
     assert settings.asr.vosk_model_path == "models/vosk"
     assert settings.asr.max_record_seconds == 22
+    assert settings.asr.hotkey_enabled is True
+    assert settings.asr.hotkey_sequence == "Alt+M"
+
+
+def test_voice_settings_panel_shows_current_character_voice_profile(qt_app):
+    from guanghe_companion.capability_panels import VoiceSettingsPanel
+    from guanghe_companion.capability_settings import CapabilitySettings
+
+    panel = VoiceSettingsPanel(
+        CapabilitySettings.default(),
+        {},
+        {
+            "profile_id": "xingxi_pixel_pet_qwen_vivian_v1",
+            "display_name": "Xingxi designed voice",
+            "provider": "http_qwen3tts",
+            "voice": "Vivian",
+            "model_variant": "qwen3tts_0.6b_customvoice",
+            "voice_source_type": "original_design",
+            "training_status": "designed",
+        },
+    )
+
+    text = panel.voice_character_profile_label.text()
+    assert "Xingxi designed voice" in text
+    assert "xingxi_pixel_pet_qwen_vivian_v1" in text
+    assert "http_qwen3tts" in text
+    assert "Vivian" in text
+    assert "designed" in text
+
+    panel.set_character_voice_profile({})
+
+    assert "not defined" in panel.voice_character_profile_label.text()
+
+
+def test_voice_settings_panel_exposes_service_status_controls(qt_app):
+    from guanghe_companion.capability_panels import VoiceSettingsPanel
+
+    panel = VoiceSettingsPanel()
+
+    assert "语音服务：未检查" in panel.voice_service_status_label.text()
+    assert "随包脚本" in panel.voice_service_status_label.text()
+    assert panel.voice_service_preflight_button.text() == "检查语音服务"
+    assert panel.voice_service_launch_button.text() == "启动随包语音服务"
+
+    panel.set_service_status("语音服务预检通过：Qwen3TTS: HTTP 404")
+
+    assert "Qwen3TTS" in panel.voice_service_status_label.text()
 
 
 def test_voice_settings_panel_uses_catalog_provider_choices(qt_app):
@@ -90,7 +146,7 @@ def test_voice_settings_panel_uses_catalog_provider_choices(qt_app):
     tts_values = [panel.tts_provider_combo.itemText(index) for index in range(panel.tts_provider_combo.count())]
     asr_values = [panel.asr_provider_combo.itemText(index) for index in range(panel.asr_provider_combo.count())]
 
-    assert tts_values == ["http_qwen3tts", "edge_tts", "windows_sapi"]
+    assert tts_values == ["http_emoti_voice", "http_qwen3tts", "http_gptsovits", "edge_tts", "windows_sapi"]
     assert asr_values == [
         "sensevoice_openai",
         "funasr_openai",
@@ -115,6 +171,8 @@ def test_capability_panels_emit_user_action_signals(qt_app):
     manual_panel.manualPerceptionRequested.connect(lambda: captured.append(("manual", "")))
     voice_panel.ttsTestRequested.connect(lambda: captured.append(("tts-test", "")))
     voice_panel.asrStartRequested.connect(lambda: captured.append(("asr-start", "")))
+    voice_panel.voiceServicePreflightRequested.connect(lambda: captured.append(("voice-service-preflight", "")))
+    voice_panel.voiceServiceLaunchRequested.connect(lambda: captured.append(("voice-service-launch", "")))
 
     capability_panel.web_search_query_input.setText("星汐")
     capability_panel.capability_save_button.click()
@@ -125,6 +183,8 @@ def test_capability_panels_emit_user_action_signals(qt_app):
     voice_panel.asr_enabled_check.setChecked(True)
     voice_panel.tts_test_button.click()
     voice_panel.asr_start_button.click()
+    voice_panel.voice_service_preflight_button.click()
+    voice_panel.voice_service_launch_button.click()
 
     assert captured == [
         ("save", ""),
@@ -133,4 +193,6 @@ def test_capability_panels_emit_user_action_signals(qt_app):
         ("manual", ""),
         ("tts-test", ""),
         ("asr-start", ""),
+        ("voice-service-preflight", ""),
+        ("voice-service-launch", ""),
     ]

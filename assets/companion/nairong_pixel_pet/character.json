@@ -1,0 +1,104 @@
+{
+  "character_id": "nairong_pixel_pet",
+  "name": "奶龙",
+  "title": "呆萌桌面小宠",
+  "description": "奶龙作为课程提交中的宠物向角色展示包：圆润、呆萌、反应直白，适合短促又有点犯傻的陪伴反馈。",
+  "spritesheet": "spritesheet.png",
+  "motion_manifest": "motion_manifest.json",
+  "renderer": {
+    "backend": "sprite",
+    "motion_map": {
+      "Default": "Default",
+      "MoveRight": "MoveRight",
+      "MoveLeft": "MoveLeft",
+      "TouchHead": "TouchHead",
+      "Play": "Play",
+      "SwitchDown": "SwitchDown",
+      "Sleep": "Sleep",
+      "Raised": "Raised",
+      "Study": "Study",
+      "Comfort": "Comfort",
+      "Eat": "Eat",
+      "Gift": "Gift",
+      "Shop": "Shop",
+      "Tick": "Tick"
+    },
+    "expression_map": {
+      "calm": "Default",
+      "neutral": "Default",
+      "blink": "Default",
+      "joy": "TouchHead",
+      "happy": "TouchHead",
+      "excited": "Play",
+      "surprised": "Play",
+      "focused": "Study",
+      "sleepy": "Sleep",
+      "sadness": "SwitchDown",
+      "sad": "SwitchDown",
+      "confused": "SwitchDown",
+      "shy": "Default",
+      "goofy": "Play"
+    }
+  },
+  "default_mode": "Calm",
+  "modes": [
+    "Glow",
+    "Calm",
+    "Frayed",
+    "Overload"
+  ],
+  "mode_descriptions": {
+    "Glow": "开心地摇晃。",
+    "Calm": "圆滚滚地待在桌面上。",
+    "Frayed": "慢半拍地呆看着你。",
+    "Overload": "放空休息模式。"
+  },
+  "motion_labels": {
+    "Default": "待机眨眼",
+    "MoveRight": "向右挪动",
+    "MoveLeft": "向左挪动",
+    "TouchHead": "小小挥手",
+    "Play": "呆萌弹跳",
+    "SwitchDown": "犯傻定住",
+    "Sleep": "困困等待",
+    "Raised": "小跑",
+    "Study": "严肃盯着",
+    "Comfort": "软软安抚",
+    "Eat": "吃点心",
+    "Gift": "收到礼物",
+    "Shop": "补给时间",
+    "Tick": "时间经过"
+  },
+  "distribution_boundary": "shareable_after_review",
+  "tts_profile": {
+    "profile_id": "nairong_pixel_pet_qwen_goofy_v1",
+    "display_name": "奶龙呆萌声线",
+    "provider": "http_emoti_voice",
+    "api_url": "",
+    "language": "zh",
+    "voice": "Dylan",
+    "model_variant": "qwen3tts_0.6b_customvoice",
+    "backend_provider": "http_qwen3tts",
+    "backend_api_url": "http://127.0.0.1:9880/",
+    "backend_model_variant": "qwen3tts_0.6b_customvoice",
+    "display_language": "zh",
+    "synthesis_language": "zh",
+    "synthesis_text_mode": "display",
+    "rate": 2,
+    "volume": 0.95,
+    "instruct": "用普通话扮演奶龙：圆滚滚、呆萌、开心、有点犯傻，不吵闹，用很短的搞笑回应。",
+    "voice_source_type": "third_party_reference",
+    "training_status": "candidate",
+    "distribution_policy": "public_ok",
+    "rights_note": "E-Moti 课程提交演示 voice profile。",
+    "reference_audio": []
+  },
+  "relationship_decorations": [
+    {
+      "unlock_id": "unlock_first_nickname",
+      "item_id": "butter_cookie",
+      "label": "黄油饼干",
+      "icon": "item_icons/butter_cookie.png"
+    }
+  ]
+}

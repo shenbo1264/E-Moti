@@ -1,6 +1,7 @@
 param(
     [switch]$SkipAppBuild,
     [string]$PythonPath = "",
+    [string]$VoiceRuntimePath = "",
     [string]$ISCCPath = ""
 )
 
@@ -56,6 +57,9 @@ if (-not $SkipAppBuild) {
     $AppBuildArgs = @()
     if ($PythonPath) {
         $AppBuildArgs += @("-PythonPath", $PythonPath)
+    }
+    if ($VoiceRuntimePath) {
+        $AppBuildArgs += @("-VoiceRuntimePath", $VoiceRuntimePath)
     }
     & $AppBuildScript @AppBuildArgs
     if ($LASTEXITCODE -ne 0) {

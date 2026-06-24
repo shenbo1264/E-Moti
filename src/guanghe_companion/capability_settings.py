@@ -14,6 +14,7 @@ DEFAULT_ASR_PROVIDER = "sensevoice_openai"
 DEFAULT_ASR_MODEL = "sensevoice"
 DEFAULT_ASR_BASE_URL = "http://127.0.0.1:8899/v1"
 DEFAULT_ASR_API_KEY = "local"
+DEFAULT_ASR_HOTKEY_SEQUENCE = "Ctrl+Alt+M"
 
 SCREEN_OBSERVATION_PROVIDER_ALIASES = {
     "openai": "openai_compatible",
@@ -24,6 +25,8 @@ WEB_SEARCH_ENGINE_ALIASES = {
     "duckduckgo": "duckduckgo",
 }
 TTS_PROVIDER_ALIASES = {
+    "http_emoti_voice": "http_emoti_voice",
+    "emoti_voice": "http_emoti_voice",
     "windows_sapi": "windows_sapi",
     "sapi": "windows_sapi",
     "edge": "edge_tts",
@@ -32,8 +35,22 @@ TTS_PROVIDER_ALIASES = {
     "http_qwen3tts": "http_qwen3tts",
     "qwen3tts": "http_qwen3tts",
     "qwen3_tts": "http_qwen3tts",
+    "http_gptsovits": "http_gptsovits",
+    "gptsovits": "http_gptsovits",
+    "gpt_sovits": "http_gptsovits",
 }
 TTS_MODEL_VARIANT_ALIASES = {
+    "gptsovits_v2": "gptsovits_v2",
+    "gpt_sovits_v2": "gptsovits_v2",
+    "base": "qwen3tts_0.6b_base",
+    "0.6b_base": "qwen3tts_0.6b_base",
+    "0_6b_base": "qwen3tts_0.6b_base",
+    "qwen3tts_0.6b_base": "qwen3tts_0.6b_base",
+    "qwen3tts_0_6b_base": "qwen3tts_0.6b_base",
+    "1.7b_base": "qwen3tts_1.7b_base",
+    "1_7b_base": "qwen3tts_1.7b_base",
+    "qwen3tts_1.7b_base": "qwen3tts_1.7b_base",
+    "qwen3tts_1_7b_base": "qwen3tts_1.7b_base",
     "1.7b": "qwen3tts_1.7b_customvoice",
     "1_7b": "qwen3tts_1.7b_customvoice",
     "1.6b": "qwen3tts_1.7b_customvoice",
@@ -146,6 +163,15 @@ class TTSSettings:
     voice: str = ""
     model_variant: str = DEFAULT_TTS_MODEL_VARIANT
     instruct: str = ""
+    backend_provider: str = ""
+    backend_api_url: str = ""
+    backend_model_variant: str = ""
+    display_language: str = ""
+    synthesis_language: str = ""
+    synthesis_text_mode: str = ""
+    synthesis_text_map: dict[str, str] = field(default_factory=dict)
+    reference_audio: tuple[str, ...] = ()
+    reference_text: str = ""
     rate: int = 0
     volume: float = 1.0
     auto_speak: bool = False
@@ -170,6 +196,23 @@ class TTSSettings:
                 aliases=TTS_MODEL_VARIANT_ALIASES,
             ),
             instruct=_clean_string(source.get("instruct"), max_length=360),
+            backend_provider=_clean_provider(
+                source.get("backend_provider"),
+                default="",
+                aliases=TTS_PROVIDER_ALIASES,
+            ),
+            backend_api_url=_clean_string(source.get("backend_api_url"), max_length=240),
+            backend_model_variant=_clean_provider(
+                source.get("backend_model_variant"),
+                default="",
+                aliases=TTS_MODEL_VARIANT_ALIASES,
+            ),
+            display_language=_clean_string(source.get("display_language"), max_length=16),
+            synthesis_language=_clean_string(source.get("synthesis_language"), max_length=16),
+            synthesis_text_mode=_clean_string(source.get("synthesis_text_mode"), max_length=40),
+            synthesis_text_map=_clean_string_map(source.get("synthesis_text_map"), max_length=160),
+            reference_audio=_clean_string_sequence(source.get("reference_audio"), max_length=500),
+            reference_text=_clean_string(source.get("reference_text"), max_length=1000),
             rate=_clean_int(source.get("rate"), default=0, minimum=-10, maximum=10),
             volume=_clean_float(source.get("volume"), default=1.0, minimum=0.0, maximum=1.0),
             auto_speak=_clean_bool(source.get("auto_speak")),
@@ -186,6 +229,8 @@ class ASRSettings:
     language: str = "zh"
     vosk_model_path: str = ""
     auto_send: bool = False
+    hotkey_enabled: bool = False
+    hotkey_sequence: str = DEFAULT_ASR_HOTKEY_SEQUENCE
     max_record_seconds: int = 12
 
     @classmethod
@@ -205,6 +250,9 @@ class ASRSettings:
             language=_clean_string(source.get("language"), max_length=16) or "zh",
             vosk_model_path=_clean_string(source.get("vosk_model_path"), max_length=500),
             auto_send=_clean_bool(source.get("auto_send")),
+            hotkey_enabled=_clean_bool(source.get("hotkey_enabled")),
+            hotkey_sequence=_clean_string(source.get("hotkey_sequence"), max_length=80)
+            or DEFAULT_ASR_HOTKEY_SEQUENCE,
             max_record_seconds=_clean_int(source.get("max_record_seconds"), default=12, minimum=1, maximum=30),
         )
 
@@ -345,6 +393,37 @@ def _clean_string(value: object, *, max_length: int) -> str:
         return ""
     cleaned = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value.strip())
     return cleaned[:max_length]
+
+
+def _clean_string_sequence(value: object, *, max_length: int) -> tuple[str, ...]:
+    if not isinstance(value, (list, tuple)):
+        return ()
+    result: list[str] = []
+    for item in value:
+        cleaned = _clean_string(item, max_length=max_length)
+        if cleaned:
+            result.append(cleaned)
+    return tuple(result)
+
+
+def _clean_string_map(value: object, *, max_length: int) -> dict[str, str]:
+    if not isinstance(value, Mapping):
+        return {}
+    result: dict[str, str] = {}
+    for raw_key, raw_value in value.items():
+        if not isinstance(raw_key, str) or not isinstance(raw_value, str):
+            continue
+        if _has_control_character(raw_key) or _has_control_character(raw_value):
+            continue
+        key = _clean_string(raw_key, max_length=max_length)
+        mapped = _clean_string(raw_value, max_length=max_length)
+        if key and mapped:
+            result[key] = mapped
+    return result
+
+
+def _has_control_character(value: str) -> bool:
+    return any(ord(char) < 32 or ord(char) == 127 for char in value)
 
 
 def _default_asr_model(provider: str) -> str:

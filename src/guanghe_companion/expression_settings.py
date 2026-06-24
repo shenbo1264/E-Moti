@@ -184,6 +184,37 @@ def provider_api_key_required(provider: str) -> bool:
     return preset.get("requires_api_key", "true") == "true"
 
 
+def expression_settings_readiness(settings: ExpressionSettings) -> dict[str, object]:
+    api_key_required = provider_api_key_required(settings.provider)
+    api_key_set = bool(settings.api_key)
+    return {
+        "enabled": settings.enabled,
+        "provider": settings.provider,
+        "model": settings.model,
+        "base_url": settings.base_url,
+        "api_style": provider_api_style(settings.provider),
+        "api_key_required": api_key_required,
+        "api_key_set": api_key_set,
+        "ready": bool(settings.enabled and (api_key_set or not api_key_required)),
+    }
+
+
+def expression_settings_status_text(settings: ExpressionSettings) -> str:
+    readiness = expression_settings_readiness(settings)
+    enabled_text = "已启用" if readiness["enabled"] else "关闭"
+    if readiness["api_key_set"]:
+        key_text = "Key 已配置"
+    elif readiness["api_key_required"]:
+        key_text = "Key 未配置"
+    else:
+        key_text = "Key 可选"
+    ready_text = "就绪" if readiness["ready"] else "未就绪"
+    return (
+        f"LLM 表达：{enabled_text} | {readiness['provider']} / {readiness['model']} | "
+        f"{key_text} | {ready_text} | 可点击测试 LLM 回应"
+    )
+
+
 def _normalize_api_key(value: object) -> str:
     return _clean_string(value, MAX_EXPRESSION_API_KEY_LENGTH)
 

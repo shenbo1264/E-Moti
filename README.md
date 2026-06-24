@@ -2,7 +2,7 @@
 
 E-Moti is a Windows-first desktop AI companion pet demo built with Python and PySide6.
 
-The bundled companion is the original character Xingxi. The current near-term route is a hatch-pet-style pixel-pet sequence workflow: lock one canonical character base, generate one animation row at a time, review contact sheets, repair only failed rows, and only then promote a validated character pack. The repo now uses `xingxi_pixel_pet` as the default bundled pixel-pet companion pack; the older `original_oc` pack remains bundled as a hidden fallback for compatibility. Learning, resting, comforting, and playing are action states, not the product identity.
+The bundled course-delivery role set includes three visible switchable character packs: `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`. The default companion is Xingxi, while Ikaros and Nairong are included to demonstrate the same runtime, memory namespace, shop theme, voice profile metadata, and desktop-pet renderer working across different role styles. The current near-term art route is a hatch-pet-style pixel-pet sequence workflow: lock one canonical character base, generate one animation row at a time, review contact sheets, repair only failed rows, and only then promote a validated character pack. Learning, resting, comforting, and playing are action states, not the product identity.
 
 This project is not a productivity coach, course supervisor, mascot skin, or chatbot-only shell.
 
@@ -14,7 +14,7 @@ This project is not a productivity coach, course supervisor, mascot skin, or cha
 - Character library support for switching bundled or user-imported complete character packs.
 - Local state machine for focus, charge, stability, mood, trust, coins, level, inventory, memories, and relationship unlocks.
 - Sprite atlas renderer kept as the tray-friendly baseline and regression-safe renderer.
-- Pixel-pet sequence workflow for character packs, with the QA-gated Xingxi pixel-pet pack promoted as the default bundled companion.
+- Pixel-pet sequence workflow for character packs, with Xingxi, Ikaros, and Nairong available in the bundled character library.
 - Portrait/Spirit renderer kept as a later presentation path rather than the active art-production route.
 - Live2D Web renderer path for character packs that provide a safe `.model3.json`; sprite remains the fallback.
 - Optional LLM expression adapter that can turn validated local events into character speech, expression cues, motion cues, and read-only interaction intents.
@@ -91,6 +91,9 @@ python run_demo.py
 ```powershell
 python -m pytest
 python -m json.tool assets\companion\original_oc\shop_items.json
+python -m json.tool assets\companion\xingxi_pixel_pet\shop_items.json
+python -m json.tool assets\companion\ikaros_pixel_pet\shop_items.json
+python -m json.tool assets\companion\nairong_pixel_pet\shop_items.json
 ```
 
 Focused UI smoke tests:
@@ -104,10 +107,12 @@ Character pack validation:
 ```powershell
 python tools\validate_character_pack.py assets\companion\original_oc
 python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
+python tools\validate_character_pack.py assets\companion\ikaros_pixel_pet
+python tools\validate_character_pack.py assets\companion\nairong_pixel_pet
 python tools\review_character_pack_status.py assets\companion\original_oc --json artifacts\character-pack-status-original-oc.json --markdown artifacts\character-pack-status-original-oc.md
 ```
 
-Character-pack distribution rules are documented in `docs\character_pack_distribution_policy.md`. Keep third-party and fanwork packs local unless rights are cleared.
+Character-pack distribution rules are documented in `docs\character_pack_distribution_policy.md`. The course-delivery build presents the three bundled role packs together in the character library; the local import workflow remains available for additional user-authored packs.
 Local character-pack authoring is documented in `docs\character_pack_authoring_runbook.md`.
 
 Generated character draft validation:
@@ -133,6 +138,8 @@ Bundled character-library QA:
 
 ```powershell
 python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\screenshots
+python tools\character_library_qa.py --character-id ikaros_pixel_pet --report artifacts\character-library-qa\ikaros-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\ikaros-screenshots
+python tools\character_library_qa.py --character-id nairong_pixel_pet --report artifacts\character-library-qa\nairong-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\nairong-screenshots
 python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --preview artifacts\character-library-qa\xingxi-pixel-pet-visual-qa-preview.png
 python tools\art\pixel_pet_edge_style_brief.py --visual-qa-report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --character-id xingxi_pixel_pet --character-name Xingxi --report artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.json --markdown artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.md
 python tools\art\hatch_pet_imagegen_readiness.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.md
@@ -147,7 +154,7 @@ python tools\release_readiness_report.py --pixel-pet-emote-mapping-report artifa
 python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --fail-on-warnings
 ```
 
-This opens the real control panel with temporary user data, selects `xingxi_pixel_pet`, verifies the distribution/provenance/license detail, switches to the pack, opens desktop pet mode, saves screenshots, and writes a JSON report. `xingxi_pixel_pet` is now the default bundled pack; `original_oc` remains only as a hidden compatibility fallback.
+The character-library QA opens the real control panel with temporary user data, selects a requested bundled character, verifies the role-pack detail text and preview image, switches to the pack, opens desktop pet mode, saves screenshots, and writes a JSON report. Run it for `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet` before course-delivery packaging.
 `pixel_pet_visual_qa.py` is a read-only spritesheet gate for pixel-pet candidates. It reuses the atlas contract and counts suspicious purple/red edge pixels adjacent to transparency; `--preview` writes an overlay image for human QA. `pixel_pet_edge_style_brief.py` turns that report into a paste-ready regeneration/redraw brief and acceptance-gate checklist, including a base-only prompt lock that forbids sprite sheets, row strips, atlases, repeated copies, and animation frames for the first canonical base. `hatch_pet_imagegen_readiness.py` checks a hatch-pet run before provider calls and reports missing/invalid generation credentials without printing secrets. `hatch_pet_imagegen_route_preflight.py` combines the hatch-pet readiness result with an optional `codex --version` launcher check so invalid API keys and blocked native imagegen runners are recorded before retrying base generation. `hatch_pet_base_intake_preflight.py` checks a selected built-in `$imagegen` `ig_*.png` against the ready hatch-pet `base` job and base-review gate before suggesting the `record_imagegen_result.py` command; it rejects row-strip or atlas-shaped images as base candidates and does not copy files or modify `imagegen-jobs.json`. `pixel_pet_emote_mapping_check.py` verifies that the LLM expression-to-pixel-motion mapping can be served by a pack's `motion_manifest.json`; it is read-only and does not mutate state, saves, runtime manifests, or character assets. `release_readiness_report.py --pixel-pet-visual-qa-report`, `--pixel-pet-edge-style-brief-report`, `--hatch-pet-imagegen-readiness-report`, `--hatch-pet-imagegen-route-preflight-report`, `--hatch-pet-base-intake-report`, and `--pixel-pet-emote-mapping-report` roll those art gates, imagegen blockers, intake decisions, or LLM pixel-emote coverage checks into the aggregate release readiness summary. Warnings do not change runtime behavior, but `--fail-on-warnings` can block default-promotion packages.
 
 Import a complete validated character pack into a user pack root:
@@ -157,8 +164,8 @@ python tools\import_character_pack.py path\to\complete_pack --target-root "%LOCA
 ```
 
 Generated drafts are not import-ready until final art, icons, spritesheet, provenance, and manual QA are complete. Use `--force` only when intentionally replacing an existing local pack with the same `character_id`.
-Complete runtime packs can declare `character.json.distribution_boundary` as `shareable_after_review`, `local_ugc_only`, or `private_local_fanwork`. The character registry, import JSON report, character-library UI, import confirmation, and status review tool surface that value so open-source-ready packs and local UGC/fanwork packs do not share the same release assumptions.
-`review_character_pack_status.py` is a read-only release/import review helper for generated drafts and complete runtime packs. It reports validation status, import readiness, manual QA needs, provenance/license files, local fanwork distribution boundaries, and next actions without copying files or changing runtime manifests.
+Complete runtime packs can declare `character.json.distribution_boundary` metadata so the registry, import JSON report, character-library UI, import confirmation, and status review tool can show where a pack came from. The course-delivery build presents Xingxi, Ikaros, and Nairong together as visible bundled role packs; extra user-authored packs use the same validation and import flow.
+`review_character_pack_status.py` is a read-only release/import review helper for generated drafts and complete runtime packs. It reports validation status, import readiness, manual QA needs, provenance/source-note files, and next actions without copying files or changing runtime manifests.
 
 Current roadmap:
 
@@ -177,7 +184,7 @@ Current final gate:
 type docs\final_release_gate_2026-07.md
 ```
 
-The current final gate promotes `xingxi_pixel_pet` as the default bundled pack, keeps `original_oc` as a hidden fallback, validates the live DeepSeek expression cue probe, and keeps Ikaros/Nairong as private local UGC workflow representatives rather than public bundled assets.
+The current final gate verifies the three visible bundled role packs (`xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`), validates the live DeepSeek expression cue probe, and checks that the Windows package can demonstrate character switching in the real role library.
 
 Portrait candidate validation before manifest promotion:
 
@@ -372,7 +379,7 @@ See `docs/live2d_asset_pipeline.md` for the PSD layer checklist, Cubism export c
 
 - `src/guanghe_companion/` contains the application code.
 - `assets/companion/xingxi_pixel_pet/` contains the default bundled Xingxi pixel-pet companion pack. Its character-library detail card uses `preview/profile.png` for the polished profile CG; runtime animation still uses the sprite sheet.
-- `assets/companion/original_oc/` contains the older bundled original character runtime assets and remains available as a hidden compatibility fallback, not as a visible role-library option.
+- `assets/companion/original_oc/` contains older compatibility assets retained for historical renderer coverage; the course-delivery role library is centered on `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`.
 - `tests/` contains the regression and smoke tests.
 - `packaging/` and `tools/` contain Windows build entry points and scripts.
 - `data/` contains local runtime saves and is intentionally ignored by git.

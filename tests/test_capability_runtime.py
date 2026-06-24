@@ -105,6 +105,54 @@ def test_web_search_runtime_writes_tool_results_and_formats_status_without_growt
     assert after.memory_log == before.memory_log
 
 
+def test_topic_scout_runtime_writes_permission_cards_without_growth_mutation(tmp_path):
+    settings = CapabilitySettings(web_search=WebSearchSettings(enabled=True, max_results=3))
+    controller = CompanionController(save_path=tmp_path / "save.json", auto_load=False)
+
+    class FakeWebSearchService:
+        def __init__(self):
+            self.calls = []
+
+        def search(self, query, received_settings):
+            self.calls.append((query, received_settings))
+            return WebSearchResult(
+                True,
+                "ok",
+                [
+                    {
+                        "source": "web_search",
+                        "title": "AI companion topic",
+                        "summary": "A short hook for the player.",
+                    }
+                ],
+            )
+
+    service = FakeWebSearchService()
+    runtime = CapabilityRuntime(
+        settings_saver=lambda: settings,
+        settings_reader=lambda: settings,
+        set_tool_results=controller.set_tool_results,
+        web_search_service=service,
+        context_reader=lambda: {
+            "recent_dialogue": [
+                {"role": "user", "speaker": "player", "text": "desktop pet gossip"},
+            ]
+        },
+    )
+    before = controller.get_typed_snapshot()
+
+    result = runtime.run_topic_scout(interests=["AI companion"])
+
+    after = controller.get_typed_snapshot()
+    assert result.ok is True
+    assert service.calls == [("AI companion desktop pet gossip", settings.web_search)]
+    assert result.cards[0]["opening_line"] == "我刚看到一个关于 AI companion topic 的小话题，要听听吗？"
+    assert controller._expression_context()["tool_results"] == result.cards
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.memory_log == before.memory_log
+
+
 def test_voice_runtime_saves_settings_for_tts_test_and_reads_settings_for_stop():
     settings = CapabilitySettings(tts=TTSSettings(enabled=True, provider="http_qwen3tts"))
     saved_calls = []
@@ -257,6 +305,90 @@ def test_voice_runtime_applies_character_voice_profile_route_and_style_instructi
     assert received_settings.volume == 0.92
     assert received_settings.instruct == "gentle companion tone"
     assert settings.tts.provider == "edge_tts"
+
+
+def test_voice_runtime_applies_character_reference_audio_for_local_clone():
+    settings = CapabilitySettings(tts=TTSSettings(enabled=True, auto_speak=True))
+
+    class FakeTTSManager:
+        def __init__(self):
+            self.speak_calls = []
+
+        def speak(self, text, received_settings):
+            self.speak_calls.append((text, received_settings))
+            return TTSResult(True, "started")
+
+    manager = FakeTTSManager()
+    runtime = CapabilityRuntime(
+        settings_reader=lambda: settings,
+        tts_manager=manager,
+        tts_profile_reader=lambda: {
+            "provider": "http-qwen3tts",
+            "model_variant": "qwen3tts_0.6b_base",
+            "reference_audio": ["D:/voice-packs/ikaros/reference.wav"],
+            "reference_text": "参考台词。",
+        },
+    )
+
+    result = runtime.speak_text("reference clone route test")
+
+    received_settings = manager.speak_calls[0][1]
+    assert result.ok is True
+    assert received_settings.model_variant == "qwen3tts_0.6b_base"
+    assert received_settings.reference_audio == ("D:/voice-packs/ikaros/reference.wav",)
+    assert received_settings.reference_text == "参考台词。"
+
+
+def test_voice_runtime_applies_unified_gateway_and_bilingual_profile():
+    settings = CapabilitySettings(
+        tts=TTSSettings(
+            enabled=True,
+            auto_speak=True,
+            provider="http_qwen3tts",
+            api_url="http://127.0.0.1:9880/",
+            language="zh",
+        )
+    )
+
+    class FakeTTSManager:
+        def __init__(self):
+            self.speak_calls = []
+
+        def speak(self, text, received_settings):
+            self.speak_calls.append((text, received_settings))
+            return TTSResult(True, "started")
+
+    manager = FakeTTSManager()
+    runtime = CapabilityRuntime(
+        settings_reader=lambda: settings,
+        tts_manager=manager,
+        tts_profile_reader=lambda: {
+            "profile_id": "ikaros_unified_gateway_v1",
+            "provider": "http-emoti-voice",
+            "backend_provider": "gpt-sovits",
+            "backend_api_url": "http://127.0.0.1:9882/",
+            "backend_model_variant": "gptsovits-v2",
+            "display_language": "zh",
+            "synthesis_language": "all_ja",
+            "synthesis_text_mode": "profile_static_map",
+            "synthesis_text_map": {"我在这里。": "マスター、私はここにいます。"},
+        },
+    )
+
+    result = runtime.speak_text("我在这里。")
+
+    received_settings = manager.speak_calls[0][1]
+    assert result.ok is True
+    assert manager.speak_calls[0][0] == "我在这里。"
+    assert received_settings.profile_id == "ikaros_unified_gateway_v1"
+    assert received_settings.provider == "http_emoti_voice"
+    assert received_settings.backend_provider == "http_gptsovits"
+    assert received_settings.backend_api_url == "http://127.0.0.1:9882/"
+    assert received_settings.backend_model_variant == "gptsovits_v2"
+    assert received_settings.display_language == "zh"
+    assert received_settings.synthesis_language == "all_ja"
+    assert received_settings.synthesis_text_mode == "profile_static_map"
+    assert received_settings.synthesis_text_map == {"我在这里。": "マスター、私はここにいます。"}
 
 
 def test_asr_runtime_returns_dialogue_request_for_auto_send_without_submitting_to_controller():

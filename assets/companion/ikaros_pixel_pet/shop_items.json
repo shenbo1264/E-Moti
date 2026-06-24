@@ -1,0 +1,24 @@
+[
+  {
+    "item_id": "snack",
+    "name": "小点心",
+    "category": "food",
+    "icon": "item_icons/snack.png",
+    "price": 12,
+    "effects": {
+      "mood": 3,
+      "charge": 6
+    }
+  },
+  {
+    "item_id": "keepsake_badge",
+    "name": "纪念徽章",
+    "category": "gift",
+    "icon": "item_icons/keepsake_badge.png",
+    "price": 24,
+    "effects": {
+      "mood": 6,
+      "trust": 3
+    }
+  }
+]

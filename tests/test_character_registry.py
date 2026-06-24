@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 from PIL import Image
 
@@ -614,3 +615,20 @@ def test_character_registry_hides_pack_from_library_when_manifest_marks_hidden(t
     pack_ids = {pack.character_id for pack in registry.list_available_packs()}
     assert "hidden_character" not in pack_ids
     assert "visible_character" in pack_ids
+
+
+def test_bundled_submission_character_library_lists_three_visible_roles():
+    repo_root = Path(__file__).resolve().parents[1]
+    registry = CharacterRegistry(
+        builtin_root=repo_root / "assets" / "companion",
+        user_root=repo_root / "data" / "missing-user-packs-for-test",
+    )
+
+    packs = {pack.character_id: pack for pack in registry.list_available_packs()}
+
+    assert {"xingxi_pixel_pet", "ikaros_pixel_pet", "nairong_pixel_pet"} <= set(packs)
+    assert packs["xingxi_pixel_pet"].name == "星汐"
+    assert packs["ikaros_pixel_pet"].name == "伊卡洛斯"
+    assert packs["nairong_pixel_pet"].name == "奶龙"
+    assert packs["ikaros_pixel_pet"].preview_path.name == "profile.png"
+    assert packs["nairong_pixel_pet"].preview_path.name == "profile.png"

@@ -99,6 +99,10 @@ class ShinsekaiAIExpressor:
         memory = " / ".join(
             f"{entry['kind']}: {entry['summary']}" for entry in prompt_payload["recent_memory"]
         )
+        recent_dialogue = " / ".join(
+            f"{entry['role']}/{entry['speaker']}: {entry['text']}"
+            for entry in prompt_payload["recent_dialogue"]
+        )
         long_term_memory = " / ".join(
             f"{entry['category']}: {entry['summary']}" for entry in prompt_payload["long_term_memory"]
         )
@@ -127,6 +131,7 @@ class ShinsekaiAIExpressor:
                 f"goal: {prompt_payload['goal']}",
                 f"choices: {choices}",
                 f"recent_memory: {memory}",
+                f"recent_dialogue: {recent_dialogue}",
                 f"long_term_memory: {long_term_memory}",
                 '示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}',
             ]

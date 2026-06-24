@@ -24,6 +24,19 @@ def _copy_xingxi_pixel_pack(target: Path) -> Path:
     return destination
 
 
+def _write_frozen_voice_services(app_dir: Path) -> None:
+    voice_services = app_dir / "_internal" / "voice_services"
+    voice_services.mkdir(parents=True, exist_ok=True)
+    for filename in (
+        "preflight_voice_services.py",
+        "qwen3_tts_local_server.py",
+        "start_qwen3_tts_server.ps1",
+        "start_ikaros_gptsovits_server.ps1",
+        "start_sensevoice_asr_server.ps1",
+    ):
+        (voice_services / filename).write_text(f"# {filename}\n", encoding="utf-8")
+
+
 def test_source_character_pack_check_reports_ready_for_original_oc() -> None:
     from tools.readiness_checks import build_source_character_pack_check
 
@@ -44,6 +57,7 @@ def _write_frozen_build(root: Path, *, include_license: bool = True) -> tuple[Pa
         (character_dir / "xingxi_pixel_pet" / "LICENSE.md").unlink()
     app_dir.mkdir(parents=True, exist_ok=True)
     (app_dir / "E-Moti.exe").write_bytes(b"MZ" + b"0" * 128)
+    _write_frozen_voice_services(app_dir)
     installer = root / "dist" / "installer" / "E-Moti_Setup_0.1.0.exe"
     installer.parent.mkdir(parents=True)
     installer.write_bytes(b"MZ" + b"1" * 128)

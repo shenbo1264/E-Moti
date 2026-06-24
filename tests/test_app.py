@@ -514,8 +514,8 @@ def test_character_library_lists_and_switches_character_packs(monkeypatch, tmp_p
         "澄光 | 桌面回声同伴",
         "星汐 | 像素桌面同伴",
     ]
-    assert "Optional official candidate" in window.character_list.item(0).toolTip()
-    assert "Default official" in window.character_list.item(1).toolTip()
+    assert "课程提交角色" in window.character_list.item(0).toolTip()
+    assert "默认提交角色" in window.character_list.item(1).toolTip()
     window.character_list.setCurrentRow(0)
     window.character_switch_button.click()
     app.processEvents()
@@ -555,15 +555,16 @@ def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_pat
     app.processEvents()
 
     details = window.character_detail_label.text()
-    assert "Role: Default official" in details
-    assert "Source: builtin" in details
-    assert "Distribution: shareable_after_review" in details
-    assert "Provenance: ready" in details
-    assert "License: ready" in details
-    assert "Visual QA: not recorded" in details
-    assert "Manual QA: not recorded" in details
-    assert "Provenance: provenance.md" in details
-    assert "License: LICENSE" in details
+    assert "角色定位: 默认提交角色" in details
+    assert "来源: 内置角色库" in details
+    assert "交付状态: 已纳入课程提交角色库" in details
+    assert "来源记录: 已记录" in details
+    assert "说明文件: 已记录" in details
+    assert "视觉 QA: 未记录" in details
+    assert "人工 QA: 未记录" in details
+    assert "来源记录: provenance.md" in details
+    assert "说明文件: LICENSE" in details
+    assert "Warning:" not in details
 
     window.close()
     app.processEvents()
@@ -599,9 +600,9 @@ def test_character_library_detail_metadata_is_scrollable(monkeypatch, tmp_path):
     assert window.character_detail_scroll_area.widget() is window.character_detail_label
     assert window.character_detail_label.wordWrap()
     assert window.character_detail_label.alignment() & Qt.AlignmentFlag.AlignTop
-    assert "Distribution: shareable_after_review" in window.character_detail_label.text()
-    assert "Provenance: provenance.md" in window.character_detail_label.text()
-    assert "License: LICENSE.md" in window.character_detail_label.text()
+    assert "交付状态: 已纳入课程提交角色库" in window.character_detail_label.text()
+    assert "来源记录: provenance.md" in window.character_detail_label.text()
+    assert "说明文件: LICENSE.md" in window.character_detail_label.text()
 
     window.close()
     app.processEvents()
@@ -842,10 +843,10 @@ def test_character_library_import_confirmation_shows_distribution_metadata(monke
     assert (tmp_path / "user-data" / "character_packs" / "imported_character").is_dir()
     assert len(confirmations) == 1
     assert "imported_character" in confirmations[0][1]
-    assert "Source: import_source" in confirmations[0][1]
-    assert "Distribution: local_ugc_only" in confirmations[0][1]
-    assert "Provenance: provenance.md" in confirmations[0][1]
-    assert "License: LICENSE" in confirmations[0][1]
+    assert "来源: import_source" in confirmations[0][1]
+    assert "交付状态: 用户导入角色包" in confirmations[0][1]
+    assert "来源记录: provenance.md" in confirmations[0][1]
+    assert "说明文件: LICENSE" in confirmations[0][1]
 
     window.close()
     app.processEvents()
@@ -896,8 +897,8 @@ def test_character_library_import_confirmation_marks_fanwork_ugc_with_source_not
     window.character_import_button.click()
     app.processEvents()
 
-    assert "Fanwork UGC" in confirmations[0]
-    assert "Keep provenance and source notes with shared fanwork packs." in confirmations[0]
+    assert "扩展角色" in confirmations[0]
+    assert "导入后会保留来源记录和 QA 说明" in confirmations[0]
     assert (tmp_path / "user-data" / "character_packs" / "private_fanwork_character").is_dir()
 
     window.close()
@@ -2676,7 +2677,11 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert window.expression_timeout_input.value() == 2.0
     assert window.expression_timeout_input.maximum() == 60.0
     assert window.expression_test_button.text() == "测试 LLM 回应"
-    assert window.expression_settings_status_label.text() == "LLM 表达：关闭"
+    initial_status = window.expression_settings_status_label.text()
+    assert "LLM 表达：关闭" in initial_status
+    assert "openai" in initial_status
+    assert "gpt-5.5" in initial_status
+    assert "Key" in initial_status
 
     window.expression_enabled_checkbox.setChecked(True)
     window.expression_model_input.setText("demo-model")
@@ -2693,7 +2698,60 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert settings["base_url"] == "https://example.test/v1/responses"
     assert settings["api_key_set"] is True
     assert settings["timeout_seconds"] == 0.5
-    assert window.expression_settings_status_label.text() == "LLM 表达设置已保存"
+    saved_status = window.expression_settings_status_label.text()
+    assert "LLM 表达：已启用" in saved_status
+    assert "openai" in saved_status
+    assert "demo-model" in saved_status
+    assert "Key" in saved_status
+    assert "test-key" not in saved_status
+
+    window.close()
+    app.processEvents()
+
+
+def test_expression_settings_status_shows_ai_readiness_without_secret_echo(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.expression_settings import normalize_expression_settings
+
+    controller = make_controller(tmp_path)
+    controller.update_expression_settings(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "deepseek",
+                "api_key": "sk-hidden-course-key",
+            }
+        )
+    )
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[6].click()
+    app.processEvents()
+
+    initial_status = window.expression_settings_status_label.text()
+    assert "deepseek" in initial_status
+    assert "deepseek-v4-flash" in initial_status
+    assert "Key" in initial_status
+    assert "sk-hidden-course-key" not in initial_status
+
+    window.expression_model_input.setText("course-model")
+    window.expression_api_key_input.setText("sk-hidden-form-key")
+    window.expression_save_button.click()
+    app.processEvents()
+
+    saved_status = window.expression_settings_status_label.text()
+    assert "deepseek" in saved_status
+    assert "course-model" in saved_status
+    assert "Key" in saved_status
+    assert "sk-hidden-form-key" not in saved_status
 
     window.close()
     app.processEvents()
@@ -3006,6 +3064,105 @@ def test_voice_settings_page_marks_tts_and_asr_disabled(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_voice_service_preflight_button_updates_status_without_state_mutation(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+    from guanghe_companion.voice_service_control import VoiceServiceStatus
+
+    calls: list[float] = []
+
+    def fake_probe_voice_services(*, timeout: float = 2.0):
+        calls.append(timeout)
+        return (
+            VoiceServiceStatus("qwen3tts", "Qwen3TTS", True, "http://127.0.0.1:9880/tts", "HTTP 404"),
+            VoiceServiceStatus("gptsovits", "GPT-SoVITS", False, "http://127.0.0.1:9882/", "connection refused"),
+            VoiceServiceStatus(
+                "sensevoice_asr",
+                "SenseVoice ASR",
+                True,
+                "http://127.0.0.1:8899/v1/models",
+                "HTTP 200",
+            ),
+        )
+
+    monkeypatch.setattr(app_module, "probe_voice_services", fake_probe_voice_services)
+
+    app = QApplication.instance() or QApplication([])
+    window = app_module.CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.navigation_buttons[8].click()
+    window.voice_service_preflight_button.click()
+    app.processEvents()
+
+    assert calls == [2.0]
+    assert "语音服务未就绪" in window.voice_service_status_label.text()
+    assert "GPT-SoVITS" in window.voice_service_status_label.text()
+    assert window.controller.get_typed_snapshot().stats == before.stats
+    assert window.controller.get_typed_snapshot().inventory == before.inventory
+    assert window.controller.get_typed_snapshot().memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_voice_service_launch_button_updates_status_without_state_mutation(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+    from guanghe_companion.voice_service_control import VoiceServiceLaunchResult, VoiceServiceStatus
+
+    statuses = (
+        VoiceServiceStatus("qwen3tts", "Qwen3TTS", True, "http://127.0.0.1:9880/tts", "HTTP 404"),
+        VoiceServiceStatus("gptsovits", "GPT-SoVITS", False, "http://127.0.0.1:9882/", "down"),
+    )
+    bundled_scripts = tmp_path / "_internal" / "voice_services"
+    launches = []
+
+    def fake_probe_voice_services(*, timeout: float = 1.0):
+        return statuses
+
+    def fake_launch_missing_voice_services(repo_root, *, statuses, scripts_dir):
+        launches.append((repo_root, statuses, scripts_dir))
+        return (
+            VoiceServiceLaunchResult("qwen3tts", "Qwen3TTS", False, "已在运行"),
+            VoiceServiceLaunchResult("gptsovits", "GPT-SoVITS", True, "启动命令已发送"),
+        )
+
+    monkeypatch.setattr(app_module, "probe_voice_services", fake_probe_voice_services)
+    monkeypatch.setattr(app_module, "launch_missing_voice_services", fake_launch_missing_voice_services)
+    monkeypatch.setattr(app_module, "voice_services_root", lambda: bundled_scripts)
+
+    app = QApplication.instance() or QApplication([])
+    window = app_module.CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.navigation_buttons[8].click()
+    window.voice_service_launch_button.click()
+    app.processEvents()
+
+    assert len(launches) == 1
+    assert launches[0][1] == statuses
+    assert launches[0][2] == bundled_scripts
+    assert "语音服务启动请求已发送" in window.voice_service_status_label.text()
+    assert "GPT-SoVITS" in window.voice_service_status_label.text()
+    assert window.controller.get_typed_snapshot().stats == before.stats
+    assert window.controller.get_typed_snapshot().inventory == before.inventory
+    assert window.controller.get_typed_snapshot().memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
 def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
@@ -3045,10 +3202,24 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
 
             return TTSResult(True, "已停止朗读")
 
+    class InlineVoiceRunner:
+        def __init__(self, speak):
+            self.speak = speak
+            self.texts = []
+
+        def run(self, text):
+            self.texts.append(text)
+            self.speak(text)
+            return len(self.texts)
+
+        def shutdown(self):
+            pass
+
     app = QApplication.instance() or QApplication([])
     window = CompanionWindow(controller=make_controller(tmp_path, ai_expressor=CapturingExpressor()))
     fake_tts = FakeTTSManager()
     window.tts_manager = fake_tts
+    window.voice_async_runner = InlineVoiceRunner(window.capability_runtime.speak_text)
     window.tts_enabled_check.setChecked(True)
     window.tts_auto_speak_check.setChecked(True)
     window.tts_model_variant_combo.setCurrentText("qwen3tts_1.7b_customvoice")
@@ -3060,6 +3231,7 @@ def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_pat
     app.processEvents()
     after = window.controller.get_typed_snapshot()
 
+    assert window.voice_async_runner.texts == ["LLM 连接成功"]
     assert len(fake_tts.calls) == 1
     assert fake_tts.calls[0][0] == "LLM 连接成功"
     assert fake_tts.calls[0][1].profile_id == "xingxi_pixel_pet_qwen_vivian_v1"
@@ -3123,6 +3295,19 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
 
             return TTSResult(True, "stopped")
 
+    class InlineVoiceRunner:
+        def __init__(self, speak):
+            self.speak = speak
+            self.texts = []
+
+        def run(self, text):
+            self.texts.append(text)
+            self.speak(text)
+            return len(self.texts)
+
+        def shutdown(self):
+            pass
+
     app = QApplication.instance() or QApplication([])
     controller = CompanionController(
         character_id="xingxi_pixel_pet",
@@ -3132,10 +3317,12 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
     window = CompanionWindow(controller=controller)
     fake_tts = FakeTTSManager()
     window.tts_manager = fake_tts
+    window.voice_async_runner = InlineVoiceRunner(window.capability_runtime.speak_text)
     window.tts_enabled_check.setChecked(True)
 
     window._handle_tts_test()
 
+    assert window.voice_async_runner.texts == ["Xingxi voice test."]
     assert fake_tts.calls
     assert fake_tts.calls[0][1].profile_id == "xingxi_qwen_vivian_v1"
     assert fake_tts.calls[0][1].provider == "http_qwen3tts"
@@ -3144,6 +3331,124 @@ def test_character_tts_profile_is_applied_to_voice_test(monkeypatch, tmp_path):
     assert fake_tts.calls[0][1].rate == 2
     assert fake_tts.calls[0][1].volume == 0.8
     assert fake_tts.calls[0][1].instruct == "gentle companion tone"
+
+    window.close()
+    app.processEvents()
+
+
+def test_tts_test_button_enqueues_background_speech_without_inline_synthesis(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class FakeVoiceRunner:
+        def __init__(self):
+            self.texts = []
+            self.shutdown_called = False
+
+        def run(self, text):
+            self.texts.append(text)
+            return len(self.texts)
+
+        def shutdown(self):
+            self.shutdown_called = True
+
+    class FakeTTSManager:
+        def speak(self, text, settings):
+            from guanghe_companion.voice_tts import TTSResult
+
+            return TTSResult(True, "inline synthesis should move to background")
+
+        def stop(self, settings=None):
+            from guanghe_companion.voice_tts import TTSResult
+
+            return TTSResult(True, "stopped")
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    fake_runner = FakeVoiceRunner()
+    window.voice_async_runner = fake_runner
+    window.tts_manager = FakeTTSManager()
+    window.tts_enabled_check.setChecked(True)
+
+    window._handle_tts_test()
+
+    assert fake_runner.texts == [f"{window.controller.character_pack.name} voice test."]
+    assert "后台" in window.voice_status_label.text()
+
+    window.close()
+    app.processEvents()
+    assert fake_runner.shutdown_called is True
+
+
+def test_character_switch_updates_voice_profile_summary(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(
+        assets_root,
+        "xingxi_pixel_pet",
+        name="Xingxi",
+        title="Desktop companion",
+        tts_profile={
+            "profile_id": "xingxi_voice_v1",
+            "display_name": "Xingxi designed voice",
+            "provider": "http_qwen3tts",
+            "voice": "Vivian",
+            "model_variant": "0.6B",
+            "voice_source_type": "original_design",
+            "training_status": "designed",
+            "distribution_policy": "public_ok",
+        },
+    )
+    write_ui_character_pack(
+        assets_root,
+        "custom_character",
+        name="Custom",
+        title="Voice companion",
+        tts_profile={
+            "profile_id": "custom_voice_v1",
+            "display_name": "Custom role voice",
+            "provider": "http_qwen3tts",
+            "voice": "Dylan",
+            "model_variant": "0.6B",
+            "voice_source_type": "local_generated",
+            "training_status": "candidate",
+            "distribution_policy": "public_ok",
+        },
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="xingxi_pixel_pet",
+        save_path=tmp_path / "save.json",
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    app.processEvents()
+
+    assert "Xingxi designed voice" in window.voice_character_profile_label.text()
+    assert "Vivian" in window.voice_character_profile_label.text()
+
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "custom_character":
+            window.character_list.setCurrentItem(item)
+            break
+    window.character_switch_button.click()
+    app.processEvents()
+
+    assert window.controller.state.character_id == "custom_character"
+    assert "Custom role voice" in window.voice_character_profile_label.text()
+    assert "Dylan" in window.voice_character_profile_label.text()
 
     window.close()
     app.processEvents()
@@ -3229,6 +3534,66 @@ def test_asr_auto_send_uses_dialogue_request_without_growth_mutation(monkeypatch
     assert window.dialogue_input.text() == ""
     assert user_entries[-1].source == "asr"
     assert user_entries[-1].text == "你好星汐"
+    assert after.stats == before.stats
+    assert after.inventory == before.inventory
+    assert after.memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_asr_hotkey_toggles_recording_and_uses_dialogue_request(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtGui import QKeySequence
+    from PySide6.QtWidgets import QApplication
+
+    from guanghe_companion.app import CompanionWindow
+
+    class FakeASRService:
+        def __init__(self):
+            self.started = []
+            self.stopped = []
+
+        def start_recording(self, settings):
+            from guanghe_companion.voice_asr import ASRResult
+
+            self.started.append(settings)
+            return ASRResult(True, "录音中")
+
+        def stop_and_transcribe(self, settings):
+            from guanghe_companion.voice_asr import ASRResult
+
+            self.stopped.append(settings)
+            return ASRResult(True, "识别完成", "快捷键和星汐说话")
+
+    app = QApplication.instance() or QApplication([])
+    window = CompanionWindow(controller=make_controller(tmp_path))
+    fake_asr = FakeASRService()
+    window.asr_service = fake_asr
+    window.asr_enabled_check.setChecked(True)
+    window.asr_auto_send_check.setChecked(True)
+    window.asr_hotkey_enabled_check.setChecked(True)
+    window.asr_hotkey_input.setText("Ctrl+Alt+Space")
+    window.capability_save_button.click()
+    before = window.controller.get_typed_snapshot()
+
+    assert window.asr_hotkey_shortcut.isEnabled() is True
+    assert (
+        window.asr_hotkey_shortcut.key().toString(QKeySequence.SequenceFormat.PortableText)
+        == "Ctrl+Alt+Space"
+    )
+
+    window.asr_hotkey_shortcut.activated.emit()
+    window.asr_hotkey_shortcut.activated.emit()
+    app.processEvents()
+    after = window.controller.get_typed_snapshot()
+    user_entries = [entry for entry in window.controller.dialogue_history if entry.role == "user"]
+
+    assert [settings.hotkey_sequence for settings in fake_asr.started] == ["Ctrl+Alt+Space"]
+    assert [settings.hotkey_sequence for settings in fake_asr.stopped] == ["Ctrl+Alt+Space"]
+    assert user_entries[-1].source == "asr"
+    assert user_entries[-1].text == "快捷键和星汐说话"
     assert after.stats == before.stats
     assert after.inventory == before.inventory
     assert after.memory_log == before.memory_log
@@ -3362,6 +3727,48 @@ def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
 
     assert "能量有点低" in window.feedback_label.text()
     assert "主动陪伴" in window.memory_label.text()
+
+    window.close()
+    app.processEvents()
+
+
+def test_window_can_reject_proactive_companionship_and_extend_cooldown(monkeypatch, tmp_path):
+    from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
+
+    app, window = make_window(monkeypatch, tmp_path)
+    window.controller.update_capability_settings(
+        CapabilitySettings(
+            proactive_companion=ProactiveCompanionSettings(
+                enabled=True,
+                interval_seconds=60,
+                global_cooldown_seconds=60,
+            )
+        )
+    )
+    window.controller.state.charge = 25
+    window.controller.state.mood = 60
+    window.controller.state.focus = 70
+    window.controller.state.stability = 70
+
+    window._handle_tick()
+    app.processEvents()
+
+    assert window.proactive_reject_button.isVisible()
+    assert window.controller.get_snapshot()["proactive_feedback"]["kind"] == "low_charge"
+
+    window.proactive_reject_button.click()
+    app.processEvents()
+
+    rejected = window.controller.get_snapshot()
+    assert rejected["proactive_feedback"] is None
+    assert window.proactive_reject_button.isVisible() is False
+    assert "暂停" in rejected["feedback"]
+
+    window.controller.now += 75
+    window._handle_tick()
+    app.processEvents()
+
+    assert window.controller.get_snapshot()["proactive_feedback"] is None
 
     window.close()
     app.processEvents()

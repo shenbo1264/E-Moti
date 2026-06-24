@@ -26,12 +26,28 @@ class ASRProviderOption:
 
 TTS_PROVIDER_OPTIONS: tuple[TTSProviderOption, ...] = (
     TTSProviderOption(
+        provider_id="http_emoti_voice",
+        label="E-Moti Voice Gateway",
+        recommended_use="character_voice_gateway",
+        default_model="",
+        default_api_url="",
+        route_note="App-facing character voice gateway; delegates to each character profile backend.",
+    ),
+    TTSProviderOption(
         provider_id="http_qwen3tts",
         label="Qwen3-TTS HTTP",
         recommended_use="formal_character_voice",
         default_model="qwen3tts_0.6b_customvoice",
         default_api_url="http://127.0.0.1:9880/",
         route_note="Formal route for original character voice through a local HTTP service.",
+    ),
+    TTSProviderOption(
+        provider_id="http_gptsovits",
+        label="GPT-SoVITS HTTP",
+        recommended_use="trained_character_voice",
+        default_model="gptsovits_v2",
+        default_api_url="http://127.0.0.1:9882/",
+        route_note="Local trained-character route that uses reference audio and prompt text.",
     ),
     TTSProviderOption(
         provider_id="edge_tts",

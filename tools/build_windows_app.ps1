@@ -1,6 +1,7 @@
 param(
     [switch]$SkipClean,
-    [string]$PythonPath = ""
+    [string]$PythonPath = "",
+    [string]$VoiceRuntimePath = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -12,9 +13,12 @@ $AppDir = Join-Path $DistDir "E-Moti"
 $BuildDir = Join-Path $RepoRoot "build\pyinstaller"
 $RuntimeAssetsRoot = Join-Path $BuildDir "runtime_assets\assets"
 $RuntimeCompanionDir = Join-Path $RuntimeAssetsRoot "companion"
+$RuntimeVoiceServicesDir = Join-Path $BuildDir "runtime_voice_services\voice_services"
+$PortableVoiceRuntimeDir = Join-Path $AppDir "voice_runtime"
 $EntryPath = Join-Path $RepoRoot "packaging\launch_control_panel.py"
 $AssetsPath = Join-Path $RepoRoot "assets"
 $SourceCompanionDir = Join-Path $AssetsPath "companion"
+$SourceVoiceServicesDir = Join-Path $RepoRoot "tools\voice_services"
 $SrcPath = Join-Path $RepoRoot "src"
 $ExePath = Join-Path $AppDir "E-Moti.exe"
 
@@ -97,6 +101,9 @@ if (-not (Test-Path -LiteralPath $AssetsPath)) {
 if (-not (Test-Path -LiteralPath $SourceCompanionDir)) {
     throw "Missing companion assets directory: $SourceCompanionDir"
 }
+if (-not (Test-Path -LiteralPath $SourceVoiceServicesDir)) {
+    throw "Missing voice services directory: $SourceVoiceServicesDir"
+}
 
 $ResolvedPython = Resolve-PythonInvocation -RequestedPath $PythonPath
 Write-Host "Using Python: $($ResolvedPython.Command) $($ResolvedPython.Arguments -join ' ')"
@@ -109,6 +116,7 @@ if (-not $SkipClean) {
 New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
 New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
 New-Item -ItemType Directory -Force -Path $RuntimeCompanionDir | Out-Null
+New-Item -ItemType Directory -Force -Path $RuntimeVoiceServicesDir | Out-Null
 
 # Keep frozen companion packs equivalent to the validated source packs.
 # Required examples: original_oc item_icons, portrait_manifest.json, portraits, preview, portrait_assets_provenance.md, LICENSE.md, and additional bundled sprite packs.
@@ -116,7 +124,14 @@ Get-ChildItem -Force -LiteralPath $SourceCompanionDir | ForEach-Object {
     Copy-Item -LiteralPath $_.FullName -Destination $RuntimeCompanionDir -Recurse -Force
 }
 
+# Keep local voice service launchers available in the onedir package.
+# Required scripts: preflight_voice_services.py, qwen3_tts_local_server.py, start_qwen3_tts_server.ps1, start_ikaros_gptsovits_server.ps1, start_sensevoice_asr_server.ps1.
+Get-ChildItem -Force -LiteralPath $SourceVoiceServicesDir | ForEach-Object {
+    Copy-Item -LiteralPath $_.FullName -Destination $RuntimeVoiceServicesDir -Recurse -Force
+}
+
 $AddData = "$RuntimeAssetsRoot;assets"
+$AddVoiceServices = "$RuntimeVoiceServicesDir;voice_services"
 $Arguments = @(
     "-m", "PyInstaller",
     "--noconfirm",
@@ -131,6 +146,7 @@ $Arguments = @(
     "--hidden-import", "ddgs",
     "--hidden-import", "edge_tts",
     "--add-data", $AddData,
+    "--add-data", $AddVoiceServices,
     "packaging\launch_control_panel.py"
 )
 
@@ -148,6 +164,15 @@ finally {
 
 if (-not (Test-Path -LiteralPath $ExePath)) {
     throw "PyInstaller did not create expected app executable: dist\E-Moti\E-Moti.exe"
+}
+
+if ($VoiceRuntimePath) {
+    if (-not (Test-Path -LiteralPath $VoiceRuntimePath)) {
+        throw "Voice runtime directory not found: $VoiceRuntimePath"
+    }
+    Remove-Item -LiteralPath $PortableVoiceRuntimeDir -Recurse -Force -ErrorAction SilentlyContinue
+    Copy-Item -LiteralPath $VoiceRuntimePath -Destination $PortableVoiceRuntimeDir -Recurse -Force
+    Write-Host "Bundled portable voice runtime: dist\E-Moti\voice_runtime"
 }
 
 Write-Host "Built dist\E-Moti\E-Moti.exe"

@@ -1,4 +1,4 @@
-import json
+﻿import json
 from pathlib import Path
 
 from PIL import Image
@@ -20,7 +20,8 @@ def test_load_default_character_pack_reads_xingxi_pixel_pet_manifest():
     assert "Glow" in pack.modes
     assert pack.motion_labels["TouchHead"] == "招手回应"
     assert pack.tts_profile.profile_id == "xingxi_pixel_pet_qwen_vivian_v1"
-    assert pack.tts_profile.provider == "http_qwen3tts"
+    assert pack.tts_profile.provider == "http_emoti_voice"
+    assert pack.tts_profile.backend_provider == "http_qwen3tts"
     assert pack.tts_profile.voice == "Vivian"
     assert pack.tts_profile.voice_source_type == "original_design"
     assert pack.tts_profile.distribution_policy == "public_ok"
@@ -105,6 +106,113 @@ def test_bundled_original_oc_pack_remains_valid_fallback():
     assert report.ok is True
     assert pack.character_id == "original_oc"
     assert pack.renderer.backend == "portrait"
+
+
+def test_bundled_submission_character_packs_are_valid_and_visible():
+    expected = {
+        "xingxi_pixel_pet": "星汐",
+        "ikaros_pixel_pet": "伊卡洛斯",
+        "nairong_pixel_pet": "奶龙",
+    }
+
+    for character_id, name in expected.items():
+        pack_dir = REPO_ROOT / "assets" / "companion" / character_id
+        report = validate_character_pack_dir(pack_dir)
+        pack = load_character_pack_from_dir(pack_dir)
+        payload = json.loads((pack_dir / "character.json").read_text(encoding="utf-8-sig"))
+
+        assert report.ok is True
+        assert pack.character_id == character_id
+        assert pack.name == name
+        assert pack.renderer.backend == "sprite"
+        assert payload.get("hide_from_character_library") is not True
+        assert (pack_dir / "preview" / "profile.png").is_file()
+
+
+def test_bundled_characters_use_unified_voice_gateway_profiles():
+    for character_id in ("xingxi_pixel_pet", "ikaros_pixel_pet", "nairong_pixel_pet"):
+        pack_dir = REPO_ROOT / "assets" / "companion" / character_id
+        report = validate_character_pack_dir(pack_dir)
+        pack = load_character_pack_from_dir(pack_dir)
+
+        assert report.ok is True
+        assert pack.tts_profile.provider == "http_emoti_voice"
+
+
+def test_bundled_ikaros_keeps_trained_gptsovits_backend_voice_profile():
+    pack_dir = REPO_ROOT / "assets" / "companion" / "ikaros_pixel_pet"
+
+    report = validate_character_pack_dir(pack_dir)
+    pack = load_character_pack_from_dir(pack_dir)
+
+    assert report.ok is True
+    assert pack.tts_profile.provider == "http_emoti_voice"
+    assert pack.tts_profile.backend_provider == "http_gptsovits"
+    assert pack.tts_profile.backend_model_variant == "gptsovits_v2"
+    assert pack.tts_profile.display_language == "zh"
+    assert pack.tts_profile.synthesis_language == "all_ja"
+    assert pack.tts_profile.synthesis_text_mode == "profile_static_map"
+    assert pack.tts_profile.training_status == "trained_local"
+    assert pack.tts_profile.reference_text
+    assert len(pack.tts_profile.reference_audio) == 1
+    assert Path(pack.tts_profile.reference_audio[0]).is_file()
+
+
+def test_ikaros_bilingual_phrase_map_covers_demo_flow_lines():
+    pack_dir = REPO_ROOT / "assets" / "companion" / "ikaros_pixel_pet"
+
+    pack = load_character_pack_from_dir(pack_dir)
+
+    expected_lines = {
+        "我在这里。",
+        "伊卡洛斯，和导师打个招呼。",
+        "伊卡洛斯，陪我安静一会儿。",
+        "我会陪着你。",
+        "需要我待在这里吗？",
+        "我明白了，Master。",
+    }
+    assert expected_lines.issubset(set(pack.tts_profile.synthesis_text_map))
+    for line in expected_lines:
+        assert "マスター" in pack.tts_profile.synthesis_text_map[line]
+
+
+def test_load_character_pack_resolves_voice_references_to_pack_directory(tmp_path):
+    pack_dir = tmp_path / "voice_clone_pet"
+    (pack_dir / "voice").mkdir(parents=True)
+    (pack_dir / "voice" / "reference.wav").write_bytes(b"RIFFdemo")
+    (pack_dir / "character.json").write_text(
+        json.dumps(
+            {
+                "character_id": "voice_clone_pet",
+                "name": "Voice Clone Pet",
+                "title": "Voice clone test",
+                "description": "Character with a local reference voice.",
+                "spritesheet": "spritesheet.png",
+                "motion_manifest": "motion_manifest.json",
+                "default_mode": "Calm",
+                "modes": ["Calm"],
+                "mode_descriptions": {"Calm": "Calm"},
+                "motion_labels": {"Default": "Idle"},
+                "tts_profile": {
+                    "profile_id": "voice_clone_pet_local_v1",
+                    "provider": "http-qwen3tts",
+                    "model_variant": "qwen3tts_0.6b_base",
+                    "voice_source_type": "local_trained_clone",
+                    "training_status": "trained_local",
+                    "distribution_policy": "local_only",
+                    "reference_audio": ["voice/reference.wav"],
+                    "reference_text": "参考声音用于本地克隆。",
+                },
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    pack = load_character_pack_from_dir(pack_dir)
+
+    assert pack.tts_profile.reference_audio == (str((pack_dir / "voice" / "reference.wav").resolve()),)
+    assert pack.tts_profile.reference_text == "参考声音用于本地克隆。"
+
 
 
 def test_load_character_pack_reads_live2d_renderer_model_path(tmp_path):

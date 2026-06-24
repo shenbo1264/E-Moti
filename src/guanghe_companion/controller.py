@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Protocol
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
+from .ai_context_builder import build_ai_context_payload
 from .ai_expressor import (
     ShinsekaiAIExpressor,
     build_default_ai_expressor,
@@ -56,7 +57,11 @@ from .memory import (
     memory_kind_for_inventory_usage,
 )
 from .models import CompanionState
-from .proactive_companion import ProactiveCompanionDecision, ProactiveCompanionService
+from .proactive_companion import (
+    ProactiveCompanionDecision,
+    ProactiveCompanionService,
+    proactive_rejection_cooldown_updates,
+)
 from .relationship import RelationshipService
 from .runtime_paths import (
     capability_settings_path as default_capability_settings_path,
@@ -857,6 +862,23 @@ class CompanionController:
         self._force_next_proactive_kind = forced_kind
         return self.advance_tick(include_ai_expression=include_ai_expression)
 
+    def reject_proactive_request(self) -> dict[str, object]:
+        feedback = self.last_proactive_feedback
+        if feedback:
+            self._last_proactive_at.update(
+                proactive_rejection_cooldown_updates(
+                    kind=str(feedback.get("kind", "")),
+                    now=self.now,
+                )
+            )
+        self.last_proactive_feedback = None
+        self.last_feedback = "已暂停这次主动提醒。她会先安静陪着你。"
+        self.last_delta_text = "proactive postponed"
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_events = []
+        return self.get_snapshot()
+
     def _persist(self) -> None:
         self.save_manager.save(self.state)
 
@@ -968,13 +990,19 @@ class CompanionController:
         return result
 
     def _expression_context(self) -> dict[str, object]:
-        context = RuntimeExpressionContextService(
+        runtime_context = RuntimeExpressionContextService(
             state=self.state,
             relationship_decorations=self.character_pack.relationship_decorations,
             external_provider=self.expression_context_provider,
             perception_summary=self._perception_summary,
             tool_results=self._tool_results,
         )()
+        context = build_ai_context_payload(
+            dialogue_history=self.dialogue_history,
+            long_term_memory=self.long_term_memory_service.summaries(),
+            perception_summary=runtime_context.get("perception_summary", ""),
+            tool_results=runtime_context.get("tool_results", []),
+        )
         if self._current_player_message:
             context["player_message"] = self._current_player_message
         return context
