@@ -3007,6 +3007,102 @@ def test_voice_settings_page_marks_tts_and_asr_disabled(monkeypatch, tmp_path):
     app.processEvents()
 
 
+def test_voice_service_preflight_button_updates_status_without_state_mutation(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+    from guanghe_companion.voice_service_control import VoiceServiceStatus
+
+    calls: list[float] = []
+
+    def fake_probe_voice_services(*, timeout: float = 2.0):
+        calls.append(timeout)
+        return (
+            VoiceServiceStatus("qwen3tts", "Qwen3TTS", True, "http://127.0.0.1:9880/tts", "HTTP 404"),
+            VoiceServiceStatus("gptsovits", "GPT-SoVITS", False, "http://127.0.0.1:9882/", "connection refused"),
+            VoiceServiceStatus(
+                "sensevoice_asr",
+                "SenseVoice ASR",
+                True,
+                "http://127.0.0.1:8899/v1/models",
+                "HTTP 200",
+            ),
+        )
+
+    monkeypatch.setattr(app_module, "probe_voice_services", fake_probe_voice_services)
+
+    app = QApplication.instance() or QApplication([])
+    window = app_module.CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.navigation_buttons[8].click()
+    window.voice_service_preflight_button.click()
+    app.processEvents()
+
+    assert calls == [2.0]
+    assert "语音服务未就绪" in window.voice_service_status_label.text()
+    assert "GPT-SoVITS" in window.voice_service_status_label.text()
+    assert window.controller.get_typed_snapshot().stats == before.stats
+    assert window.controller.get_typed_snapshot().inventory == before.inventory
+    assert window.controller.get_typed_snapshot().memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
+def test_voice_service_launch_button_updates_status_without_state_mutation(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+    from guanghe_companion.voice_service_control import VoiceServiceLaunchResult, VoiceServiceStatus
+
+    statuses = (
+        VoiceServiceStatus("qwen3tts", "Qwen3TTS", True, "http://127.0.0.1:9880/tts", "HTTP 404"),
+        VoiceServiceStatus("gptsovits", "GPT-SoVITS", False, "http://127.0.0.1:9882/", "down"),
+    )
+    launches = []
+
+    def fake_probe_voice_services(*, timeout: float = 1.0):
+        return statuses
+
+    def fake_launch_missing_voice_services(repo_root, *, statuses):
+        launches.append((repo_root, statuses))
+        return (
+            VoiceServiceLaunchResult("qwen3tts", "Qwen3TTS", False, "已在运行"),
+            VoiceServiceLaunchResult("gptsovits", "GPT-SoVITS", True, "启动命令已发送"),
+        )
+
+    monkeypatch.setattr(app_module, "probe_voice_services", fake_probe_voice_services)
+    monkeypatch.setattr(app_module, "launch_missing_voice_services", fake_launch_missing_voice_services)
+
+    app = QApplication.instance() or QApplication([])
+    window = app_module.CompanionWindow(controller=make_controller(tmp_path))
+    window.show()
+    app.processEvents()
+    before = window.controller.get_typed_snapshot()
+
+    window.navigation_buttons[8].click()
+    window.voice_service_launch_button.click()
+    app.processEvents()
+
+    assert len(launches) == 1
+    assert launches[0][1] == statuses
+    assert "语音服务启动请求已发送" in window.voice_service_status_label.text()
+    assert "GPT-SoVITS" in window.voice_service_status_label.text()
+    assert window.controller.get_typed_snapshot().stats == before.stats
+    assert window.controller.get_typed_snapshot().inventory == before.inventory
+    assert window.controller.get_typed_snapshot().memory_log == before.memory_log
+
+    window.close()
+    app.processEvents()
+
+
 def test_auto_tts_consumes_snapshot_speech_after_validation(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 

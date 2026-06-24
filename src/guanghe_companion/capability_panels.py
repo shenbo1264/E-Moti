@@ -251,6 +251,8 @@ class VoiceSettingsPanel(QGroupBox):
     ttsStopRequested = Signal()
     asrStartRequested = Signal()
     asrStopRequested = Signal()
+    voiceServicePreflightRequested = Signal()
+    voiceServiceLaunchRequested = Signal()
 
     def __init__(
         self,
@@ -273,6 +275,12 @@ class VoiceSettingsPanel(QGroupBox):
         self.voice_asr_provider_label = QLabel("asr_provider: disabled")
         self.voice_character_profile_label = QLabel("")
         self.voice_character_profile_label.setWordWrap(True)
+        self.voice_service_status_label = QLabel("语音服务：未检查")
+        self.voice_service_status_label.setWordWrap(True)
+        self.voice_service_preflight_button = QPushButton("检查语音服务")
+        self.voice_service_preflight_button.clicked.connect(self.voiceServicePreflightRequested)
+        self.voice_service_launch_button = QPushButton("启动本地语音服务")
+        self.voice_service_launch_button.clicked.connect(self.voiceServiceLaunchRequested)
 
         self.tts_enabled_check = QCheckBox("启用 TTS")
         self.tts_provider_combo = QComboBox()
@@ -347,6 +355,9 @@ class VoiceSettingsPanel(QGroupBox):
         layout.addWidget(self.asr_hotkey_input, 13, 2, 1, 2)
         layout.addWidget(self.voice_tts_enable_button, 14, 0)
         layout.addWidget(self.voice_asr_enable_button, 14, 1)
+        layout.addWidget(self.voice_service_status_label, 15, 0, 1, 2)
+        layout.addWidget(self.voice_service_preflight_button, 15, 2)
+        layout.addWidget(self.voice_service_launch_button, 15, 3)
         self.load_settings(
             settings or CapabilitySettings.default(),
             expression_settings or {},
@@ -414,6 +425,9 @@ class VoiceSettingsPanel(QGroupBox):
 
     def set_status(self, text: str) -> None:
         self.voice_status_label.setText(text)
+
+    def set_service_status(self, text: str) -> None:
+        self.voice_service_status_label.setText(text)
 
     def set_character_voice_profile(self, profile: Mapping[str, object]) -> None:
         self.voice_character_profile_label.setText(_voice_profile_summary(profile))

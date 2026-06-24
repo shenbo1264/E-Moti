@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import json
+import subprocess
+import sys
+from pathlib import Path
 
 
 def test_voice_service_preflight_reports_endpoint_status(tmp_path, monkeypatch) -> None:
@@ -20,8 +23,11 @@ def test_voice_service_preflight_reports_endpoint_status(tmp_path, monkeypatch) 
     assert code == 0
     payload = json.loads(report.read_text(encoding="utf-8"))
     assert payload["qwen3tts"]["ok"] is True
+    assert payload["qwen3tts"]["label"] == "Qwen3TTS"
     assert payload["gptsovits"]["ok"] is True
+    assert payload["gptsovits"]["label"] == "GPT-SoVITS"
     assert payload["sensevoice_asr"]["ok"] is True
+    assert payload["sensevoice_asr"]["label"] == "SenseVoice ASR"
     assert calls == [
         "http://127.0.0.1:9880/tts",
         "http://127.0.0.1:9882/",
@@ -47,3 +53,18 @@ def test_voice_service_preflight_exits_nonzero_when_any_service_is_down(tmp_path
     assert payload["gptsovits"]["ok"] is False
     assert payload["gptsovits"]["message"] == "connection refused"
 
+
+def test_voice_service_preflight_script_can_run_as_file() -> None:
+    repo_root = Path(__file__).resolve().parents[1]
+    script = repo_root / "tools" / "voice_services" / "preflight_voice_services.py"
+
+    completed = subprocess.run(
+        [sys.executable, str(script), "--help"],
+        cwd=repo_root,
+        capture_output=True,
+        text=True,
+        timeout=10,
+    )
+
+    assert completed.returncode == 0
+    assert "Check local E-Moti voice services." in completed.stdout

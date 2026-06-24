@@ -96,8 +96,19 @@ from .runtime_paths import USER_DATA_ENV, demo_save_path, user_data_dir
 from .tray_controller import TrayController
 from .voice_asr import ASRService
 from .voice_async import VoiceAsyncRunner
+from .voice_service_control import (
+    format_voice_service_launch_results,
+    format_voice_service_statuses,
+    launch_missing_voice_services,
+    probe_voice_services,
+)
 from .voice_tts import TTSManager, TTSResult
 from .web_search import WebSearchService
+
+
+def _voice_service_repo_root() -> Path:
+    return Path(__file__).resolve().parents[2]
+
 
 MANUAL_PERCEPTION_NO_SCREEN_SUMMARY = "manual screen perception requested; no screen content was read"
 DESKTOP_DOCK_THRESHOLD_PX = 32
@@ -825,6 +836,8 @@ class CompanionWindow(QMainWindow):
         self.voice_settings_card.ttsStopRequested.connect(self._handle_tts_stop)
         self.voice_settings_card.asrStartRequested.connect(self._handle_asr_start)
         self.voice_settings_card.asrStopRequested.connect(self._handle_asr_stop)
+        self.voice_settings_card.voiceServicePreflightRequested.connect(self._handle_voice_service_preflight)
+        self.voice_settings_card.voiceServiceLaunchRequested.connect(self._handle_voice_service_launch)
         self._alias_voice_settings_panel_widgets()
         voice_layout.addWidget(self.voice_settings_card)
         voice_layout.addStretch(1)
@@ -878,6 +891,9 @@ class CompanionWindow(QMainWindow):
             "voice_tts_provider_label",
             "voice_asr_provider_label",
             "voice_character_profile_label",
+            "voice_service_status_label",
+            "voice_service_preflight_button",
+            "voice_service_launch_button",
             "tts_enabled_check",
             "tts_provider_combo",
             "tts_api_url_input",
@@ -1779,6 +1795,15 @@ class CompanionWindow(QMainWindow):
     def _handle_tts_stop(self) -> None:
         result = self.capability_runtime.stop_tts()
         self.voice_status_label.setText(result.message)
+
+    def _handle_voice_service_preflight(self) -> None:
+        statuses = probe_voice_services(timeout=2.0)
+        self.voice_settings_card.set_service_status(format_voice_service_statuses(statuses))
+
+    def _handle_voice_service_launch(self) -> None:
+        statuses = probe_voice_services(timeout=1.0)
+        results = launch_missing_voice_services(_voice_service_repo_root(), statuses=statuses)
+        self.voice_settings_card.set_service_status(format_voice_service_launch_results(results))
 
     def _sync_voice_controls_enabled(self) -> None:
         self.voice_settings_card.sync_controls_enabled()

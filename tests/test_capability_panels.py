@@ -123,6 +123,20 @@ def test_voice_settings_panel_shows_current_character_voice_profile(qt_app):
     assert "not defined" in panel.voice_character_profile_label.text()
 
 
+def test_voice_settings_panel_exposes_service_status_controls(qt_app):
+    from guanghe_companion.capability_panels import VoiceSettingsPanel
+
+    panel = VoiceSettingsPanel()
+
+    assert "语音服务：未检查" in panel.voice_service_status_label.text()
+    assert panel.voice_service_preflight_button.text() == "检查语音服务"
+    assert panel.voice_service_launch_button.text() == "启动本地语音服务"
+
+    panel.set_service_status("语音服务预检通过：Qwen3TTS: HTTP 404")
+
+    assert "Qwen3TTS" in panel.voice_service_status_label.text()
+
+
 def test_voice_settings_panel_uses_catalog_provider_choices(qt_app):
     from guanghe_companion.capability_panels import VoiceSettingsPanel
 
@@ -156,6 +170,8 @@ def test_capability_panels_emit_user_action_signals(qt_app):
     manual_panel.manualPerceptionRequested.connect(lambda: captured.append(("manual", "")))
     voice_panel.ttsTestRequested.connect(lambda: captured.append(("tts-test", "")))
     voice_panel.asrStartRequested.connect(lambda: captured.append(("asr-start", "")))
+    voice_panel.voiceServicePreflightRequested.connect(lambda: captured.append(("voice-service-preflight", "")))
+    voice_panel.voiceServiceLaunchRequested.connect(lambda: captured.append(("voice-service-launch", "")))
 
     capability_panel.web_search_query_input.setText("星汐")
     capability_panel.capability_save_button.click()
@@ -166,6 +182,8 @@ def test_capability_panels_emit_user_action_signals(qt_app):
     voice_panel.asr_enabled_check.setChecked(True)
     voice_panel.tts_test_button.click()
     voice_panel.asr_start_button.click()
+    voice_panel.voice_service_preflight_button.click()
+    voice_panel.voice_service_launch_button.click()
 
     assert captured == [
         ("save", ""),
@@ -174,4 +192,6 @@ def test_capability_panels_emit_user_action_signals(qt_app):
         ("manual", ""),
         ("tts-test", ""),
         ("asr-start", ""),
+        ("voice-service-preflight", ""),
+        ("voice-service-launch", ""),
     ]
