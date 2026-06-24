@@ -313,6 +313,45 @@ def test_voice_smoke_tool_can_skip_qt_playback_for_gptsovits(tmp_path, monkeypat
     assert callable(constructed["audio_player"])
 
 
+def test_voice_smoke_tool_can_skip_qt_playback_for_emoti_voice_gateway(tmp_path, monkeypatch) -> None:
+    from guanghe_companion.voice_tts import TTSResult
+    from tools import voice_capability_smoke
+
+    constructed = {}
+
+    class FakeGatewayProvider:
+        def __init__(self, *, audio_player):
+            constructed["audio_player"] = audio_player
+
+        def speak(self, text, settings):
+            constructed["spoken"] = (text, settings.provider)
+            return TTSResult(True, "spoken", str(tmp_path / "out.wav"))
+
+        def stop(self):
+            pass
+
+    monkeypatch.setattr(voice_capability_smoke, "EmotiVoiceGatewayProvider", FakeGatewayProvider)
+    report = tmp_path / "report.json"
+
+    code = voice_capability_smoke.main(
+        [
+            "--tts-provider",
+            "http_emoti_voice",
+            "--tts-text",
+            "Unified gateway smoke.",
+            "--skip-playback",
+            "--report",
+            str(report),
+        ]
+    )
+
+    payload = json.loads(report.read_text(encoding="utf-8"))
+    assert code == 0
+    assert payload["tts"]["ok"] is True
+    assert constructed["spoken"] == ("Unified gateway smoke.", "http_emoti_voice")
+    assert callable(constructed["audio_player"])
+
+
 def test_voice_smoke_tool_writes_asr_report_from_audio_file(tmp_path, monkeypatch) -> None:
     from guanghe_companion.voice_asr import ASRResult
     from tools import voice_capability_smoke

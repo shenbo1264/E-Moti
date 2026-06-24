@@ -71,6 +71,47 @@ def test_voice_profile_exposes_reference_audio_and_text_for_runtime() -> None:
     assert profile.to_runtime_dict()["reference_text"] == "这是一段用于复刻角色语气的参考台词。"
 
 
+def test_voice_profile_exposes_unified_gateway_and_bilingual_synthesis_fields() -> None:
+    from guanghe_companion.character_voice_profile import CharacterVoiceProfile
+
+    profile = CharacterVoiceProfile.from_payload(
+        {
+            "profile_id": "ikaros_unified_gateway_v1",
+            "provider": "emoti-voice",
+            "backend_provider": "gpt-sovits",
+            "backend_api_url": " http://127.0.0.1:9882/ ",
+            "backend_model_variant": "gptsovits-v2",
+            "language": "zh",
+            "display_language": "zh",
+            "synthesis_language": "all_ja",
+            "synthesis_text_mode": "profile_static_map",
+            "synthesis_text_map": {
+                "我在这里。": "マスター、私はここにいます。",
+                "  ": "ignored",
+                "bad\nkey": "ignored",
+            },
+        }
+    )
+
+    assert profile.provider == "http_emoti_voice"
+    assert profile.backend_provider == "http_gptsovits"
+    assert profile.backend_api_url == "http://127.0.0.1:9882/"
+    assert profile.backend_model_variant == "gptsovits_v2"
+    assert profile.display_language == "zh"
+    assert profile.synthesis_language == "all_ja"
+    assert profile.synthesis_text_mode == "profile_static_map"
+    assert profile.synthesis_text_map == {"我在这里。": "マスター、私はここにいます。"}
+    runtime = profile.to_runtime_dict()
+    assert runtime["provider"] == "http_emoti_voice"
+    assert runtime["backend_provider"] == "http_gptsovits"
+    assert runtime["backend_api_url"] == "http://127.0.0.1:9882/"
+    assert runtime["backend_model_variant"] == "gptsovits_v2"
+    assert runtime["display_language"] == "zh"
+    assert runtime["synthesis_language"] == "all_ja"
+    assert runtime["synthesis_text_mode"] == "profile_static_map"
+    assert runtime["synthesis_text_map"] == {"我在这里。": "マスター、私はここにいます。"}
+
+
 def test_voice_profile_rejects_reference_audio_outside_voice_directory(tmp_path) -> None:
     from guanghe_companion.character_voice_profile import validate_voice_profile_payload
 

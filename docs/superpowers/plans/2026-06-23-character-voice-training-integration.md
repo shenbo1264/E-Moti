@@ -4,11 +4,12 @@ Date: 2026-06-23
 
 ## Current Verified State
 
-- The repository has per-character `tts_profile` metadata and working local Qwen3-TTS preset synthesis.
-- `xingxi_pixel_pet` and `nairong_pixel_pet` currently keep the Qwen preset route.
-- `ikaros_pixel_pet` now uses `http_gptsovits` with profile `ikaros_pixel_pet_gptsovits_curated160_e4_v1`.
+- The repository has per-character `tts_profile` metadata and working local Qwen3-TTS / GPT-SoVITS synthesis routes.
+- `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet` now use the unified app-facing `http_emoti_voice` provider.
+- The unified provider delegates per character: Xingxi and Nairong currently use Qwen3TTS backends; Ikaros uses GPT-SoVITS backend profile `ikaros_pixel_pet_gptsovits_curated160_e4_v1`.
 - The Ikaros role package includes `assets/companion/ikaros_pixel_pet/voice/reference_generated.wav` plus matching Japanese `reference_text`.
-- The runtime TTS path now supports both Qwen-style reference cloning and GPT-SoVITS root-endpoint synthesis.
+- The runtime TTS path now supports both Qwen-style reference cloning and GPT-SoVITS root-endpoint synthesis behind the same app-facing provider.
+- Ikaros supports first-pass Chinese display / Japanese synthesis through a validated speech-to-synthesis text map in the TTS layer.
 - The command-line voice smoke tool supports `--tts-text-file`, so Japanese/Chinese smoke text can be read as UTF-8 instead of relying on Windows shell argument encoding.
 
 ## 2026-06-24 Ikaros Training Record
@@ -53,8 +54,8 @@ artifacts\voice-smoke\ikaros-character-profile-gptsovits-medium-file-live.wav
 
 Verified results:
 
-- Short line via `ikaros_pixel_pet` character profile: provider `http_gptsovits`, 32000 Hz mono WAV, about 2.48 seconds.
-- Medium line via `ikaros_pixel_pet` character profile: provider `http_gptsovits`, 32000 Hz mono WAV, about 6.66 seconds.
+- Short line via `ikaros_pixel_pet` character profile: app provider `http_emoti_voice`, backend provider `http_gptsovits`, 32000 Hz mono WAV, about 2.48 seconds.
+- Medium line via `ikaros_pixel_pet` character profile: app provider `http_emoti_voice`, backend provider `http_gptsovits`, 32000 Hz mono WAV, about 6.66 seconds.
 - Header-only 44-byte WAV responses are now rejected by the provider instead of reported as successful speech.
 
 Start the local Ikaros GPT-SoVITS service:

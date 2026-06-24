@@ -16,6 +16,7 @@ from guanghe_companion.character_pack import load_character_pack, load_character
 from guanghe_companion.voice_asr import default_asr_transcriber
 from guanghe_companion.voice_tts import (
     EdgeNeuralTTSProvider,
+    EmotiVoiceGatewayProvider,
     HttpGPTSoVITSProvider,
     HttpQwen3TTSProvider,
     default_tts_provider_factory,
@@ -131,6 +132,8 @@ def _tts_provider(provider_id: str, *, skip_playback: bool):
         return HttpQwen3TTSProvider(audio_player=lambda path: None)
     if provider_id == "http_gptsovits":
         return HttpGPTSoVITSProvider(audio_player=lambda path: None)
+    if provider_id == "http_emoti_voice":
+        return EmotiVoiceGatewayProvider(audio_player=lambda path: None)
     return default_tts_provider_factory(provider_id)
 
 

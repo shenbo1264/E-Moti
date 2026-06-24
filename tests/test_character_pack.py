@@ -20,7 +20,8 @@ def test_load_default_character_pack_reads_xingxi_pixel_pet_manifest():
     assert "Glow" in pack.modes
     assert pack.motion_labels["TouchHead"] == "招手回应"
     assert pack.tts_profile.profile_id == "xingxi_pixel_pet_qwen_vivian_v1"
-    assert pack.tts_profile.provider == "http_qwen3tts"
+    assert pack.tts_profile.provider == "http_emoti_voice"
+    assert pack.tts_profile.backend_provider == "http_qwen3tts"
     assert pack.tts_profile.voice == "Vivian"
     assert pack.tts_profile.voice_source_type == "original_design"
     assert pack.tts_profile.distribution_policy == "public_ok"
@@ -128,16 +129,29 @@ def test_bundled_submission_character_packs_are_valid_and_visible():
         assert (pack_dir / "preview" / "profile.png").is_file()
 
 
-def test_bundled_ikaros_uses_trained_gptsovits_voice_profile():
+def test_bundled_characters_use_unified_voice_gateway_profiles():
+    for character_id in ("xingxi_pixel_pet", "ikaros_pixel_pet", "nairong_pixel_pet"):
+        pack_dir = REPO_ROOT / "assets" / "companion" / character_id
+        report = validate_character_pack_dir(pack_dir)
+        pack = load_character_pack_from_dir(pack_dir)
+
+        assert report.ok is True
+        assert pack.tts_profile.provider == "http_emoti_voice"
+
+
+def test_bundled_ikaros_keeps_trained_gptsovits_backend_voice_profile():
     pack_dir = REPO_ROOT / "assets" / "companion" / "ikaros_pixel_pet"
 
     report = validate_character_pack_dir(pack_dir)
     pack = load_character_pack_from_dir(pack_dir)
 
     assert report.ok is True
-    assert pack.tts_profile.provider == "http_gptsovits"
-    assert pack.tts_profile.model_variant == "gptsovits_v2"
-    assert pack.tts_profile.language == "all_ja"
+    assert pack.tts_profile.provider == "http_emoti_voice"
+    assert pack.tts_profile.backend_provider == "http_gptsovits"
+    assert pack.tts_profile.backend_model_variant == "gptsovits_v2"
+    assert pack.tts_profile.display_language == "zh"
+    assert pack.tts_profile.synthesis_language == "all_ja"
+    assert pack.tts_profile.synthesis_text_mode == "profile_static_map"
     assert pack.tts_profile.training_status == "trained_local"
     assert pack.tts_profile.reference_text
     assert len(pack.tts_profile.reference_audio) == 1

@@ -233,6 +233,104 @@ def test_http_gptsovits_provider_rejects_header_only_wav(tmp_path) -> None:
     assert "invalid audio" in result.message
 
 
+def test_emoti_voice_gateway_delegates_to_backend_with_profile_synthesis_text() -> None:
+    from guanghe_companion.voice_tts import EmotiVoiceGatewayProvider, TTSResult
+
+    calls: list[tuple[str, TTSSettings]] = []
+
+    class FakeBackendProvider:
+        def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+            calls.append((text, settings))
+            return TTSResult(True, "delegated")
+
+        def stop(self) -> None:
+            pass
+
+    provider = EmotiVoiceGatewayProvider(provider_factory=lambda provider_name: FakeBackendProvider())
+    settings = TTSSettings(
+        enabled=True,
+        provider="http_emoti_voice",
+        api_url="http://127.0.0.1:9879/",
+        language="zh",
+        voice="ikaros",
+        backend_provider="http_gptsovits",
+        backend_api_url="http://127.0.0.1:9882/",
+        backend_model_variant="gptsovits_v2",
+        synthesis_language="all_ja",
+        synthesis_text_mode="profile_static_map",
+        synthesis_text_map={"我在这里。": "マスター、私はここにいます。"},
+        reference_audio=("E:/voice-packs/ikaros/reference.wav",),
+        reference_text="マスター、私はここにいます。",
+        rate=-1,
+    )
+
+    result = provider.speak("我在这里。", settings)
+
+    assert result.ok is True
+    assert calls[0][0] == "マスター、私はここにいます。"
+    delegated_settings = calls[0][1]
+    assert delegated_settings.provider == "http_gptsovits"
+    assert delegated_settings.api_url == "http://127.0.0.1:9882/"
+    assert delegated_settings.language == "all_ja"
+    assert delegated_settings.model_variant == "gptsovits_v2"
+    assert delegated_settings.reference_audio == ("E:/voice-packs/ikaros/reference.wav",)
+    assert delegated_settings.reference_text == "マスター、私はここにいます。"
+    assert delegated_settings.rate == -1
+
+
+def test_emoti_voice_gateway_falls_back_to_display_text_when_no_synthesis_mapping() -> None:
+    from guanghe_companion.voice_tts import EmotiVoiceGatewayProvider, TTSResult
+
+    calls: list[str] = []
+
+    class FakeBackendProvider:
+        def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+            calls.append(text)
+            return TTSResult(True, "delegated")
+
+        def stop(self) -> None:
+            pass
+
+    provider = EmotiVoiceGatewayProvider(provider_factory=lambda provider_name: FakeBackendProvider())
+
+    result = provider.speak(
+        "新的中文句子。",
+        TTSSettings(
+            enabled=True,
+            provider="http_emoti_voice",
+            language="zh",
+            backend_provider="http_gptsovits",
+            backend_api_url="http://127.0.0.1:9882/",
+            backend_model_variant="gptsovits_v2",
+            synthesis_language="all_ja",
+            synthesis_text_mode="profile_static_map",
+            synthesis_text_map={"我在这里。": "マスター、私はここにいます。"},
+            reference_audio=("E:/voice-packs/ikaros/reference.wav",),
+            reference_text="マスター、私はここにいます。",
+        ),
+    )
+
+    assert result.ok is True
+    assert calls == ["新的中文句子。"]
+
+
+def test_emoti_voice_gateway_rejects_missing_or_recursive_backend() -> None:
+    from guanghe_companion.voice_tts import EmotiVoiceGatewayProvider
+
+    provider = EmotiVoiceGatewayProvider(provider_factory=lambda provider_name: None)
+
+    missing = provider.speak("我在这里。", TTSSettings(enabled=True, provider="http_emoti_voice"))
+    recursive = provider.speak(
+        "我在这里。",
+        TTSSettings(enabled=True, provider="http_emoti_voice", backend_provider="http_emoti_voice"),
+    )
+
+    assert missing.ok is False
+    assert "backend_provider" in missing.message
+    assert recursive.ok is False
+    assert "backend_provider" in recursive.message
+
+
 def test_edge_neural_tts_provider_uses_character_voice_profile(tmp_path) -> None:
     from guanghe_companion.voice_tts import EdgeNeuralTTSProvider
 

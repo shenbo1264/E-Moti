@@ -25,6 +25,8 @@ WEB_SEARCH_ENGINE_ALIASES = {
     "duckduckgo": "duckduckgo",
 }
 TTS_PROVIDER_ALIASES = {
+    "http_emoti_voice": "http_emoti_voice",
+    "emoti_voice": "http_emoti_voice",
     "windows_sapi": "windows_sapi",
     "sapi": "windows_sapi",
     "edge": "edge_tts",
@@ -161,6 +163,13 @@ class TTSSettings:
     voice: str = ""
     model_variant: str = DEFAULT_TTS_MODEL_VARIANT
     instruct: str = ""
+    backend_provider: str = ""
+    backend_api_url: str = ""
+    backend_model_variant: str = ""
+    display_language: str = ""
+    synthesis_language: str = ""
+    synthesis_text_mode: str = ""
+    synthesis_text_map: dict[str, str] = field(default_factory=dict)
     reference_audio: tuple[str, ...] = ()
     reference_text: str = ""
     rate: int = 0
@@ -187,6 +196,21 @@ class TTSSettings:
                 aliases=TTS_MODEL_VARIANT_ALIASES,
             ),
             instruct=_clean_string(source.get("instruct"), max_length=360),
+            backend_provider=_clean_provider(
+                source.get("backend_provider"),
+                default="",
+                aliases=TTS_PROVIDER_ALIASES,
+            ),
+            backend_api_url=_clean_string(source.get("backend_api_url"), max_length=240),
+            backend_model_variant=_clean_provider(
+                source.get("backend_model_variant"),
+                default="",
+                aliases=TTS_MODEL_VARIANT_ALIASES,
+            ),
+            display_language=_clean_string(source.get("display_language"), max_length=16),
+            synthesis_language=_clean_string(source.get("synthesis_language"), max_length=16),
+            synthesis_text_mode=_clean_string(source.get("synthesis_text_mode"), max_length=40),
+            synthesis_text_map=_clean_string_map(source.get("synthesis_text_map"), max_length=160),
             reference_audio=_clean_string_sequence(source.get("reference_audio"), max_length=500),
             reference_text=_clean_string(source.get("reference_text"), max_length=1000),
             rate=_clean_int(source.get("rate"), default=0, minimum=-10, maximum=10),
@@ -380,6 +404,26 @@ def _clean_string_sequence(value: object, *, max_length: int) -> tuple[str, ...]
         if cleaned:
             result.append(cleaned)
     return tuple(result)
+
+
+def _clean_string_map(value: object, *, max_length: int) -> dict[str, str]:
+    if not isinstance(value, Mapping):
+        return {}
+    result: dict[str, str] = {}
+    for raw_key, raw_value in value.items():
+        if not isinstance(raw_key, str) or not isinstance(raw_value, str):
+            continue
+        if _has_control_character(raw_key) or _has_control_character(raw_value):
+            continue
+        key = _clean_string(raw_key, max_length=max_length)
+        mapped = _clean_string(raw_value, max_length=max_length)
+        if key and mapped:
+            result[key] = mapped
+    return result
+
+
+def _has_control_character(value: str) -> bool:
+    return any(ord(char) < 32 or ord(char) == 127 for char in value)
 
 
 def _default_asr_model(provider: str) -> str:

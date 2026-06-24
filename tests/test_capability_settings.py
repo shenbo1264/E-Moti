@@ -191,6 +191,26 @@ def test_capability_settings_accepts_voice_route_aliases() -> None:
     assert TTSSettings.from_dict({"provider": "qwen3_tts"}).provider == "http_qwen3tts"
     assert TTSSettings.from_dict({"provider": "gpt-sovits"}).provider == "http_gptsovits"
     assert TTSSettings.from_dict({"provider": "http_gptsovits", "model_variant": "gptsovits-v2"}).model_variant == "gptsovits_v2"
+    unified = TTSSettings.from_dict(
+        {
+            "provider": "emoti-voice",
+            "backend_provider": "gpt-sovits",
+            "backend_api_url": " http://127.0.0.1:9882/ ",
+            "backend_model_variant": "gptsovits-v2",
+            "display_language": "zh",
+            "synthesis_language": "all_ja",
+            "synthesis_text_mode": "profile_static_map",
+            "synthesis_text_map": {"我在这里。": "マスター、私はここにいます。", "": "ignored"},
+        }
+    )
+    assert unified.provider == "http_emoti_voice"
+    assert unified.backend_provider == "http_gptsovits"
+    assert unified.backend_api_url == "http://127.0.0.1:9882/"
+    assert unified.backend_model_variant == "gptsovits_v2"
+    assert unified.display_language == "zh"
+    assert unified.synthesis_language == "all_ja"
+    assert unified.synthesis_text_mode == "profile_static_map"
+    assert unified.synthesis_text_map == {"我在这里。": "マスター、私はここにいます。"}
     assert ASRSettings.from_dict({"provider": "funasr"}).provider == "funasr_openai"
     assert ASRSettings.from_dict({"provider": "sensevoice"}).provider == "sensevoice_openai"
     assert ASRSettings.from_dict({"provider": "qwen3_asr"}).provider == "qwen3_asr_openai"

@@ -8,7 +8,7 @@ import subprocess
 import urllib.error
 import urllib.request
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 from typing import Protocol
 
@@ -168,6 +168,59 @@ class HttpGPTSoVITSProvider:
             stop()
 
 
+class EmotiVoiceGatewayProvider:
+    def __init__(
+        self,
+        *,
+        provider_factory: Callable[[str], TTSProvider | None] | None = None,
+        audio_player: Callable[[Path], object] | None = None,
+    ) -> None:
+        self._audio_player = audio_player
+        self._provider_factory = provider_factory or self._default_backend_provider
+        self._providers: dict[str, TTSProvider] = {}
+
+    def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+        backend_provider = settings.backend_provider
+        if not backend_provider or backend_provider == "http_emoti_voice":
+            return TTSResult(False, "E-Moti Voice backend_provider is required")
+        provider = self._backend_provider(backend_provider)
+        if provider is None:
+            return TTSResult(False, f"E-Moti Voice backend unavailable: {backend_provider}")
+        backend_settings = replace(
+            settings,
+            provider=backend_provider,
+            api_url=settings.backend_api_url or settings.api_url,
+            language=settings.synthesis_language or settings.language,
+            model_variant=settings.backend_model_variant or settings.model_variant,
+        )
+        return provider.speak(select_synthesis_text(text, settings), backend_settings)
+
+    def stop(self) -> None:
+        for provider in self._providers.values():
+            try:
+                provider.stop()
+            except Exception:
+                continue
+
+    def _backend_provider(self, provider_name: str) -> TTSProvider | None:
+        if provider_name not in self._providers:
+            provider = self._provider_factory(provider_name)
+            if provider is None:
+                return None
+            self._providers[provider_name] = provider
+        return self._providers[provider_name]
+
+    def _default_backend_provider(self, provider_name: str) -> TTSProvider | None:
+        if self._audio_player is not None:
+            if provider_name == "http_qwen3tts":
+                return HttpQwen3TTSProvider(audio_player=self._audio_player)
+            if provider_name == "http_gptsovits":
+                return HttpGPTSoVITSProvider(audio_player=self._audio_player)
+            if provider_name == "edge_tts":
+                return EdgeNeuralTTSProvider(audio_player=self._audio_player)
+        return default_tts_provider_factory(provider_name)
+
+
 class WindowsSapiTTSProvider:
     def __init__(self, powershell_executable: str = "powershell") -> None:
         self._powershell_executable = powershell_executable
@@ -267,6 +320,8 @@ class _QtAudioFilePlayer:
 
 
 def default_tts_provider_factory(provider: str) -> TTSProvider | None:
+    if provider == "http_emoti_voice":
+        return EmotiVoiceGatewayProvider()
     if provider == "http_qwen3tts":
         return HttpQwen3TTSProvider()
     if provider == "http_gptsovits":
@@ -313,6 +368,14 @@ def _gptsovits_payload(text: str, settings: TTSSettings) -> dict[str, object]:
 
 def _gptsovits_speed(rate: int) -> float:
     return round(max(0.5, min(1.5, 1.0 + (int(rate) * 0.1))), 2)
+
+
+def select_synthesis_text(text: str, settings: TTSSettings) -> str:
+    if settings.synthesis_text_mode == "profile_static_map":
+        mapped = settings.synthesis_text_map.get(text)
+        if mapped:
+            return mapped
+    return text
 
 
 def _model_size_label(model_variant: str) -> str:

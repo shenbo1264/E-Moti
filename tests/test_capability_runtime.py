@@ -291,6 +291,58 @@ def test_voice_runtime_applies_character_reference_audio_for_local_clone():
     assert received_settings.reference_text == "参考台词。"
 
 
+def test_voice_runtime_applies_unified_gateway_and_bilingual_profile():
+    settings = CapabilitySettings(
+        tts=TTSSettings(
+            enabled=True,
+            auto_speak=True,
+            provider="http_qwen3tts",
+            api_url="http://127.0.0.1:9880/",
+            language="zh",
+        )
+    )
+
+    class FakeTTSManager:
+        def __init__(self):
+            self.speak_calls = []
+
+        def speak(self, text, received_settings):
+            self.speak_calls.append((text, received_settings))
+            return TTSResult(True, "started")
+
+    manager = FakeTTSManager()
+    runtime = CapabilityRuntime(
+        settings_reader=lambda: settings,
+        tts_manager=manager,
+        tts_profile_reader=lambda: {
+            "profile_id": "ikaros_unified_gateway_v1",
+            "provider": "http-emoti-voice",
+            "backend_provider": "gpt-sovits",
+            "backend_api_url": "http://127.0.0.1:9882/",
+            "backend_model_variant": "gptsovits-v2",
+            "display_language": "zh",
+            "synthesis_language": "all_ja",
+            "synthesis_text_mode": "profile_static_map",
+            "synthesis_text_map": {"我在这里。": "マスター、私はここにいます。"},
+        },
+    )
+
+    result = runtime.speak_text("我在这里。")
+
+    received_settings = manager.speak_calls[0][1]
+    assert result.ok is True
+    assert manager.speak_calls[0][0] == "我在这里。"
+    assert received_settings.profile_id == "ikaros_unified_gateway_v1"
+    assert received_settings.provider == "http_emoti_voice"
+    assert received_settings.backend_provider == "http_gptsovits"
+    assert received_settings.backend_api_url == "http://127.0.0.1:9882/"
+    assert received_settings.backend_model_variant == "gptsovits_v2"
+    assert received_settings.display_language == "zh"
+    assert received_settings.synthesis_language == "all_ja"
+    assert received_settings.synthesis_text_mode == "profile_static_map"
+    assert received_settings.synthesis_text_map == {"我在这里。": "マスター、私はここにいます。"}
+
+
 def test_asr_runtime_returns_dialogue_request_for_auto_send_without_submitting_to_controller():
     settings = CapabilitySettings(asr=ASRSettings(enabled=True, auto_send=True))
 

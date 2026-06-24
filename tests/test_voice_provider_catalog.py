@@ -4,7 +4,8 @@ from __future__ import annotations
 def test_voice_provider_catalog_exposes_formal_and_preview_tts_routes() -> None:
     from guanghe_companion.voice_provider_catalog import tts_provider_ids, tts_provider_option
 
-    assert tts_provider_ids() == ("http_qwen3tts", "http_gptsovits", "edge_tts", "windows_sapi")
+    assert tts_provider_ids() == ("http_emoti_voice", "http_qwen3tts", "http_gptsovits", "edge_tts", "windows_sapi")
+    assert tts_provider_option("http_emoti_voice").recommended_use == "character_voice_gateway"
     assert tts_provider_option("edge_tts").label == "Edge Neural TTS"
     assert tts_provider_option("http_qwen3tts").recommended_use == "formal_character_voice"
     assert tts_provider_option("http_qwen3tts").default_model == "qwen3tts_0.6b_customvoice"
