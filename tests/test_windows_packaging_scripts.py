@@ -75,13 +75,17 @@ def test_pyinstaller_build_script_does_not_hardcode_bare_python():
     assert "& $ResolvedPython.Command @PythonArguments" in script
 
 
-def test_installer_script_outputs_local_appdata_installer_and_shortcuts():
+def test_installer_script_defaults_to_visible_portable_sibling_directory_and_shortcuts():
     script = read_text("packaging/e-moti-installer.iss")
 
     assert "AppName=E-Moti" in script
     assert "OutputDir=..\\dist\\installer" in script
     assert "OutputBaseFilename=E-Moti_Setup_0.1.0" in script
-    assert "DefaultDirName={localappdata}\\Programs\\E-Moti" in script
+    assert "DefaultDirName={src}\\E-Moti-portable" in script
+    assert "DisableDirPage=no" in script
+    assert "UsePreviousAppDir=no" in script
+    assert "AlwaysShowDirOnReadyPage=yes" in script
+    assert "{localappdata}\\Programs\\E-Moti" not in script
     assert 'Source: "..\\dist\\E-Moti\\*"' in script
     assert "星汐 E-Moti" in script
     assert "星汐桌宠模式" in script
