@@ -570,6 +570,84 @@ def test_character_library_shows_pack_distribution_metadata(monkeypatch, tmp_pat
     app.processEvents()
 
 
+def test_character_library_detail_shows_personality_and_independent_memory(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    assets_root = tmp_path / "assets"
+    write_ui_character_pack(assets_root, "xingxi_pixel_pet", name="Xingxi", title="Desktop companion")
+    custom_pack = write_ui_character_pack(assets_root, "custom_character", name="Ikaros", title="Angeloid companion")
+    (custom_pack / "dialogue_style.json").write_text(
+        json.dumps(
+            {
+                "tone": "quiet loyal low-affect",
+                "keywords": ["protective", "literal", "slightly naive"],
+                "fallback_style": "short direct replies",
+                "speech_style": "calm Japanese voice with Chinese subtitles",
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    user_data_root = tmp_path / "user-data"
+    memory_path = user_data_root / "characters" / "custom_character" / "long_term_memory.json"
+    memory_path.parent.mkdir(parents=True)
+    memory_path.write_text(
+        json.dumps(
+            {
+                "entries": [
+                    {
+                        "key": "preference:quiet",
+                        "category": "preference",
+                        "summary": "likes quiet companion time",
+                        "source": "manual",
+                        "created_at": 1,
+                        "updated_at": 1,
+                    }
+                ]
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    patch_ui_character_assets(monkeypatch, assets_root)
+
+    from PySide6.QtCore import Qt
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.controller import CompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = CompanionController(
+        character_id="xingxi_pixel_pet",
+        user_data_root=user_data_root,
+        auto_load=False,
+    )
+    window = CompanionWindow(controller=controller)
+    window.show()
+    app.processEvents()
+
+    window.navigation_buttons[3].click()
+    app.processEvents()
+    for index in range(window.character_list.count()):
+        item = window.character_list.item(index)
+        if item.data(Qt.ItemDataRole.UserRole) == "custom_character":
+            window.character_list.setCurrentRow(index)
+            break
+    app.processEvents()
+
+    details = window.character_detail_label.text()
+    assert "quiet loyal low-affect" in details
+    assert "protective / literal / slightly naive" in details
+    assert "short direct replies" in details
+    assert "calm Japanese voice with Chinese subtitles" in details
+    assert "characters/custom_character/companion_save.json" in details
+    assert "characters/custom_character/dialogue_history.json" in details
+    assert "characters/custom_character/long_term_memory.json" in details
+    assert "preference: likes quiet companion time" in details
+
+    window.close()
+    app.processEvents()
+
+
 def test_character_library_detail_metadata_is_scrollable(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     assets_root = tmp_path / "assets"

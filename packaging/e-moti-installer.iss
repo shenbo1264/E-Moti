@@ -21,6 +21,7 @@ UninstallDisplayName=E-Moti
 
 [Files]
 Source: "..\dist\E-Moti\*"; DestDir: "{app}"; Flags: ignoreversion recursesubdirs createallsubdirs
+Source: "..\private_submission_config\*"; DestDir: "{app}\user_data"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 
 [Icons]
 Name: "{autoprograms}\星汐 E-Moti"; Filename: "{app}\E-Moti.exe"; WorkingDir: "{app}"

@@ -180,7 +180,8 @@ class CompanionController:
         self.expression_settings_store = expression_settings_store or ExpressionSettingsStore(
             self.expression_settings_path
         )
-        self.expression_settings = self.expression_settings_store.load()
+        self._allow_global_expression_settings_fallback = expression_settings_store is None
+        self.expression_settings, expression_settings_source_exists = self._load_expression_settings_with_fallback()
         self.capability_settings_path = (
             Path(capability_settings_path)
             if capability_settings_path is not None
@@ -213,7 +214,7 @@ class CompanionController:
         self._tool_results: list[dict[str, object]] = []
         self._current_player_message = ""
         self.ai_expressor = ai_expressor or build_default_ai_expressor(
-            settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
+            settings=self.expression_settings if expression_settings_source_exists else None
         )
         self._closed = False
         self.expression_context_provider = expression_context_provider or ExpressionContextChain(
@@ -269,6 +270,23 @@ class CompanionController:
     @property
     def user_data_root(self) -> Path | None:
         return self._user_data_root
+
+    def _load_expression_settings_with_fallback(self) -> tuple[ExpressionSettings, bool]:
+        if Path(self.expression_settings_path).exists():
+            return self.expression_settings_store.load(), True
+        fallback_path = self._global_expression_settings_path()
+        if (
+            self._allow_global_expression_settings_fallback
+            and fallback_path != Path(self.expression_settings_path)
+            and fallback_path.exists()
+        ):
+            return ExpressionSettingsStore(fallback_path).load(), True
+        return self.expression_settings_store.load(), False
+
+    def _global_expression_settings_path(self) -> Path:
+        if self._user_data_root is not None:
+            return self._user_data_root / "expression_settings.json"
+        return default_expression_settings_path()
 
     def reset_demo_state(self, *, include_ai_expression: bool = True) -> dict[str, object]:
         self.state = create_initial_state(
@@ -365,7 +383,8 @@ class CompanionController:
         self.dialogue_history = self.dialogue_history_store.load()
         self.expression_settings_path = session_paths.expression_settings_path
         self.expression_settings_store = ExpressionSettingsStore(self.expression_settings_path)
-        self.expression_settings = self.expression_settings_store.load()
+        self._allow_global_expression_settings_fallback = True
+        self.expression_settings, expression_settings_source_exists = self._load_expression_settings_with_fallback()
         self.long_term_memory_path = session_paths.long_term_memory_path
         self._long_term_memory_enabled = True
         self.long_term_memory_store = LongTermMemoryStore(self.long_term_memory_path)
@@ -375,7 +394,7 @@ class CompanionController:
         )
         self._replace_ai_expressor(
             build_default_ai_expressor(
-                settings=self.expression_settings if Path(self.expression_settings_path).exists() else None
+                settings=self.expression_settings if expression_settings_source_exists else None
             )
         )
         loaded_state = self.save_manager.load()

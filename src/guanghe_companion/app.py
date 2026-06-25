@@ -58,6 +58,8 @@ from .character_library_view_model import (
     character_pack_list_item_text,
     character_pack_distribution_text,
     character_pack_import_review_text,
+    character_pack_personality_text,
+    character_pack_session_text,
 )
 from .character_pack_import import import_character_pack_dir
 from .character_registry import (
@@ -1035,9 +1037,15 @@ class CompanionWindow(QMainWindow):
             return
         current = character_id == self.controller.state.character_id
         self.character_detail_label.setText(
-            f"{pack.name}\n{pack.title}\n\n{pack.description}\n\n"
-            "切换角色会切换外观、语气、商店主题和独立记忆，不改写其他角色会话。\n\n"
-            f"{character_pack_distribution_text(pack)}"
+            "\n\n".join(
+                (
+                    f"{pack.name}\n{pack.title}\n\n{pack.description}",
+                    "切换角色会切换外观、语气、商店主题和独立记忆，不改写其他角色会话。",
+                    character_pack_personality_text(pack),
+                    character_pack_session_text(pack, user_data_root=self.controller.user_data_root),
+                    character_pack_distribution_text(pack),
+                )
+            )
         )
         if pack.preview_path.is_file():
             preview = QPixmap(str(pack.preview_path))

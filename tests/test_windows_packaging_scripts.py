@@ -92,6 +92,14 @@ def test_installer_script_defaults_to_visible_portable_sibling_directory_and_sho
     assert 'Parameters: "--pet-mode"' in script
 
 
+def test_installer_script_bundles_private_submission_config_as_packaged_user_data():
+    script = read_text("packaging/e-moti-installer.iss")
+
+    assert 'Source: "..\\private_submission_config\\*"' in script
+    assert 'DestDir: "{app}\\user_data"' in script
+    assert "skipifsourcedoesntexist" in script
+
+
 def test_installer_build_script_calls_inno_and_verifies_artifact():
     script = read_text("tools/build_windows_installer.ps1")
 

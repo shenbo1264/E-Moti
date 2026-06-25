@@ -189,6 +189,49 @@ def test_controller_character_session_paths_isolate_dialogue_and_memory(tmp_path
     assert second.get_snapshot()["long_term_memory"] == []
 
 
+def test_controller_character_sessions_inherit_global_expression_settings(tmp_path, monkeypatch):
+    from guanghe_companion.expression_settings import ExpressionSettingsStore, normalize_expression_settings
+
+    _write_controller_character_pack(tmp_path / "assets", "custom_character")
+    _write_controller_character_pack(tmp_path / "assets", "solar_mender")
+    _patch_character_assets(monkeypatch, tmp_path / "assets")
+    user_data_root = tmp_path / "user-data"
+    ExpressionSettingsStore(user_data_root / "expression_settings.json").save(
+        normalize_expression_settings(
+            {
+                "enabled": True,
+                "provider": "deepseek",
+                "model": "deepseek-v4-flash",
+                "base_url": "https://api.deepseek.com",
+                "api_key": "test-global-key",
+                "timeout_seconds": 1.5,
+            }
+        )
+    )
+
+    controller = CompanionController(
+        character_id="custom_character",
+        user_data_root=user_data_root,
+        auto_load=False,
+    )
+
+    assert controller.expression_settings_path == (
+        user_data_root / "characters" / "custom_character" / "expression_settings.json"
+    )
+    assert controller.get_expression_settings(include_api_key=True)["api_key"] == "test-global-key"
+    assert controller.get_expression_settings()["provider"] == "deepseek"
+    assert controller.ai_expressor.enabled is True
+
+    controller.switch_character("solar_mender")
+
+    assert controller.expression_settings_path == (
+        user_data_root / "characters" / "solar_mender" / "expression_settings.json"
+    )
+    assert controller.get_expression_settings(include_api_key=True)["api_key"] == "test-global-key"
+    assert controller.get_expression_settings()["provider"] == "deepseek"
+    assert controller.ai_expressor.enabled is True
+
+
 def test_controller_reloads_character_session_inventory_with_current_shop_items(tmp_path, monkeypatch):
     _write_controller_character_pack(tmp_path / "assets", "custom_character")
     _patch_character_assets(monkeypatch, tmp_path / "assets")
