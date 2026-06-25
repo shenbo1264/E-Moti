@@ -2,7 +2,7 @@
   "character_id": "nairong_pixel_pet",
   "name": "奶龙",
   "title": "呆萌桌面小宠",
-  "description": "奶龙作为课程提交中的宠物向角色展示包：圆润、呆萌、反应直白，适合短促又有点犯傻的陪伴反馈。",
+  "description": "圆滚滚的呆萌桌面小宠。反应直白、慢半拍，喜欢用短促又有点犯傻的方式贴近玩家。",
   "spritesheet": "spritesheet.png",
   "motion_manifest": "motion_manifest.json",
   "renderer": {

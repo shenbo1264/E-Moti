@@ -178,7 +178,7 @@ def _apply_touch(state: CompanionState, now: int) -> tuple[CompanionState, str, 
     next_state.trust += 1
     next_state.resting = False
     next_state.last_interaction_at = now
-    return next_state, "TouchHead", {"focus": -2, "mood": 4, "trust": 1}, "我记录下来了。这不是指令，是你靠近我的方式。"
+    return next_state, "TouchHead", {"focus": -2, "mood": 4, "trust": 1}, "我记下来了。你靠近时，我会轻轻回应。"
 
 
 def _apply_soothe(state: CompanionState, now: int) -> tuple[CompanionState, str, dict[str, float], str]:

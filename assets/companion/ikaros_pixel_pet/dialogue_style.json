@@ -7,5 +7,26 @@
     "保护本能",
     "细微情绪"
   ],
-  "fallback_style": "短句、明确反馈、避免长篇解释"
+  "fallback_style": "短句、直白、少解释；常态淡淡的，偶尔露出一点迟钝的温柔。",
+  "local_copy": {
+    "initial": "伊卡洛斯待机中。Master，需要时请呼叫我。",
+    "reset": "伊卡洛斯重新待机。背包清空，剩余 20 coins。",
+    "switch": "伊卡洛斯已切换完成。Master，我在这里。",
+    "touch": "接触確認。Master，我会留在这里。",
+    "dialogue_ack": "收到：{text}",
+    "empty_dialogue": "我在。需要时，叫我就好。",
+    "purchase": "{item_name} 已购入。伊卡洛斯会保管。",
+    "feed": "{item_name} 已接收。伊卡洛斯轻轻点了点头。",
+    "gift": "{item_name} 已保存。伊卡洛斯会把它当作重要物品。",
+    "use": "{item_name} 已使用。",
+    "tick": "伊卡洛斯安静待命，翅膀轻轻收拢。",
+    "proactive_low_charge": "能量偏低。伊卡洛斯把翅膀收近一点，安静待命。",
+    "proactive_low_mood": "情绪数值下降。Master，伊卡洛斯会靠近一点。",
+    "proactive_morning_greeting": "早安，Master。伊卡洛斯开始今日待机。",
+    "proactive_high_trust": "Master，距离比之前更近了。伊卡洛斯会继续守在这里。",
+    "proactive_post_gift": "刚才的物品已保存。伊卡洛斯会珍惜它。",
+    "proactive_context_topic": "检测到你可能在处理 {topic}。伊卡洛斯会保持安静，必要时再回应。",
+    "proactive_return_after_idle": "Master，离席结束。伊卡洛斯仍在待机。",
+    "reject_proactive": "了解。伊卡洛斯暂停提醒，保持待机。"
+  }
 }

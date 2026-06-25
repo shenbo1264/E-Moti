@@ -9,8 +9,8 @@ from .models import CompanionState
 
 
 RELATIONSHIP_UNLOCK_LINES: dict[str, str] = {
-    "unlock_first_nickname": "第一次主动称呼解锁了。她开始用更亲近的方式回应你。",
-    "unlock_shared_ritual": "共同日常仪式解锁了。你们之间有了一段固定的小默契。",
+    "unlock_first_nickname": "我好像能更自然地叫你了。这个称呼，以后会更贴近一点。",
+    "unlock_shared_ritual": "我们有自己的小默契了。以后安静待着，也像一起做了什么。",
 }
 
 MAX_PLAYER_ALIAS_LENGTH = 20

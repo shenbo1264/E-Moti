@@ -20,7 +20,7 @@ def test_touch_action_updates_stats_and_feedback():
     assert result.state.trust == 6
     assert result.state.mode == "Calm"
     assert result.feedback["character_name"] == "星汐"
-    assert "记录下来了" in result.feedback["speech"]
+    assert "轻轻回应" in result.feedback["speech"]
     assert result.delta["focus"] == -2
     assert result.delta["mood"] == 4
     assert result.delta["trust"] == 1

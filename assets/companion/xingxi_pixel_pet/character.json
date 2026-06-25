@@ -2,7 +2,7 @@
     "character_id":  "xingxi_pixel_pet",
     "name":  "星汐",
     "title":  "像素桌面同伴",
-    "description":  "星汐原创 OC 的 hatch-pet 风格像素宠序列帧包。该包现在作为默认桌宠形象使用，角色库详情使用独立 CG 角色卡，运行时仍使用像素序列帧。",
+    "description":  "住在桌面角落的星汐像素形态。她安静、克制，会用眨眼、轻跳和短句回应玩家。",
     "spritesheet":  "spritesheet.png",
     "motion_manifest":  "motion_manifest.json",
     "renderer":  {

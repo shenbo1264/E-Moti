@@ -1805,7 +1805,7 @@ def test_desktop_mode_feedback_overlay_updates_after_sprite_touch(monkeypatch, t
 
     assert "模式：Calm" in text
     assert "招手回应" in text
-    assert "靠近我的方式" in text
+    assert "轻轻回应" in text
     assert window.controller.get_snapshot()["motion"] == "TouchHead"
 
     window.close()

@@ -2,7 +2,7 @@
   "character_id": "ikaros_pixel_pet",
   "name": "伊卡洛斯",
   "title": "天使型桌面伴侣",
-  "description": "伊卡洛斯作为课程提交中的多角色切换展示包：安静、忠诚、低情绪起伏，会在陪伴中逐渐显露细微情绪。",
+  "description": "安静忠诚的天使型桌面伴侣。她情绪起伏很低，常常直白回应，在陪伴里慢慢露出一点迟钝的温柔。",
   "spritesheet": "spritesheet.png",
   "motion_manifest": "motion_manifest.json",
   "renderer": {

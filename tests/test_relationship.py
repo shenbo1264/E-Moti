@@ -24,11 +24,11 @@ def test_relationship_service_reports_stage_next_unlock_and_memory_drafts():
     assert service.stage() == "熟悉的陪伴"
     assert "信任达到 35" in service.next_unlock()
     assert unlocks == ["unlock_first_nickname"]
-    assert "第一次主动称呼" in service.unlock_feedback(unlocks)
+    assert "更自然地叫你" in service.unlock_feedback(unlocks)
     assert drafts == [
         {
             "kind": "关系解锁",
-            "summary": "第一次主动称呼解锁了。她开始用更亲近的方式回应你。",
+            "summary": "我好像能更自然地叫你了。这个称呼，以后会更贴近一点。",
             "motion": "TouchHead",
         }
     ]
@@ -106,6 +106,6 @@ def test_relationship_service_builds_unlock_event_payloads_for_typed_events():
         {
             "stage": "熟悉的陪伴",
             "unlock_id": "unlock_first_nickname",
-            "message": "第一次主动称呼解锁了。她开始用更亲近的方式回应你。",
+                "message": "我好像能更自然地叫你了。这个称呼，以后会更贴近一点。",
         }
     ]

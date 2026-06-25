@@ -12,6 +12,7 @@ from .ai_expressor import (
     build_default_ai_expressor,
 )
 from .capability_settings import CapabilitySettings, CapabilitySettingsStore
+from .character_local_copy import load_character_local_copy
 from .character_pack import DEFAULT_CHARACTER_ID, resolve_motion_caption
 from .character_resources import CharacterResources, load_character_resources, load_character_resources_from_dir
 from .character_session import (
@@ -60,6 +61,7 @@ from .models import CompanionState
 from .proactive_companion import (
     ProactiveCompanionDecision,
     ProactiveCompanionService,
+    ProactiveFeedback,
     proactive_rejection_cooldown_updates,
 )
 from .relationship import RelationshipService
@@ -147,6 +149,7 @@ class CompanionController:
         self.resources = character_resources or load_character_resources(character_id)
         self.character_pack = self.resources.character_pack
         self.shop_items = self.resources.shop_items
+        self.local_copy = load_character_local_copy(self.resources.asset_dir)
         self.save_path = Path(save_path) if save_path is not None else (
             session_paths.save_path if session_paths is not None else DEFAULT_SAVE_PATH
         )
@@ -234,7 +237,7 @@ class CompanionController:
         self.now = logical_time_from_state(self.state) if loaded_state is not None else 0
         self.tick_count = 0
         self.last_motion = "Default"
-        self.last_feedback = "信号稳定。先从一个简单动作开始。"
+        self.last_feedback = self._local_copy_line("initial")
         self.last_delta_text = "暂无变化"
         self.last_allowed = True
         self.last_item_feedback_icon: str | None = None
@@ -271,6 +274,14 @@ class CompanionController:
     def user_data_root(self) -> Path | None:
         return self._user_data_root
 
+    def _local_copy_line(self, key: str, *, default: str = "", **values: object) -> str:
+        return self.local_copy.line(
+            key,
+            default=default,
+            character_name=self.character_pack.name,
+            **values,
+        )
+
     def _load_expression_settings_with_fallback(self) -> tuple[ExpressionSettings, bool]:
         if Path(self.expression_settings_path).exists():
             return self.expression_settings_store.load(), True
@@ -300,7 +311,7 @@ class CompanionController:
         self.now = 0
         self.tick_count = 0
         self.last_motion = "Default"
-        self.last_feedback = f"演示状态已重置。{self.character_pack.name} 回到初识、空背包和 20 coins。"
+        self.last_feedback = self._local_copy_line("reset")
         self.last_delta_text = "演示 seed 已重置"
         self.last_allowed = True
         self.last_item_feedback_icon = None
@@ -371,6 +382,7 @@ class CompanionController:
         self.resources = resources
         self.character_pack = resources.character_pack
         self.shop_items = resources.shop_items
+        self.local_copy = load_character_local_copy(self.resources.asset_dir)
         self.save_path = session_paths.save_path
         self.save_manager = SaveManager(
             self.save_path,
@@ -411,7 +423,7 @@ class CompanionController:
         self.now = logical_time_from_state(self.state) if loaded_state is not None else 0
         self.tick_count = 0
         self.last_motion = "Default"
-        self.last_feedback = f"已切换到 {self.character_pack.name}。"
+        self.last_feedback = self._local_copy_line("switch")
         self.last_delta_text = "角色会话已切换"
         self.last_allowed = True
         self.last_item_feedback_icon = None
@@ -440,10 +452,10 @@ class CompanionController:
         text = request.normalized_text()
         self.last_motion = "Default"
         if text:
-            self.last_feedback = f"我听见了：{text}"
+            self.last_feedback = self._local_copy_line("dialogue_ack", text=text)
             self.last_delta_text = "对话输入不改变养成状态"
         else:
-            self.last_feedback = "我在这里。你可以慢慢说。"
+            self.last_feedback = self._local_copy_line("empty_dialogue")
             self.last_delta_text = "空白对话未改变养成状态"
         self.last_allowed = True
         self.last_item_feedback_icon = None
@@ -499,7 +511,7 @@ class CompanionController:
         if normalized:
             self.last_feedback = f"我记住这个称呼了：{normalized}"
         else:
-            self.last_feedback = "本地称呼已清空。"
+            self.last_feedback = "称呼先放回空白。"
         self.last_delta_text = "本地称呼更新，不改变成长数值"
         self.last_allowed = True
         self.last_item_feedback_icon = None
@@ -598,7 +610,7 @@ class CompanionController:
         result = apply_action(self.state, action_id=action_id, now=self.now)
         self.state = result.state
         self.last_motion = result.motion
-        self.last_feedback = result.feedback["speech"]
+        self.last_feedback = self._local_copy_line(action_id, default=result.feedback["speech"])
         self.last_delta_text = format_delta_text(result.delta)
         self.last_allowed = result.allowed
         self.last_item_feedback_icon = None
@@ -653,7 +665,7 @@ class CompanionController:
         item_id = request.item_id
         item = self.shop_items[item_id]
         self.last_motion = "Shop"
-        self.last_feedback = f"已购买：{item.name}。放进背包里了。"
+        self.last_feedback = self._local_copy_line("purchase", item_name=item.name)
         self.last_delta_text = f"coins -{item.price}"
         self.last_allowed = True
         self.last_item_feedback_icon = None
@@ -738,13 +750,13 @@ class CompanionController:
             return self.get_snapshot()
         if usage == "feed":
             self.last_motion = "Eat"
-            self.last_feedback = f"投喂了 {item.name}。她的频率平稳了一点。"
+            self.last_feedback = self._local_copy_line("feed", item_name=item.name)
         elif usage == "gift":
             self.last_motion = "Gift"
-            self.last_feedback = f"赠送了 {item.name}。她把这份心意收下了。"
+            self.last_feedback = self._local_copy_line("gift", item_name=item.name)
         else:
             self.last_motion = "UseItem"
-            self.last_feedback = f"使用了 {item.name}。"
+            self.last_feedback = self._local_copy_line("use", item_name=item.name)
         new_unlocks = self._new_relationship_unlocks(previous_unlocks)
         unlock_feedback = self._relationship_unlock_feedback(new_unlocks)
         if unlock_feedback:
@@ -794,7 +806,7 @@ class CompanionController:
         previous_state = self.state
         self.state = apply_tick(self.state, ticks=1, now=self.now)
         self.last_motion = "Tick"
-        self.last_feedback = "时间过去了 15 秒。她还在持续变化。"
+        self.last_feedback = self._local_copy_line("tick")
         new_unlocks = self._new_relationship_unlocks(previous_unlocks)
         unlock_feedback = self._relationship_unlock_feedback(new_unlocks)
         if unlock_feedback:
@@ -894,7 +906,7 @@ class CompanionController:
                 )
             )
         self.last_proactive_feedback = None
-        self.last_feedback = "已暂停这次主动提醒。她会先安静陪着你。"
+        self.last_feedback = self._local_copy_line("reject_proactive")
         self.last_delta_text = "proactive postponed"
         self.last_allowed = True
         self.last_item_feedback_icon = None
@@ -1105,7 +1117,7 @@ class CompanionController:
             self._force_next_proactive = False
             self._force_next_proactive_kind = ""
         expression_context = self._expression_context()
-        return ProactiveCompanionService(
+        decision = ProactiveCompanionService(
             state=self.state,
             previous_state=previous_state,
             now=self.now,
@@ -1116,6 +1128,37 @@ class CompanionController:
             tool_results=expression_context.get("tool_results", []),
             forced_kind=forced_kind,
         ).select_decision(motion=self.last_motion)
+        return self._with_character_proactive_copy(decision)
+
+    def _with_character_proactive_copy(self, decision: ProactiveCompanionDecision) -> ProactiveCompanionDecision:
+        if decision.feedback is None:
+            return decision
+        topic = _proactive_topic_from_summary(decision.feedback.summary)
+        speech = self._local_copy_line(
+            f"proactive_{decision.feedback.kind}",
+            default=decision.feedback.speech,
+            topic=topic,
+        )
+        if speech == decision.feedback.speech:
+            return decision
+        return ProactiveCompanionDecision(
+            feedback=ProactiveFeedback(
+                kind=decision.feedback.kind,
+                speech=speech,
+                summary=decision.feedback.summary,
+            ),
+            now=decision.now,
+            motion=decision.motion,
+        )
+
+
+def _proactive_topic_from_summary(summary: str) -> str:
+    if not isinstance(summary, str):
+        return ""
+    marker = "："
+    if marker not in summary:
+        return ""
+    return summary.rsplit(marker, 1)[-1].strip()
 
 
 def _dialogue_history_path_for_save_path(save_path: Path) -> Path:

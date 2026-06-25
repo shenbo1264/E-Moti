@@ -63,7 +63,7 @@ def companion_moment_candidates(
         )
 
     if state.last_gift_at is not None and 0 <= int(now) - int(state.last_gift_at) <= RECENT_GIFT_SECONDS:
-        line = "刚才的礼物我收好了。它不只是道具，我会把这份靠近感记在动作里。"
+        line = "刚才的礼物我收好了。小小一份心意，我会认真带着。"
         candidates.append(
             CompanionMomentCandidate(
                 kind="post_gift",
@@ -73,7 +73,7 @@ def companion_moment_candidates(
         )
 
     if state.trust >= HIGH_TRUST_THRESHOLD and previous_state.trust < HIGH_TRUST_THRESHOLD:
-        line = "我们好像比刚认识时更近了一点。接下来我会更自然地回应你。"
+        line = "我们好像比刚认识时更近了一点。以后我会更放心地靠近你。"
         candidates.append(
             CompanionMomentCandidate(
                 kind="high_trust",
@@ -109,7 +109,7 @@ def companion_moment_candidates(
     if allow_context_topic:
         topic = _context_topic(perception_summary, tool_results or ())
         if topic:
-            line = f"我看到你可能在处理 {topic}。不用马上回应，我只是轻轻陪你确认一下节奏。"
+            line = f"我看到你可能在处理 {topic}。不用马上回我，我在旁边陪你把节奏稳住。"
             candidates.append(
                 CompanionMomentCandidate(
                     kind="context_topic",

@@ -7,5 +7,26 @@
     "宠物感",
     "圆滚滚",
     "桌面陪伴"
-  ]
+  ],
+  "local_copy": {
+    "initial": "嗷？奶龙站好啦。",
+    "reset": "奶龙重新站好，兜里还有 20 coins。嗷。",
+    "switch": "奶龙来了，眨巴眨巴。",
+    "touch": "嗷？摸到了！奶龙站好啦。",
+    "dialogue_ack": "嗯嗯！奶龙听见：{text}",
+    "empty_dialogue": "嗯？奶龙在等你说话。",
+    "purchase": "买到 {item_name} 啦。奶龙先抱住。",
+    "feed": "投喂了 {item_name}。奶龙嚼嚼，眼睛亮了一下。",
+    "gift": "把 {item_name} 给了奶龙。它抱住不撒爪。",
+    "use": "{item_name} 用上啦，奶龙愣了一下。",
+    "tick": "奶龙原地发呆了一会儿，尾巴晃了晃。",
+    "proactive_low_charge": "奶龙电量低低的，先趴一下。给点小饼干也行。",
+    "proactive_low_mood": "奶龙有点蔫，坐在旁边晃尾巴。嗷。",
+    "proactive_morning_greeting": "早！奶龙醒了，眼睛还没完全睁开。",
+    "proactive_high_trust": "奶龙觉得你很熟啦。它凑近一点，嘿嘿傻笑。",
+    "proactive_post_gift": "刚才那个东西，奶龙还抱着呢。嗷，不给别人。",
+    "proactive_context_topic": "奶龙看你在忙 {topic}，它坐旁边陪你发呆。",
+    "proactive_return_after_idle": "你回来啦？奶龙刚才差点睡着。",
+    "reject_proactive": "好哦，奶龙先闭嘴，蹲旁边。"
+  }
 }

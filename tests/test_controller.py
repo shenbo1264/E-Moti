@@ -232,6 +232,32 @@ def test_controller_character_sessions_inherit_global_expression_settings(tmp_pa
     assert controller.ai_expressor.enabled is True
 
 
+def test_controller_uses_character_specific_local_copy_when_llm_is_disabled(tmp_path):
+    user_data_root = tmp_path / "user-data"
+    feedback_by_character: dict[str, dict[str, str]] = {}
+
+    for character_id in ("xingxi_pixel_pet", "ikaros_pixel_pet", "nairong_pixel_pet"):
+        controller = CompanionController(
+            character_id=character_id,
+            user_data_root=user_data_root,
+            auto_load=False,
+        )
+        touch = controller.perform_action("touch", include_ai_expression=False)["feedback"]
+        food_id = next(item_id for item_id, item in controller.shop_items.items() if item.category == "food")
+        controller.state.coins = 200
+        controller.buy_selected_item(food_id)
+        feed = controller.use_selected_item(food_id, usage="feed", include_ai_expression=False)["feedback"]
+        feedback_by_character[character_id] = {"touch": touch, "feed": feed}
+        controller.close()
+
+    assert len({entry["touch"] for entry in feedback_by_character.values()}) == 3
+    assert "Master" in feedback_by_character["ikaros_pixel_pet"]["touch"]
+    assert "確認" in feedback_by_character["ikaros_pixel_pet"]["touch"]
+    assert "嗷" in feedback_by_character["nairong_pixel_pet"]["touch"]
+    assert "嚼嚼" in feedback_by_character["nairong_pixel_pet"]["feed"]
+    assert "轻轻回应" in feedback_by_character["xingxi_pixel_pet"]["touch"]
+
+
 def test_controller_reloads_character_session_inventory_with_current_shop_items(tmp_path, monkeypatch):
     _write_controller_character_pack(tmp_path / "assets", "custom_character")
     _patch_character_assets(monkeypatch, tmp_path / "assets")
@@ -514,7 +540,7 @@ def test_controller_adds_typed_relationship_event_for_unlock_feedback():
 
     assert relationship_event.payload["stage"] == "熟悉的陪伴"
     assert relationship_event.payload["unlock_id"] == "unlock_first_nickname"
-    assert "第一次主动称呼" in relationship_event.payload["message"]
+    assert "更自然地叫你" in relationship_event.payload["message"]
     assert len(snapshot["events"]) == 3
 
 
@@ -1350,10 +1376,10 @@ def test_controller_surfaces_relationship_unlock_feedback():
 
     assert "unlock_first_nickname" in snapshot["unlocks"]
     assert snapshot["relationship_stage"] == "熟悉的陪伴"
-    assert "第一次主动称呼" in snapshot["feedback"]
+    assert "更自然地叫你" in snapshot["feedback"]
     assert snapshot["events"][0]["effect"] == "SHOCKED"
     assert snapshot["memory_log"][0]["kind"] == "关系解锁"
-    assert "第一次主动称呼" in snapshot["memory_log"][0]["summary"]
+    assert "更自然地叫你" in snapshot["memory_log"][0]["summary"]
     assert "信任达到 35" in snapshot["next_relationship_unlock"]
 
 
@@ -1576,7 +1602,7 @@ def test_controller_clear_replay_and_revert_dialogue_history_do_not_touch_growth
     cleared = controller.clear_dialogue_history()
 
     assert "第二句" in replayed["feedback"]
-    assert [entry["text"] for entry in reverted["dialogue_history"]] == ["第一句", "我听见了：第一句"]
+    assert [entry["text"] for entry in reverted["dialogue_history"]] == ["第一句", "嗯，我听见了：第一句"]
     assert "第一句" in reverted["feedback"]
     assert cleared["dialogue_history"] == []
     assert "清屏" in cleared["feedback"]
@@ -1738,7 +1764,7 @@ def test_controller_relationship_unlock_upserts_long_term_memory_and_reloads(tmp
     assert snapshot["long_term_memory"] == [
         {
             "category": "relationship_unlock",
-            "summary": "第一次主动称呼解锁了。她开始用更亲近的方式回应你。",
+            "summary": "我好像能更自然地叫你了。这个称呼，以后会更贴近一点。",
             "source": "relationship_unlock",
         }
     ]
