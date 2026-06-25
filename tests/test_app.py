@@ -3797,7 +3797,7 @@ def test_window_tick_refreshes_authorized_context_before_proactive_topic(monkeyp
     assert screen_service.calls == [window.controller.get_capability_settings().screen_observation]
     assert search_service.calls == [
         (
-            "player is editing pixel pet blink frames",
+            "pixel art blink animation",
             window.controller.get_capability_settings().web_search,
         )
     ]

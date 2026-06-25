@@ -49,7 +49,7 @@ def test_topic_scout_builds_safe_query_and_permission_topic_cards():
     )
 
     assert result.ok is True
-    assert service.calls == [("desktop pet I want anime pet news and memes likes AI companions", settings)]
+    assert service.calls == [("desktop pet anime news memes AI companion", settings)]
     assert result.cards == [
         {
             "source": "web_search",
@@ -118,8 +118,34 @@ def test_topic_scout_uses_readonly_screen_observation_as_search_signal():
     )
 
     assert result.ok is True
-    assert service.calls == [("player is editing pixel pet blink frames", settings)]
+    assert service.calls == [("pixel art blink animation", settings)]
     assert result.cards[0]["title"] == "Pixel pet animation"
+
+
+def test_topic_scout_query_drops_screen_noise_and_keeps_companion_intent():
+    from guanghe_companion.topic_scout import build_topic_search_query
+
+    query = build_topic_search_query(
+        context={
+            "perception_summary": (
+                "Screen shows VS Code, PowerShell, GitHub and an E-Moti project. "
+                "The player is researching AI desktop pet proactive web search ideas."
+            ),
+            "recent_dialogue": [
+                {"role": "user", "speaker": "player", "text": "想让桌宠根据屏幕主动找话题，不要搜到垃圾站。"}
+            ],
+            "long_term_memory": [
+                {"category": "interest", "summary": "喜欢 AI 伴侣和二次元桌宠。"},
+            ],
+        },
+        interests=["AI companion"],
+    )
+
+    assert query == "AI companion desktop pet 联网搜索 主动聊天 屏幕观察"
+    assert "VS Code" not in query
+    assert "PowerShell" not in query
+    assert "GitHub" not in query
+    assert "E-Moti" not in query
 
 
 def test_topic_scout_bounds_results_and_sanitizes_opening_lines():

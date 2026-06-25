@@ -8,7 +8,7 @@ def test_fake_web_search_results_are_sanitized():
 
     def fake_adapter(query, max_results, timeout):
         assert query == "星汐 demo"
-        assert max_results == 2
+        assert max_results == 6
         assert timeout == 9
         return [
             {
@@ -62,3 +62,46 @@ def test_web_search_empty_or_failed_results_return_clear_message():
     assert "没有返回可用来源" in empty.message
     assert failed.ok is False
     assert "network down" in failed.message
+
+
+def test_web_search_filters_low_quality_irrelevant_results_and_prefers_relevant_hits():
+    from guanghe_companion.web_search import WebSearchService
+
+    def fake_adapter(query, max_results, timeout):
+        assert query == "AI companion desktop pet screen observation"
+        assert max_results == 6
+        return [
+            {
+                "title": "Free casino slots and bonus",
+                "body": "AI companion desktop pet keywords copied into a spam page.",
+                "href": "https://spam.example/casino",
+            },
+            {
+                "title": "Random plumbing supplier",
+                "body": "Pipe fittings, wholesale valves, and unrelated catalog text.",
+                "href": "https://plumbing.example/catalog",
+            },
+            {
+                "title": "Screen-aware desktop pet companion design",
+                "body": "A virtual companion can use screen summaries to start better conversations.",
+                "href": "https://example.test/desktop-pet-context",
+            },
+            {
+                "title": "AI companion proactive topic ideas",
+                "body": "Players expect contextual but non-intrusive prompts from desktop companions.",
+                "href": "https://example.test/ai-companion-topic",
+            },
+        ]
+
+    result = WebSearchService(adapter=fake_adapter).search(
+        "AI companion desktop pet screen observation",
+        WebSearchSettings(enabled=True, max_results=2, timeout_seconds=9),
+    )
+
+    assert result.ok is True
+    assert [item["title"] for item in result.tool_results] == [
+        "Screen-aware desktop pet companion design",
+        "AI companion proactive topic ideas",
+    ]
+    assert "casino" not in str(result.tool_results).lower()
+    assert "plumbing" not in str(result.tool_results).lower()
