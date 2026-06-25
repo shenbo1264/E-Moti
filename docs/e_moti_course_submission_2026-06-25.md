@@ -162,7 +162,7 @@ ASR 方向已接入 SenseVoice OpenAI-compatible 服务，并预留快捷键设�
 
 | 交付物 | 路径 | 用途 |
 | --- | --- | --- |
-| 课程提交 zip | `dist/E-Moti-course-submission.zip` | 推荐给导师/课程平台提交，约 279MB |
+| 课程提交 zip | `dist/E-Moti-course-submission.zip` | 推荐给导师/课程平台提交，约 292MB |
 | 免安装目录 | `dist/E-Moti-course-submission/` | 解压后直接运行 `E-Moti.exe` |
 | Windows 安装器 | `dist/installer/E-Moti_Setup_0.1.0.exe` | 需要安装流程时使用，约 199MB |
 
@@ -184,7 +184,7 @@ ASR 方向已接入 SenseVoice OpenAI-compatible 服务，并预留快捷键设�
 
 | 验证项 | 结果 |
 | --- | --- |
-| 全量测试 | `999 passed` |
+| 全量测试 | `1007 passed` |
 | Windows app 构建 | 通过 |
 | Windows installer 构建 | 通过 |
 | Windows build validator | `ok=true` |
@@ -198,13 +198,15 @@ ASR 方向已接入 SenseVoice OpenAI-compatible 服务，并预留快捷键设�
 
 主要报告路径：
 
-- `artifacts/final-package-qa/course-submission-package-20260625.json`
-- `artifacts/final-package-qa/mentor-preview-smoke-20260625.json`
-- `artifacts/final-package-qa/course-deepseek-smoke-20260625.json`
+- `artifacts/final-package-qa/course-submission-package-copy-20260625.json`
+- `artifacts/final-package-qa/mentor-preview-smoke-course-copy-20260625.json`
+- `artifacts/final-package-qa/course-deepseek-smoke-copy-20260625.json`
+- `artifacts/final-package-qa/course-mimo-screen-observation-copy-20260625.json`
+- `artifacts/final-package-qa/course-mimo-topic-runtime-copy-20260625.json`
 - `artifacts/final-package-qa/simulated-playthrough-20260625.json`
 - `artifacts/final-package-qa/voice-service-preflight-20260625.json`
 - `artifacts/final-package-qa/submission-screenshot-qa-20260625.json`
-- `artifacts/windows-build-validation-20260625.json`
+- `artifacts/windows-build-validation-copy-20260625.json`
 
 ## 12. 课程作品亮点
 
@@ -224,16 +226,49 @@ LLM 是角色表现力核心，但不是状态机主人。这样既能利用 AI 
 
 项目不仅有源码，还有 exe、安装器、课程 zip、截图、测试记录和演示流程。导师可以按文档快速体验，不需要先理解工程结构。
 
-## 13. AI 辅助创作说明
+## 13. AI 辅助创作与美术工作流
 
-本作在开发过程中使用 AI 辅助完成了多类工作：
+本项目不是简单把几张 AI 图塞进程序，而是围绕“可运行、可切换、可验证”的目标，做了一套面向桌面电子宠物的角色包工作流。
 
-- 角色路线讨论：从 Live2D、AI 视频、GalGame 立绘路线，收敛到更适合桌宠 Demo 的像素序列帧路线。
-- 美术候选生成：辅助生成星汐、伊卡洛斯、奶龙的角色卡和像素形象候选，再经过人工审阅和替换。
-- 工程开发：辅助实现角色包、LLM 表达、桌宠窗口、语音入口、打包验证和自动化测试。
-- 文档整理：辅助把工程能力重组为产品体验说明和课程交付文档。
+### 13.1 市场调研驱动的路线选择
 
-AI 没有替代最终产品判断。角色是否好看、是否符合路线、交互是否合理、课程文档是否可读，仍然由人工审阅和实际运行结果决定。
+开发过程中参考了 AI 伴侣、电子宠物、独立游戏美术生产等社区讨论。比较明确的结论是：玩家不只想要“会说话的工具”，而是希望角色有性格、有记忆感、有细小动作，最好能主动但不过度打扰。对应到本项目里，学习、休息、专注都被处理成角色动作状态，而不是把产品做成任务监督器。
+
+美术路线也不是单纯凭个人喜好决定。更精细的 GalGame 立绘路线在视觉表现上更漂亮，但放到桌宠小窗口里会暴露分辨率、边缘、动态帧一致性等问题；Live2D 路线表现力上限更高，但正式制作需要分层 PSD、Cubism 绑定、表情/动作导出和模型授权，短期内不适合作为课程提交主线；AI 视频转序列帧可以得到呼吸、眨眼等细节，但角色一致性和帧间漂移仍然需要大量人工修复。最终本项目收敛到像素宠序列帧路线，是因为它更适合小窗口桌宠，也更容易在课程周期内做到可演示和可复现。
+
+### 13.2 参考并兼容 hatch-pet，而不是照搬
+
+本项目的像素宠路线参考了 Codex `hatch-pet` skill 的思路：先锁定一个稳定基准形象，再一行一行生成 idle、touch、run 等动作序列，最后通过 contact sheet 和校验工具确认能否进入运行时。
+
+但 E-Moti 没有把 hatch-pet 当成唯一答案。项目内部进一步定义了自己的角色包结构：
+
+```text
+character.json
+dialogue_style.json
+motion_manifest.json
+spritesheet.png
+preview/contact-sheet.png
+provenance / qa report
+```
+
+这套结构服务的是 E-Moti 自己的角色库、独立记忆命名空间、商店道具、LLM 表情动作映射和桌宠渲染器。也就是说，hatch-pet 提供了可借鉴的像素宠生产方法，E-Moti 则把它扩展成可以被游戏系统识别和游玩的角色包。
+
+兼容性上，符合类似 hatch-pet 输出规范的像素宠资源，可以通过 E-Moti 的角色包校验工具转换或接入；而当前内置的星汐、伊卡洛斯、奶龙三套角色包，是在这个基础上继续做角色设定、道具、语音 profile、文案和 UI 展示优化后的版本。
+
+### 13.3 AI 进入美术生产的实际结果
+
+本作在美术侧验证了几条路线：
+
+- Live2D：已经保留了 renderer 与 smoke 研究路径，但没有把未绑定模型当成提交主线。
+- AI 视频 / LivePortrait：适合探索呼吸、眨眼和头发细动，但当前稳定性不足，容易出现帧间漂移、边界模糊和形象不一致。
+- 精细立绘 / GalGame 方案：适合角色卡、宣传图和详情页 CG，但不适合作为小尺寸桌宠主渲染。
+- 像素宠序列帧：当前最适合桌宠 Demo，能较稳定地做到多角色切换、动作映射和运行时验证。
+
+最终交付采用“角色卡 CG + 像素宠运行形象”的组合：角色库里展示更完整的角色气质，桌面上使用更轻量、更容易动起来的像素序列帧。这样既保证展示效果，也避免把美术路线卡在高成本模型制作上。
+
+### 13.4 AI 没有替代产品判断
+
+AI 辅助了角色路线讨论、美术候选生成、代码实现、测试设计和文档整理，但最终是否采用某个角色形象、是否符合玩家期待、是否能进入课程提交包，都经过了人工审阅和实际运行验证。E-Moti 的核心价值不是“AI 自动生成了一切”，而是验证了 AI 可以进入一个完整的小游戏生产链路：从调研、设定、美术、角色包、运行时、LLM 表现到交付测试，都有明确位置和验收标准。
 
 ## 14. 仍可继续优化的方向
 
