@@ -1,49 +1,103 @@
 # E-Moti
 
-E-Moti is a Windows-first desktop AI companion pet demo built with Python and PySide6.
+[中文](#中文说明) | [English](#english-version)
 
-The bundled course-delivery role set includes three visible switchable character packs: `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`. The default companion is Xingxi, while Ikaros and Nairong are included to demonstrate the same runtime, memory namespace, shop theme, voice profile metadata, and desktop-pet renderer working across different role styles. The current near-term art route is an E-Moti pixel-pet character-pack workflow that is inspired by and compatible with hatch-pet-style assets: lock one canonical character base, generate one animation row at a time, review contact sheets, repair only failed rows, and only then promote a validated character pack into E-Moti's own role, memory, shop, voice, and renderer contracts. Learning, resting, comforting, and playing are action states, not the product identity.
+E-Moti is a Windows-first desktop AI companion pet demo built with Python and PySide6. It combines a lightweight virtual-pet loop, switchable character packs, and optional AI expression services. The game state is controlled by local rules; AI is used to make the companion speak, react, and perform with more personality.
 
-This project is not a productivity coach, course supervisor, mascot skin, or chatbot-only shell.
+The current art-production route is a **hatch-pet-style pixel-pet sequence workflow**: lock one canonical character base, generate and review one animation row at a time, inspect contact sheets, repair failed rows, and only then promote a validated pack into the runtime.
 
-## Features
+The bundled course-delivery role set includes **three visible switchable character packs**: `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`. Xingxi is the default companion. Ikaros and Nairong demonstrate the same character-pack, renderer, memory namespace, shop theme, and voice-profile contracts across different role styles.
 
-- Control panel mode with status, actions, shop, inventory, relationship, memory, dialogue, and settings views.
-- Desktop pet mode with transparent always-on-top presentation and direct companion interaction.
-- System tray support for hiding, restoring, entering pet mode, and exiting.
-- Character library support for switching bundled or user-imported complete character packs.
-- Local state machine for focus, charge, stability, mood, trust, coins, level, inventory, memories, and relationship unlocks.
-- Sprite atlas renderer kept as the tray-friendly baseline and regression-safe renderer.
-- Pixel-pet sequence workflow for character packs, with hatch-pet-compatible asset intake plus E-Moti-specific role data, shop data, voice profile metadata, and LLM motion mapping.
-- Portrait/Spirit renderer kept as a later presentation path rather than the active art-production route.
-- Live2D Web renderer path for character packs that provide a safe `.model3.json`; sprite remains the fallback.
-- Optional LLM expression adapter that can turn validated local events into character speech, expression cues, motion cues, and read-only interaction intents.
-- Optional screen observation, web search, TTS, and ASR integrations behind explicit settings.
-- Windows packaging scripts for a frozen app and Inno Setup installer.
+> Learning, resting, comforting, and playing are action states. E-Moti is not a productivity coach, course supervisor, mascot skin, or chatbot-only shell.
 
-## Architecture Boundaries
+---
 
-E-Moti keeps pet growth and AI expression separate.
+## 中文说明
 
-- The local controller owns state, inventory, relationship, memory, goals, and saves.
-- LLM output is parsed through typed events before it reaches the UI.
-- Sprite presentation can map validated `visual_actions.expression` cues such as `joy`, `focused`, `sleepy`, `goofy`, and `confused` to safe pixel-pet motion families; explicit motion cues still take priority.
-- Screen observation and web search only enter read-only expression context.
-- ASR only becomes player text input.
-- TTS only speaks already validated companion speech.
-- No API key is bundled in the repository.
-- Runtime saves are local files and are ignored by git.
+![E-Moti AI 产品架构总览](docs/assets/emoti-ai-architecture-overview-zh.png)
 
-## Requirements
+### 项目定位
 
-- Python 3.11
-- Windows 10/11 recommended
-- PowerShell for packaging scripts
-- Inno Setup 6 only if you want to build the installer
+E-Moti 是一个 Windows 桌面 AI 电子宠物 Demo。它的核心体验不是“让 AI 接管游戏”，而是把传统桌宠的常驻陪伴、轻量养成、即时反馈和 AI 角色表演结合起来：
 
-Core Python dependencies are declared in `pyproject.toml`.
+- 本地规则负责状态、资源、背包、关系、回忆和存档。
+- AI 负责让角色更会说、更会演，可以生成台词、表情提示、动作提示和只读互动意图。
+- 屏幕观察、联网搜索、TTS、ASR 都是可选能力，只作为表达与陪伴增强，不拥有养成状态。
 
-## Setup
+### 当前功能
+
+- 控制面板：状态、互动、商店、背包、关系、回忆、对话和设置。
+- 桌宠模式：透明置顶窗口、轻量交互、桌面常驻演出。
+- 系统托盘：隐藏、恢复、进入桌宠模式和退出。
+- 三角色切换：`xingxi_pixel_pet`、`ikaros_pixel_pet`、`nairong_pixel_pet` 可在同一运行时切换。
+- 本地养成闭环：心情、信任、金币、等级、背包、关系解锁和长期记忆。
+- 角色包系统：每个角色拥有独立的美术资源、角色设定、商店主题、语音画像元数据和存档命名空间。
+- 像素宠序列帧路线：使用可验证的 spritesheet、motion manifest、contact sheet、provenance 和 QA 报告。
+- AI 表达层：LLM 输出经过 typed events 校验后，才能进入 UI、动作和语音链路。
+- 只读感知增强：屏幕摘要、联网搜索和主动话题可注入 expression context，但不能写入游戏状态。
+- 语音能力：TTS 只消费已校验的角色 speech；ASR 只生成玩家输入文本，并通过 `DialogueRequest` 进入对话。
+- 打包交付：提供 Windows frozen app、Inno Setup installer 和课程便携包构建脚本。
+
+### 架构设计
+
+E-Moti 按“本地规则核心 + AI 表演层 + 可插拔角色包”组织：
+
+| 层 | 主要模块 | 职责 |
+| --- | --- | --- |
+| UI 与桌面外壳 | `app.py`, `capability_panels.py`, `desktop_shell.py`, `tray_controller.py` | 控制面板、桌宠窗口、托盘生命周期、设置入口 |
+| 游戏核心 | `controller.py`, `engine.py`, `actions.py`, `models.py`, `storage.py` | 状态机、互动效果、金币/背包/等级、存档 |
+| 角色与内容 | `character_pack.py`, `character_registry.py`, `character_session.py`, `character_resources.py` | 加载角色包、切换角色、隔离角色资源和会话数据 |
+| AI 表达管线 | `expression_event_pipeline.py`, `ai_expressor.py`, `expression_parser.py`, `visual_actions.py`, `interaction_intents.py` | 将 LLM 响应解析成 typed events、speech、表情动作和只读意图 |
+| 只读上下文 | `expression_context.py`, `ai_context_builder.py`, `screen_observation.py`, `web_search.py`, `topic_scout.py`, `proactive_companion.py` | 屏幕摘要、搜索卡片、主动话题和近期上下文 |
+| 语音能力 | `voice_tts.py`, `voice_asr.py`, `voice_service_control.py`, `character_voice_profile.py` | 角色音色配置、TTS 播放、ASR 转写、服务检测 |
+| 渲染器 | `presentation_renderer.py`, `snapshot_renderer.py`, `spirit_stage.py`, `live2d_web.py` | sprite 基线渲染、portrait/spirit 研究路径、Live2D Web 适配路径 |
+| 工具与验证 | `tools/`, `tests/`, `packaging/` | 角色包验证、像素美术 QA、LLM smoke、Windows 打包和回归测试 |
+
+关键边界：
+
+- LLM 不能修改成长状态、背包、关系、回忆、目标、金币或存档。
+- 屏幕观察和联网搜索只产生只读上下文。
+- ASR 只能产生玩家输入文本。
+- TTS 只能播放通过 typed events 校验后的角色台词。
+- sprite renderer 是当前稳定基线；portrait、AI-video、LivePortrait 和 Live2D 是后续研究/扩展路线。
+
+### 角色包结构
+
+运行时角色包位于 `assets/companion/`：
+
+```text
+assets/companion/<character_id>/
+  character.json
+  dialogue_style.json
+  motion_manifest.json
+  spritesheet.png
+  preview/contact-sheet.png
+  preview/profile.png
+  provenance.md
+  qa_report.json
+  shop_items.json
+  LICENSE.md
+```
+
+当前内置角色：
+
+- `xingxi_pixel_pet`: 默认原创主角色。
+- `ikaros_pixel_pet`: 用于展示人形角色包、角色切换和语音画像工作流。
+- `nairong_pixel_pet`: 用于展示宠物向、搞笑向角色包的兼容性。
+- `original_oc`: 旧版兼容资源，保留用于历史 renderer 覆盖。
+
+第三方或二创角色包应保留来源说明、生成记录、QA 证据和授权边界；公开分发前请确认你拥有对应权利。
+
+### 快速开始
+
+环境要求：
+
+- Python 3.11+
+- Windows 10/11
+- PowerShell
+- Inno Setup 6，仅在需要构建安装器时使用
+
+安装开发环境：
 
 ```powershell
 python -m venv .venv
@@ -53,15 +107,171 @@ python -m pip install -e .
 python -m pip install pytest pyinstaller
 ```
 
-## Run
-
-Control panel:
+启动控制面板：
 
 ```powershell
 python -m guanghe_companion.app
 ```
 
-Desktop pet mode:
+启动桌宠模式：
+
+```powershell
+python -m guanghe_companion.app --pet-mode
+```
+
+使用演示存档：
+
+```powershell
+python -m guanghe_companion.app --demo-save
+```
+
+### 测试与验证
+
+```powershell
+python -m pytest
+python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py -q
+python -m pytest tests\test_repository_hygiene.py -q
+python -m json.tool assets\companion\xingxi_pixel_pet\shop_items.json
+python -m json.tool assets\companion\ikaros_pixel_pet\shop_items.json
+python -m json.tool assets\companion\nairong_pixel_pet\shop_items.json
+```
+
+角色包验证：
+
+```powershell
+python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
+python tools\validate_character_pack.py assets\companion\ikaros_pixel_pet
+python tools\validate_character_pack.py assets\companion\nairong_pixel_pet
+python tools\validate_pixel_pet_pack.py assets\companion\xingxi_pixel_pet
+```
+
+LLM 表达 smoke：
+
+```powershell
+python tools\llm_provider_matrix.py --dry-run --report artifacts\llm_smoke\provider-matrix-dry-run.json --markdown artifacts\llm_smoke\provider-matrix-dry-run.md
+$env:DEEPSEEK_API_KEY="<your-local-key>"
+python tools\llm_expression_cue_probe.py --provider deepseek --timeout-seconds 45 --min-speech-chars 8 --max-speech-chars 80 --report artifacts\llm_smoke\deepseek-expression-cue-probe.json
+Remove-Item Env:\DEEPSEEK_API_KEY
+```
+
+Windows 构建：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1
+powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild
+python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
+```
+
+更多演示与交付操作见 `docs\demo_operator_quickstart.md`、`docs\final_release_gate_2026-07.md` 和 `docs\llm_expression_operations.md`。
+
+### 可选 AI 能力
+
+E-Moti 可以离线运行；AI 能力需要用户在设置中自行配置：
+
+- LLM expression: OpenAI Responses、DeepSeek、OpenRouter、Ollama、LM Studio 或其他 OpenAI-compatible 服务。
+- Screen observation: OpenAI-compatible vision endpoint。
+- Web search: DuckDuckGo search through `ddgs`。
+- TTS: Windows SAPI、Edge TTS 或本地 HTTP TTS 服务。
+- ASR: OpenAI-compatible transcription endpoint 或本地 Vosk 模型。
+
+开源仓库不包含 API key、运行时对话历史、私有配置、第三方模型权重或本地存档。
+
+---
+
+## English Version
+
+![E-Moti AI Architecture Overview](docs/assets/emoti-ai-architecture-overview.png)
+
+### What Is E-Moti?
+
+E-Moti is a Windows-first desktop AI companion pet demo. It is designed as a playable virtual-pet loop with desktop presence, lightweight progression, character feedback, and optional AI expression.
+
+The core design rule is simple:
+
+- Local game rules own progression, inventory, memories, relationships, goals, coins, and saves.
+- AI improves the companion's speech, expression, motion cues, and read-only context use.
+- Optional perception, search, voice, and ASR features enhance presentation but never take over the growth state machine.
+
+### Features
+
+- PySide6 control panel with status, actions, shop, inventory, relationship, memory, dialogue, and settings views.
+- Transparent always-on-top desktop pet mode.
+- Tray lifecycle: hide, restore, enter pet mode, and exit.
+- Character library with three visible bundled packs: `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`.
+- Local virtual-pet progression for mood, trust, coins, level, inventory, relationship unlocks, and long-term memory.
+- Sprite renderer as the stable desktop-pet baseline.
+- Pixel-pet sequence workflow with spritesheets, motion manifests, contact sheets, provenance notes, and QA reports.
+- Optional LLM expression adapter for validated speech, visual actions, motion cues, and read-only interaction intents.
+- Optional screen observation, web search, TTS, and ASR integrations behind explicit settings.
+- Windows build and installer scripts.
+
+### Architecture
+
+E-Moti is organized as a local game core plus an AI performance layer and pluggable character packs.
+
+| Layer | Modules | Responsibility |
+| --- | --- | --- |
+| UI and Shell | `app.py`, `capability_panels.py`, `desktop_shell.py`, `tray_controller.py` | Control panel, desktop pet window, tray lifecycle, capability settings |
+| Game Core | `controller.py`, `engine.py`, `actions.py`, `models.py`, `storage.py` | State machine, interaction effects, inventory, coins, level, saves |
+| Character System | `character_pack.py`, `character_registry.py`, `character_session.py`, `character_resources.py` | Load, validate, switch, and isolate character packs |
+| AI Expression Pipeline | `expression_event_pipeline.py`, `ai_expressor.py`, `expression_parser.py`, `visual_actions.py`, `interaction_intents.py` | Parse LLM output into typed events, speech, visual actions, and read-only intents |
+| Read-only Context | `expression_context.py`, `ai_context_builder.py`, `screen_observation.py`, `web_search.py`, `topic_scout.py`, `proactive_companion.py` | Screen summaries, search cards, proactive topics, and recent context |
+| Voice | `voice_tts.py`, `voice_asr.py`, `voice_service_control.py`, `character_voice_profile.py` | Character voice profiles, TTS playback, ASR transcription, service checks |
+| Renderers | `presentation_renderer.py`, `snapshot_renderer.py`, `spirit_stage.py`, `live2d_web.py` | Sprite baseline, portrait/spirit research path, Live2D Web adapter path |
+| Tooling and QA | `tools/`, `tests/`, `packaging/` | Character-pack validation, pixel-art QA, LLM smoke tests, Windows packaging |
+
+Important boundaries:
+
+- LLM output cannot mutate growth state, inventory, relationship, memory, goals, coins, or saves.
+- Screen observation and web search only provide read-only expression context.
+- ASR only becomes player text through `DialogueRequest`.
+- TTS only consumes validated companion speech.
+- Sprite rendering is the current production baseline; portrait, AI-video, LivePortrait, and Live2D remain research or extension paths.
+
+### Character Packs
+
+Runtime character packs live under `assets/companion/`.
+
+```text
+assets/companion/<character_id>/
+  character.json
+  dialogue_style.json
+  motion_manifest.json
+  spritesheet.png
+  preview/contact-sheet.png
+  preview/profile.png
+  provenance.md
+  qa_report.json
+  shop_items.json
+  LICENSE.md
+```
+
+Bundled packs:
+
+- `xingxi_pixel_pet`: default original companion.
+- `ikaros_pixel_pet`: humanoid character-pack workflow representative.
+- `nairong_pixel_pet`: pet-style and goofy character-pack workflow representative.
+- `original_oc`: older compatibility assets retained for renderer coverage.
+
+Fanwork or third-party-inspired packs should keep source notes, generation records, QA evidence, and license boundaries. Confirm rights before public redistribution.
+
+### Setup
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+python -m pip install -U pip
+python -m pip install -e .
+python -m pip install pytest pyinstaller
+```
+
+Run the control panel:
+
+```powershell
+python -m guanghe_companion.app
+```
+
+Run desktop pet mode:
 
 ```powershell
 python -m guanghe_companion.app --pet-mode
@@ -73,325 +283,59 @@ Use demo save data:
 python -m guanghe_companion.app --demo-save
 ```
 
-Reset demo save data:
-
-```powershell
-python -m guanghe_companion.app --reset-demo-save
-```
-
-Script entry points are also available:
-
-```powershell
-python run_ui.py
-python run_demo.py
-```
-
-## Test
+### Test
 
 ```powershell
 python -m pytest
-python -m json.tool assets\companion\original_oc\shop_items.json
-python -m json.tool assets\companion\xingxi_pixel_pet\shop_items.json
-python -m json.tool assets\companion\ikaros_pixel_pet\shop_items.json
-python -m json.tool assets\companion\nairong_pixel_pet\shop_items.json
+python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py -q
+python -m pytest tests\test_repository_hygiene.py -q
 ```
 
-Focused UI smoke tests:
+Validate character packs:
 
 ```powershell
-python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py
-```
-
-Character pack validation:
-
-```powershell
-python tools\validate_character_pack.py assets\companion\original_oc
 python tools\validate_character_pack.py assets\companion\xingxi_pixel_pet
 python tools\validate_character_pack.py assets\companion\ikaros_pixel_pet
 python tools\validate_character_pack.py assets\companion\nairong_pixel_pet
-python tools\review_character_pack_status.py assets\companion\original_oc --json artifacts\character-pack-status-original-oc.json --markdown artifacts\character-pack-status-original-oc.md
+python tools\validate_pixel_pet_pack.py assets\companion\xingxi_pixel_pet
 ```
 
-Character-pack distribution rules are documented in `docs\character_pack_distribution_policy.md`. The course-delivery build presents the three bundled role packs together in the character library; the local import workflow remains available for additional user-authored packs.
-Local character-pack authoring is documented in `docs\character_pack_authoring_runbook.md`.
-
-Generated character draft validation:
-
-```powershell
-python tools\create_character_draft.py --brief path\to\brief.json --output-root generated
-python tools\validate_character_draft.py path\to\generated\<character_id>
-```
-
-Draft pixel-pet pack validation:
-
-```powershell
-python tools\art\review_pixel_pet_base.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\decoded\base.png --character-id xingxi_pixel_pet --prompt artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\hatch_run\prompts\base-pet.md --character-definition artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_definition.json --prior-qa artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\first-row-qa.json --decision accepted_for_row_testing --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\base-review-20260611
-python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-frames --state idle --expected-frames 6 --decision needs_regeneration --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\idle-current-row-review
-python tools\art\review_pixel_pet_row_candidate.py artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-frames --state running-right --expected-frames 8 --decision accepted_for_row_testing --require-components --output-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\review\running-right-current-row-review
-python tools\validate_pixel_pet_pack.py path\to\character_packs_drafts\<character_id>
-```
-
-`review_pixel_pet_base.py` is for ignored canonical-base candidates only. It writes JSON/Markdown/preview evidence, reports cleanup risks such as non-flat chroma-key backgrounds, and never updates runtime manifests.
-`review_pixel_pet_row_candidate.py` reviews one extracted row candidate at a time. It is also ignored evidence only; it can reject a weak row without changing decoded images, job manifests, or runtime character manifests.
-
-Bundled character-library QA:
-
-```powershell
-python tools\character_library_qa.py --character-id xingxi_pixel_pet --report artifacts\character-library-qa\xingxi-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\screenshots
-python tools\character_library_qa.py --character-id ikaros_pixel_pet --report artifacts\character-library-qa\ikaros-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\ikaros-screenshots
-python tools\character_library_qa.py --character-id nairong_pixel_pet --report artifacts\character-library-qa\nairong-pixel-pet-character-library-qa.json --screenshot-dir artifacts\character-library-qa\nairong-screenshots
-python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --preview artifacts\character-library-qa\xingxi-pixel-pet-visual-qa-preview.png
-python tools\art\pixel_pet_edge_style_brief.py --visual-qa-report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --character-id xingxi_pixel_pet --character-name Xingxi --report artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.json --markdown artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.md
-python tools\art\hatch_pet_imagegen_readiness.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.md
-python tools\art\hatch_pet_imagegen_route_preflight.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --check-codex-exec --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-route-preflight.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-route-preflight.md
-python tools\art\hatch_pet_base_intake_preflight.py --run-dir artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2 --job-id base --source "$env:CODEX_HOME\generated_images\<session>\ig_<image>.png" --character-id xingxi_pixel_pet --character-definition artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet\character_definition.json --report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.json --markdown artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.md
-python tools\pixel_pet_emote_mapping_check.py assets\companion\xingxi_pixel_pet --json artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.json --markdown artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.md
-python tools\release_readiness_report.py --pixel-pet-visual-qa-report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --pixel-pet-edge-style-brief-report artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.json --json artifacts\release-readiness-pixel-pet-art-gates.json --markdown artifacts\release-readiness-pixel-pet-art-gates.md
-python tools\release_readiness_report.py --hatch-pet-imagegen-readiness-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.json --json artifacts\release-readiness-hatch-pet-imagegen.json --markdown artifacts\release-readiness-hatch-pet-imagegen.md
-python tools\release_readiness_report.py --hatch-pet-imagegen-route-preflight-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-route-preflight.json --json artifacts\release-readiness-hatch-pet-imagegen-route-preflight.json --markdown artifacts\release-readiness-hatch-pet-imagegen-route-preflight.md
-python tools\release_readiness_report.py --hatch-pet-base-intake-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.json --json artifacts\release-readiness-hatch-pet-base-intake.json --markdown artifacts\release-readiness-hatch-pet-base-intake.md
-python tools\release_readiness_report.py --pixel-pet-emote-mapping-report artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.json --json artifacts\release-readiness-pixel-pet-emote-mapping.json --markdown artifacts\release-readiness-pixel-pet-emote-mapping.md
-python tools\art\pixel_pet_visual_qa.py assets\companion\xingxi_pixel_pet\spritesheet.png --motion-manifest assets\companion\xingxi_pixel_pet\motion_manifest.json --fail-on-warnings
-```
-
-The character-library QA opens the real control panel with temporary user data, selects a requested bundled character, verifies the role-pack detail text and preview image, switches to the pack, opens desktop pet mode, saves screenshots, and writes a JSON report. Run it for `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet` before course-delivery packaging.
-`pixel_pet_visual_qa.py` is a read-only spritesheet gate for pixel-pet candidates. It reuses the atlas contract and counts suspicious purple/red edge pixels adjacent to transparency; `--preview` writes an overlay image for human QA. `pixel_pet_edge_style_brief.py` turns that report into a paste-ready regeneration/redraw brief and acceptance-gate checklist, including a base-only prompt lock that forbids sprite sheets, row strips, atlases, repeated copies, and animation frames for the first canonical base. `hatch_pet_imagegen_readiness.py` checks a hatch-pet run before provider calls and reports missing/invalid generation credentials without printing secrets. `hatch_pet_imagegen_route_preflight.py` combines the hatch-pet readiness result with an optional `codex --version` launcher check so invalid API keys and blocked native imagegen runners are recorded before retrying base generation. `hatch_pet_base_intake_preflight.py` checks a selected built-in `$imagegen` `ig_*.png` against the ready hatch-pet `base` job and base-review gate before suggesting the `record_imagegen_result.py` command; it rejects row-strip or atlas-shaped images as base candidates and does not copy files or modify `imagegen-jobs.json`. `pixel_pet_emote_mapping_check.py` verifies that the LLM expression-to-pixel-motion mapping can be served by a pack's `motion_manifest.json`; it is read-only and does not mutate state, saves, runtime manifests, or character assets. `release_readiness_report.py --pixel-pet-visual-qa-report`, `--pixel-pet-edge-style-brief-report`, `--hatch-pet-imagegen-readiness-report`, `--hatch-pet-imagegen-route-preflight-report`, `--hatch-pet-base-intake-report`, and `--pixel-pet-emote-mapping-report` roll those art gates, imagegen blockers, intake decisions, or LLM pixel-emote coverage checks into the aggregate release readiness summary. Warnings do not change runtime behavior, but `--fail-on-warnings` can block default-promotion packages.
-
-Import a complete validated character pack into a user pack root:
-
-```powershell
-python tools\import_character_pack.py path\to\complete_pack --target-root "%LOCALAPPDATA%\E-Moti\character_packs"
-```
-
-Generated drafts are not import-ready until final art, icons, spritesheet, provenance, and manual QA are complete. Use `--force` only when intentionally replacing an existing local pack with the same `character_id`.
-Complete runtime packs can declare `character.json.distribution_boundary` metadata so the registry, import JSON report, character-library UI, import confirmation, and status review tool can show where a pack came from. The course-delivery build presents Xingxi, Ikaros, and Nairong together as visible bundled role packs; extra user-authored packs use the same validation and import flow.
-`review_character_pack_status.py` is a read-only release/import review helper for generated drafts and complete runtime packs. It reports validation status, import readiness, manual QA needs, provenance/source-note files, and next actions without copying files or changing runtime manifests.
-
-Current roadmap:
-
-```powershell
-type docs\demo_operator_quickstart.md
-type docs\current_development_route_2026-06-17.md
-type docs\pixel_pet_sequence_sop.md
-type docs\superpowers\plans\2026-06-18-p18-p23-optimization-roadmap.md
-```
-
-The older VN portrait, AI-video, LivePortrait, and Live2D notes are retained as research or historical planning material. They are not the near-term art-production route.
-
-Current final gate:
-
-```powershell
-type docs\final_release_gate_2026-07.md
-```
-
-The current final gate verifies the three visible bundled role packs (`xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`), validates the live DeepSeek expression cue probe, and checks that the Windows package can demonstrate character switching in the real role library.
-
-Portrait candidate validation before manifest promotion:
-
-```powershell
-python tools\art\prepare_portrait_candidate.py artifacts\portrait-candidate-xingxi-vn-20260607.png --output artifacts\portrait-candidate-xingxi-vn-20260607 --report artifacts\portrait-candidate-xingxi-vn-20260607\candidate-preparation-report.json
-python tools\art\review_portrait_candidate.py artifacts\portrait-candidate-xingxi-vn-20260607\portrait_candidate.json --output-dir artifacts\portrait-candidate-xingxi-vn-20260607\review --report artifacts\portrait-candidate-xingxi-vn-20260607\review\portrait-candidate-review.json
-python tools\art\clean_portrait_candidate_edges.py artifacts\portrait-candidate-xingxi-vn-20260607\portrait_candidate.json --output artifacts\portrait-candidate-xingxi-vn-20260607-edge-cleaned --report artifacts\portrait-candidate-xingxi-vn-20260607-edge-cleaned\edge-cleanup-report.json
-python tools\art\create_portrait_video_source_packs_from_candidate.py artifacts\portrait-candidate-xingxi-vn-20260607\portrait_candidate.json --set-id-prefix xingxi-vn --set-id-suffix 20260608 --character-name "Xingxi" --source-label-prefix "VN expression candidate" --report artifacts\portrait-video-source-create-report.json
-python tools\art\create_portrait_video_source_pack.py --source-image artifacts\portrait-candidate-xingxi-vn-20260607\portraits\neutral_open.png --set-id xingxi-vn-neutral-20260608 --character-name "Xingxi" --source-label "VN neutral candidate"
-python tools\art\inspect_liveportrait_preflight.py artifacts\portrait-video-source\xingxi-vn-neutral-20260608 --liveportrait-root tmp\liveportrait_research\LivePortrait --driving tmp\liveportrait_research\drivers\blink_driver.mp4 --report artifacts\liveportrait-preflight-xingxi-vn-neutral.json --markdown artifacts\liveportrait-preflight-xingxi-vn-neutral.md
-python tools\art\bundle_portrait_video_source_packs.py artifacts\portrait-video-source --output-dir artifacts\portrait-video-handoff --report artifacts\portrait-video-handoff-report.json
-python tools\release_readiness_report.py --portrait-video-handoff-report artifacts\portrait-video-handoff-report.json --json artifacts\release-readiness-with-portrait-video-handoff.json --markdown artifacts\release-readiness-with-portrait-video-handoff.md
-python tools\art\import_portrait_video_to_source_pack.py artifacts\portrait-video-source\xingxi-vn-neutral-20260608 --video path\to\downloaded-provider-video.mp4 --source-tool Pika --fps 12
-python tools\art\inspect_portrait_video_workflow.py artifacts\portrait-video-source --handoff-dir artifacts\portrait-video-handoff --candidate-root artifacts --report artifacts\portrait-video-workflow-report.json --markdown artifacts\portrait-video-workflow-report.md
-python tools\art\inspect_portrait_video_source_frames.py artifacts\portrait-video-source --report artifacts\portrait-video-frame-preflight.json
-python tools\art\portrait_video_frame_visual_qa.py artifacts\portrait-video-source\xingxi-vn-neutral-20260608-normalized --preview artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.png --report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json
-python tools\art\portrait_video_regeneration_brief.py --workflow-report artifacts\portrait-video-workflow-report.json --frame-qa-report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json --report artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json --markdown artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.md
-python tools\art\bundle_portrait_video_retry_handoff.py artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json --output-dir artifacts\portrait-video-retry-handoff --report artifacts\portrait-video-retry-handoff-report.json
-python tools\art\normalize_portrait_video_source_frames.py artifacts\portrait-video-source\xingxi-vn-neutral-20260608 --output-pack-dir artifacts\portrait-video-source\xingxi-vn-neutral-20260608-normalized --report artifacts\portrait-video-frame-normalization.json
-python tools\release_readiness_report.py --portrait-frame-normalization-report artifacts\portrait-video-frame-normalization.json --json artifacts\release-readiness-with-portrait-frame-normalization.json --markdown artifacts\release-readiness-with-portrait-frame-normalization.md
-python tools\art\batch_process_portrait_video_source_packs.py artifacts\portrait-video-source --report artifacts\portrait-video-source-batch-report.json
-python tools\art\process_portrait_video_source_pack.py artifacts\portrait-video-source\xingxi-vn-neutral-20260608 --output-dir artifacts\portrait-candidate-xingxi-vn-neutral-20260608-motion --report artifacts\portrait-video-source-process-xingxi-vn-neutral-20260608.json
-python tools\release_readiness_report.py --portrait-source-process-report artifacts\portrait-video-source-process-xingxi-vn-neutral-20260608.json --json artifacts\release-readiness-with-portrait-source-process.json --markdown artifacts\release-readiness-with-portrait-source-process.md
-python tools\art\extract_portrait_motion_frames.py --reference-image artifacts\portrait-candidate-xingxi-vn-20260607\portraits\neutral_open.png --frames-dir artifacts\portrait-video-source\frames --output-dir artifacts\portrait-candidate-xingxi-vn-motion --report artifacts\portrait-candidate-xingxi-vn-motion\candidate-motion-frame-report.json --source-tool "AI video" --generation-prompt "Static camera; same character, outfit, pose, and proportions; subtle breathing; one natural blink; slight hair sway; no text."
-python tools\art\portrait_candidate_visual_qa.py artifacts\portrait-candidate-xingxi-vn-20260607\portrait_candidate.json --preview artifacts\portrait-candidate-xingxi-vn-20260607\preview\portrait-visual-qa.png --report artifacts\portrait-candidate-xingxi-vn-20260607\portrait-visual-qa-report.json
-python tools\art\portrait_candidate_decision_brief.py artifacts\portrait-candidate-xingxi-vn-20260607\portrait_candidate.json --report artifacts\portrait-candidate-xingxi-vn-20260607\portrait-decision-brief.json --markdown artifacts\portrait-candidate-xingxi-vn-20260607\portrait-decision-brief.md
-python tools\art\validate_portrait_candidates.py path\to\portrait_candidate.json --runtime-manifest assets\companion\original_oc\portrait_manifest.json --contact-sheet artifacts\portrait-candidate-contact-sheet.png
-```
-
-The near-term sequence-frame art route is the pixel-pet workflow in `docs\pixel_pet_sequence_sop.md`. It keeps local drafts under ignored `artifacts\pixel-pet-sequence-drafts\`, borrows the hatch-pet idea of a canonical base plus row-strip generation, and then validates assets against E-Moti's own character-pack contract. The route intentionally targets compact pixel-adjacent pet art instead of refined VN portraits. AI-video, LivePortrait, and Live2D remain fallback/research paths because provider video frames can drift too much for reliable promotion, and formal Live2D still requires a layered model plus rigging work.
-
-`prepare_portrait_candidate.py`, `review_portrait_candidate.py`, `clean_portrait_candidate_edges.py`, `create_portrait_video_source_packs_from_candidate.py`, `create_portrait_video_source_pack.py`, `inspect_liveportrait_preflight.py`, `bundle_portrait_video_source_packs.py`, `import_portrait_video_to_source_pack.py`, `inspect_portrait_video_workflow.py`, `inspect_portrait_video_source_frames.py`, `portrait_video_frame_visual_qa.py`, `portrait_video_regeneration_brief.py`, `bundle_portrait_video_retry_handoff.py`, `normalize_portrait_video_source_frames.py`, `batch_process_portrait_video_source_packs.py`, `process_portrait_video_source_pack.py`, `extract_portrait_motion_frames.py`, `portrait_candidate_visual_qa.py`, and `portrait_candidate_decision_brief.py` are for ignored local VN candidate packs only. They create an RGBA cutout, one AI-video source folder per portrait set, LivePortrait local setup preflight reports, handoff zip bundles, provider-video import reports, next-action workflow reports, frame preflight reports, frame visual QA sheets, same-aspect frame normalization clones, provider-regeneration briefs, retry handoff zips, cloned edge-cleanup candidates, blink/motion frame candidates from AI video PNG frames, `portrait_candidate.json`, contact sheet, multi-background visual QA preview, alpha/edge metrics, and JSON/Markdown human decision briefs, but they do not update `portrait_manifest.json`.
-
-`clean_portrait_candidate_edges.py` clones a candidate directory and removes bright semi-transparent edge-halo pixels from the clone only, preserving the original candidate for comparison and provenance. `create_portrait_video_source_packs_from_candidate.py` reads `portrait_candidate.json` and creates one source folder for each expression open/static portrait. `create_portrait_video_source_pack.py` writes `artifacts\portrait-video-source\<set_id>\reference`, `gemini_prompt.md`, `provider_prompts.md`, `video`, `frames`, and `source_pack.json` with `reference_size` so Pika, Hailuo, Kling, PixVerse, Runway, Vidu, LivePortrait, or Gemini work can be handed off cleanly. `inspect_liveportrait_preflight.py` checks a local external LivePortrait checkout, required human-mode weight files, driving clip/template signature, FFmpeg, and source-pack reference image, then writes `suggested_commands` for the next manual local steps without running the model. `bundle_portrait_video_source_packs.py` creates one ignored zip per source pack with only the reference image, prompts, metadata, and handoff README, including the exact required frame size; release readiness verifies those required zip entries before treating the provider-neutral handoff as ready. `import_portrait_video_to_source_pack.py` copies a downloaded provider video into the source pack's `video/` folder, extracts PNG frames into `frames/` with FFmpeg, refuses to overwrite existing frames unless `--replace-frames` is passed, and writes `video_import_report.json` plus next local commands. `inspect_portrait_video_workflow.py` reports each pack's frame preflight source status, handoff zip, frame count, motion candidate status, compatibility `next_action`, split `source_next_action` / `motion_next_action`, compact `attention_reasons`, and suggested local follow-up commands as JSON or Markdown; waiting packs emit a LivePortrait preflight command, and warning packs emit frame visual QA, regeneration brief, and retry handoff commands. `inspect_portrait_video_source_frames.py` opens exported PNG frames before extraction, rejects unreadable frames, flags non-normalizable size mismatches or high body drift for review, and recommends `normalize_frames` for same-aspect lower-resolution frames. `portrait_video_frame_visual_qa.py` samples one source pack's reference and exported frames into a PNG contact sheet and JSON drift summary for human review before extraction. `portrait_video_regeneration_brief.py` packages a workflow report plus optional frame visual QA report into an ignored JSON/Markdown brief with source-pack reference image path, blockers, paste-ready retry/negative prompts, prompt locks, and suggested local rerun commands when the AI video should be regenerated. `bundle_portrait_video_retry_handoff.py` turns that brief into an ignored retry zip containing the reference image, retry prompt, negative prompt, README, and metadata for manual provider upload. Release readiness verifies those required retry zip entries before treating the handoff as ready. `normalize_portrait_video_source_frames.py` clones a source pack and resizes same-aspect provider frames to the reference size without overwriting originals; it rewrites the clone's `next_command`, and release readiness verifies that the normalized source metadata points at the normalized pack and normalized motion output. The normalized clone must still pass frame preflight before processing. `batch_process_portrait_video_source_packs.py` scans those folders and reports `ready`, `ready_with_warnings`, `insufficient_frames`, `waiting_for_frames`, or processed status; add `--process-ready` to process only source packs that passed frame preflight without warnings, writing a per-pack `source_pack_process_report.json` into each processed candidate output directory. `process_portrait_video_source_pack.py` also blocks extraction unless the source pack preflights as `ready`, then turns one source pack into a motion candidate using the saved prompt as provenance and can write a source-pack process report with `--report`; release readiness can verify that report's output directory, candidate manifest, extraction report, preflight status, and motion frame count before candidate QA. `extract_portrait_motion_frames.py` is the lower-level extractor; it also accepts `--video` when `ffmpeg` is installed locally.
-
-Runtime portrait manifests may include optional top-level `motion_frames` paths under `motion_frames/` plus `animation.idle.enabled=true` and `animation.idle.fps`. The Spirit surface only plays those idle frames for the fallback portrait expression, so neutral AI-video breathing frames do not overwrite other expressions.
-
-Portrait character-pack smoke and strict promotion gate:
-
-```powershell
-python tools\portrait_pack_smoke.py path\to\complete_pack --report artifacts\portrait-pack-smoke-report.json --screenshot artifacts\portrait-pack-smoke-window.png
-python tools\portrait_promotion_gate.py path\to\complete_pack --report artifacts\portrait-promotion-report.json
-```
-
-`portrait_pack_smoke.py` proves that a portrait pack can load through the runtime renderer. `portrait_promotion_gate.py` is stricter: it is for final manifest promotion and requires approved candidate metadata, provenance, transparent tall VN portraits, distinct expressions, and distinct neutral blink frames. `portrait_video_provenance.md` from AI video frame extraction counts as a provenance note only after human review keeps the candidate in the promotion package. Its JSON report can also include non-blocking visual QA warnings such as light-edge halo risk; those warnings do not replace human art approval.
-
-LLM expression smoke with DeepSeek or another OpenAI-compatible provider:
-
-LLM setup and smoke-test operations are documented in `docs\llm_expression_operations.md`.
-
-```powershell
-python tools\llm_provider_matrix.py --dry-run --report artifacts\llm_smoke\provider-matrix-dry-run.json --markdown artifacts\llm_smoke\provider-matrix-dry-run.md
-python tools\llm_dialogue_smoke.py --provider deepseek --dry-run
-$env:DEEPSEEK_API_KEY="<your_deepseek_api_key>"
-python tools\llm_dialogue_smoke.py --provider deepseek --timeout-seconds 45 --min-speech-chars 8 --max-speech-chars 80 --report artifacts\llm_smoke\deepseek-live-smoke.json
-python tools\llm_expression_cue_probe.py --provider deepseek --timeout-seconds 45 --min-speech-chars 8 --max-speech-chars 80 --report artifacts\llm_smoke\deepseek-expression-cue-probe.json
-python tools\review_llm_smoke_report.py artifacts\llm_smoke\deepseek-live-smoke.json --json artifacts\llm_smoke\deepseek-live-smoke-review.json --markdown artifacts\llm_smoke\deepseek-live-smoke-review.md
-python tools\review_llm_smoke_report.py artifacts\llm_smoke --json artifacts\llm_smoke\llm-smoke-batch-review.json --markdown artifacts\llm_smoke\llm-smoke-batch-review.md
-Remove-Item Env:\DEEPSEEK_API_KEY
-```
-
-The provider matrix distinguishes missing keys, authentication failures, quota or rate limits, timeouts, invalid responses, and local providers that are not running. The dry run prints sanitized provider settings without API calls. The live LLM smoke uses a temporary save directory and can write a UTF-8 JSON report with `--report`. It fails if the provider cannot be called, if fallback is used, if growth state mutates, if expression/motion coverage is too weak, or if speech is empty, too short, or too long for the configured smoke thresholds. `llm_expression_cue_probe.py` sends explicit player-like joy, sadness, sleepy, focused, and surprised cue cases and verifies that the typed expression action includes the expected visible emotion. `review_llm_smoke_report.py` converts an existing dialogue smoke JSON, expression cue probe JSON, or ignored smoke artifact directory into compact JSON/Markdown review output without calling any provider.
-
-Live2D smoke tests require local-only verification dependencies that are not committed:
-
-```text
-tmp\live2d_research\CubismWebSamples\Samples\Resources\Haru\Haru.model3.json
-tmp\live2d_research\live2dcubismcore.min.js
-```
-
-Run them only after those files are present:
-
-```powershell
-python tools\live2d_spike\smoke_live2d_web.py --timeout-seconds 45
-python tools\live2d_spike\smoke_app_surface.py
-python tools\live2d_spike\smoke_character_pack_window.py
-```
-
-## Build
-
-Build the frozen Windows app:
+Build Windows artifacts:
 
 ```powershell
 powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1
-```
-
-If `python` on PATH points to the wrong interpreter, pass a known Python 3.11+ executable:
-
-```powershell
-powershell -ExecutionPolicy Bypass -File tools\build_windows_app.ps1 -PythonPath "C:\Path\To\Python311\python.exe"
-```
-
-The app executable is written to:
-
-```text
-dist\E-Moti\E-Moti.exe
-```
-
-Build the installer after the app has been built:
-
-```powershell
 powershell -ExecutionPolicy Bypass -File tools\build_windows_installer.ps1 -SkipAppBuild
-```
-
-When the installer script needs to build the app first, the same `-PythonPath` argument is forwarded to `tools\build_windows_app.ps1`.
-
-The installer is written to:
-
-```text
-dist\installer\E-Moti_Setup_0.1.0.exe
-```
-
-If Inno Setup is installed somewhere else, pass `-ISCCPath` to `tools\build_windows_installer.ps1`.
-
-Validate the frozen app bundle and installer artifacts:
-
-```powershell
 python tools\validate_windows_build.py --report artifacts\windows-build-validation.json
-python tools\validate_windows_build.py --character-id xingxi_pixel_pet --report artifacts\windows-build-validation-xingxi-pixel-pet.json
-python tools\release_readiness_report.py --json artifacts\release-readiness.json --markdown artifacts\release-readiness.md
-python tools\release_readiness_report.py --llm-report artifacts\llm_smoke\deepseek-expression-cue-probe-20260609-rerun.json --llm-report artifacts\llm_smoke\deepseek-speech-quality-live-20260609-rerun.json --json artifacts\release-readiness-with-llm.json --markdown artifacts\release-readiness-with-llm.md
-python tools\release_readiness_report.py --llm-report artifacts\llm_smoke --json artifacts\release-readiness-with-llm-directory.json --markdown artifacts\release-readiness-with-llm-directory.md
-python tools\release_readiness_report.py --portrait-candidate-report artifacts\portrait-candidate-xingxi-vn-20260607\portrait-decision-brief.json --json artifacts\release-readiness-with-portrait-candidate.json --markdown artifacts\release-readiness-with-portrait-candidate.md
-python tools\release_readiness_report.py --portrait-source-create-report artifacts\portrait-video-source-create-report.json --json artifacts\release-readiness-with-portrait-source-create.json --markdown artifacts\release-readiness-with-portrait-source-create.md
-python tools\release_readiness_report.py --portrait-workflow-report artifacts\portrait-video-workflow-report.json --json artifacts\release-readiness-with-portrait-workflow.json --markdown artifacts\release-readiness-with-portrait-workflow.md
-python tools\release_readiness_report.py --liveportrait-preflight-report artifacts\liveportrait-preflight-xingxi-vn-neutral.json --json artifacts\release-readiness-with-liveportrait-preflight.json --markdown artifacts\release-readiness-with-liveportrait-preflight.md
-python tools\release_readiness_report.py --portrait-frame-preflight-report artifacts\portrait-video-frame-preflight.json --json artifacts\release-readiness-with-portrait-frame-preflight.json --markdown artifacts\release-readiness-with-portrait-frame-preflight.md
-python tools\release_readiness_report.py --portrait-frame-normalization-report artifacts\portrait-video-frame-normalization.json --json artifacts\release-readiness-with-portrait-frame-normalization.json --markdown artifacts\release-readiness-with-portrait-frame-normalization.md
-python tools\release_readiness_report.py --portrait-video-handoff-report artifacts\portrait-video-handoff-report.json --json artifacts\release-readiness-with-portrait-video-handoff.json --markdown artifacts\release-readiness-with-portrait-video-handoff.md
-python tools\release_readiness_report.py --portrait-video-import-report artifacts\portrait-video-source\xingxi-vn-neutral-20260608\video_import_report.json --json artifacts\release-readiness-with-portrait-video-import.json --markdown artifacts\release-readiness-with-portrait-video-import.md
-python tools\release_readiness_report.py --portrait-source-batch-report artifacts\portrait-video-source-batch-report.json --json artifacts\release-readiness-with-portrait-source-batch.json --markdown artifacts\release-readiness-with-portrait-source-batch.md
-python tools\release_readiness_report.py --portrait-source-process-report artifacts\portrait-video-source-process-xingxi-vn-neutral-20260608.json --json artifacts\release-readiness-with-portrait-source-process.json --markdown artifacts\release-readiness-with-portrait-source-process.md
-python tools\release_readiness_report.py --portrait-frame-qa-report artifacts\portrait-video-frame-qa-xingxi-vn-neutral-20260608-normalized.json --json artifacts\release-readiness-with-portrait-frame-qa.json --markdown artifacts\release-readiness-with-portrait-frame-qa.md
-python tools\release_readiness_report.py --portrait-regeneration-brief-report artifacts\portrait-video-regeneration-brief-xingxi-vn-neutral-20260608-normalized.json --json artifacts\release-readiness-with-portrait-regeneration-brief.json --markdown artifacts\release-readiness-with-portrait-regeneration-brief.md
-python tools\release_readiness_report.py --portrait-retry-handoff-report artifacts\portrait-video-retry-handoff-report.json --json artifacts\release-readiness-with-portrait-retry-handoff.json --markdown artifacts\release-readiness-with-portrait-retry-handoff.md
-python tools\release_readiness_report.py --hatch-pet-imagegen-readiness-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-readiness.json --json artifacts\release-readiness-hatch-pet-imagegen.json --markdown artifacts\release-readiness-hatch-pet-imagegen.md
-python tools\release_readiness_report.py --hatch-pet-imagegen-route-preflight-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\imagegen-route-preflight.json --json artifacts\release-readiness-hatch-pet-imagegen-route-preflight.json --markdown artifacts\release-readiness-hatch-pet-imagegen-route-preflight.md
-python tools\release_readiness_report.py --hatch-pet-base-intake-report artifacts\pixel-pet-sequence-drafts\xingxi_pixel_pet_edge_style_v2\base-intake-preflight.json --json artifacts\release-readiness-hatch-pet-base-intake.json --markdown artifacts\release-readiness-hatch-pet-base-intake.md
-python tools\release_readiness_report.py --pixel-pet-emote-mapping-report artifacts\route-scan-20260612\xingxi-pixel-pet-emote-mapping.json --json artifacts\release-readiness-pixel-pet-emote-mapping.json --markdown artifacts\release-readiness-pixel-pet-emote-mapping.md
-python tools\release_readiness_report.py --pixel-pet-visual-qa-report artifacts\character-library-qa\xingxi-pixel-pet-visual-qa.json --pixel-pet-edge-style-brief-report artifacts\character-library-qa\xingxi-pixel-pet-edge-style-brief.json --json artifacts\release-readiness-pixel-pet-art-gates.json --markdown artifacts\release-readiness-pixel-pet-art-gates.md
-
-# Full local snapshot across current ignored QA artifacts. Exit code 1 means blockers remain.
-python tools\release_readiness_report.py --full-local-snapshot --json artifacts\release-readiness-full-local-snapshot.json --markdown artifacts\release-readiness-full-local-snapshot.md
 ```
 
-The build validator also checks that a selected frozen bundled character pack includes renderer-appropriate assets: portrait packs require portrait manifests and portraits; sprite packs require spritesheets, motion manifests, provenance, preview, item icons, and pack-level `LICENSE.md`.
-`release_readiness_report.py` is a read-only aggregate report that combines the source character-pack status review with frozen Windows build validation. Pass one or more `--llm-report` paths to include existing dialogue smoke or expression cue probe JSON reports without calling a provider. `--llm-report` also accepts an ignored smoke artifact directory and summarizes the batch review, including per-file attention summaries; old-format or failing reports in that directory intentionally make release readiness need attention. Pass `--portrait-candidate-report` to include an existing portrait candidate decision brief so candidate blockers, warnings, and next human decisions are visible before manifest promotion. Pass `--portrait-source-create-report` to include an existing source-pack creation report and verify the referenced source images, output directories, `source_pack.json`, prompts, reference image directory, frames directory, and video directory still exist before provider handoff. Pass `--portrait-workflow-report` to include an existing AI-video workflow JSON report so unresolved motion-frame blockers and suggested local follow-up commands stay visible in release notes. Pass `--portrait-frame-preflight-report` to include an existing source-frame preflight report and treat `ready_with_warnings` as not ready for motion extraction. Pass `--portrait-frame-normalization-report` to include an existing same-aspect frame normalization report so source/output pack paths, frame counts, resize warning count, normalized `source_pack.json`, and normalized `next_command` target remain visible before the normalized pack is preflighted again; when the normalization report is ready, release readiness marks the original lower-resolution source warnings as resolved by the normalized sibling while keeping normalized body-drift warnings as blockers. Pass `--portrait-video-handoff-report` to include an existing provider-neutral handoff zip report and verify every bundled zip still contains its reference image, Gemini prompt, provider prompts, source-pack metadata, and handoff README before manual upload. Pass `--portrait-video-import-report` to include an existing source-pack video import report and verify the copied provider video plus extracted PNG frame directory still exist before frame preflight. Pass `--portrait-source-batch-report` to include an existing source-pack batch scan or `--process-ready` result and keep skipped warning packs visible; processed packs must include an existing output directory and `process_report_path` file. Pass `--portrait-source-process-report` to include an existing single source-pack processing report and verify the referenced output directory, candidate manifest, extraction report, source prompt, preflight status, and motion frame count before candidate QA. Pass `--portrait-frame-qa-report` to include an existing frame visual QA JSON report so sampled frame count, size mismatches, preview path, preview file existence, and max body drift stay visible before motion extraction. Pass `--portrait-regeneration-brief-report` to include an existing regeneration brief so the current retry decision, paste-ready provider prompts, source reference image file, and frame QA preview file remain visible in release readiness. Pass `--portrait-retry-handoff-report` to include an existing retry handoff zip report and verify the manual provider upload bundle still contains its required reference image, retry prompt, negative prompt, regeneration brief, source-pack reference, and README entries. Pass `--hatch-pet-imagegen-readiness-report` to include an existing hatch-pet imagegen readiness report so invalid provider credentials, ready job ids, blocked row counts, and retry actions remain visible before base generation. Pass `--hatch-pet-imagegen-route-preflight-report` to include an existing route preflight report so native `codex exec` launcher access and secondary fallback status stay visible before retrying generation. Pass `--hatch-pet-base-intake-report` to include an existing base intake preflight report so accepted or rejected selected `$imagegen` outputs remain visible before `record_imagegen_result.py` mutates the hatch-pet run. Pass `--pixel-pet-visual-qa-report` and `--pixel-pet-edge-style-brief-report` to include existing pixel-pet art-gate reports and surface suspicious edge halo risk or default-promotion blockers before treating a sprite pack as release-ready. Pass `--pixel-pet-emote-mapping-report` to include an existing LLM expression-to-pixel-motion coverage report and surface missing motion families or unsupported expressions before treating a pack as LLM-performance ready. Pass `--liveportrait-preflight-report` to include an existing local LivePortrait setup preflight JSON, including missing weights, driving input status, and suggested manual follow-up commands, without cloning, installing, downloading weights, or running inference.
-Use `--full-local-snapshot` to include the current project QA artifact set under `artifacts`; pass `--snapshot-artifact-root` for a copied artifact root. The aggregate JSON includes `check_count`, `ready_check_count`, `attention_check_count`, and `attention_checks` with compact `reasons`; the Markdown repeats those numbers and adds an `Attention Checks` section with next actions and reason summaries before the detailed per-check output. Those top-level reasons include source-frame summaries, source-batch summaries, frame visual-QA status/drift metrics, pixel-pet edge halo/default-promotion blockers, hatch-pet imagegen readiness blockers, and hatch-pet imagegen route preflight blockers when available.
+Operational notes:
 
-## Optional AI Capabilities
+- Demo quickstart: `docs\demo_operator_quickstart.md`
+- Final release gate: `docs\final_release_gate_2026-07.md`
+- LLM operations: `docs\llm_expression_operations.md`
+- Character-pack distribution: `docs\character_pack_distribution_policy.md`
 
-The demo can run without network services. Optional capabilities must be configured by the user in the app UI:
+### Optional AI Capabilities
 
-- LLM expression: OpenAI Responses, OpenAI-compatible cloud providers, or local OpenAI-compatible servers.
+E-Moti runs without network services. Optional capabilities can be configured in the UI:
+
+- LLM expression: OpenAI Responses, DeepSeek, OpenRouter, Ollama, LM Studio, or custom OpenAI-compatible services.
 - Screen observation: OpenAI-compatible vision endpoint.
 - Web search: DuckDuckGo search through `ddgs`.
-- TTS: Windows SAPI or a local HTTP Qwen3TTS-compatible service.
+- TTS: Windows SAPI, Edge TTS, or a local HTTP TTS service.
 - ASR: OpenAI-compatible transcription endpoint or a local Vosk model.
 
-These capabilities are expression helpers. They do not own pet progression or save data.
-
-LLM expression provider presets:
-
-| Provider | Default Base URL | API Key | Notes |
-| --- | --- | --- | --- |
-| `openai` | `https://api.openai.com/v1/responses` | Required | Uses the Responses API path. |
-| `deepseek` | `https://api.deepseek.com` | Required | Uses OpenAI-compatible chat completions. |
-| `openrouter` | `https://openrouter.ai/api/v1` | Required | Uses OpenAI-compatible chat completions. |
-| `ollama` | `http://127.0.0.1:11434/v1` | Optional | Start Ollama locally, pull a model, then use the model list button or type the model ID. |
-| `lmstudio` | `http://127.0.0.1:1234/v1` | Optional | Start the LM Studio local server, load a model, then use the model list button or type the model ID. |
-| `custom` | `https://api.openai.com/v1` | Optional | For other OpenAI-compatible services. Fill an API key when that service requires one. |
-
-## Live2D Status
-
-The repository contains the Live2D Web renderer integration and smoke harness. It does not contain a rigged Xingxi Live2D model.
-
-Current verified boundary:
-
-```text
-LLM -> typed speech/visual_actions events -> renderer adapter -> Live2D surface
-```
-
-Formal Xingxi Live2D production still requires a layered PSD, Cubism Editor rigging, expression/motion export, and a character pack that passes:
-
-```powershell
-python tools\validate_character_pack.py character_packs\xingxi_live2d
-```
-
-See `docs/live2d_asset_pipeline.md` for the PSD layer checklist, Cubism export checklist, and renderer mapping contract.
+The open-source repository does not include API keys, private runtime configuration, dialogue history, third-party model weights, or local save files.
 
 ## Repository Notes
 
 - `src/guanghe_companion/` contains the application code.
-- `assets/companion/xingxi_pixel_pet/` contains the default bundled Xingxi pixel-pet companion pack. Its character-library detail card uses `preview/profile.png` for the polished profile CG; runtime animation still uses the sprite sheet.
-- `assets/companion/original_oc/` contains older compatibility assets retained for historical renderer coverage; the course-delivery role library is centered on `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`.
-- `tests/` contains the regression and smoke tests.
-- `packaging/` and `tools/` contain Windows build entry points and scripts.
-- `data/` contains local runtime saves and is intentionally ignored by git.
-- `tmp/live2d_research/`, `artifacts/simulation/`, `node_modules/`, API keys, and third-party Live2D sample assets must stay out of commits.
-
-## Open Source Boundaries
-
-- E-Moti's code is MIT licensed.
-- The bundled Xingxi sprite/reference assets in this repository are original project assets.
-- Live2D Cubism Core, Live2D official sample models, and third-party character models are not bundled.
-- Do not commit copied models, proprietary runtime files, API keys, generated dialogue history, or runtime saves.
-- Fanwork or third-party character packs should only be distributed when the author has the right to publish the assets and character setting.
+- `assets/companion/` contains runtime character packs.
+- `tests/` contains regression, smoke, packaging, and hygiene tests.
+- `tools/` contains validation, QA, release-readiness, art-workflow, and packaging helpers.
+- `packaging/` contains Windows packaging entry points.
+- `data/` is for local runtime saves and is ignored by git.
+- Generated drafts, local model research, API keys, dialogue history, and private runtime artifacts must stay out of commits.
 
 ## License
 

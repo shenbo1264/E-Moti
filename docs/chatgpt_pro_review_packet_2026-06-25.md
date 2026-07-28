@@ -111,7 +111,7 @@ Submission
 请基于以下文件继续优化：
 
 ```text
-D:\学工文档\光核\电子宠物\E-Moti_demo\docs\e_moti_course_submission_2026-06-25.md
+docs/e_moti_course_submission_2026-06-25.md
 ```
 
 如果我把该 Markdown 全文贴给你，请直接重构它；如果我只给你 PDF 或截图，请先给出结构改写建议。
@@ -145,4 +145,3 @@ D:\学工文档\光核\电子宠物\E-Moti_demo\docs\e_moti_course_submission_20
 - 不要声称 Live2D 或 AI 视频已作为主线落地。
 - 不要暴露任何 API key。
 - 不要凭空增加项目没有验证过的功能。
-
