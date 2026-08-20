@@ -88,4 +88,3 @@ class CompanionStoryRuntime:
             self.memory.store.load_memories(),
             self.memory.store.load_chapters(),
         )
-
