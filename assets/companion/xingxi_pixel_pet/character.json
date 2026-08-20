@@ -2,7 +2,7 @@
     "character_id":  "xingxi_pixel_pet",
     "name":  "星汐",
     "title":  "像素桌面同伴",
-    "description":  "住在桌面角落的星汐像素形态。她安静、克制，会用眨眼、轻跳和短句回应玩家。",
+    "description":  "住在桌面角落的像素小宠星汐。她有点慢热，也会偷偷吐槽；熟悉之后，会用眨眼、轻跳和短句主动回应玩家。",
     "spritesheet":  "spritesheet.png",
     "motion_manifest":  "motion_manifest.json",
     "renderer":  {
@@ -49,27 +49,27 @@
                   "Overload"
               ],
     "mode_descriptions":  {
-                              "Glow":  "情绪稳定且主动亲近。",
-                              "Calm":  "频率平稳，适合日常互动。",
-                              "Frayed":  "开始疲惫或分心，需要轻一点的陪伴。",
-                              "Overload":  "进入保护状态，只接受安抚和休息。"
+                              "Glow":  "心情亮晶晶，已经开始主动往你这边凑。",
+                              "Calm":  "状态平稳，适合摸摸头或一起玩一会儿。",
+                              "Frayed":  "有点蔫，回应会变少；轻一点陪她就好。",
+                              "Overload":  "小脑袋过载，暂时只想被安抚或睡一觉。"
                           },
     "motion_labels":  {
-                          "Default":  "待机眨眼",
-                          "MoveRight":  "向右移动",
-                          "MoveLeft":  "向左移动",
+                          "Default":  "桌角待机",
+                          "MoveRight":  "哒哒向右",
+                          "MoveLeft":  "哒哒向左",
                           "TouchHead":  "招手回应",
-                          "Play":  "轻跳",
-                          "SwitchDown":  "低状态反馈",
-                          "Sleep":  "等待休息",
-                          "Raised":  "原地跑动",
+                          "Play":  "开心轻跳",
+                          "SwitchDown":  "蔫成一小团",
+                          "Sleep":  "缩起来休息",
+                          "Raised":  "被拎起后扑腾",
                           "Study":  "专注检查",
-                          "Comfort":  "安静陪伴",
-                          "Eat":  "接受投喂",
-                          "Gift":  "收到礼物",
-                          "Shop":  "资源补给",
-                          "Tick":  "时间流逝",
-                          "ConfusedShy":  "Confused / shy"
+                          "Comfort":  "安静靠近",
+                          "Eat":  "嗷呜一口",
+                          "Gift":  "抱好礼物",
+                          "Shop":  "翻翻小背包",
+                          "Tick":  "桌角时间流逝",
+                          "ConfusedShy":  "困惑又害羞"
                       },
     "distribution_boundary":  "shareable_after_review",
     "tts_profile":  {
@@ -88,7 +88,7 @@
         "synthesis_text_mode":  "display",
         "rate":  1,
         "volume":  0.92,
-        "instruct":  "Speak Mandarin Chinese as Xingxi: gentle, clear, slightly shy, warm desktop companion, short emotional lines.",
+        "instruct":  "Speak Mandarin Chinese as Xingxi, a tiny celestial desktop pet. Use short natural lines with a warm, slightly shy and playful personality. Light interjections such as 唔、欸、哼哼 and soft pauses are welcome. Never sound like a system notification, customer-service assistant, productivity coach, or manipulative companion.",
         "voice_source_type":  "original_design",
         "training_status":  "designed",
         "distribution_policy":  "public_ok",

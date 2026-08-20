@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "id": "emoti.bundled.stargazing",
+  "name": "星图角落",
+  "version": "0.1.0",
+  "api_version": "1",
+  "entrypoint": "plugin.py:activate",
+  "description": "A bundled demonstration plugin that contributes one interaction, one memory rule, one context section, and one generic UI panel model.",
+  "default_enabled": false,
+  "permissions": [
+    "actions.register",
+    "memory.propose",
+    "context.provide",
+    "ui.register",
+    "storage.local"
+  ],
+  "dependencies": [],
+  "settings": {
+    "speech": "星汐挪了挪位置，给你留出一小块看星星的地方。"
+  },
+  "contributes": {
+    "actions": ["stargazing.watch"],
+    "memory_rules": ["stargazing.first-memory"],
+    "context_sections": ["stargazing.status"],
+    "ui_panels": ["stargazing.panel"]
+  }
+}

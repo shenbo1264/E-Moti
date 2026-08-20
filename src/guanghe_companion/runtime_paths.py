@@ -34,6 +34,13 @@ def voice_services_root() -> Path:
     return _voice_service_candidates()[0]
 
 
+def plugins_root() -> Path:
+    for candidate in _plugin_candidates():
+        if candidate.exists():
+            return candidate
+    return _plugin_candidates()[0]
+
+
 def user_data_dir() -> Path:
     override = os.environ.get(USER_DATA_ENV)
     if override:
@@ -99,6 +106,17 @@ def _voice_service_candidates() -> list[Path]:
             candidates.append(Path(meipass) / "voice_services")
         candidates.append(Path(sys.executable).resolve().parent / "voice_services")
     candidates.append(repo_root() / "tools" / "voice_services")
+    return candidates
+
+
+def _plugin_candidates() -> list[Path]:
+    candidates: list[Path] = []
+    if is_frozen():
+        meipass = getattr(sys, "_MEIPASS", None)
+        if meipass:
+            candidates.append(Path(meipass) / "plugins")
+        candidates.append(Path(sys.executable).resolve().parent / "plugins")
+    candidates.append(repo_root() / "plugins")
     return candidates
 
 

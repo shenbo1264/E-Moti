@@ -1,0 +1,14 @@
+{
+  "schema_version": 1,
+  "id": "emoti.community.my-first-plugin",
+  "name": "我的第一个 E-Moti 插件",
+  "version": "0.1.0",
+  "api_version": "1",
+  "entrypoint": "plugin.py:activate",
+  "description": "一个只增加本地互动动作的最小模板。",
+  "default_enabled": false,
+  "permissions": ["actions.register"],
+  "dependencies": [],
+  "settings": {"speech": "星汐朝你挥了挥手。"},
+  "contributes": {"actions": ["community.wave"]}
+}

@@ -68,7 +68,10 @@ from .character_registry import (
     summarize_character_pack_dir,
     validate_character_pack_dir,
 )
-from .controller import CompanionController
+from .plugin_enabled_controller import PluginEnabledCompanionController as CompanionController
+from .focus_companion_qt import create_focus_companion_widget
+from .memory_album_qt import create_memory_album_widget
+from .plugin_center_qt import create_plugin_center_widget
 from .dialogue import DialogueRequest
 from .desktop_shell import DesktopShell
 from .expression_settings import (
@@ -545,6 +548,15 @@ class CompanionWindow(QMainWindow):
         self.web_search_service = WebSearchService()
         self.tts_manager = TTSManager()
         self.asr_service = ASRService()
+        bind_plugin_capabilities = getattr(self.controller, "bind_plugin_capabilities", None)
+        if callable(bind_plugin_capabilities):
+            bind_plugin_capabilities(
+                expression_provider=self.controller.generate_plugin_expression,
+                tts_manager=self.tts_manager,
+                asr_transcriber=self.asr_service,
+                screen_observer=self.screen_observation_service,
+                web_search_service=self.web_search_service,
+            )
         self._asr_recording = False
         self.asr_hotkey_shortcut = QShortcut(QKeySequence(), self)
         self.asr_hotkey_shortcut.activated.connect(self._toggle_asr_recording)
@@ -842,6 +854,44 @@ class CompanionWindow(QMainWindow):
         voice_layout.addWidget(self.voice_settings_card)
         voice_layout.addStretch(1)
         self.content_stack.addWidget(voice_page)
+
+        memory_album_controller = getattr(self.controller, "memory_album_controller", None)
+        if memory_album_controller is not None:
+            self.memory_album_page = create_memory_album_widget(
+                self.controller,
+                on_changed=lambda: self._apply_snapshot(self.controller.get_snapshot()),
+            )
+        else:
+            self.memory_album_page = QWidget()
+            memory_album_layout = QVBoxLayout(self.memory_album_page)
+            memory_album_layout.addWidget(QLabel("当前控制器未启用情感记忆。"))
+            memory_album_layout.addStretch(1)
+        self.content_stack.addWidget(self.memory_album_page)
+
+        if hasattr(self.controller, "get_focus_companion_view_model"):
+            self.focus_companion_page = create_focus_companion_widget(
+                self.controller,
+                on_changed=lambda: self._apply_snapshot(self.controller.get_snapshot()),
+            )
+        else:
+            self.focus_companion_page = QWidget()
+            focus_companion_layout = QVBoxLayout(self.focus_companion_page)
+            focus_companion_layout.addWidget(QLabel("当前控制器未启用探头时刻。"))
+            focus_companion_layout.addStretch(1)
+        self.content_stack.addWidget(self.focus_companion_page)
+
+        plugin_center_controller = getattr(self.controller, "plugin_center", None)
+        if plugin_center_controller is not None:
+            self.plugin_center_page = create_plugin_center_widget(
+                plugin_center_controller,
+                on_changed=lambda: self._apply_snapshot(self.controller.get_snapshot()),
+            )
+        else:
+            self.plugin_center_page = QWidget()
+            plugin_center_layout = QVBoxLayout(self.plugin_center_page)
+            plugin_center_layout.addWidget(QLabel("当前控制器未启用插件运行时。"))
+            plugin_center_layout.addStretch(1)
+        self.content_stack.addWidget(self.plugin_center_page)
         self._load_capability_settings_into_ui()
 
     def _alias_capability_settings_panel_widgets(self) -> None:
@@ -928,7 +978,7 @@ class CompanionWindow(QMainWindow):
         self.navigation_hint_label.setObjectName("NavigationHint")
         layout.addWidget(self.navigation_hint_label)
 
-        for index, label in enumerate(("总览", "互动", "背包", "角色库", "感知与搜索", "隐私", "LLM表达", "表达规则", "语音")):
+        for index, label in enumerate(("总览", "互动", "背包", "角色库", "感知与搜索", "隐私", "LLM表达", "表达规则", "语音", "回忆", "探头时刻", "插件")):
             button = QPushButton(label)
             button.setObjectName("NavigationButton")
             button.setCheckable(True)
@@ -1072,6 +1122,12 @@ class CompanionWindow(QMainWindow):
             self._sync_linked_character_windows(snapshot)
             self._apply_snapshot(snapshot)
             self._refresh_character_library()
+            refresh_album = getattr(getattr(self, "memory_album_page", None), "refresh_memory_album", None)
+            if callable(refresh_album):
+                refresh_album()
+            refresh_plugins = getattr(getattr(self, "plugin_center_page", None), "refresh_plugins", None)
+            if callable(refresh_plugins):
+                refresh_plugins()
         except (KeyError, ValueError, OSError) as exc:
             self._show_message(str(exc))
 
@@ -1335,14 +1391,38 @@ class CompanionWindow(QMainWindow):
 
     def _build_actions_card(self) -> QGroupBox:
         box = QGroupBox("互动动作")
-        layout = QHBoxLayout(box)
-        for action_id in ("touch", "soothe", "rest", "study", "play", "drag"):
-            button = QPushButton(action_id)
-            button.clicked.connect(lambda checked=False, current=action_id: self._handle_action(current))
-            button.setMinimumHeight(42)
-            self.action_buttons[action_id] = button
-            layout.addWidget(button)
+        self.actions_layout = QGridLayout(box)
+        self._sync_action_buttons(self.controller.get_snapshot().get("actions", ()))
         return box
+
+    def _sync_action_buttons(self, entries: object) -> None:
+        rows = [entry for entry in entries if isinstance(entry, dict)]
+        expected_ids = [str(entry.get("action_id", "")) for entry in rows if entry.get("action_id")]
+        for action_id in tuple(self.action_buttons):
+            if action_id in expected_ids:
+                continue
+            button = self.action_buttons.pop(action_id)
+            self.actions_layout.removeWidget(button)
+            button.deleteLater()
+        for index, entry in enumerate(rows):
+            action_id = str(entry.get("action_id", ""))
+            if not action_id:
+                continue
+            button = self.action_buttons.get(action_id)
+            if button is None:
+                button = QPushButton(action_id)
+                button.clicked.connect(
+                    lambda checked=False, current=action_id: self._handle_action(current)
+                )
+                button.setMinimumHeight(42)
+                self.action_buttons[action_id] = button
+            self.actions_layout.removeWidget(button)
+            self.actions_layout.addWidget(button, index // 3, index % 3)
+            button.setText(str(entry.get("label", action_id)))
+            button.setEnabled(bool(entry.get("enabled", True)))
+            description = str(entry.get("description", ""))
+            if description:
+                button.setToolTip(description)
 
     def _build_demo_card(self) -> QGroupBox:
         box = QGroupBox("演示工具")
@@ -1576,7 +1656,7 @@ class CompanionWindow(QMainWindow):
         return_action = QAction("返回控制面板", self)
         return_action.triggered.connect(self._return_to_control_panel)
         exit_action = QAction("退出", self)
-        exit_action.triggered.connect(self.tray_controller.request_quit)
+        exit_action.triggered.connect(self._request_application_quit)
         menu.addAction(status_action)
         menu.addAction(history_action)
         menu.addAction(clear_history_action)
@@ -1587,6 +1667,13 @@ class CompanionWindow(QMainWindow):
         menu.addAction(return_action)
         menu.addAction(exit_action)
         return menu
+
+    def _request_application_quit(self) -> None:
+        owner = self._return_target_window
+        if owner is not None and owner is not self:
+            owner.tray_controller.request_quit()
+            return
+        self.tray_controller.request_quit()
 
     def contextMenuEvent(self, event) -> None:
         if not self.desktop_mode:
@@ -2090,11 +2177,7 @@ class CompanionWindow(QMainWindow):
         else:
             self.proactive_reject_button.hide()
 
-        actions = {entry["action_id"]: entry for entry in snapshot["actions"]}
-        for action_id, button in self.action_buttons.items():
-            entry = actions[action_id]
-            button.setText(str(entry["label"]))
-            button.setEnabled(bool(entry["enabled"]))
+        self._sync_action_buttons(snapshot["actions"])
 
         self._fill_list(self.shop_list, snapshot["shop_items"], kind="shop")
         self._fill_list(self.inventory_list, snapshot["inventory_items"], kind="inventory")

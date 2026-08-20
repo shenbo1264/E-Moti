@@ -255,7 +255,7 @@ def test_controller_uses_character_specific_local_copy_when_llm_is_disabled(tmp_
     assert "確認" in feedback_by_character["ikaros_pixel_pet"]["touch"]
     assert "嗷" in feedback_by_character["nairong_pixel_pet"]["touch"]
     assert "嚼嚼" in feedback_by_character["nairong_pixel_pet"]["feed"]
-    assert "轻轻回应" in feedback_by_character["xingxi_pixel_pet"]["touch"]
+    assert "被发现了" in feedback_by_character["xingxi_pixel_pet"]["touch"]
 
 
 def test_controller_reloads_character_session_inventory_with_current_shop_items(tmp_path, monkeypatch):
@@ -594,7 +594,7 @@ def test_controller_closes_buy_and_use_loop():
     fed = controller.use_selected_item("warm_milk", usage="feed")
     assert fed["charge"] == 72
     assert fed["mood"] == 60
-    assert "投喂" in fed["feedback"]
+    assert "好吃" in fed["feedback"]
 
 
 def test_controller_keeps_local_stat_and_choice_events_when_ai_supplies_speech(tmp_path):
@@ -1161,7 +1161,7 @@ def test_tick_surfaces_low_charge_proactive_companionship_once(tmp_path):
     snapshot = controller.advance_tick()
 
     assert snapshot["proactive_feedback"]["kind"] == "low_charge"
-    assert "能量有点低" in snapshot["feedback"]
+    assert "能量槽快见底" in snapshot["feedback"]
     assert snapshot["events"][0]["speech"] == snapshot["feedback"]
     assert snapshot["memory_log"][0]["kind"] == "主动陪伴"
     assert "能量有点低" in snapshot["memory_log"][0]["summary"]
@@ -1192,7 +1192,7 @@ def test_tick_surfaces_mood_drop_after_long_quiet(tmp_path):
     snapshot = controller.advance_tick()
 
     assert snapshot["proactive_feedback"]["kind"] == "low_mood"
-    assert "我还在这里" in snapshot["feedback"]
+    assert "探了两次头" in snapshot["feedback"]
     assert snapshot["memory_log"][0]["kind"] == "主动陪伴"
     assert "久未互动" in snapshot["memory_log"][0]["summary"]
 
@@ -1254,7 +1254,7 @@ def test_demo_trigger_surfaces_low_charge_proactive_companionship_immediately():
     snapshot = controller.trigger_demo_proactive("low_charge")
 
     assert snapshot["proactive_feedback"]["kind"] == "low_charge"
-    assert "能量有点低" in snapshot["feedback"]
+    assert "能量槽快见底" in snapshot["feedback"]
     assert snapshot["memory_log"][0]["kind"] == "主动陪伴"
     assert snapshot["charge"] < 25
     assert snapshot["tick_count"] == 1
@@ -1266,7 +1266,7 @@ def test_demo_trigger_surfaces_quiet_mood_proactive_companionship_immediately():
     snapshot = controller.trigger_demo_proactive("quiet_mood")
 
     assert snapshot["proactive_feedback"]["kind"] == "low_mood"
-    assert "我还在这里" in snapshot["feedback"]
+    assert "探了两次头" in snapshot["feedback"]
     assert snapshot["memory_log"][0]["kind"] == "主动陪伴"
     assert snapshot["mood"] <= 35
     assert snapshot["tick_count"] == 1
@@ -1602,7 +1602,7 @@ def test_controller_clear_replay_and_revert_dialogue_history_do_not_touch_growth
     cleared = controller.clear_dialogue_history()
 
     assert "第二句" in replayed["feedback"]
-    assert [entry["text"] for entry in reverted["dialogue_history"]] == ["第一句", "嗯，我听见了：第一句"]
+    assert [entry["text"] for entry in reverted["dialogue_history"]] == ["第一句", "唔，我听见了。你刚才说：第一句"]
     assert "第一句" in reverted["feedback"]
     assert cleared["dialogue_history"] == []
     assert "清屏" in cleared["feedback"]

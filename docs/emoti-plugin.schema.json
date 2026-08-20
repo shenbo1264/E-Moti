@@ -1,0 +1,78 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.invalid/emoti-plugin.schema.json",
+  "title": "E-Moti Plugin Manifest",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "id",
+    "name",
+    "version",
+    "api_version",
+    "entrypoint",
+    "permissions",
+    "dependencies"
+  ],
+  "properties": {
+    "schema_version": {"const": 1},
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z0-9][a-z0-9._-]{2,79}$"
+    },
+    "name": {"type": "string", "minLength": 1, "maxLength": 120},
+    "version": {
+      "type": "string",
+      "pattern": "^[0-9]+\\.[0-9]+\\.[0-9]+(?:[-+][A-Za-z0-9._-]+)?$"
+    },
+    "api_version": {"type": "string", "minLength": 1, "maxLength": 20},
+    "entrypoint": {
+      "type": "string",
+      "pattern": "^[^/\\\\].*\\.py(?::[A-Za-z_][A-Za-z0-9_]*)?$"
+    },
+    "description": {"type": "string", "maxLength": 500},
+    "default_enabled": {"type": "boolean", "default": false},
+    "permissions": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "enum": [
+          "events.subscribe",
+          "events.publish",
+          "actions.register",
+          "skills.register",
+          "context.provide",
+          "memory.propose",
+          "ui.register",
+          "services.register",
+          "storage.local",
+          "game.snapshot.read",
+          "screen.summary.read",
+          "network.http",
+          "credentials.use",
+          "filesystem.external",
+          "timer.background"
+        ]
+      }
+    },
+    "dependencies": {
+      "type": "array",
+      "uniqueItems": true,
+      "items": {
+        "oneOf": [
+          {"type": "string"},
+          {
+            "type": "object",
+            "required": ["id"],
+            "properties": {
+              "id": {"type": "string"},
+              "optional": {"type": "boolean", "default": false}
+            }
+          }
+        ]
+      }
+    },
+    "settings": {"type": "object"},
+    "contributes": {"type": "object"}
+  }
+}
