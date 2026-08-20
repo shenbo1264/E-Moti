@@ -441,6 +441,9 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
         "LLM表达",
         "表达规则",
         "语音",
+        "回忆",
+        "探头时刻",
+        "插件",
     ]
 
     window.close()
@@ -1805,7 +1808,7 @@ def test_desktop_mode_feedback_overlay_updates_after_sprite_touch(monkeypatch, t
 
     assert "模式：Calm" in text
     assert "招手回应" in text
-    assert "轻轻回应" in text
+    assert "被发现了" in text
     assert window.controller.get_snapshot()["motion"] == "TouchHead"
 
     window.close()
@@ -1923,6 +1926,47 @@ def test_desktop_mode_context_menu_exit_closes_window_and_controller(monkeypatch
     assert controller.close_calls == 1
 
 
+def test_desktop_pet_child_exit_quits_owning_control_panel(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+
+    from PySide6.QtWidgets import QApplication
+
+    import guanghe_companion.app as app_module
+    from guanghe_companion.controller import CompanionController
+
+    class CloseAwareController(CompanionController):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.close_calls = 0
+
+        def close(self):
+            if self.close_calls:
+                return
+            self.close_calls += 1
+            super().close()
+
+    FakeSystemTrayIcon.instances = []
+    FakeSystemTrayIcon.available = True
+    monkeypatch.setattr(app_module, "QSystemTrayIcon", FakeSystemTrayIcon, raising=False)
+    app = QApplication.instance() or QApplication([])
+    controller = CloseAwareController(save_path=tmp_path / "save.json", auto_load=False)
+    window = app_module.CompanionWindow(controller=controller)
+    window.show()
+    window._enter_desktop_mode()
+    app.processEvents()
+    pet_window = window.desktop_pet_window
+    assert pet_window is not None
+
+    menu = pet_window._build_desktop_context_menu()
+    actions = {action.text(): action for action in menu.actions() if not action.isSeparator()}
+    actions["退出"].trigger()
+    app.processEvents()
+
+    assert controller.close_calls == 1
+    assert not window.isVisible()
+    assert window.desktop_pet_window is None
+
+
 def test_desktop_pet_history_menu_shows_copies_replays_reverts_and_clears_dialogue(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
 
@@ -1998,7 +2042,7 @@ def test_clicking_sprite_area_performs_touch_action(monkeypatch, tmp_path):
 
     assert snapshot["motion"] == "TouchHead"
     assert snapshot["mood"] == 62
-    assert "靠近" in snapshot["feedback"]
+    assert "被发现了" in snapshot["feedback"]
 
     window.close()
     app.processEvents()
@@ -3803,7 +3847,7 @@ def test_window_shows_proactive_companionship_feedback(monkeypatch, tmp_path):
     window._handle_tick()
     app.processEvents()
 
-    assert "能量有点低" in window.feedback_label.text()
+    assert "能量槽快见底" in window.feedback_label.text()
     assert "主动陪伴" in window.memory_label.text()
 
     window.close()
@@ -3917,7 +3961,7 @@ def test_window_can_reject_proactive_companionship_and_extend_cooldown(monkeypat
     rejected = window.controller.get_snapshot()
     assert rejected["proactive_feedback"] is None
     assert window.proactive_reject_button.isVisible() is False
-    assert "暂停" in rejected["feedback"]
+    assert "静音待机" in rejected["feedback"]
 
     window.controller.now += 75
     window._handle_tick()
@@ -4197,7 +4241,7 @@ def test_window_demo_buttons_trigger_proactive_companionship(monkeypatch, tmp_pa
     window.demo_low_charge_button.click()
     app.processEvents()
 
-    assert "能量有点低" in window.feedback_label.text()
+    assert "能量槽快见底" in window.feedback_label.text()
     assert "主动陪伴" in window.memory_label.text()
 
     window.close()

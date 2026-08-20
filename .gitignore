@@ -81,6 +81,9 @@ artifacts/portrait-candidate*/
 artifacts/spirit-sequence-drafts/
 artifacts/pixel-pet-sequence-drafts/
 artifacts/windows-build-validation*.json
+artifacts/codex_handoff/
+artifacts/plugin-overlay-backup/
+artifacts/plugin-overlay-verification/
 assets/companion/original_oc/preview/pyside_*smoke*.png
 assets/companion/original_oc/preview/qa_diagnostics_*/
 
@@ -89,3 +92,6 @@ assets/companion/original_oc/preview/qa_diagnostics_*/
 Thumbs.db
 .vscode/
 .idea/
+# E-Moti local plugin runtime
+data/plugins/
+.codex_private/

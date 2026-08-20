@@ -1,0 +1,11 @@
+{
+  "schema_version": 1,
+  "enabled": true,
+  "provider": "deepseek",
+  "model": "deepseek-v4-flash",
+  "base_url": "https://api.deepseek.com",
+  "api_key": "",
+  "timeout_seconds": 45,
+  "tts_provider": "disabled",
+  "asr_provider": "disabled"
+}

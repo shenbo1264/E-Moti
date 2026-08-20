@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "id": "emoti.bundled.local-expression-fallback",
+  "name": "本地角色表达兜底",
+  "version": "0.1.0",
+  "api_version": "1",
+  "entrypoint": "plugin.py:activate",
+  "description": "在外部模型不可用时提供一条确定性的短句表达服务。",
+  "default_enabled": true,
+  "permissions": ["services.register"],
+  "dependencies": ["emoti.core.capability-contracts"],
+  "settings": {
+    "default_line": "唔……我还在这里。先慢慢说吧。"
+  },
+  "contributes": {
+    "service_providers": ["emoti.bundled.local-expression"]
+  }
+}

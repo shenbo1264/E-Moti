@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "id": "emoti.core.capability-contracts",
+  "name": "E-Moti Capability Contracts",
+  "version": "0.1.0",
+  "api_version": "1",
+  "entrypoint": "plugin.py:activate",
+  "description": "Stable service definitions for expression, voice, screen summary, and web search providers.",
+  "default_enabled": true,
+  "permissions": ["services.register"],
+  "dependencies": [],
+  "settings": {},
+  "contributes": {
+    "services": [
+      "emoti.llm.expression",
+      "emoti.voice.tts",
+      "emoti.voice.asr",
+      "emoti.context.screen-summary",
+      "emoti.context.web-search"
+    ]
+  }
+}

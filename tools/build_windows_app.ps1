@@ -17,6 +17,7 @@ $RuntimeVoiceServicesDir = Join-Path $BuildDir "runtime_voice_services\voice_ser
 $PortableVoiceRuntimeDir = Join-Path $AppDir "voice_runtime"
 $EntryPath = Join-Path $RepoRoot "packaging\launch_control_panel.py"
 $AssetsPath = Join-Path $RepoRoot "assets"
+$PluginsPath = Join-Path $RepoRoot "plugins"  # E-Moti plugin runtime integration
 $SourceCompanionDir = Join-Path $AssetsPath "companion"
 $SourceVoiceServicesDir = Join-Path $RepoRoot "tools\voice_services"
 $SrcPath = Join-Path $RepoRoot "src"
@@ -132,6 +133,7 @@ Get-ChildItem -Force -LiteralPath $SourceVoiceServicesDir | ForEach-Object {
 
 $AddData = "$RuntimeAssetsRoot;assets"
 $AddVoiceServices = "$RuntimeVoiceServicesDir;voice_services"
+$AddPlugins = "$PluginsPath;plugins"
 $Arguments = @(
     "-m", "PyInstaller",
     "--noconfirm",
@@ -147,6 +149,7 @@ $Arguments = @(
     "--hidden-import", "edge_tts",
     "--add-data", $AddData,
     "--add-data", $AddVoiceServices,
+    "--add-data", $AddPlugins,
     "packaging\launch_control_panel.py"
 )
 
