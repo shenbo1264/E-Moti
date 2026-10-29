@@ -10,6 +10,10 @@ requires-python = ">=3.11"
 license = { text = "MIT" }
 dependencies = ["PySide6==6.11.0", "Pillow>=12.1.0", "ddgs>=9.0.0", "edge-tts>=7.0.0"]
 
+[project.optional-dependencies]
+host = ["fastapi>=0.137.1,<0.138", "uvicorn>=0.46,<0.47"]
+test = ["pytest>=9", "httpx>=0.28,<0.29"]
+
 [tool.pytest.ini_options]
 pythonpath = ["src", "."]
 testpaths = ["tests"]

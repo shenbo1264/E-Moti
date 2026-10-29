@@ -191,6 +191,7 @@ class PluginEnabledCompanionController(_BaseController):
         return story.memory.store.context_epoch if story is not None else 0
 
     def _on_memory_invalidated(self) -> None:
+        self._invalidate_host_dialogue()
         self._memory_epoch_seen = self._dialogue_context_epoch()
         self._perception_summary = ""
         self._tool_results = []
@@ -209,6 +210,7 @@ class PluginEnabledCompanionController(_BaseController):
         self._tools_epoch = self._dialogue_context_epoch()
 
     def submit_dialogue_request(self, request, *, include_ai_expression: bool = False):
+        self._require_dialogue_idle()
         # A narrow, explicit user command creates a reviewable proposal. Normal
         # chats, model replies and hypothetical scenes cannot silently write facts.
         pending = self.story_runtime.memory.propose_explicit_user_memory(request.normalized_text(), now=int(self.now))
@@ -219,6 +221,11 @@ class PluginEnabledCompanionController(_BaseController):
             self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
             return self.get_snapshot()
         return snapshot
+
+    def _prepare_host_memory(self, request) -> bool:
+        return self.story_runtime.memory.propose_explicit_user_memory(
+            request.normalized_text(), now=int(self.now),
+        ) is not None
 
     def _expression_context_is_current(self, request) -> bool:
         story = getattr(self, "story_runtime", None)

@@ -63,6 +63,23 @@ class ExpressionEventPipeline:
             if not self.context_guard(expression_request):
                 return self._revoked_context_events(choices) + domain_event_list
             return fallback_events + domain_event_list
+        return self.complete_events(expression_request, expressed_events, effect=effect,
+                                    feedback=feedback, domain_events=domain_event_list)
+
+    def complete_events(
+        self,
+        expression_request: ExpressionRequest,
+        expressed_events: list[dict[str, str]] | None,
+        *,
+        effect: str,
+        feedback: str,
+        domain_events: Iterable[CompanionEvent] = (),
+    ) -> list[CompanionEvent]:
+        domain_event_list = list(domain_events)
+        choices = self._choices()
+        fallback_events = build_typed_fallback_events(
+            state=self.state, feedback=feedback, choices=choices, effect=effect,
+        )
         if not self.context_guard(expression_request):
             return self._revoked_context_events(choices) + domain_event_list
         if not expressed_events:
