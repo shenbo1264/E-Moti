@@ -581,6 +581,7 @@ class CompanionWindow(QMainWindow):
             on_finished=self._emit_async_tts_finished,
         )
         self._last_auto_tts_key: tuple[str, str] | None = None
+        self._voice_context_key: tuple[str, int] | None = None
         self.desktop_pet_window: CompanionWindow | None = None
         self._return_target_window: CompanionWindow | None = None
         self._close_callbacks: list[Callable[[CompanionWindow], None]] = []
@@ -669,6 +670,7 @@ class CompanionWindow(QMainWindow):
         self.countdown_timer.stop()
         self.screen_observation_timer.stop()
         try:
+            self._cancel_tts_speech()
             self.voice_async_runner.shutdown()
         except Exception:
             pass
@@ -1925,8 +1927,30 @@ class CompanionWindow(QMainWindow):
         return self.controller.character_pack.tts_profile.to_runtime_dict()
 
     def _handle_tts_stop(self) -> None:
-        result = self.capability_runtime.stop_tts()
+        result = self._cancel_tts_speech()
         self.voice_status_label.setText(result.message)
+
+    def _cancel_tts_speech(self) -> TTSResult:
+        cancel = getattr(self.voice_async_runner, "cancel_pending", None)
+        if callable(cancel):
+            cancel()
+        # A character change can select a different provider. Stop every
+        # instantiated provider, including the one used by the previous role.
+        return self.tts_manager.stop()
+
+    def _invalidate_tts_context(self, snapshot: dict[str, object]) -> None:
+        epoch_reader = getattr(self.controller, "_dialogue_context_epoch", None)
+        epoch = int(epoch_reader()) if callable(epoch_reader) else 0
+        character_id = str(snapshot.get("character_id", self.controller.character_pack.character_id))
+        key = (character_id, epoch)
+        if self._voice_context_key is not None and key != self._voice_context_key:
+            self._cancel_tts_speech()
+            # Rendering a refreshed snapshot must not requeue its old speech.
+            # The next distinct, valid output still follows normal auto-speak.
+            self._last_auto_tts_key = (str(snapshot.get("event_preview", "")),
+                                       self.snapshot_renderer.snapshot_tts_speech(snapshot))
+            self.voice_status_label.setText("记忆或角色已更新，旧朗读已取消")
+        self._voice_context_key = key
 
     def _handle_voice_service_preflight(self) -> None:
         statuses = probe_voice_services(timeout=2.0)
@@ -2116,6 +2140,7 @@ class CompanionWindow(QMainWindow):
             self._show_message(str(exc))
 
     def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
+        self._invalidate_tts_context(snapshot)
         frame = self.presentation_renderer.frame_from_snapshot(snapshot)
         if frame.backend == "portrait":
             self._render_portrait_frame(frame)
@@ -2207,7 +2232,9 @@ class CompanionWindow(QMainWindow):
 
     @Slot(int, object)
     def _handle_async_tts_finished(self, job_id: int, result: object) -> None:
-        _ = job_id
+        is_current = getattr(self.voice_async_runner, "is_current", None)
+        if callable(is_current) and not is_current(job_id):
+            return
         if isinstance(result, TTSResult):
             self.voice_status_label.setText(result.message)
             return

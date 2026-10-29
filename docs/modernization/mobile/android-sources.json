@@ -1,0 +1,409 @@
+{
+  "schema_version": 1,
+  "research_date_local": "2026-10-28",
+  "timezone": "America/Los_Angeles",
+  "checked_at_utc": "2026-10-29 06:11:19 UTC",
+  "evidence_limitations": [
+    "No Android SDK build, APK installation, phone connection, real device execution, battery measurement, or model evaluation was performed.",
+    "Google Play distribution policy is distinct from Android API feasibility.",
+    "HyperOS 4 build, device model, region, and underlying Android API level are not yet known.",
+    "pushed_at can differ from default-branch commit_date; no maturity score inferred from timestamps.",
+    "Repository metadata NOASSERTION was not used as a substitute for actual license text."
+  ],
+  "projects": [
+    {
+      "repository": "ActivityWatch/aw-android",
+      "canonical_url": "https://github.com/ActivityWatch/aw-android",
+      "commit": "bb634609364872b9c7d38b3a4452fa228c1f9e4b",
+      "commit_date_utc": "2026-10-26T17:35:04Z",
+      "pushed_at_utc": "2026-10-26T17:35:04Z",
+      "archived": false,
+      "license": "MPL-2.0",
+      "decision": "reuse_optional_external_data_adapter",
+      "evidence": "read_only_source_and_metadata_review; not installed or executed",
+      "inspected_files": [
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/ActivityWatch/aw-android/blob/bb634609364872b9c7d38b3a4452fa228c1f9e4b/LICENSE"
+        },
+        {
+          "path": "mobile/src/main/java/net/activitywatch/android/watcher/UsageStatsWatcher.kt",
+          "url": "https://github.com/ActivityWatch/aw-android/blob/bb634609364872b9c7d38b3a4452fa228c1f9e4b/mobile/src/main/java/net/activitywatch/android/watcher/UsageStatsWatcher.kt"
+        },
+        {
+          "path": "mobile/src/main/java/net/activitywatch/android/watcher/SessionEventWatcher.kt",
+          "url": "https://github.com/ActivityWatch/aw-android/blob/bb634609364872b9c7d38b3a4452fa228c1f9e4b/mobile/src/main/java/net/activitywatch/android/watcher/SessionEventWatcher.kt"
+        },
+        {
+          "path": "mobile/src/main/java/net/activitywatch/android/watcher/WebWatcher.kt",
+          "url": "https://github.com/ActivityWatch/aw-android/blob/bb634609364872b9c7d38b3a4452fa228c1f9e4b/mobile/src/main/java/net/activitywatch/android/watcher/WebWatcher.kt"
+        },
+        {
+          "path": "mobile/src/main/java/net/activitywatch/android/watcher/MediaWatcher.kt",
+          "url": "https://github.com/ActivityWatch/aw-android/blob/bb634609364872b9c7d38b3a4452fa228c1f9e4b/mobile/src/main/java/net/activitywatch/android/watcher/MediaWatcher.kt"
+        },
+        {
+          "path": "mobile/src/main/res/xml/accessibility_service_config.xml",
+          "url": "https://github.com/ActivityWatch/aw-android/blob/bb634609364872b9c7d38b3a4452fa228c1f9e4b/mobile/src/main/res/xml/accessibility_service_config.xml"
+        },
+        {
+          "path": "mobile/src/main/AndroidManifest.xml",
+          "url": "https://github.com/ActivityWatch/aw-android/blob/bb634609364872b9c7d38b3a4452fa228c1f9e4b/mobile/src/main/AndroidManifest.xml"
+        }
+      ]
+    },
+    {
+      "repository": "droidrun/mobilerun",
+      "canonical_url": "https://github.com/droidrun/mobilerun",
+      "commit": "11dcdebdec9ea99f172dd7e80af7ba1eadbeb6c8",
+      "commit_date_utc": "2026-10-28T07:15:04Z",
+      "pushed_at_utc": "2026-10-28T20:57:49Z",
+      "archived": false,
+      "license": "MIT",
+      "decision": "framework_research_and_optional_external_executor",
+      "evidence": "read_only_source_and_metadata_review; not installed or executed",
+      "inspected_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/droidrun/mobilerun/blob/11dcdebdec9ea99f172dd7e80af7ba1eadbeb6c8/README.md"
+        },
+        {
+          "path": "mobilerun/agent/utils/android_device.py",
+          "url": "https://github.com/droidrun/mobilerun/blob/11dcdebdec9ea99f172dd7e80af7ba1eadbeb6c8/mobilerun/agent/utils/android_device.py"
+        },
+        {
+          "path": "mobilerun/agent/utils/portal_setup.py",
+          "url": "https://github.com/droidrun/mobilerun/blob/11dcdebdec9ea99f172dd7e80af7ba1eadbeb6c8/mobilerun/agent/utils/portal_setup.py"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/droidrun/mobilerun/blob/11dcdebdec9ea99f172dd7e80af7ba1eadbeb6c8/LICENSE"
+        }
+      ]
+    },
+    {
+      "repository": "droidrun/mobilerun-portal",
+      "canonical_url": "https://github.com/droidrun/mobilerun-portal",
+      "commit": "4962c54cb1c5a2b5b2f68e228bb91ffb33d2b113",
+      "commit_date_utc": "2026-10-29T01:48:37Z",
+      "pushed_at_utc": "2026-10-29T05:23:41Z",
+      "archived": false,
+      "license": "AGPL-3.0-or-later",
+      "decision": "do_not_copy_into_mit_repo",
+      "evidence": "read_only_source_and_metadata_review; not installed or executed",
+      "inspected_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/droidrun/mobilerun-portal/blob/4962c54cb1c5a2b5b2f68e228bb91ffb33d2b113/README.md"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/droidrun/mobilerun-portal/blob/4962c54cb1c5a2b5b2f68e228bb91ffb33d2b113/LICENSE"
+        },
+        {
+          "path": "app/src/main/res/xml/accessibility_service_config.xml",
+          "url": "https://github.com/droidrun/mobilerun-portal/blob/4962c54cb1c5a2b5b2f68e228bb91ffb33d2b113/app/src/main/res/xml/accessibility_service_config.xml"
+        },
+        {
+          "path": "docs/websocket-events.md",
+          "url": "https://github.com/droidrun/mobilerun-portal/blob/4962c54cb1c5a2b5b2f68e228bb91ffb33d2b113/docs/websocket-events.md"
+        }
+      ]
+    },
+    {
+      "repository": "zai-org/Open-AutoGLM",
+      "canonical_url": "https://github.com/zai-org/Open-AutoGLM",
+      "commit": "86f55382982fb054e8fc98ca80609dff8a2cdc3c",
+      "commit_date_utc": "2026-03-06T08:38:32Z",
+      "pushed_at_utc": "2026-03-06T08:38:39Z",
+      "archived": false,
+      "license": "Apache-2.0",
+      "decision": "optional_reviewed_adapter_candidate_not_observer",
+      "evidence": "read_only_source_and_metadata_review; not installed or executed",
+      "inspected_files": [
+        {
+          "path": "README_en.md",
+          "url": "https://github.com/zai-org/Open-AutoGLM/blob/86f55382982fb054e8fc98ca80609dff8a2cdc3c/README_en.md"
+        },
+        {
+          "path": "phone_agent/adb/screenshot.py",
+          "url": "https://github.com/zai-org/Open-AutoGLM/blob/86f55382982fb054e8fc98ca80609dff8a2cdc3c/phone_agent/adb/screenshot.py"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/zai-org/Open-AutoGLM/blob/86f55382982fb054e8fc98ca80609dff8a2cdc3c/LICENSE"
+        }
+      ]
+    },
+    {
+      "repository": "X-PLUG/MobileAgent",
+      "canonical_url": "https://github.com/X-PLUG/MobileAgent",
+      "commit": "81fa28b564ef7a695521500bc15a0e1324b2b394",
+      "commit_date_utc": "2026-10-28T03:02:17Z",
+      "pushed_at_utc": "2026-10-28T03:02:18Z",
+      "archived": false,
+      "license": "MIT (root; inspect component/model licenses separately)",
+      "decision": "executor_and_benchmark_reference",
+      "evidence": "read_only_source_and_metadata_review; not installed or executed",
+      "inspected_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/X-PLUG/MobileAgent/blob/81fa28b564ef7a695521500bc15a0e1324b2b394/README.md"
+        },
+        {
+          "path": "Mobile-Agent-v3.5/README.md",
+          "url": "https://github.com/X-PLUG/MobileAgent/blob/81fa28b564ef7a695521500bc15a0e1324b2b394/Mobile-Agent-v3.5/README.md"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/X-PLUG/MobileAgent/blob/81fa28b564ef7a695521500bc15a0e1324b2b394/LICENSE"
+        }
+      ]
+    },
+    {
+      "repository": "Genymobile/scrcpy",
+      "canonical_url": "https://github.com/Genymobile/scrcpy",
+      "commit": "a60891aea193d92e7e5c3942700eca63f9d19a5f",
+      "commit_date_utc": "2026-10-08T06:41:27Z",
+      "pushed_at_utc": "2026-10-26T22:10:06Z",
+      "archived": false,
+      "license": "Apache-2.0",
+      "decision": "user_opt_in_adb_observation_tool",
+      "evidence": "read_only_source_and_metadata_review; not installed or executed",
+      "inspected_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/Genymobile/scrcpy/blob/a60891aea193d92e7e5c3942700eca63f9d19a5f/README.md"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/Genymobile/scrcpy/blob/a60891aea193d92e7e5c3942700eca63f9d19a5f/LICENSE"
+        }
+      ]
+    },
+    {
+      "repository": "RikkaApps/Shizuku",
+      "canonical_url": "https://github.com/RikkaApps/Shizuku",
+      "commit": "b844bc491f1790c72328e1a8e5b2349f8978f0ea",
+      "commit_date_utc": "2025-06-18T04:19:30Z",
+      "pushed_at_utc": "2025-06-18T04:21:02Z",
+      "archived": false,
+      "license": "Apache-2.0 with branding restrictions",
+      "decision": "optional_advanced_adapter_not_default",
+      "evidence": "read_only_source_and_metadata_review; not installed or executed",
+      "inspected_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/RikkaApps/Shizuku/blob/b844bc491f1790c72328e1a8e5b2349f8978f0ea/README.md"
+        },
+        {
+          "path": "LICENSE",
+          "url": "https://github.com/RikkaApps/Shizuku/blob/b844bc491f1790c72328e1a8e5b2349f8978f0ea/LICENSE"
+        }
+      ]
+    },
+    {
+      "repository": "screenpipe/screenpipe",
+      "canonical_url": "https://github.com/screenpipe/screenpipe",
+      "commit": "93a0fba0aa94c1aeeb8cd78795ad943b4dc435e4",
+      "commit_date_utc": "2026-10-28T22:29:40Z",
+      "pushed_at_utc": "2026-10-29T02:57:58Z",
+      "archived": false,
+      "license": "Screenpipe Commercial License",
+      "decision": "do_not_integrate_current_source_as_mit; no verified Android collector",
+      "evidence": "read_only_source_and_metadata_review; not installed or executed",
+      "inspected_files": [
+        {
+          "path": "README.md",
+          "url": "https://github.com/screenpipe/screenpipe/blob/93a0fba0aa94c1aeeb8cd78795ad943b4dc435e4/README.md"
+        },
+        {
+          "path": "LICENSE.md",
+          "url": "https://github.com/screenpipe/screenpipe/blob/93a0fba0aa94c1aeeb8cd78795ad943b4dc435e4/LICENSE.md"
+        }
+      ]
+    }
+  ],
+  "official_sources": [
+    {
+      "id": "usage_stats",
+      "url": "https://developer.android.com/reference/android/app/usage/UsageStatsManager",
+      "web_reference": "turn22search0"
+    },
+    {
+      "id": "usage_new_permission_role",
+      "url": "https://developer.android.com/reference/android/Manifest.permission#QUERY_APP_USAGE",
+      "web_reference": "turn26search1"
+    },
+    {
+      "id": "notification_listener",
+      "url": "https://developer.android.com/reference/android/service/notification/NotificationListenerService",
+      "web_reference": "turn28view2"
+    },
+    {
+      "id": "android15_sensitive_notifications",
+      "url": "https://developer.android.com/about/versions/15/behavior-changes-all",
+      "web_reference": "turn24search2"
+    },
+    {
+      "id": "accessibility_service",
+      "url": "https://developer.android.com/reference/android/accessibilityservice/AccessibilityService",
+      "web_reference": "turn22search1"
+    },
+    {
+      "id": "accessibility_sensitive_nodes",
+      "url": "https://developer.android.com/reference/androidx/core/view/accessibility/AccessibilityNodeInfoCompat",
+      "web_reference": "turn34search5"
+    },
+    {
+      "id": "media_projection",
+      "url": "https://developer.android.com/media/grow/media-projection",
+      "web_reference": "turn22search3"
+    },
+    {
+      "id": "secure_window",
+      "url": "https://developer.android.com/reference/android/view/WindowManager.LayoutParams#FLAG_SECURE",
+      "web_reference": "turn34search7"
+    },
+    {
+      "id": "fgs_types",
+      "url": "https://developer.android.com/develop/background-work/services/fgs/service-types",
+      "web_reference": "turn21search2"
+    },
+    {
+      "id": "local_network_android17",
+      "url": "https://developer.android.com/privacy-and-security/local-network-permission",
+      "web_reference": "turn26search3"
+    },
+    {
+      "id": "nsd_picker",
+      "url": "https://developer.android.com/reference/android/net/nsd/NsdManager",
+      "web_reference": "turn26search4"
+    },
+    {
+      "id": "periodic_work",
+      "url": "https://developer.android.com/reference/androidx/work/PeriodicWorkRequest",
+      "web_reference": "turn34search4"
+    },
+    {
+      "id": "long_workers_quota",
+      "url": "https://developer.android.com/develop/background-work/background-tasks/persistent/how-to/long-running",
+      "web_reference": "turn34search3"
+    },
+    {
+      "id": "play_accessibility_policy",
+      "url": "https://support.google.com/googleplay/android-developer/answer/10964491?hl=en",
+      "web_reference": "turn24search0"
+    },
+    {
+      "id": "advanced_protection_user",
+      "url": "https://support.google.com/android/answer/16339980?hl=en",
+      "web_reference": "turn42search0"
+    },
+    {
+      "id": "advanced_protection_api",
+      "url": "https://developer.android.com/privacy-and-security/advanced-protection-mode",
+      "web_reference": "turn28view1"
+    },
+    {
+      "id": "hyperos4",
+      "url": "https://hyperos.mi.com/",
+      "web_reference": "turn21search6"
+    },
+    {
+      "id": "xiaomi_autostart",
+      "url": "https://dev.mi.com/xiaomihyperos/documentation/detail?pId=1624",
+      "web_reference": "turn24search5"
+    },
+    {
+      "id": "xiaomi_powerkeeper",
+      "url": "https://dev.mi.com/xiaomihyperos/documentation/detail?pId=1628",
+      "web_reference": "turn24search6"
+    },
+    {
+      "id": "xiaomi_background_activity",
+      "url": "https://dev.mi.com/xiaomihyperos/documentation/detail?pId=1625",
+      "web_reference": "turn24search7"
+    },
+    {
+      "id": "xiaomi_android17",
+      "url": "https://dev.mi.com/xiaomihyperos/documentation/detail?pId=2297",
+      "web_reference": "turn47view2"
+    },
+    {
+      "id": "shizuku_manual",
+      "url": "https://shizuku.rikka.app/guide/setup/",
+      "web_reference": "turn36view0"
+    },
+    {
+      "id": "appfunctions",
+      "url": "https://developer.android.com/ai/appfunctions",
+      "web_reference": "turn44search0"
+    },
+    {
+      "id": "appfunctions_release",
+      "url": "https://developer.android.com/jetpack/androidx/releases/appfunctions",
+      "web_reference": "turn44search6"
+    },
+    {
+      "id": "assistant_session",
+      "url": "https://developer.android.com/reference/android/service/voice/VoiceInteractionSession",
+      "web_reference": "turn44search7"
+    },
+    {
+      "id": "mpl_faq",
+      "url": "https://www.mozilla.org/en-US/MPL/2.0/FAQ/",
+      "web_reference": "turn47view0"
+    },
+    {
+      "id": "receive_shared_data",
+      "url": "https://developer.android.com/develop/ui/compose/sharing/receive",
+      "web_reference": "turn51search3"
+    }
+  ],
+  "real_source_findings": [
+    {
+      "project": "ActivityWatch/aw-android",
+      "path": "mobile/src/main/java/net/activitywatch/android/watcher/WebWatcher.kt",
+      "symbol": "logBrowserEvent",
+      "finding": "incognito is hard-coded false with TODO; no claim of Android private-browsing exclusion"
+    },
+    {
+      "project": "ActivityWatch/aw-android",
+      "path": "mobile/src/main/java/net/activitywatch/android/watcher/UsageStatsWatcher.kt",
+      "symbol": "setupAlarm",
+      "finding": "hourly setInexactRepeating, not a guaranteed real-time global activity stream"
+    },
+    {
+      "project": "droidrun/mobilerun-portal",
+      "path": "app/src/main/res/xml/accessibility_service_config.xml",
+      "finding": "isAccessibilityTool=true is source configuration, not proof that E-Moti or a general assistant meets Google Play eligibility"
+    },
+    {
+      "project": "screenpipe/screenpipe",
+      "path": "LICENSE.md",
+      "finding": "current root license covers all current repo code and restricts commercial/embedded use; old MIT releases keep their prior license"
+    },
+    {
+      "project": "screenpipe/screenpipe",
+      "path": "README.md and recursive tree",
+      "finding": "documented desktop support; observed Android-named paths are icons, not verified Android capture implementation"
+    }
+  ],
+  "community_cases": [
+    {
+      "url": "https://github.com/ActivityWatch/aw-android/issues/255",
+      "title": "ForegroundServiceStartNotAllowedException crashes BackgroundService on Android 14+",
+      "state": "closed",
+      "closed_at": "2026-09-23T00:08:59Z",
+      "not_reproduced": true
+    },
+    {
+      "url": "https://github.com/ActivityWatch/aw-android/issues/261",
+      "title": "Blank white screen and app not working",
+      "state": "closed",
+      "closed_at": "2026-09-15T19:42:37Z",
+      "not_reproduced": true
+    }
+  ]
+}

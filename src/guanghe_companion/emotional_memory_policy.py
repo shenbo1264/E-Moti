@@ -209,12 +209,14 @@ class EmotionalMemoryPolicy:
         owner_id: str = "local_user",
         now: int,
     ) -> MemoryCandidate | None:
-        cleaned = _clean(text)
+        if not isinstance(text, str):
+            return None
+        cleaned = " ".join(text.replace("\n", " ").replace("\r", " ").strip().split())
         markers = ("请记住", "记住这件事", "帮我记住", "你要记得")
         marker = next((item for item in markers if cleaned.startswith(item)), "")
         if not marker:
             return None
-        content = cleaned[len(marker) :].lstrip("：:，, ")
+        content = _clean(cleaned[len(marker) :].lstrip("：:，, "))
         if not content:
             return None
         return MemoryCandidate(

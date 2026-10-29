@@ -81,10 +81,12 @@ class CompanionStoryRuntime:
             top_k=4,
         )
         return enrich_ai_context_with_memory(base_context, bundle), bundle
-    def build_memory_album(self) -> tuple[MemoryAlbumSection, ...]:
+    def build_memory_album(self, *, now: int | None = None) -> tuple[MemoryAlbumSection, ...]:
         """Return a game-facing album model for the PySide6 memory page."""
 
+        if now is None:
+            now = max((entry.updated_at for entry in self.memory.store.load_memories()), default=0)
         return build_memory_album(
             self.memory.store.load_memories(),
-            self.memory.store.load_chapters(),
+            self.memory.valid_chapters(now=now),
         )

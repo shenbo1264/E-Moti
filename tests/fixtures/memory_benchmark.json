@@ -1,0 +1,274 @@
+{
+  "version": 1,
+  "description": "Synthetic deterministic lifecycle and final-prompt contract probes. No live model benchmark claims.",
+  "cases": [
+    {
+      "id": "recall_drink", "category": "recall", "description": "用户明确饮品偏好需要进入真实最终 prompt",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}}],
+      "query": "饮品偏好是什么", "expect": {"recalled": ["fact"], "context_contains": ["白桃乌龙"], "prompt_contains": ["白桃乌龙"]}
+    },
+    {
+      "id": "recall_alias", "category": "recall", "description": "称呼事实召回",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "用户称呼", "summary": "请叫我小柏"}}],
+      "query": "我喜欢什么称呼", "expect": {"recalled": ["fact"], "prompt_contains": ["小柏"]}
+    },
+    {
+      "id": "recall_hobby", "category": "recall", "description": "持续兴趣与短任务区分",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "电吉他练习目标", "summary": "我正在练习星河旋律"}}],
+      "query": "电吉他的练习目标", "expect": {"recalled": ["fact"], "prompt_contains": ["星河旋律"]}
+    },
+    {
+      "id": "recall_english", "category": "recall", "description": "英文单词检索",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "favorite constellation", "summary": "My favorite constellation is Cygnus."}}],
+      "query": "favorite constellation", "expect": {"recalled": ["fact"], "prompt_contains": ["Cygnus"]}
+    },
+    {
+      "id": "older_relevant_beats_recent", "category": "recall", "description": "较旧但相关的事实不能被最新无关事实挤掉",
+      "ops": [
+        {"op": "remember", "id": "fact", "now": 1, "args": {"title": "生日甜点偏好", "summary": "生日甜点想吃栗子蛋糕"}},
+        {"op": "remember", "id": "other", "now": 999, "args": {"title": "键盘型号", "summary": "新键盘叫银河九号"}}
+      ],
+      "query": "生日甜点", "expect": {"recalled": ["fact"], "not_recalled": ["other"], "prompt_contains": ["栗子蛋糕"]}
+    },
+    {
+      "id": "explicit_confirmed_memory", "category": "recall", "description": "候选确认后可召回且真正送达模型输入",
+      "ops": [{"op": "propose", "id": "fact", "text": "请记住：我喜欢梅子汽水", "confirm": true}],
+      "query": "梅子汽水的偏好", "expect": {"recalled": ["fact"], "prompt_contains": ["我喜欢梅子汽水"], "pending_count": 0}
+    },
+    {
+      "id": "unrelated_technical_query", "category": "irrelevant", "description": "技术问题不强插无关生活记忆",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "生日甜点偏好", "summary": "生日甜点想吃栗子蛋糕", "pinned": true}}],
+      "query": "矩阵特征值怎么计算", "expect": {"empty_recall": true, "context_absent": ["栗子蛋糕"], "prompt_absent": ["栗子蛋糕"]}
+    },
+    {
+      "id": "unrelated_english_query", "category": "irrelevant", "description": "低词汇重合的英文问题",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "orchid cultivar", "summary": "Paphiopedilum is the orchid cultivar."}}],
+      "query": "SQLite transaction isolation", "expect": {"empty_recall": true, "context_absent": ["Paphiopedilum"], "prompt_absent": ["Paphiopedilum"]}
+    },
+    {
+      "id": "unrelated_compiler_query", "category": "irrelevant", "description": "已固定记忆仍需相关性门槛",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "周末散步", "summary": "周末散步喜欢去落日公园", "pinned": true}}],
+      "query": "Rust 编译错误 E0308", "expect": {"empty_recall": true, "context_absent": ["落日公园"], "prompt_absent": ["落日公园"]}
+    },
+    {
+      "id": "correct_fact", "category": "correction", "description": "新偏好取代旧偏好",
+      "ops": [
+        {"op": "remember", "id": "old", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "correct", "id": "old", "new_id": "new", "summary": "现在喜欢桂花红茶", "now": 200}
+      ],
+      "query": "饮品偏好是什么", "expect": {"recalled": ["new"], "not_recalled": ["old"], "prompt_contains": ["桂花红茶"], "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "correct_fact_twice", "category": "correction", "description": "连续两次纠正只暴露最新版",
+      "ops": [
+        {"op": "remember", "id": "v1", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "correct", "id": "v1", "new_id": "v2", "summary": "现在喜欢桂花红茶", "now": 200},
+        {"op": "correct", "id": "v2", "new_id": "v3", "summary": "最近只喝青柠气泡水", "now": 300}
+      ],
+      "query": "饮品偏好是什么", "expect": {"recalled": ["v3"], "not_recalled": ["v1", "v2"], "prompt_contains": ["青柠气泡水"], "context_absent": ["白桃乌龙", "桂花红茶"], "prompt_absent": ["白桃乌龙", "桂花红茶"]}
+    },
+    {
+      "id": "correct_with_old_dialogue", "category": "correction", "description": "纠正后的旧聊天不能绕过有效性规则",
+      "ops": [
+        {"op": "remember", "id": "old", "args": {"title": "工作城市", "summary": "工作城市是青藤城"}},
+        {"op": "history", "user": "工作城市是青藤城", "assistant": "记住了，你在青藤城工作。"},
+        {"op": "correct", "id": "old", "new_id": "new", "summary": "工作城市已改为白鹭城", "now": 200}
+      ],
+      "query": "工作城市是哪", "expect": {"recalled": ["new"], "prompt_contains": ["白鹭城"], "context_absent": ["青藤城"], "prompt_absent": ["青藤城"]}
+    },
+    {
+      "id": "forget_basic", "category": "forgetting", "description": "遗忘后不参与召回或模型输入",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "forget", "id": "fact", "now": 200}
+      ],
+      "query": "饮品偏好是什么", "expect": {"empty_recall": true, "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "forget_survives_restart", "category": "forgetting", "description": "重启不恢复被遗忘事实",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "forget", "id": "fact", "now": 200}, {"op": "reopen"}
+      ],
+      "query": "饮品偏好是什么", "expect": {"empty_recall": true, "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "forget_blocks_stale_object_replay", "category": "forgetting", "description": "持有旧对象再upsert不得复活遗忘事实",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "forget", "id": "fact", "now": 200}, {"op": "replay", "id": "fact"}
+      ],
+      "query": "饮品偏好是什么", "expect": {"empty_recall": true, "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "forget_old_dialogue", "category": "forgetting", "description": "遗忘同步阻止对话历史重新注入",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "history", "user": "我喜欢白桃乌龙", "assistant": "白桃乌龙是你的心头好。"},
+        {"op": "forget", "id": "fact", "now": 200}
+      ],
+      "query": "饮品偏好是什么", "expect": {"empty_recall": true, "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "forget_recent_state_log", "category": "forgetting", "description": "snapshot近期事件不能绕过长期记忆失效",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "共同约定", "summary": "周末一起去云杉书屋"}},
+        {"op": "recent_log", "summary": "周末一起去云杉书屋"},
+        {"op": "forget", "id": "fact", "now": 200}
+      ],
+      "query": "共同约定有哪些", "expect": {"empty_recall": true, "context_absent": ["云杉书屋"], "prompt_absent": ["云杉书屋"]}
+    },
+    {
+      "id": "forget_chapter_source", "category": "derived", "description": "章节源被遗忘，章节不得继续保留旧事实",
+      "ops": [
+        {"op": "remember", "id": "fact", "now": 100, "args": {"title": "最爱白桃乌龙", "summary": "我喜欢白桃乌龙"}},
+        {"op": "remember", "id": "b", "now": 101, "args": {"title": "每周练习电吉他", "summary": "我每周练习电吉他"}},
+        {"op": "remember", "id": "c", "now": 102, "args": {"title": "养了一盆薄荷", "summary": "我养了一盆薄荷"}},
+        {"op": "consolidate", "now": 150}, {"op": "forget", "id": "fact", "now": 200}
+      ],
+      "query": "饮品偏好", "expect": {"not_recalled": ["fact"], "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "forget_profile_source", "category": "derived", "description": "画像来源被遗忘后派生偏好失效",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "profile", "sources": ["fact"], "args": {"new_preference": "喜欢白桃乌龙"}},
+        {"op": "forget", "id": "fact", "now": 200}
+      ],
+      "query": "平时有什么偏好", "expect": {"not_recalled": ["fact"], "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "correct_chapter_source", "category": "derived", "description": "纠正事实后旧章节不再有权支持旧说法",
+      "ops": [
+        {"op": "remember", "id": "fact", "now": 100, "args": {"title": "最爱白桃乌龙", "summary": "我喜欢白桃乌龙"}},
+        {"op": "remember", "id": "b", "now": 101, "args": {"title": "每周练习电吉他", "summary": "我每周练习电吉他"}},
+        {"op": "remember", "id": "c", "now": 102, "args": {"title": "养了一盆薄荷", "summary": "我养了一盆薄荷"}},
+        {"op": "consolidate", "now": 150},
+        {"op": "correct", "id": "fact", "new_id": "new", "title": "饮品偏好", "summary": "现在喜欢桂花红茶", "now": 200}
+      ],
+      "query": "饮品偏好", "expect": {"recalled": ["new"], "prompt_contains": ["桂花红茶"], "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "chapter_detects_same_id_content_revision", "category": "derived", "description": "源ID相同但内容改变时需核对版本而非只看ID存在",
+      "ops": [
+        {"op": "remember", "id": "fact", "now": 100, "args": {"title": "最爱白桃乌龙", "summary": "我喜欢白桃乌龙"}},
+        {"op": "remember", "id": "b", "now": 101, "args": {"title": "每周练习电吉他", "summary": "我每周练习电吉他"}},
+        {"op": "remember", "id": "c", "now": 102, "args": {"title": "养了一盆薄荷", "summary": "我养了一盆薄荷"}},
+        {"op": "consolidate", "now": 150},
+        {"op": "rewrite_source", "id": "fact", "title": "饮品偏好", "summary": "现在喜欢桂花红茶", "now": 200}
+      ],
+      "query": "饮品偏好", "expect": {"context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"], "chapter_absent": true}
+    },
+    {
+      "id": "character_namespace", "category": "isolation", "description": "不同角色不能共享同一共同经历",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "共同秘密", "summary": "我们给小岛取名蓝鲸岛"}},
+        {"op": "actor", "name": "other", "character": "original_oc"}, {"op": "read_as", "name": "other"}
+      ],
+      "query": "共同秘密", "expect": {"empty_recall": true, "context_absent": ["蓝鲸岛"], "prompt_absent": ["蓝鲸岛"]}
+    },
+    {
+      "id": "owner_namespace", "category": "isolation", "description": "同角色不同owner的事实不互读；测试服务契约",
+      "ops": [
+        {"op": "actor", "name": "alice", "owner": "alice"},
+        {"op": "remember", "actor": "alice", "id": "fact", "args": {"title": "共同秘密", "summary": "Alice的小岛叫珊瑚岛"}},
+        {"op": "actor", "name": "bob", "owner": "bob"}, {"op": "read_as", "name": "bob"}
+      ],
+      "query": "共同秘密", "expect": {"empty_recall": true, "context_absent": ["珊瑚岛"], "prompt_absent": ["珊瑚岛"]}
+    },
+    {
+      "id": "work_scene_is_transient", "category": "isolation", "description": "工作状态不得自动混入companion长期上下文",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "项目进度", "summary": "Relay任务名为银杉部署", "scope": "work"}}],
+      "query": "项目进度", "expect": {"empty_recall": true, "context_absent": ["银杉部署"], "prompt_absent": ["银杉部署"]}
+    },
+    {
+      "id": "game_scene_is_transient", "category": "isolation", "description": "游戏世界短期事实不得默认为本体共同记忆",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "游戏当前位置", "summary": "副本位置是晨雾港口", "scope": "game"}}],
+      "query": "游戏当前位置", "expect": {"empty_recall": true, "context_absent": ["晨雾港口"], "prompt_absent": ["晨雾港口"]}
+    },
+    {
+      "id": "expired_fact", "category": "temporal", "description": "时间有效期结束即不能当现时事实",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "本周城市", "summary": "本周住在青藤城", "valid_from": 100, "valid_until": 200}}],
+      "query": "本周城市", "now": 300, "expect": {"empty_recall": true, "context_absent": ["青藤城"], "prompt_absent": ["青藤城"]}
+    },
+    {
+      "id": "future_fact", "category": "temporal", "description": "尚未生效的安排不能当已发生事实",
+      "ops": [{"op": "remember", "id": "fact", "args": {"title": "本周城市", "summary": "届时会住在白鹭城", "valid_from": 500}}],
+      "query": "本周城市", "now": 300, "expect": {"empty_recall": true, "context_absent": ["白鹭城"], "prompt_absent": ["白鹭城"]}
+    },
+    {
+      "id": "model_output_not_fact", "category": "fabrication", "description": "未获用户确认的模型自述不能持久化为共同经历",
+      "ops": [{"op": "remember", "id": "fiction", "expect_rejected": true, "args": {"title": "昨夜探险", "summary": "我们昨晚去了月辉洞穴", "source": "assistant_generated", "user_confirmed": false}}],
+      "query": "昨夜探险", "expect": {"write_rejected": true, "active_count": 0, "context_absent": ["月辉洞穴"], "prompt_absent": ["月辉洞穴"]}
+    },
+    {
+      "id": "uncompleted_proactive_not_fact", "category": "fabrication", "description": "提出邀请不等于共同完成",
+      "ops": [{"op": "record_event", "event": {"event_type": "proactive", "payload": {"summary": "我们完成了蓝月观测", "completed": false, "user_accepted": true}}}],
+      "query": "共同观测", "expect": {"active_count": 0, "context_absent": ["蓝月观测"], "prompt_absent": ["蓝月观测"]}
+    },
+    {
+      "id": "unaccepted_proactive_not_fact", "category": "fabrication", "description": "用户未接受的互动不能被写成共同经历",
+      "ops": [{"op": "record_event", "event": {"event_type": "proactive", "payload": {"summary": "我们完成了蓝月观测", "completed": true, "user_accepted": false}}}],
+      "query": "共同观测", "expect": {"active_count": 0, "context_absent": ["蓝月观测"], "prompt_absent": ["蓝月观测"]}
+    },
+    {
+      "id": "raw_screen_not_long_term_fact", "category": "fabrication", "description": "屏幕原文不经用户确认长期保存",
+      "ops": [{"op": "record_event", "event": {"event_type": "proactive", "payload": {"summary": "屏幕里的任务叫夜鹭计划", "completed": true, "user_accepted": true, "contains_screen_content": true}}}],
+      "query": "屏幕任务", "expect": {"active_count": 0, "context_absent": ["夜鹭计划"], "prompt_absent": ["夜鹭计划"]}
+    },
+    {
+      "id": "hypothetical_chat_not_fact", "category": "fabrication", "description": "普通聊天中的假设不得直接产生真实事件记忆",
+      "ops": [{"op": "chat", "text": "假设我们昨晚一起去了月辉洞穴，你会带什么？"}],
+      "query": "今天聊点什么", "expect": {"active_count": 0, "empty_recall": true}
+    },
+    {
+      "id": "persona_survives_correction", "category": "persona", "description": "用户偏好纠正不改角色配置；不代表已测模型行为一致性",
+      "ops": [
+        {"op": "capture_persona"},
+        {"op": "remember", "id": "old", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "correct", "id": "old", "new_id": "new", "summary": "现在喜欢桂花红茶", "now": 200}
+      ],
+      "query": "饮品偏好", "expect": {"persona_unchanged": true, "recalled": ["new"], "prompt_contains": ["桂花红茶"]}
+    },
+    {
+      "id": "persona_survives_forgetting", "category": "persona", "description": "用户遗忘不重写角色稳定设定",
+      "ops": [
+        {"op": "capture_persona"},
+        {"op": "remember", "id": "fact", "args": {"title": "饮品偏好", "summary": "我喜欢白桃乌龙"}},
+        {"op": "forget", "id": "fact", "now": 200}
+      ],
+      "query": "饮品偏好", "expect": {"persona_unchanged": true, "empty_recall": true, "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "migration_cannot_resurrect", "category": "migration", "description": "旧JSON重导不能恢复被遗忘事实",
+      "ops": [
+        {"op": "migrate", "id": "fact", "rows": [{"key": "preference:drink", "category": "preference", "summary": "我喜欢白桃乌龙", "updated_at": 100}]},
+        {"op": "forget", "id": "fact", "now": 200},
+        {"op": "migrate", "rows": [{"key": "preference:drink", "category": "preference", "summary": "我喜欢白桃乌龙", "updated_at": 100}], "now": 300}
+      ],
+      "query": "饮品偏好", "expect": {"empty_recall": true, "context_absent": ["白桃乌龙"], "prompt_absent": ["白桃乌龙"]}
+    },
+    {
+      "id": "character_switch_with_expression", "category": "isolation", "description": "切角色过程中即使要求表达，也不能使用旧角色story",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "共同秘密", "summary": "我们给小岛取名蓝鲸岛"}},
+        {"op": "switch", "character": "original_oc", "expression": true}
+      ],
+      "query": "共同秘密", "expect": {"scope_mismatch": false, "empty_recall": true, "context_absent": ["蓝鲸岛"], "prompt_absent": ["蓝鲸岛"]}
+    },
+    {
+      "id": "unconfirmed_candidate_is_not_fact", "category": "fabrication", "description": "尚未确认的记忆候选不可变成权威事实",
+      "ops": [{"op": "propose", "id": "fact", "text": "请记住：我喜欢梅子汽水", "confirm": false}],
+      "query": "饮品偏好", "expect": {"pending_count": 1, "active_count": 0, "empty_recall": true, "context_absent": ["梅子汽水"], "prompt_absent": ["梅子汽水"]}
+    },
+    {
+      "id": "expired_fact_with_history", "category": "temporal", "description": "事实到期后旧聊天也不能绕过时间有效性控制",
+      "ops": [
+        {"op": "remember", "id": "fact", "args": {"title": "本周城市", "summary": "本周住在青藤城", "valid_from": 100, "valid_until": 200}},
+        {"op": "history", "user": "本周住在青藤城", "assistant": "你本周住在青藤城。"}
+      ],
+      "query": "本周城市", "now": 300,
+      "expect": {"empty_recall": true, "context_absent": ["青藤城"], "prompt_absent": ["青藤城"]}
+    }
+  ]
+}

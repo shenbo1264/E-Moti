@@ -462,6 +462,7 @@ class CompanionController:
         self.last_proactive_feedback = None
         self.last_session_goal_reward = None
         self._current_player_message = text
+        dialogue_epoch = self._dialogue_context_epoch()
         try:
             self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
         finally:
@@ -479,10 +480,17 @@ class CompanionController:
                 assistant_text=assistant_text,
                 effect="ATTENTION",
                 source=request.source,
+                context_epoch=dialogue_epoch,
             )
             self.dialogue_history_store.save(self.dialogue_history)
         self._persist()
         return self.get_snapshot()
+
+    def _dialogue_context_epoch(self) -> int:
+        return 0
+
+    def _expression_context_is_current(self, request) -> bool:
+        return True
 
     def copy_dialogue_history_text(self) -> str:
         return format_dialogue_history_text(self.dialogue_history)
@@ -969,6 +977,7 @@ class CompanionController:
             snapshot_provider=self.get_typed_snapshot,
             context_provider=self._expression_context,
             actions_provider=self._build_actions,
+            context_guard=self._expression_context_is_current,
         ).build_events(
             effect=effect,
             feedback=self.last_feedback,

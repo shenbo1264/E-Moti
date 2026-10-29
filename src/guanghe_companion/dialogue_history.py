@@ -21,6 +21,7 @@ class DialogueHistoryEntry:
     text: str
     effect: str = ""
     source: str = "desktop_pet"
+    context_epoch: int = 0
 
     def to_dict(self) -> dict[str, str]:
         return {
@@ -29,6 +30,7 @@ class DialogueHistoryEntry:
             "text": self.text,
             "effect": self.effect,
             "source": self.source,
+            "context_epoch": self.context_epoch,
         }
 
 
@@ -77,6 +79,7 @@ def append_dialogue_exchange(
     assistant_text: str,
     effect: str = "",
     source: str = "desktop_pet",
+    context_epoch: int = 0,
 ) -> tuple[DialogueHistoryEntry, ...]:
     next_entries = list(entries)
     cleaned_user_text = _clean_append_text(user_text, MAX_DIALOGUE_HISTORY_TEXT_LENGTH)
@@ -91,6 +94,7 @@ def append_dialogue_exchange(
                 speaker=USER_DIALOGUE_SPEAKER,
                 text=cleaned_user_text,
                 source=cleaned_source,
+                context_epoch=max(0, int(context_epoch)),
             )
         )
     if cleaned_assistant_text:
@@ -101,6 +105,7 @@ def append_dialogue_exchange(
                 text=cleaned_assistant_text,
                 effect=cleaned_effect,
                 source=cleaned_source,
+                context_epoch=max(0, int(context_epoch)),
             )
         )
     return tuple(next_entries[-MAX_DIALOGUE_HISTORY_ENTRIES:])
@@ -147,6 +152,7 @@ def _entry_from_payload(value: object) -> DialogueHistoryEntry | None:
         text=text,
         effect=effect,
         source=source or "desktop_pet",
+        context_epoch=max(0, value.get("context_epoch", 0)) if type(value.get("context_epoch", 0)) is int else 0,
     )
 
 

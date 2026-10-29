@@ -1,0 +1,48 @@
+{
+  "base_commit": "b9f200955123790a5c66abcaf4e2567b3659a90e",
+  "base_tree": "836cd8a6ff1b8a6ee6bb83173863714bfa865643",
+  "tested_tree": "836cd8a6ff1b8a6ee6bb83173863714bfa865643",
+  "python": "3.12.14 (main, Aug 25 2026, 14:00:49) [Clang 22.1.3 ]",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "packages": {
+    "pytest": "9.1.1",
+    "PySide6": "6.11.0",
+    "Pillow": "12.3.0",
+    "ddgs": null,
+    "edge-tts": null
+  },
+  "runs": [
+    {
+      "log": "/tmp/emoti-true-baseline.log",
+      "log_sha256": "ef4c26e45078bf46022da14689b49c42a88600da81e8175746a367af007a8319",
+      "failed": 9,
+      "passed": 1176,
+      "total": 1185,
+      "seconds": 96.2,
+      "environment": {
+        "TZ": "America/New_York (inherited)",
+        "PYTHONPATH": null,
+        "socket": "sandbox restricted",
+        "git_index": false
+      }
+    },
+    {
+      "log": "/tmp/emoti-true-baseline-normalized.log",
+      "log_sha256": "483cd81e352bf359429b7b3d6fa6fe5cef2a5772aa2fc03d69004984bd2643f5",
+      "failed": 1,
+      "passed": 1184,
+      "total": 1185,
+      "seconds": 90.09,
+      "environment": {
+        "TZ": "UTC",
+        "PYTHONPATH": "/tmp/emoti-audit-baseline/src",
+        "socket": "loopback allowed via low-risk escalation",
+        "git_index": true
+      }
+    }
+  ],
+  "unchanged_failure": "tests/test_portrait_video_source_pack_import.py::test_import_portrait_video_to_source_pack_cli_runs_from_repo_root",
+  "failure_cause": "Test creates only ffmpeg.cmd; Linux shutil.which(\"ffmpeg\") uses system FFmpeg, which rejects synthetic non-video input.",
+  "production_source_modified": false,
+  "tests_modified": false
+}

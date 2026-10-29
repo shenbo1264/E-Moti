@@ -55,6 +55,7 @@ class MemoryReflectionService:
             source_memory_ids=source_ids,
             created_at=max(0, int(now)),
             tags=("关系章节", *tuple(dict.fromkeys(tag for memory in significant for tag in memory.tags))[:4]),
+            source_fingerprints={memory.memory_id: memory.evidence_fingerprint() for memory in significant},
         )
 
     def update_bond_profile(

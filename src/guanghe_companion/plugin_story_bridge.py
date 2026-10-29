@@ -20,6 +20,7 @@ from .plugin_api import (
     thaw_value,
 )
 from .plugin_runtime import PluginRuntime
+from .emotional_memory_policy import MemoryCandidate
 
 
 @dataclass(frozen=True, slots=True)
@@ -64,7 +65,8 @@ class PluginStoryBridge:
         *,
         now: int,
     ) -> SettledEventBridgeResult:
-        rows = tuple(events)
+        rows = tuple({**_domain_event_payload(event), "event_id": _domain_event_id(event, index=index, now=now)}
+                     for index, event in enumerate(events))
         builtin_ids = tuple(self.story.record_settled_events(rows, now=now))
         processed: list[PluginEventProcessingResult] = []
         plugin_ids: list[str] = []
@@ -92,6 +94,9 @@ class PluginStoryBridge:
         return self._process_execution(result)
 
     def process_plugin_event(self, event: PluginEvent) -> PluginEventProcessingResult:
+        if event.character_id != self.character_id or self.story.memory.character_id != self.character_id:
+            return PluginEventProcessingResult(event, EventDispatchReport(), rejected_proposals=("character_scope_mismatch",))
+        epoch = self.story.memory.store.context_epoch
         dispatch = self.plugins.emit(event)
         proposal_report = self.plugins.collect_memory_proposals(event)
         memory_ids: list[str] = []
@@ -99,10 +104,25 @@ class PluginStoryBridge:
         pending: list[str] = []
         failures = list(dispatch.failures) + list(proposal_report.failures)
         for proposal in proposal_report.proposals:
-            if proposal.requires_user_confirmation:
-                pending.append(proposal.proposal_id)
+            if not event.durable or proposal.metadata.get("scope", "companion") != "companion":
+                rejected.append(proposal.proposal_id)
                 continue
-            memory_id = self._persist_proposal(proposal, event=event)
+            candidate = self._proposal_candidate(proposal, event=event)
+            if self.story.memory.store.is_retired_origin(entry=candidate.to_memory(now=event.occurred_at)):
+                rejected.append(proposal.proposal_id)
+                continue
+            if proposal.requires_user_confirmation:
+                try:
+                    self.story.memory.propose_candidate(candidate, pending_id=proposal.proposal_id, expected_epoch=epoch)
+                    pending.append(proposal.proposal_id)
+                except ValueError:
+                    rejected.append(proposal.proposal_id)
+                continue
+            try:
+                memory_id = self._persist_proposal(proposal, event=event, expected_epoch=epoch)
+            except ValueError:
+                rejected.append(proposal.proposal_id)
+                continue
             if memory_id:
                 memory_ids.append(memory_id)
         return PluginEventProcessingResult(
@@ -153,7 +173,18 @@ class PluginStoryBridge:
             ),
         )
 
-    def _persist_proposal(self, proposal: MemoryProposal, *, event: PluginEvent) -> str:
+    def _proposal_candidate(self, proposal: MemoryProposal, *, event: PluginEvent) -> MemoryCandidate:
+        metadata = dict(thaw_value(proposal.metadata))
+        metadata.update({"plugin_proposal_id": proposal.proposal_id, "plugin_event_id": event.event_id,
+                         "source_plugin_id": event.source_plugin_id})
+        return MemoryCandidate(character_id=self.character_id, owner_id=self.story.memory.owner_id,
+            kind=proposal.kind, title=proposal.title, summary=proposal.summary, source=proposal.source,
+            occurred_at=event.occurred_at, source_ids=tuple(dict.fromkeys((*proposal.source_ids, event.event_id))),
+            tags=proposal.tags, importance=proposal.importance, relationship_delta=proposal.relationship_delta,
+            pinned=proposal.pinned, requires_user_confirmation=proposal.requires_user_confirmation, metadata=metadata)
+
+    def _persist_proposal(self, proposal: MemoryProposal, *, event: PluginEvent,
+                          expected_epoch: int | None = None) -> str:
         existing = next(
             (
                 memory
@@ -163,15 +194,17 @@ class PluginStoryBridge:
             None,
         )
         if existing is not None:
+            if existing.deleted or existing.metadata.get("corrected_by_user"):
+                return ""
             metadata = dict(existing.metadata)
             metadata.update(dict(thaw_value(proposal.metadata)))
-            self.story.memory.store.update_memory(
+            self.story.memory.store.upsert_memory(
                 replace(
                     existing,
                     summary=proposal.summary or existing.summary,
                     updated_at=max(existing.updated_at, event.occurred_at),
                     metadata=metadata,
-                )
+                ), expected_epoch=expected_epoch,
             )
             return ""
         metadata = dict(thaw_value(proposal.metadata))
@@ -192,10 +225,12 @@ class PluginStoryBridge:
             importance=proposal.importance,
             tags=proposal.tags,
             pinned=proposal.pinned,
-            user_confirmed=True,
+            user_confirmed=False,
             metadata=metadata,
+            source_ids=tuple(dict.fromkeys((*proposal.source_ids, event.event_id))),
+            expected_epoch=expected_epoch,
         )
-        return memory.memory_id
+        return "" if memory.deleted else memory.memory_id
 
 
 def _domain_event_payload(event: object) -> dict[str, object]:

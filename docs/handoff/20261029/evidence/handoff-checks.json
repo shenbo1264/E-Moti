@@ -1,0 +1,67 @@
+{
+  "checked_at_utc": "2026-10-29T18:38:50.791005+00:00",
+  "user_date": "2026-10-29",
+  "scope": "Documentation and handoff only; no production code changes.",
+  "base_production_commit": "078ef1ca8b4ab714b8c64f2f9cdbe645c80464a2",
+  "production_python_files": 105,
+  "production_source_sha256": "f3d427ce552672e18bfe56e8f592cd63c0ff3409c0a36b996f189c26851adf3c",
+  "matches_previous_tested_source": true,
+  "modified_or_added_files": [
+    "AGENTS.md",
+    "README.md",
+    "README.zh-CN.md",
+    "docs/handoff/20261029/CLAUDE_PROMPT.md",
+    "docs/handoff/20261029/CODEX_PROMPT.md",
+    "docs/handoff/20261029/README.md",
+    "docs/handoff/20261029/acceptance.md",
+    "docs/handoff/20261029/current-state.md",
+    "docs/handoff/20261029/evidence/handoff-checks.json",
+    "docs/handoff/20261029/evidence/repository-check.json",
+    "docs/handoff/20261029/ios-research.md",
+    "docs/handoff/20261029/platform-scope.md",
+    "docs/handoff/20261029/requirements.md",
+    "docs/handoff/20261029/work-allocation.md",
+    "docs/modernization/README.md",
+    "docs/modernization/handoff.md",
+    "docs/modernization/mobile/README.md",
+    "docs/modernization/mobile/architecture.md",
+    "docs/modernization/mobile/handoff.md",
+    "docs/modernization/mobile/platforms-research.md",
+    "docs/modernization/product-roadmap.md",
+    "docs/modernization/source-audit.md"
+  ],
+  "checks": {
+    "non_document_changes": [],
+    "local_markdown_links_checked": 122,
+    "missing_local_links": [],
+    "json_files_parsed": 2,
+    "git_diff_check": "passed"
+  },
+  "reused_test_evidence": {
+    "full_pytest": {
+      "passed": 1390,
+      "failed": 1,
+      "total": 1391
+    },
+    "new_task_observation_tests": 57,
+    "memory_benchmark": {
+      "passed": 38,
+      "total": 38
+    },
+    "simulated_input_smoke": {
+      "passed": 18,
+      "total": 18
+    }
+  },
+  "not_rerun": [
+    "Full pytest (production source unchanged)",
+    "Memory benchmark (production source unchanged)"
+  ],
+  "not_executed": [
+    "Android/iOS/Huawei phone build or physical-device acceptance",
+    "real Relay or model integration",
+    "background runner",
+    "remote push or release"
+  ],
+  "package_checks": "Archive and each base-specific patch are checked after the documentation commit; see package DELIVERY.json."
+}

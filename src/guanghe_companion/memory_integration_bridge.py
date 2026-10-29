@@ -25,7 +25,13 @@ def enrich_ai_context_with_memory(
     """Add memory V2 as read-only expression context."""
 
     next_context = dict(context)
+    if bundle.context_epoch and context.get("memory_context_epoch") != bundle.context_epoch:
+        for key in ("recent_dialogue", "tool_results", "plugin_context"):
+            next_context[key] = [] if key != "plugin_context" else {}
+        next_context["perception_summary"] = ""
     next_context["emotional_memory"] = bundle.to_prompt_payload()
+    next_context["memory_v2_authoritative"] = True
+    next_context["long_term_memory"] = []
     return next_context
 
 
