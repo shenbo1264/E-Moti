@@ -138,7 +138,7 @@ MCP 可以作为某些工具适配器的协议，但不是整套个人伙伴会�
 
 ## 6. 平台实现选择
 
-| 平台 | 建议首选 | 复用与额外工作 |
+| 平台 | 推荐方案 | 复用与额外工作 |
 |---|---|---|
 | Android / HyperOS 4 | Kotlin + Jetpack Compose 薄客户端，平台原生 collector | 复用 host 协议；独立处理权限、生命周期、分享、Keystore、录屏服务；不移植整套 PySide UI |
 | iPhone / iOS | Swift/SwiftUI薄客户端及必要的系统扩展 | 复用host协议；分别处理分享、局域网权限、Keychain、APNs和按系统版本授权的屏幕会话；不依赖EU限定的数据导出 |
