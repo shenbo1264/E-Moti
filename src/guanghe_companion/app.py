@@ -263,6 +263,9 @@ QListWidget::item:selected {
 """
 
 
+MEMORY_ALBUM_PAGE_INDEX = 9
+
+
 class CharacterProfilePreview(QWidget):
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -1315,6 +1318,13 @@ class CompanionWindow(QMainWindow):
         self.dialogue_asr_button.setMinimumHeight(30)
         self.dialogue_asr_button.setEnabled(False)
         self.dialogue_asr_button.clicked.connect(self._toggle_asr_recording)
+        self.memory_pending_button = QPushButton()
+        self.memory_pending_button.setObjectName("MemoryPendingButton")
+        self.memory_pending_button.setMinimumHeight(30)
+        self.memory_pending_button.setToolTip("确认后才会长期记住")
+        self.memory_pending_button.clicked.connect(self._open_pending_memories)
+        self.memory_pending_button.hide()
+        dialogue_layout.addWidget(self.memory_pending_button)
         dialogue_layout.addWidget(self.dialogue_input, stretch=1)
         dialogue_layout.addWidget(self.dialogue_asr_button)
         dialogue_layout.addWidget(self.dialogue_send_button)
@@ -2151,8 +2161,25 @@ class CompanionWindow(QMainWindow):
         except ValueError as exc:
             self._show_message(str(exc))
 
+    def _pending_memory_count(self) -> int:
+        story = getattr(self.controller, "story_runtime", None)
+        memory = getattr(story, "memory", None)
+        return len(getattr(memory, "pending_candidates", ()))
+
+    def _open_pending_memories(self) -> None:
+        target = self._return_target_window or self
+        if self.desktop_mode:
+            self._return_to_control_panel()
+        target._select_navigation_button(MEMORY_ALBUM_PAGE_INDEX)
+        refresh = getattr(target.memory_album_page, "refresh_memory_album", None)
+        if callable(refresh):
+            refresh()
+
     def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
         self._invalidate_tts_context(snapshot)
+        pending_count = self._pending_memory_count()
+        self.memory_pending_button.setText(f"待确认回忆 {pending_count}")
+        self.memory_pending_button.setVisible(pending_count > 0)
         frame = self.presentation_renderer.frame_from_snapshot(snapshot)
         if frame.backend == "portrait":
             self._render_portrait_frame(frame)

@@ -4414,3 +4414,31 @@ def test_launch_with_user_data_override_enables_user_character_packs(monkeypatch
     assert captured["user_data_root"] == user_data_root
     assert captured["save_path"] == user_data_root / "companion_demo_save.json"
     assert captured["shown"] is True
+
+
+def test_pending_memory_hint_appears_after_chat_and_opens_album(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication, QListWidget
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.dialogue import DialogueRequest
+    from guanghe_companion.plugin_enabled_controller import PluginEnabledCompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = PluginEnabledCompanionController(user_data_root=tmp_path)
+    window = CompanionWindow(controller=controller)
+    window.show()
+    assert window.memory_pending_button.isHidden() is True
+
+    window._apply_snapshot(controller.submit_dialogue_request(
+        DialogueRequest(text="请记住我喜欢桂花茶", source="test"), include_ai_expression=False))
+    assert window.memory_pending_button.isHidden() is False
+    assert "1" in window.memory_pending_button.text()
+
+    window.memory_pending_button.click()
+    app.processEvents()
+    assert window.content_stack.currentWidget() is window.memory_album_page
+    items = window.memory_album_page.findChild(QListWidget)
+    assert any("桂花茶" in items.item(i).text() for i in range(items.count()))
+
+    window.close()
+    app.processEvents()
