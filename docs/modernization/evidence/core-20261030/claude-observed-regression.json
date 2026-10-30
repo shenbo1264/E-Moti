@@ -332,6 +332,6 @@
       "rubric": "情绪不改写事实，记得的事实不因情绪被否认。"
     }
   ],
-  "controller_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\plugin_enabled_controller.py",
+  "controller_file": "<WORKSPACE>\\src\\guanghe_companion\\plugin_enabled_controller.py",
   "evaluation_status": "previously_observed_regression_not_unseen_holdout"
 }

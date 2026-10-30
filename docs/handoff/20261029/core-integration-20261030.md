@@ -2,7 +2,7 @@
 
 更新：Claude 已在 `dbc12d2`/`5dd8c4e` 完成本页所述窗口接入。后续明确计划、自然遗忘和纠正历史失效行为以 `claude-backend-followup-20261030.md` 为准；下文暂时计划不保存的描述是本批之前的边界。
 
-本批基于后端 `0f96f94`，只扩展现有 V2、实际 PluginEnabled controller 和领域服务。公开 main 重新核对仍为 `b9f200955123790a5c66abcaf4e2567b3659a90e`，没有开放 PR。Claude 独立工作目录保留在 `E:\E-Moti\.worktrees\claude-product-ui`，已新增桌面待确认提示与独立验收；未合并、覆盖或修改该工作目录。手机、Relay、观察范围暂停新增。
+本批基于后端 `0f96f94`，只扩展现有 V2、实际 PluginEnabled controller 和领域服务。公开 main 重新核对仍为 `b9f200955123790a5c66abcaf4e2567b3659a90e`，没有开放 PR。Claude 独立工作目录保留在 `<WORKSPACE>`，已新增桌面待确认提示与独立验收；未合并、覆盖或修改该工作目录。手机、Relay、观察范围暂停新增。
 
 ## 普通聊天与来源
 

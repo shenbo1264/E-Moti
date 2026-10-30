@@ -1,6 +1,6 @@
 # Claude 桌面接入后的后端修正
 
-本批从 Claude 的 `5dd8c4e7e8f0a70d72fd64d51729b63d8a90583d` 创建独立分支 `codex/core-followup`，目录 `E:\E-Moti\.worktrees\core-followup`。已包含 Claude 的 `dbc12d2` 桌面异步服务、记忆设置、来源显示和 `5dd8c4e` 抽取拒绝恢复。原 `claude-product-ui` 与 `host-backend` 目录保持原状；本批没有修改 app.py、手机代码或合并其他分支。
+本批从 Claude 的 `5dd8c4e7e8f0a70d72fd64d51729b63d8a90583d` 创建独立分支 `codex/core-followup`，目录 `<WORKSPACE>`。已包含 Claude 的 `dbc12d2` 桌面异步服务、记忆设置、来源显示和 `5dd8c4e` 抽取拒绝恢复。原 `claude-product-ui` 与 `host-backend` 目录保持原状；本批没有修改 app.py、手机代码或合并其他分支。
 
 ## 行为和接入
 

@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "generated_at": "2026-10-30T10:15:00.941042+00:00",
-  "repo": "E:\\E-Moti\\.worktrees\\host-backend",
+  "repo": "<WORKSPACE>",
   "git_revision": "0f96f944210410f6f98700e1e44a57ee1df9a86a",
   "source_tree_sha256": "9870f56b65e2141fb42d0d7c670e62ff111b76775a175cf8ef0c321710d4860e",
   "source_python_files": 113,
@@ -10,7 +10,7 @@
     "python": "3.11.9",
     "platform": "Windows-10-10.0.26200-SP0"
   },
-  "dataset": "E:\\E-Moti\\.worktrees\\host-backend\\tests\\fixtures\\memory_benchmark.json",
+  "dataset": "<WORKSPACE>\\tests\\fixtures\\memory_benchmark.json",
   "dataset_sha256": "5d073df52faa05a91c7bdc6af22f30644b3579524bb3e633d85748b1f61a6c47",
   "dataset_version": 1,
   "summary": {
@@ -250,7 +250,7 @@
         "prompt_utf8_bytes": 7252,
         "estimated_prompt_tokens": 1813,
         "context_and_prompt_latency_ms": 11.2052,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -375,7 +375,7 @@
         "prompt_utf8_bytes": 7246,
         "estimated_prompt_tokens": 1812,
         "context_and_prompt_latency_ms": 10.5773,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -500,7 +500,7 @@
         "prompt_utf8_bytes": 7270,
         "estimated_prompt_tokens": 1818,
         "context_and_prompt_latency_ms": 9.9138,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -625,7 +625,7 @@
         "prompt_utf8_bytes": 7278,
         "estimated_prompt_tokens": 1820,
         "context_and_prompt_latency_ms": 9.0274,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -755,7 +755,7 @@
         "prompt_utf8_bytes": 7256,
         "estimated_prompt_tokens": 1814,
         "context_and_prompt_latency_ms": 9.4629,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -888,7 +888,7 @@
         "prompt_utf8_bytes": 7325,
         "estimated_prompt_tokens": 1832,
         "context_and_prompt_latency_ms": 8.8157,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -989,7 +989,7 @@
         "prompt_utf8_bytes": 6922,
         "estimated_prompt_tokens": 1731,
         "context_and_prompt_latency_ms": 4.6888,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1090,7 +1090,7 @@
         "prompt_utf8_bytes": 6923,
         "estimated_prompt_tokens": 1731,
         "context_and_prompt_latency_ms": 5.1305,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1191,7 +1191,7 @@
         "prompt_utf8_bytes": 6918,
         "estimated_prompt_tokens": 1730,
         "context_and_prompt_latency_ms": 5.0723,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1322,7 +1322,7 @@
         "prompt_utf8_bytes": 6717,
         "estimated_prompt_tokens": 1680,
         "context_and_prompt_latency_ms": 10.7839,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1468,7 +1468,7 @@
         "prompt_utf8_bytes": 6720,
         "estimated_prompt_tokens": 1680,
         "context_and_prompt_latency_ms": 11.5425,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1594,7 +1594,7 @@
         "prompt_utf8_bytes": 6720,
         "estimated_prompt_tokens": 1680,
         "context_and_prompt_latency_ms": 13.3157,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1686,7 +1686,7 @@
         "prompt_utf8_bytes": 6384,
         "estimated_prompt_tokens": 1596,
         "context_and_prompt_latency_ms": 5.5674,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1778,7 +1778,7 @@
         "prompt_utf8_bytes": 6384,
         "estimated_prompt_tokens": 1596,
         "context_and_prompt_latency_ms": 4.8428,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1870,7 +1870,7 @@
         "prompt_utf8_bytes": 6384,
         "estimated_prompt_tokens": 1596,
         "context_and_prompt_latency_ms": 6.0729,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -1962,7 +1962,7 @@
         "prompt_utf8_bytes": 6384,
         "estimated_prompt_tokens": 1596,
         "context_and_prompt_latency_ms": 5.6795,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2054,7 +2054,7 @@
         "prompt_utf8_bytes": 6384,
         "estimated_prompt_tokens": 1596,
         "context_and_prompt_latency_ms": 5.4846,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2147,7 +2147,7 @@
         "prompt_utf8_bytes": 6375,
         "estimated_prompt_tokens": 1594,
         "context_and_prompt_latency_ms": 6.4177,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2240,7 +2240,7 @@
         "prompt_utf8_bytes": 6386,
         "estimated_prompt_tokens": 1597,
         "context_and_prompt_latency_ms": 5.8085,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2366,7 +2366,7 @@
         "prompt_utf8_bytes": 6708,
         "estimated_prompt_tokens": 1677,
         "context_and_prompt_latency_ms": 12.797,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2486,7 +2486,7 @@
         "prompt_utf8_bytes": 6714,
         "estimated_prompt_tokens": 1679,
         "context_and_prompt_latency_ms": 11.5607,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2582,7 +2582,7 @@
         "prompt_utf8_bytes": 6032,
         "estimated_prompt_tokens": 1508,
         "context_and_prompt_latency_ms": 4.0415,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2683,7 +2683,7 @@
         "prompt_utf8_bytes": 6900,
         "estimated_prompt_tokens": 1725,
         "context_and_prompt_latency_ms": 4.2225,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2784,7 +2784,7 @@
         "prompt_utf8_bytes": 6907,
         "estimated_prompt_tokens": 1727,
         "context_and_prompt_latency_ms": 4.8193,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2885,7 +2885,7 @@
         "prompt_utf8_bytes": 6913,
         "estimated_prompt_tokens": 1729,
         "context_and_prompt_latency_ms": 4.9574,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -2977,7 +2977,7 @@
         "prompt_utf8_bytes": 6375,
         "estimated_prompt_tokens": 1594,
         "context_and_prompt_latency_ms": 5.8972,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3078,7 +3078,7 @@
         "prompt_utf8_bytes": 6907,
         "estimated_prompt_tokens": 1727,
         "context_and_prompt_latency_ms": 4.6028,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3190,7 +3190,7 @@
         "prompt_utf8_bytes": 6907,
         "estimated_prompt_tokens": 1727,
         "context_and_prompt_latency_ms": 4.0105,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3293,7 +3293,7 @@
         "prompt_utf8_bytes": 6907,
         "estimated_prompt_tokens": 1727,
         "context_and_prompt_latency_ms": 3.9019,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3396,7 +3396,7 @@
         "prompt_utf8_bytes": 6907,
         "estimated_prompt_tokens": 1727,
         "context_and_prompt_latency_ms": 4.063,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3499,7 +3499,7 @@
         "prompt_utf8_bytes": 6907,
         "estimated_prompt_tokens": 1727,
         "context_and_prompt_latency_ms": 4.1119,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3607,7 +3607,7 @@
         "prompt_utf8_bytes": 7169,
         "estimated_prompt_tokens": 1793,
         "context_and_prompt_latency_ms": 4.3193,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3728,7 +3728,7 @@
         "prompt_utf8_bytes": 6708,
         "estimated_prompt_tokens": 1677,
         "context_and_prompt_latency_ms": 11.0755,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3820,7 +3820,7 @@
         "prompt_utf8_bytes": 6375,
         "estimated_prompt_tokens": 1594,
         "context_and_prompt_latency_ms": 5.3543,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -3912,7 +3912,7 @@
         "prompt_utf8_bytes": 6375,
         "estimated_prompt_tokens": 1594,
         "context_and_prompt_latency_ms": 5.5355,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -4021,7 +4021,7 @@
         "prompt_utf8_bytes": 6026,
         "estimated_prompt_tokens": 1507,
         "context_and_prompt_latency_ms": 3.6095,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -4134,7 +4134,7 @@
         "prompt_utf8_bytes": 6907,
         "estimated_prompt_tokens": 1727,
         "context_and_prompt_latency_ms": 4.2682,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     },
     {
@@ -4226,7 +4226,7 @@
         "prompt_utf8_bytes": 6375,
         "estimated_prompt_tokens": 1594,
         "context_and_prompt_latency_ms": 6.0534,
-        "loaded_service_file": "E:\\E-Moti\\.worktrees\\host-backend\\src\\guanghe_companion\\emotional_memory_service.py"
+        "loaded_service_file": "<WORKSPACE>\\src\\guanghe_companion\\emotional_memory_service.py"
       }
     }
   ],
