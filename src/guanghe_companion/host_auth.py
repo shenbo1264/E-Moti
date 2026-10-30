@@ -9,6 +9,9 @@ import json
 from uuid import uuid4
 
 
+CREDENTIAL_LIFETIME = 30 * 86400
+
+
 class AuthenticationError(ValueError):
     pass
 
@@ -65,7 +68,7 @@ class DeviceCredentials:
                 raise AuthenticationError("invalid or expired invitation")
             db.execute("DELETE FROM invitations WHERE digest = ?", (_digest(invitation),))
             token, device_id = secrets.token_urlsafe(32), uuid4().hex
-            expires = timestamp + 30 * 86400
+            expires = timestamp + CREDENTIAL_LIFETIME
             db.execute("INSERT INTO devices VALUES (?, ?, ?, ?, ?, ?, 0)",
                        (device_id, _digest(token), device_name, row[0], row[1], expires))
         return {"access_token": token, "token_type": "bearer", "device_id": device_id,
@@ -79,6 +82,16 @@ class DeviceCredentials:
         if row is None or row[4] or row[3] <= timestamp:
             raise AuthenticationError("invalid, expired or revoked device credential")
         return DeviceIdentity(row[0], row[1], tuple(json.loads(row[2])))
+
+    def list_devices(self, *, owner_id: str, now=None) -> list[dict]:
+        timestamp = time.time() if now is None else now
+        with self._connect() as db:
+            rows = db.execute("SELECT device_id, name, characters, expires, revoked FROM devices WHERE owner = ? "
+                              "ORDER BY expires DESC", (owner_id,)).fetchall()
+        return [{"device_id": row[0], "name": row[1],
+                 "status": "revoked" if row[4] else "expired" if row[3] <= timestamp else "active",
+                 "paired_at": row[3] - CREDENTIAL_LIFETIME, "expires_at": row[3],
+                 "character_ids": json.loads(row[2])} for row in rows]
 
     def revoke(self, device_id: str) -> None:
         with self._connect() as db:
