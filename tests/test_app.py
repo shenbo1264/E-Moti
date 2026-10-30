@@ -444,10 +444,58 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
         "回忆",
         "探头时刻",
         "插件",
+        "手机连接",
     ]
 
     window.close()
     app.processEvents()
+
+
+def test_mobile_link_page_is_opt_in_and_disabled_without_plugin_controller(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window.navigation_buttons[12].click()
+    app.processEvents()
+
+    assert window.content_stack.currentWidget() is window.mobile_link_page
+    assert window.mobile_link_page.state == "unsupported"
+    assert window.mobile_link_page.start_button.isEnabled() is False
+
+    window.close()
+    app.processEvents()
+
+
+def test_mobile_link_page_uses_window_controller_and_stops_on_close(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    pytest.importorskip("fastapi")
+    import socket
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.plugin_enabled_controller import PluginEnabledCompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = PluginEnabledCompanionController(user_data_root=tmp_path)
+    window = CompanionWindow(controller=controller)
+    window.show()
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        window.mobile_link_page.port = listener.getsockname()[1]
+    panel = window.mobile_link_page
+    assert panel.state == "stopped"
+    panel.start_button.click()
+    deadline = time.monotonic() + 10
+    while panel.state != "running" and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(0.01)
+    assert panel.state == "running"
+    assert panel._host.controller is controller
+    server = panel._server
+
+    window.close()
+    app.processEvents()
+
+    assert server.thread.is_alive() is False
+    assert panel._host is None
 
 
 def test_control_panel_navigation_switches_right_hand_pages(monkeypatch, tmp_path):

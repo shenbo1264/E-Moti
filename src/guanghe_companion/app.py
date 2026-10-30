@@ -71,6 +71,7 @@ from .character_registry import (
 from .plugin_enabled_controller import PluginEnabledCompanionController as CompanionController
 from .focus_companion_qt import create_focus_companion_widget
 from .memory_album_qt import create_memory_album_widget
+from .mobile_link_qt import MobileLinkPanel
 from .plugin_center_qt import create_plugin_center_widget
 from .dialogue import DialogueRequest
 from .desktop_shell import DesktopShell
@@ -670,6 +671,10 @@ class CompanionWindow(QMainWindow):
         self.countdown_timer.stop()
         self.screen_observation_timer.stop()
         try:
+            self.mobile_link_page.close_link()
+        except Exception:
+            pass
+        try:
             self._cancel_tts_speech()
             self.voice_async_runner.shutdown()
         except Exception:
@@ -894,6 +899,13 @@ class CompanionWindow(QMainWindow):
             plugin_center_layout.addWidget(QLabel("当前控制器未启用插件运行时。"))
             plugin_center_layout.addStretch(1)
         self.content_stack.addWidget(self.plugin_center_page)
+
+        self.mobile_link_page = MobileLinkPanel(
+            self.controller,
+            data_root=getattr(self.controller, "user_data_root", None),
+            on_snapshot=self._apply_snapshot,
+        )
+        self.content_stack.addWidget(self.mobile_link_page)
         self._load_capability_settings_into_ui()
 
     def _alias_capability_settings_panel_widgets(self) -> None:
@@ -980,7 +992,7 @@ class CompanionWindow(QMainWindow):
         self.navigation_hint_label.setObjectName("NavigationHint")
         layout.addWidget(self.navigation_hint_label)
 
-        for index, label in enumerate(("总览", "互动", "背包", "角色库", "感知与搜索", "隐私", "LLM表达", "表达规则", "语音", "回忆", "探头时刻", "插件")):
+        for index, label in enumerate(("总览", "互动", "背包", "角色库", "感知与搜索", "隐私", "LLM表达", "表达规则", "语音", "回忆", "探头时刻", "插件", "手机连接")):
             button = QPushButton(label)
             button.setObjectName("NavigationButton")
             button.setCheckable(True)
