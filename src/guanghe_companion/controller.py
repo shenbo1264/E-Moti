@@ -15,6 +15,7 @@ from .ai_expressor import (
 from .capability_settings import CapabilitySettings, CapabilitySettingsStore
 from .character_local_copy import load_character_local_copy
 from .character_pack import DEFAULT_CHARACTER_ID, resolve_motion_caption
+from .chat_memory import spoken_memory_result
 from .character_resources import CharacterResources, load_character_resources, load_character_resources_from_dir
 from .character_session import (
     CharacterSessionPaths,
@@ -556,8 +557,7 @@ class CompanionController:
         text = self._begin_dialogue_feedback(request)
         if pending:
             result = getattr(self, "last_chat_memory_result", None)
-            self.last_feedback = (getattr(result, "message", "") or
-                                  "这件事先放进待确认了，你可以在回忆册里确认或放弃。")
+            self.last_feedback = spoken_memory_result(result)
             self.last_delta_text = "记忆处理结果"
         expression_request = None
         self._current_player_message = text

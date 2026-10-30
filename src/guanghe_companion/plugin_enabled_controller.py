@@ -33,7 +33,7 @@ from .legacy_memory_migration import (
     migrate_legacy_entries,
 )
 from .persona import build_persona_payload
-from .chat_memory import ChatMemory, ChatMemoryResult
+from .chat_memory import ChatMemory, ChatMemoryResult, spoken_memory_result
 from .chat_memory_extraction import ChatMemoryExtraction
 
 try:  # available after the overlay is applied to the full repository
@@ -243,7 +243,7 @@ class PluginEnabledCompanionController(_BaseController):
             self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
             return self.get_snapshot()
         if handled:
-            self.last_feedback = result.message
+            self.last_feedback = spoken_memory_result(result)
             self.last_delta_text = "记忆已更新" if result.status == "forgotten" else "记忆需要确认"
             self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
             return self.get_snapshot()

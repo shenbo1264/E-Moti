@@ -18,6 +18,15 @@ class ChatMemoryResult:
     memory_ids: tuple[str, ...] = ()
 
 
+def spoken_memory_result(result) -> str:
+    """Words the companion says; the plain status text stays in the receipt."""
+    if result is not None and result.status == "forgotten":
+        return "……嗯，这件事我不记了。"
+    if result is not None and result.status == "pending":
+        return "这件事我先放进待确认了，你看一眼回忆册？"
+    return getattr(result, "message", "") or "这件事先放进待确认了，你可以在回忆册里确认或放弃。"
+
+
 # 仅接受可由原话直接证明的自述；含推测、引用、虚构和临时状态的消息不自动变成事实。
 _UNSUPPORTED = re.compile(
     r"假如|假设|如果|也许|可能|不确定|据说|他说|她说|朋友说|小说|主角|角色扮演|游戏里|游戏中|"

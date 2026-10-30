@@ -149,3 +149,17 @@ def test_rejected_extraction_asks_user_instead_of_failing_the_turn(monkeypatch, 
     assert controller.get_chat_memory_status()["last_result"]["status"] == "clarify"
     service.close()
     controller.close()
+
+
+def test_forgetting_is_spoken_in_character_with_plain_receipt(monkeypatch, tmp_path):
+    app, window, controller = make_window(monkeypatch, tmp_path)
+    controller.memory_album_controller.remember_explicit(
+        "我的猫叫年糕。", now=100, expected_epoch=controller.story_runtime.memory.store.context_epoch)
+    window.dialogue_input.setText("把我猫的事忘了吧。")
+    window._handle_dialogue_submit()
+    assert wait(app, lambda: window.dialogue_input.isEnabled())
+    assert "画像" not in controller.last_feedback
+    assert "不记了" in controller.last_feedback
+    assert "忘记" in window.memory_receipt_button.text()
+    window.close()
+    app.processEvents()
