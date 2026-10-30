@@ -22,7 +22,7 @@ _SOURCE_LABELS = {
     "game_event": "你们一起经历的事",
     "relationship_unlock": "关系里程碑",
     "confirmed_companion_skill": "你确认完成的陪伴",
-    "chat": "普通聊天",
+    "user_chat": "普通聊天",
 }
 
 

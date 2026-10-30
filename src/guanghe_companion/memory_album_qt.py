@@ -2,10 +2,10 @@ from __future__ import annotations
 
 """Optional PySide6 renderer for the Starshard Memory Album."""
 
-import json
 import time
 
 from .memory_album_controller import MemoryAlbumStaleError
+from .memory_settings_view_model import source_details_text
 
 
 def create_memory_album_widget(controller: object, on_changed=None, parent: object | None = None):
@@ -260,7 +260,7 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
                 details = {key: card[key] for key in ("pending_id", "summary", "source", "source_ids", "occurred_at")}
             else:
                 details = album.source_details(str(card["card_id"]), expected_epoch=epoch)
-            source_view.setPlainText(json.dumps(details, ensure_ascii=False, indent=2))
+            source_view.setPlainText(source_details_text(details))
         except (KeyError, ValueError) as exc:
             show_error(exc)
 

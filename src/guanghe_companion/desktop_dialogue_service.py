@@ -4,6 +4,7 @@ from concurrent.futures import Future, ThreadPoolExecutor
 
 from PySide6.QtCore import QObject, Qt, Signal, Slot
 
+from .chat_memory import ChatMemoryResult
 from .controller import HostDialogueBusyError, HostDialogueStaleError
 
 
@@ -98,8 +99,13 @@ class DesktopDialogueService(QObject):
         if (state["generation"] != c.host_context_generation or state["character"] != c.state.character_id
                 or state["epoch"] != c._dialogue_context_epoch()):
             raise HostDialogueStaleError("memory or character changed during extraction")
-        result = c.chat_memory_extraction.apply(state["extraction"], work.result(), now=int(c.now),
-            generation=c.host_context_generation, mode=c.chat_memory.mode)
+        try:
+            result = c.chat_memory_extraction.apply(state["extraction"], work.result(), now=int(c.now),
+                generation=c.host_context_generation, mode=c.chat_memory.mode)
+        except ValueError:
+            # 模型提议未通过校验时不写入事实，但这不是用户消息的失败，聊天继续。
+            state["extractor"].discard(state["extraction"])
+            result = ChatMemoryResult("clarify", "这条没能确认要记或要忘什么，可以说得更具体，或在回忆册里操作。")
         c.last_chat_memory_result = result
         if state["epoch"] != c._dialogue_context_epoch():
             c._on_memory_invalidated()

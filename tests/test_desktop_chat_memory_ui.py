@@ -18,10 +18,11 @@ def test_receipt_only_speaks_when_something_happened():
 
 
 def test_source_text_shows_original_quote_not_raw_json():
-    text = source_details_text({"summary": "我喜欢乌龙茶", "source": "chat", "user_confirmed": False, "version": 2,
+    text = source_details_text({"summary": "我喜欢乌龙茶", "source": "user_chat", "user_confirmed": False, "version": 2,
                                 "provenance": {"original_quote": "我最近喜欢乌龙茶", "confidence_reason": "明确自述"}})
     assert "你的原话：我最近喜欢乌龙茶" in text
     assert "{" not in text
+    assert "来源：普通聊天" in text
     assert "未经你逐条确认" in text
 
 
@@ -62,6 +63,11 @@ def test_ordinary_chat_goes_through_service_and_shows_receipt(monkeypatch, tmp_p
     assert "乌龙茶" in "\n".join(m.summary for m in controller.story_runtime.memory.store.load_memories())
     assert window.memory_receipt_button.isHidden() is False
     assert "记下了" in window.memory_receipt_button.text()
+    page = window.memory_album_page
+    page.refresh_memory_album()
+    page.memory_list.setCurrentRow(1)
+    page.memory_action_buttons[3].click()
+    assert "你的原话" in page.memory_source_view.toPlainText()
     window.close()
     app.processEvents()
 
@@ -117,3 +123,29 @@ def test_semantic_toggle_failure_is_visible_and_falls_back(monkeypatch, tmp_path
     assert panel.semantic_check.isChecked() is False
     window.close()
     app.processEvents()
+
+
+def test_rejected_extraction_asks_user_instead_of_failing_the_turn(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    from guanghe_companion.desktop_dialogue_service import DesktopDialogueService
+    from guanghe_companion.dialogue import DialogueRequest
+    from guanghe_companion.expression_expressor import ShinsekaiAIExpressor
+    from guanghe_companion.expression_settings import ExpressionSettingsStore
+    from guanghe_companion.plugin_enabled_controller import PluginEnabledCompanionController
+
+    app = QApplication.instance() or QApplication([])
+    client = lambda prompt: "not json" if "用户事实抽取器" in prompt else '{"speech": "好"}'
+    controller = PluginEnabledCompanionController(
+        user_data_root=tmp_path, ai_expressor=ShinsekaiAIExpressor(llm_client=client, enabled=True),
+        expression_settings_store=ExpressionSettingsStore(tmp_path / "off.json"))
+    service = DesktopDialogueService(controller)
+    errors = []
+    service.failed.connect(errors.append)
+    controller.memory_album_controller.remember_explicit(
+        "我的猫叫年糕。", now=100, expected_epoch=controller.story_runtime.memory.store.context_epoch)
+    future = service.submit(DialogueRequest(text="把我猫的事忘了吧。"), include_ai_expression=True)
+    assert wait(app, future.done)
+    assert errors == []
+    assert controller.get_chat_memory_status()["last_result"]["status"] == "clarify"
+    service.close()
+    controller.close()
