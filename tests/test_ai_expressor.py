@@ -52,8 +52,9 @@ def test_prompt_builder_includes_performance_quality_guidance():
 
     assert "Performance target:" in prompt
     assert "visual-novel desktop companion" in prompt
-    assert "18-60 Chinese characters" in prompt
-    assert "tiny emotional or sensory detail" in prompt
+    assert "no minimum length" in prompt
+    assert "mirror the player's feeling, add one tiny" not in prompt
+    assert "无需为每句添加" in prompt
     assert "[focused]" in prompt
     assert "Use exactly one visible emotion tag" in prompt
     assert "Use [calm] only when no stronger cue applies" in prompt

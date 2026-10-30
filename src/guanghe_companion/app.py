@@ -750,11 +750,17 @@ class CompanionWindow(QMainWindow):
         shell.addWidget(self.launcher_card)
 
         content = QWidget()
+        self.control_panel_content = content
         content_layout = QHBoxLayout(content)
         self.control_panel_content_layout = content_layout
         content_layout.setContentsMargins(16, 16, 16, 16)
         content_layout.setSpacing(12)
-        shell.addWidget(content, stretch=1)
+        self.control_panel_scroll = QScrollArea()
+        self.control_panel_scroll.setObjectName("ControlPanelScroll")
+        self.control_panel_scroll.setWidgetResizable(True)
+        self.control_panel_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.control_panel_scroll.setWidget(content)
+        shell.addWidget(self.control_panel_scroll, stretch=1)
 
         self.sidebar_card = self._build_sidebar_card()
         content_layout.addWidget(self.sidebar_card)
@@ -1613,6 +1619,11 @@ class CompanionWindow(QMainWindow):
 
     def _apply_desktop_mode(self) -> None:
         self.desktop_mode = True
+        # 桌宠保持透明紧凑布局，控制面板的滚动容器只在主窗口使用。
+        self.control_panel_scroll.takeWidget()
+        self.shell_layout.removeWidget(self.control_panel_scroll)
+        self.control_panel_scroll.hide()
+        self.shell_layout.addWidget(self.control_panel_content, stretch=1)
         self.screen_observation_timer.stop()
         self.setWindowFlags(
             self.windowFlags()
@@ -1796,6 +1807,10 @@ class CompanionWindow(QMainWindow):
             self.close()
             return
         self.desktop_mode = False
+        self.shell_layout.removeWidget(self.control_panel_content)
+        self.control_panel_scroll.setWidget(self.control_panel_content)
+        self.shell_layout.addWidget(self.control_panel_scroll, stretch=1)
+        self.control_panel_scroll.show()
         flags = self.windowFlags()
         flags &= ~Qt.WindowType.FramelessWindowHint
         flags &= ~Qt.WindowType.WindowStaysOnTopHint

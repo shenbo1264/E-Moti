@@ -60,8 +60,9 @@ def test_dialogue_policy_includes_performance_quality_guidance():
 
     assert "Performance target:" in prompt
     assert "visual-novel desktop companion" in prompt
-    assert "18-60 Chinese characters" in prompt
-    assert "tiny emotional or sensory detail" in prompt
+    assert "no minimum length" in prompt
+    assert "mirror the player's feeling, add one tiny" not in prompt
+    assert "无需为每句添加" in prompt
     assert "Emotion cue mapping:" in prompt
     assert "[sadness]" in prompt
     assert "[sleepy]" in prompt

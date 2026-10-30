@@ -1,0 +1,152 @@
+[
+  {
+    "id": "sample_01",
+    "phase": "before",
+    "case_id": "holdout_grounded_drink"
+  },
+  {
+    "id": "sample_02",
+    "phase": "before",
+    "case_id": "holdout_shared_success"
+  },
+  {
+    "id": "sample_03",
+    "phase": "before",
+    "case_id": "persona_rest"
+  },
+  {
+    "id": "sample_04",
+    "phase": "after",
+    "case_id": "holdout_unhealthy_claim"
+  },
+  {
+    "id": "sample_05",
+    "phase": "before",
+    "case_id": "holdout_vent_no_advice"
+  },
+  {
+    "id": "sample_06",
+    "phase": "after",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "sample_07",
+    "phase": "before",
+    "case_id": "holdout_unhealthy_claim"
+  },
+  {
+    "id": "sample_08",
+    "phase": "after",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "sample_09",
+    "phase": "after",
+    "case_id": "holdout_corrected_plan"
+  },
+  {
+    "id": "sample_10",
+    "phase": "after",
+    "case_id": "persona_refusal"
+  },
+  {
+    "id": "sample_11",
+    "phase": "after",
+    "case_id": "holdout_shared_success"
+  },
+  {
+    "id": "sample_12",
+    "phase": "before",
+    "case_id": "holdout_playful_mishap"
+  },
+  {
+    "id": "sample_13",
+    "phase": "after",
+    "case_id": "persona_game"
+  },
+  {
+    "id": "sample_14",
+    "phase": "after",
+    "case_id": "holdout_grounded_drink"
+  },
+  {
+    "id": "sample_15",
+    "phase": "before",
+    "case_id": "persona_game"
+  },
+  {
+    "id": "sample_16",
+    "phase": "after",
+    "case_id": "holdout_cloud_chat"
+  },
+  {
+    "id": "sample_17",
+    "phase": "before",
+    "case_id": "persona_refusal"
+  },
+  {
+    "id": "sample_18",
+    "phase": "before",
+    "case_id": "persona_work"
+  },
+  {
+    "id": "sample_19",
+    "phase": "after",
+    "case_id": "persona_work"
+  },
+  {
+    "id": "sample_20",
+    "phase": "after",
+    "case_id": "persona_rest"
+  },
+  {
+    "id": "sample_21",
+    "phase": "after",
+    "case_id": "holdout_playful_mishap"
+  },
+  {
+    "id": "sample_22",
+    "phase": "before",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "sample_23",
+    "phase": "before",
+    "case_id": "persona_tease"
+  },
+  {
+    "id": "sample_24",
+    "phase": "after",
+    "case_id": "persona_tease"
+  },
+  {
+    "id": "sample_25",
+    "phase": "before",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "sample_26",
+    "phase": "before",
+    "case_id": "holdout_corrected_plan"
+  },
+  {
+    "id": "sample_27",
+    "phase": "after",
+    "case_id": "holdout_vent_no_advice"
+  },
+  {
+    "id": "sample_28",
+    "phase": "after",
+    "case_id": "holdout_requested_advice"
+  },
+  {
+    "id": "sample_29",
+    "phase": "before",
+    "case_id": "holdout_cloud_chat"
+  },
+  {
+    "id": "sample_30",
+    "phase": "before",
+    "case_id": "holdout_requested_advice"
+  }
+]

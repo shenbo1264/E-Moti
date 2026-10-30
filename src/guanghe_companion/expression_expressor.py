@@ -127,7 +127,8 @@ class ShinsekaiAIExpressor:
                 f"stability: {prompt_payload['stability']}",
                 f"mood: {prompt_payload['mood']}",
                 f"trust: {prompt_payload['trust']}",
-                f"feedback: {prompt_payload['feedback']}",
+                # 对话占位回复只用于本地兜底，避免每轮向模型示范同一句口癖。
+                f"feedback: {prompt_payload['feedback']}" if not prompt_payload['player_message'] else "",
                 f"player_message: {prompt_payload['player_message']}",
                 f"delta: {prompt_payload['delta_text']}",
                 f"goal: {prompt_payload['goal']}",

@@ -1,5 +1,13 @@
 # 核心后端与宿主交接
 
+## 2026-10-30：人格表达与主窗口继续修正
+
+基于 `9f606fc`，仍在 `codex/desktop-acceptance`。主窗口使用 QScrollArea 解决页面最小高度把窗口撑出屏幕；桌宠保留透明布局。生成提示移除强制动作旁白、最低字数及重复语言风格，聊天时不再把本地占位回复提供给模型；补充建议边界和事实依据要求，不改角色配置或后处理回答。
+
+V4.1 Flash 正式前后各 15 个场景，实际使用生产客户端工厂。AI 匿名评审从 8 pass / 5 partial / 2 fail 变为 9 pass / 6 partial / 0 fail；模型协议仍有 1 个失败场景，安静请求为本地处理 not_run。仍有少量语气/臆测问题，不能声称全面解决。前期评测脚本漏用桌面 JSON 设置，其旧输出已保留并明确降为诊断证据；上一批 Flash 人格报告也受此配置偏差影响。
+
+完整回归 1654 passed / 5 skipped / 3 warnings，38 条记忆契约全过。Windows 原生窗口布局测试 3 passed；期间出现已处理的 COM 异常诊断，具体调用者未定位。Computer Use 活动请求冲突阻止了新增鼠标点击/截图验收，未伪称完成。真实请求、所有中间回答、前后对照、匿名评审和待办见 `docs/modernization/evidence/persona-refinement-20261030/README.md`。本批只本地提交，不推送。
+
 ## 2026-10-30：合并后桌面验收，Codex 暂代 Claude
 
 最新共同基线为已合并 PR #5 的 `79c8377`，本批位于独立 worktree `desktop-acceptance`、分支 `codex/desktop-acceptance`。用户授权 Claude 额度恢复前由 Codex 接手桌面实现及验收，因此本批包含 `app.py`；Claude 恢复时先核查本分支，避免覆盖。旧工作目录与存档保留，没有推送或新增 PR。
