@@ -25,7 +25,9 @@ def fit_prompt(lines: list[str], *, limit: int) -> str:
         memories = memory.get("shared_memories", [])
         optional_lists = [value for key, value in profile.items() if isinstance(value, list) and key != "boundaries"]
         persona_lists = [value for key, value in persona.items() if isinstance(value, list) and key != "boundaries"]
-        if plugin:
+        if "relationship_development" in memory:
+            memory.pop("relationship_development")
+        elif plugin:
             plugin.pop(next(reversed(plugin)))
         elif "relationship_chapter" in memory:
             memory.pop("relationship_chapter")

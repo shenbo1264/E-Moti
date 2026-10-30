@@ -623,6 +623,141 @@ class EmotionalMemoryStore:
         with self._document() as document:
             return tuple(self._entries(document))
 
+    def _pending_rows(self, document: dict) -> dict[str, dict]:
+        from .memory_document import MemoryStorageError
+        self._check_document(document)
+        rows = document.get("pending_candidates", {})
+        if not isinstance(rows, dict):
+            raise MemoryStorageError("Invalid persisted memory candidates")
+        for key, row in rows.items():
+            if not isinstance(key, str) or not key or not isinstance(row, dict):
+                raise MemoryStorageError("Invalid persisted memory candidate")
+            entry = EmotionalMemoryEntry.from_dict(row.get("entry"))
+            epoch = row.get("expected_epoch")
+            refs = row.get("source_fingerprints")
+            if (entry is None or entry.character_id != self.character_id or entry.owner_id != self.owner_id
+                    or type(epoch) is not int or epoch < 0
+                    or type(row.get("requires_user_confirmation")) is not bool
+                    or not isinstance(refs, dict)
+                    or any(not isinstance(k, str) or not isinstance(v, str) for k, v in refs.items())
+                    or not isinstance(row.get("source_key"), str)):
+                raise MemoryStorageError("Invalid persisted memory candidate fields")
+        return rows
+
+    @staticmethod
+    def _candidate_receipts(document: dict) -> dict[str, str]:
+        from .memory_document import MemoryStorageError
+        receipts = document.get("candidate_receipts", {})
+        if not isinstance(receipts, dict) or any(
+            not isinstance(key, str) or value not in ("confirmed", "rejected", "stale")
+            for key, value in receipts.items()
+        ):
+            raise MemoryStorageError("Invalid memory candidate receipts")
+        return receipts
+
+    def load_pending_candidates(self) -> dict[str, tuple[EmotionalMemoryEntry, bool, int]]:
+        with self._document() as document:
+            return {key: (EmotionalMemoryEntry.from_dict(row["entry"]),
+                          row["requires_user_confirmation"], row["expected_epoch"])
+                    for key, row in self._pending_rows(document).items()}
+
+    def save_pending_candidate(self, pending_id: str, entry: EmotionalMemoryEntry, *,
+                               requires_user_confirmation: bool, expected_epoch: int) -> str:
+        if not isinstance(pending_id, str) or not pending_id or len(pending_id) > 128:
+            raise ValueError("invalid memory candidate id")
+        memory = self._validate(entry)
+        origins = sorted(self._origins(memory))
+        source_key = hashlib.sha256(json.dumps(origins or ["candidate:" + pending_id]).encode()).hexdigest()
+        with self._document() as document:
+            rows = self._pending_rows(document)
+            receipts = self._candidate_receipts(document)
+            if expected_epoch != document["context_epoch"]:
+                raise ValueError("stale memory proposal epoch")
+            if pending_id in rows and rows[pending_id]["source_key"] != source_key:
+                raise ValueError("memory candidate id conflict")
+            if source_key in receipts:
+                raise ValueError("memory candidate source already resolved")
+            if set(origins).intersection(document.get("retired_origins", [])):
+                raise ValueError("stale memory proposal source")
+            for key, row in rows.items():
+                if row["source_key"] == source_key:
+                    if row["expected_epoch"] != expected_epoch:
+                        raise ValueError("stale memory proposal epoch")
+                    return key
+            active = {item.memory_id: item for item in self._entries(document)
+                      if item.is_active(now=memory.created_at)}
+            if origins and any(sorted(self._origins(item)) == origins for item in active.values()):
+                raise ValueError("memory candidate source already resolved")
+            references = memory.metadata.get("source_memory_ids", [])
+            if any(key not in active for key in references):
+                raise ValueError("memory candidate requires current source memories")
+            supersedes = memory.metadata.get("supersedes_memory_id")
+            if supersedes is not None and (not isinstance(supersedes, str) or supersedes not in references):
+                raise ValueError("memory correction candidate must bind its source memory")
+            rows[pending_id] = {"entry": memory.to_dict(), "expected_epoch": expected_epoch,
+                "requires_user_confirmation": bool(requires_user_confirmation), "source_key": source_key,
+                "source_fingerprints": {key: active[key].evidence_fingerprint() for key in references}}
+            document["pending_candidates"] = rows
+        return pending_id
+
+    def confirm_pending_candidate(self, pending_id: str, *, now: int) -> EmotionalMemoryEntry:
+        failure = None
+        result = None
+        with self._document() as document:
+            rows = self._pending_rows(document)
+            receipts = self._candidate_receipts(document)
+            row = rows.pop(pending_id)
+            entry = EmotionalMemoryEntry.from_dict(row["entry"])
+            entries = {item.memory_id: item for item in self._entries(document)}
+            refs = row["source_fingerprints"]
+            valid_sources = all(key in entries and entries[key].is_active(now=now)
+                                and entries[key].evidence_fingerprint() == value for key, value in refs.items())
+            if row["expected_epoch"] != document["context_epoch"] or not valid_sources:
+                failure = "stale memory proposal epoch or source"
+            else:
+                memory = replace(entry, user_confirmed=True, created_at=now, updated_at=now)
+                supersedes = entry.metadata.get("supersedes_memory_id")
+                if supersedes is not None:
+                    if not isinstance(supersedes, str) or supersedes not in refs:
+                        failure = "stale memory correction source binding"
+                    else:
+                        old = entries[supersedes]
+                        sources = tuple(dict.fromkeys((*old.source_ids, *memory.source_ids)))
+                        if len(sources) > MAX_SOURCE_IDS:
+                            raise ValueError("correction source references exceed the supported limit")
+                        memory = replace(memory, source_ids=sources,
+                            metadata={**old.metadata, **memory.metadata, "corrected_by_user": True})
+                        result = self._replace_memory_document(document, supersedes, self._validate(memory), now=now)
+                else:
+                    result = self._write_memory(document, entries, self._validate(memory))
+                    if result.deleted:
+                        failure = "stale memory proposal source"
+                    else:
+                        document["entries"] = [result.to_dict(), *(item.to_dict() for key, item in entries.items()
+                                                                   if key != result.memory_id)][:self.max_entries]
+            document["pending_candidates"] = rows
+            receipts[row["source_key"]] = "stale" if failure else "confirmed"
+            document["candidate_receipts"] = receipts
+        # 失效候选的移除也必须提交，避免重启后反复出现可确认的旧提议。
+        if failure:
+            raise ValueError(failure)
+        return result
+
+    def reject_pending_candidate(self, pending_id: str, *, revoke_context: bool = False) -> bool:
+        with self._document() as document:
+            rows = self._pending_rows(document)
+            receipts = self._candidate_receipts(document)
+            row = rows.pop(pending_id, None)
+            if row is None:
+                return False
+            receipts[row["source_key"]] = "rejected"
+            document["candidate_receipts"] = receipts
+            document["pending_candidates"] = rows
+            if revoke_context:
+                entry = EmotionalMemoryEntry.from_dict(row["entry"])
+                self._retire(document, [entry], now=entry.updated_at)
+            return True
+
     def save_memories(self, entries: Iterable[EmotionalMemoryEntry]) -> None:
         incoming = [self._validate(entry) for entry in entries]
         with self._document() as document:
@@ -682,26 +817,34 @@ class EmotionalMemoryStore:
         return self.upsert_memory(entry)
 
     def replace_memory(self, memory_id: str, replacement: EmotionalMemoryEntry, *, now: int,
-                       expected_epoch: int | None = None) -> EmotionalMemoryEntry:
+                       expected_epoch: int | None = None,
+                       preserve_occurred_at: bool = True) -> EmotionalMemoryEntry:
         memory = self._validate(replacement)
         with self._document() as document:
-            entries = self._entries(document)
             if expected_epoch is not None and expected_epoch != document["context_epoch"]:
                 raise ValueError("stale memory correction epoch")
-            old = next((entry for entry in entries
-                        if entry.memory_id == memory_id and not entry.deleted), None)
-            if old is None:
-                raise KeyError(f"active memory not found: {memory_id}")
-            if (memory.memory_id in document.get("retired_ids", [])
-                    or any(entry.memory_id == memory.memory_id for entry in entries)):
-                raise ValueError("correction must have an unused memory id")
-            if memory.deleted:
-                raise ValueError("correction must supply an active replacement")
-            memory = replace(memory, version=old.version + 1, supersedes=old.memory_id,
-                             occurred_at=old.occurred_at, created_at=now, updated_at=now)
-            self._retire(document, [old], now=now)
-            document["entries"] = [memory.to_dict(), *document["entries"]][:self.max_entries]
-            return memory
+            return self._replace_memory_document(document, memory_id, memory, now=now,
+                                                 preserve_occurred_at=preserve_occurred_at)
+
+    def _replace_memory_document(self, document: dict, memory_id: str,
+                                 memory: EmotionalMemoryEntry, *, now: int,
+                                 preserve_occurred_at: bool = True) -> EmotionalMemoryEntry:
+        entries = self._entries(document)
+        old = next((entry for entry in entries
+                    if entry.memory_id == memory_id and not entry.deleted), None)
+        if old is None:
+            raise KeyError(f"active memory not found: {memory_id}")
+        if (memory.memory_id in document.get("retired_ids", [])
+                or any(entry.memory_id == memory.memory_id for entry in entries)):
+            raise ValueError("correction must have an unused memory id")
+        if memory.deleted:
+            raise ValueError("correction must supply an active replacement")
+        memory = replace(memory, version=old.version + 1, supersedes=old.memory_id,
+                         occurred_at=old.occurred_at if preserve_occurred_at else memory.occurred_at,
+                         created_at=now, updated_at=now)
+        self._retire(document, [old], now=now)
+        document["entries"] = [memory.to_dict(), *document["entries"]][:self.max_entries]
+        return memory
 
     def forget_memory(self, memory_id: str, *, now: int,
                       expected_epoch: int | None = None) -> EmotionalMemoryEntry | None:

@@ -538,7 +538,7 @@ class CompanionController:
         return self._host_dialogue_generation
 
     def _require_dialogue_idle(self) -> None:
-        if self._host_dialogue_ticket is not None:
+        if self._host_dialogue_ticket is not None or getattr(self, "_desktop_dialogue_pending", False):
             raise HostDialogueBusyError("host dialogue is busy; wait for the current worker to finish")
 
     def _prepare_host_memory(self, request: DialogueRequest) -> bool:
@@ -546,16 +546,19 @@ class CompanionController:
 
     def prepare_host_dialogue(
         self, request: DialogueRequest, *, include_ai_expression: bool = True,
+        memory_prepared: bool | None = None,
     ) -> HostDialogueTicket:
         self._require_host_thread()
         self._require_dialogue_idle()
         if self._closed:
             raise HostDialogueStaleError("stale host dialogue: controller is closed")
-        pending = self._prepare_host_memory(request)
+        pending = self._prepare_host_memory(request) if memory_prepared is None else memory_prepared
         text = self._begin_dialogue_feedback(request)
         if pending:
-            self.last_feedback = "这件事先放进待确认了，你可以在回忆册里确认或放弃。"
-            self.last_delta_text = "有一条记忆等待确认"
+            result = getattr(self, "last_chat_memory_result", None)
+            self.last_feedback = (getattr(result, "message", "") or
+                                  "这件事先放进待确认了，你可以在回忆册里确认或放弃。")
+            self.last_delta_text = "记忆处理结果"
         expression_request = None
         self._current_player_message = text
         try:
@@ -1268,8 +1271,13 @@ class CompanionController:
             perception_summary=str(expression_context.get("perception_summary", "")),
             tool_results=expression_context.get("tool_results", []),
             forced_kind=forced_kind,
+            memory_candidate=self._memory_recollection_candidate(),
+            last_dialogue_at=getattr(self, "_last_dialogue_at", None),
         ).select_decision(motion=self.last_motion)
         return self._with_character_proactive_copy(decision)
+
+    def _memory_recollection_candidate(self):
+        return None
 
     def _with_character_proactive_copy(self, decision: ProactiveCompanionDecision) -> ProactiveCompanionDecision:
         if decision.feedback is None:
@@ -1287,6 +1295,7 @@ class CompanionController:
                 kind=decision.feedback.kind,
                 speech=speech,
                 summary=decision.feedback.summary,
+                memory_source=decision.feedback.memory_source,
             ),
             now=decision.now,
             motion=decision.motion,

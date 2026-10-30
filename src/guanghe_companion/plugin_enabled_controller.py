@@ -33,6 +33,8 @@ from .legacy_memory_migration import (
     migrate_legacy_entries,
 )
 from .persona import build_persona_payload
+from .chat_memory import ChatMemory, ChatMemoryResult
+from .chat_memory_extraction import ChatMemoryExtraction
 
 try:  # available after the overlay is applied to the full repository
     from .controller import CompanionController as _BaseController
@@ -82,6 +84,21 @@ class PluginEnabledCompanionController(_BaseController):
 
     def _initialize_personal_context(self) -> None:
         memory = self.story_runtime.memory
+        self.chat_memory = ChatMemory(memory, Path(self.user_data_root or user_data_dir()) / "characters" /
+                                      self.state.character_id / "chat_memory_settings.json")
+        self.chat_memory_extraction = ChatMemoryExtraction(memory)
+        self._proactive_state_path = self.chat_memory.settings_path.with_name("proactive_state.json")
+        if self._proactive_state_path.exists():
+            schedule = json.loads(self._proactive_state_path.read_text(encoding="utf-8"))
+            self.now = max(self.now, int(schedule["logical_time"]))
+            self._last_proactive_at = {key: int(value) for key, value in schedule["last_proactive_at"].items()}
+            self._proactive_daily_counts = {key: int(value) for key, value in schedule["daily_counts"].items()}
+            self._last_dialogue_at = schedule.get("last_dialogue_at")
+        else:
+            self._last_proactive_at = {}
+            self._proactive_daily_counts = {}
+            self._last_dialogue_at = None
+        self.last_chat_memory_result = ChatMemoryResult()
         if not memory.store.migration_done("long_term_v1"):
             migrate_legacy_entries(memory, (entry.to_dict() for entry in self.long_term_memory_service.entries),
                                    now=int(self.now))
@@ -192,7 +209,11 @@ class PluginEnabledCompanionController(_BaseController):
 
     def _on_memory_invalidated(self) -> None:
         self._invalidate_host_dialogue()
+        retriever = self.story_runtime.memory.semantic_retriever
+        if retriever is not None and hasattr(retriever, "invalidate"):
+            retriever.invalidate()
         self._memory_epoch_seen = self._dialogue_context_epoch()
+        self.story_runtime.memory.consolidate(now=int(self.now), shared_only=True)
         self._perception_summary = ""
         self._tool_results = []
         self._perception_epoch = -1
@@ -211,21 +232,109 @@ class PluginEnabledCompanionController(_BaseController):
 
     def submit_dialogue_request(self, request, *, include_ai_expression: bool = False):
         self._require_dialogue_idle()
-        # A narrow, explicit user command creates a reviewable proposal. Normal
-        # chats, model replies and hypothetical scenes cannot silently write facts.
         pending = self.story_runtime.memory.propose_explicit_user_memory(request.normalized_text(), now=int(self.now))
-        snapshot = super().submit_dialogue_request(request, include_ai_expression=include_ai_expression and pending is None)
+        result = ChatMemoryResult("pending") if pending else self._process_chat_memory(request)
+        self.last_chat_memory_result = result
+        handled = result.status in {"pending", "clarify", "forgotten"}
+        snapshot = super().submit_dialogue_request(request, include_ai_expression=include_ai_expression and not handled)
         if pending is not None:
             self.last_feedback = "这件事先放进待确认了，你可以在回忆册里确认或放弃。"
             self.last_delta_text = "有一条记忆等待确认"
             self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
             return self.get_snapshot()
+        if handled:
+            self.last_feedback = result.message
+            self.last_delta_text = "记忆已更新" if result.status == "forgotten" else "记忆需要确认"
+            self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=False)
+            return self.get_snapshot()
         return snapshot
 
+    def _commit_dialogue_exchange(self, request, dialogue_epoch: int) -> None:
+        if request.normalized_text():
+            self._last_dialogue_at = int(self.now)
+        if self.last_chat_memory_result.status == "forgotten":
+            # 撤回命令可能再次包含被遗忘原话；保留可读记录，但禁止它进入后续 prompt。
+            dialogue_epoch = max(0, dialogue_epoch - 1)
+        super()._commit_dialogue_exchange(request, dialogue_epoch)
+
+    def set_chat_memory_mode(self, mode: str):
+        self._require_host_thread()
+        self.chat_memory.set_mode(mode)
+        return self.get_snapshot()
+
+    def get_chat_memory_status(self):
+        retriever = self.story_runtime.memory.semantic_retriever
+        return {"mode": self.chat_memory.mode, "last_result": asdict(self.last_chat_memory_result),
+                "pending_count": len(self.story_runtime.memory.pending_candidates),
+                "semantic": retriever.status if retriever is not None else {"enabled": False}}
+
+    def enable_semantic_memory(self, *, cache_dir: Path, local_files_only: bool = False):
+        from .semantic_memory import SemanticMemoryRetriever
+        self._require_host_thread()
+        old = self.story_runtime.memory.semantic_retriever
+        if old is not None:
+            old.close()
+        retriever = SemanticMemoryRetriever(cache_dir=cache_dir, character_id=self.state.character_id,
+            owner_id=self.story_runtime.memory.owner_id, local_files_only=local_files_only)
+        self.story_runtime.memory.semantic_retriever = retriever
+        return retriever.warmup()
+
+    def prepare_semantic_recall(self, request):
+        self._require_host_thread()
+        memory = self.story_runtime.memory
+        memory.store.expire_memories(now=int(self.now))
+        retriever = memory.semantic_retriever
+        if retriever is None:
+            return None
+        return retriever.prepare(request.normalized_text(), memory.store.load_memories(), now=int(self.now))
+
+    def disable_semantic_memory(self):
+        self._require_host_thread()
+        self._invalidate_host_dialogue()
+        retriever = self.story_runtime.memory.semantic_retriever
+        if retriever is not None:
+            retriever.close()
+        self.story_runtime.memory.semantic_retriever = None
+
+    def _memory_recollection_candidate(self):
+        story = getattr(self, "story_runtime", None)
+        if story is None:
+            return None
+        candidate = story.memory_recollection(now=int(self.now), last_proactive_at=self._last_proactive_at)
+        return candidate if candidate and story.is_recollection_current(candidate, now=int(self.now)) else None
+
+    def _persist(self) -> None:
+        super()._persist()
+        path = getattr(self, "_proactive_state_path", None)
+        if path is not None and path.parent.name == self.state.character_id:
+            path.parent.mkdir(parents=True, exist_ok=True)
+            pending = path.with_suffix(".pending")
+            pending.write_text(json.dumps({"logical_time": int(self.now),
+                "last_proactive_at": self._last_proactive_at, "daily_counts": self._proactive_daily_counts,
+                "last_dialogue_at": self._last_dialogue_at}),
+                encoding="utf-8")
+            pending.replace(path)
+
+    def reject_proactive_request(self):
+        snapshot = super().reject_proactive_request()
+        self._persist()
+        return snapshot
+
+    def _process_chat_memory(self, request) -> ChatMemoryResult:
+        epoch = self._dialogue_context_epoch()
+        self.last_chat_memory_result = self.chat_memory.process(request.normalized_text(), now=int(self.now))
+        if self._dialogue_context_epoch() != epoch:
+            self._on_memory_invalidated()
+        return self.last_chat_memory_result
+
     def _prepare_host_memory(self, request) -> bool:
-        return self.story_runtime.memory.propose_explicit_user_memory(
+        pending = self.story_runtime.memory.propose_explicit_user_memory(
             request.normalized_text(), now=int(self.now),
-        ) is not None
+        )
+        if pending:
+            self.last_chat_memory_result = ChatMemoryResult("pending")
+            return True
+        return self._process_chat_memory(request).status in {"pending", "clarify", "forgotten"}
 
     def _expression_context_is_current(self, request) -> bool:
         story = getattr(self, "story_runtime", None)
@@ -457,6 +566,7 @@ class PluginEnabledCompanionController(_BaseController):
             state_snapshot=self._plugin_state_snapshot(),
         )
         context["persona"] = dict(getattr(self, "_persona_payload", {}))
+        context["relationship_development"] = self.story_runtime.relationship_development(now=int(self.now))
         if epoch:
             # Existing providers have no revocation contract. A new provider may
             # opt in only by attesting this character and current context epoch.
@@ -470,6 +580,10 @@ class PluginEnabledCompanionController(_BaseController):
         if character_id == self.character_pack.character_id:
             return self.get_snapshot()
         include_ai = bool(kwargs.pop("include_ai_expression", False))
+        self._persist()
+        retriever = self.story_runtime.memory.semantic_retriever
+        if retriever is not None and hasattr(retriever, "close"):
+            retriever.close()
         snapshot = super().switch_character(character_id, include_ai_expression=False, **kwargs)  # type: ignore[misc]
         data_root = Path(getattr(self, "user_data_root", None) or user_data_dir())
         self._focus_settings_path = _focus_preferences_path(data_root, character_id)
@@ -487,6 +601,9 @@ class PluginEnabledCompanionController(_BaseController):
 
     def close(self) -> None:
         try:
+            story = getattr(self, "story_runtime", None)
+            if story is not None and hasattr(story.memory.semantic_retriever, "close"):
+                story.memory.semantic_retriever.close()
             subsystem = getattr(self, "plugin_subsystem", None)
             if subsystem is not None:
                 subsystem.shutdown()

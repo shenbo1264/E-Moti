@@ -104,13 +104,19 @@ class MemoryAlbumController:
 
     def confirm_pending(self, pending_id: str, *, now: int,
                         expected_epoch: int | None = None) -> dict[str, object]:
-        self._require_epoch(expected_epoch)
+        epoch = self._require_epoch(expected_epoch)
         try:
-            self.story.memory.confirm_candidate(pending_id, now=now)
+            entry = self.story.memory.confirm_candidate(pending_id, now=now)
         except ValueError as exc:
             if "stale" in str(exc):
                 raise MemoryAlbumStaleError("stale memory proposal; refresh and submit again") from exc
             raise
+        if entry.source == "user_chat" and str(entry.metadata.get("fact_slot", "")).startswith("preference:"):
+            self.story.memory.update_bond_profile(new_preference=entry.summary,
+                source_memory_ids=(entry.memory_id,), now=now,
+                expected_epoch=self.story.memory.store.context_epoch)
+        if epoch != self.story.memory.store.context_epoch:
+            self._notify_invalidated()
         return self.snapshot(now=now)
 
     def reject_pending(self, pending_id: str, *, expected_epoch: int | None = None) -> dict[str, object]:
@@ -147,6 +153,9 @@ class MemoryAlbumController:
                 "active": memory.is_active(now=timestamp, scope=memory.scope),
                 "user_confirmed": memory.user_confirmed,
                 "supersedes": memory.supersedes,
+                "provenance": {key: memory.metadata[key] for key in (
+                    "original_quote", "message_id", "speaker", "scene", "recorded_at", "confidence_reason",
+                    "fact_domain", "fact_slot") if key in memory.metadata},
             }
             self._require_epoch(epoch)
             return details

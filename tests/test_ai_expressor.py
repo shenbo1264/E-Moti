@@ -1918,7 +1918,7 @@ def test_default_deepseek_expressor_requests_json_output_from_settings():
 
     assert isinstance(expressor.llm_client, OpenAICompatibleChatClient)
     assert expressor.llm_client.json_response is True
-    assert expressor.llm_client.max_tokens == 512
+    assert expressor.llm_client.max_tokens == 4096
 
 
 def test_openai_compatible_chat_client_allows_slow_provider_timeout():

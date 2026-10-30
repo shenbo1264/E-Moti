@@ -151,7 +151,7 @@ class EmotionalMemoryPolicy:
                 return None
             # Inventory events are the authoritative source for feed/gift
             # memories; the paired generic memory event would duplicate them.
-            if kind in {"赠礼", "投喂", "使用"}:
+            if kind in {"赠礼", "投喂", "使用", "主动陪伴", "memory_recollection"}:
                 return None
             if kind == "互动" and not first_time and not bool(payload.get("milestone", False)):
                 return None
