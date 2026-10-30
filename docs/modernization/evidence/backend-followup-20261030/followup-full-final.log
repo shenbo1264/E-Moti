@@ -32,7 +32,7 @@ tests/test_app.py::test_mobile_link_page_uses_window_controller_and_stops_on_clo
 
 tests/test_mobile_link_qt.py::test_panel_reports_port_in_use
   C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread companion-http
-  
+
   Traceback (most recent call last):
     File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 172, in startup
       server = await loop.create_server(
@@ -40,9 +40,9 @@ tests/test_mobile_link_qt.py::test_panel_reports_port_in_use
     File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 1536, in create_server
       raise OSError(err.errno, msg) from None
   OSError: [Errno 10048] error while attempting to bind on address ('127.0.0.1', 64165): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
-  
+
   During handling of the above exception, another exception occurred:
-  
+
   Traceback (most recent call last):
     File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1045, in _bootstrap_inner
       self.run()
@@ -74,7 +74,7 @@ tests/test_mobile_link_qt.py::test_panel_reports_port_in_use
     File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 182, in startup
       sys.exit(1)
   SystemExit: 1
-  
+
   Enable tracemalloc to get traceback where the object was allocated.
   See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
     warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
