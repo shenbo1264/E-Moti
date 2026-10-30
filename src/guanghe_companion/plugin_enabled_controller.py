@@ -252,8 +252,11 @@ class PluginEnabledCompanionController(_BaseController):
     def _commit_dialogue_exchange(self, request, dialogue_epoch: int) -> None:
         if request.normalized_text():
             self._last_dialogue_at = int(self.now)
-        if self.last_chat_memory_result.status == "forgotten":
-            # 撤回命令可能再次包含被遗忘原话；保留可读记录，但禁止它进入后续 prompt。
+        corrected = any(m.memory_id in self.last_chat_memory_result.memory_ids
+                        and m.metadata.get("corrected_by_user")
+                        for m in self.story_runtime.memory.store.load_memories())
+        if self.last_chat_memory_result.status == "forgotten" or corrected:
+            # 撤回和纠正原话可能包含旧事实；保留可读记录，但禁止本轮再次进入后续 prompt。
             dialogue_epoch = max(0, dialogue_epoch - 1)
         super()._commit_dialogue_exchange(request, dialogue_epoch)
 

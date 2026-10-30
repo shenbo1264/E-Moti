@@ -23,6 +23,8 @@ class MemoryCandidate:
     pinned: bool = False
     requires_user_confirmation: bool = False
     metadata: dict[str, object] = field(default_factory=dict)
+    valid_from: int = 0
+    valid_until: int = 0
 
     def to_memory(self, *, now: int, user_confirmed: bool = False) -> EmotionalMemoryEntry:
         memory_id = make_memory_id(
@@ -53,6 +55,8 @@ class MemoryCandidate:
             pinned=self.pinned,
             user_confirmed=user_confirmed,
             metadata=dict(self.metadata),
+            valid_from=self.valid_from,
+            valid_until=self.valid_until,
         ).normalized()
 
 

@@ -26,10 +26,19 @@ def test_common_direct_facts_keep_original_source(chat, text, value):
 
 
 @pytest.mark.parametrize("text", ["如果我对芒果过敏", "我不对芒果过敏", "我的猫不叫松子",
-    "我是一名木工才怪", "我打算搬到苏州", "我最近计划参加考试", "朋友说我养了一只狗", "我叫你阿岚"])
+    "我是一名木工才怪", "朋友说我养了一只狗", "我叫你阿岚"])
 def test_unsupported_or_negated_statements_are_not_positive_facts(chat, text):
     chat.process(text, now=10)
     assert not chat.memory.store.load_memories()
+
+
+@pytest.mark.parametrize("text", ["我打算搬到苏州", "我最近计划参加考试"])
+def test_explicit_intention_is_saved_as_plan_not_accomplished_fact(chat, text):
+    assert chat.process(text, now=10).status == "saved"
+    entry = chat.memory.store.load_memories()[0]
+    assert entry.metadata["plan_status"] == "planned"
+    assert "未确认完成" in entry.summary
+    assert not chat.memory.valid_profile(now=10).stable_preferences
 
 
 def explicit(chat, text):

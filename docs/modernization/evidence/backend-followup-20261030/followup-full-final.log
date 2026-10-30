@@ -1,0 +1,86 @@
+........................................................................ [  4%]
+........................................................................ [  8%]
+........................................................................ [ 13%]
+........................................................................ [ 17%]
+........................................................................ [ 22%]
+........................................................................ [ 26%]
+..................ssss.................................................. [ 31%]
+........................................................................ [ 35%]
+........................................................................ [ 39%]
+........................................................................ [ 44%]
+........................................................................ [ 48%]
+........................................................................ [ 53%]
+........................................................................ [ 57%]
+........................................................................ [ 62%]
+........................................................................ [ 66%]
+...................s.................................................... [ 71%]
+........................................................................ [ 75%]
+........................................................................ [ 79%]
+........................................................................ [ 84%]
+........................................................................ [ 88%]
+........................................................................ [ 93%]
+........................................................................ [ 97%]
+......................................                                   [100%]
+============================== warnings summary ===============================
+tests/test_app.py::test_mobile_link_page_uses_window_controller_and_stops_on_close
+  C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/test_app.py::test_mobile_link_page_uses_window_controller_and_stops_on_close
+  C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/test_mobile_link_qt.py::test_panel_reports_port_in_use
+  C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread companion-http
+  
+  Traceback (most recent call last):
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 172, in startup
+      server = await loop.create_server(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 1536, in create_server
+      raise OSError(err.errno, msg) from None
+  OSError: [Errno 10048] error while attempting to bind on address ('127.0.0.1', 64165): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+  
+  During handling of the above exception, another exception occurred:
+  
+  Traceback (most recent call last):
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1045, in _bootstrap_inner
+      self.run()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 982, in run
+      self._target(*self._args, **self._kwargs)
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 75, in run
+      return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\_compat.py", line 30, in asyncio_run
+      return runner.run(main)
+             ^^^^^^^^^^^^^^^^
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 118, in run
+      return self._loop.run_until_complete(task)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 641, in run_until_complete
+      self.run_forever()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 321, in run_forever
+      super().run_forever()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 608, in run_forever
+      self._run_once()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 1936, in _run_once
+      handle._run()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 84, in _run
+      self._context.run(self._callback, *self._args)
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 79, in serve
+      await self._serve(sockets)
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 94, in _serve
+      await self.startup(sockets=sockets)
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 182, in startup
+      sys.exit(1)
+  SystemExit: 1
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========================== short test summary info ===========================
+SKIPPED [4] tests\test_chat_memory_extraction_provider.py:15: explicit real provider test
+SKIPPED [1] tests\test_persona.py:173: symlinks unavailable on this platform
+1617 passed, 5 skipped, 3 warnings in 160.96s (0:02:40)

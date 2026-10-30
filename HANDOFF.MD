@@ -1,5 +1,13 @@
 # 核心后端与宿主交接
 
+## 2026-10-30：Claude 桌面接入后的后端修正
+
+当前后续工作以 Claude `5dd8c4e` 为基线，独立目录 `E:\E-Moti\.worktrees\core-followup`、分支 `codex/core-followup`。Claude 已完成桌面异步聊天、记忆设置与来源展示；不再按下面旧记录重复接入界面。自然话题遗忘、受控计划记录/纠正、候选有效期以及纠正本轮历史失效已补齐，接入接口不变。详见 `docs/handoff/20261029/claude-backend-followup-20261030.md`。
+
+环境中的 OpenAI/DeepSeek 凭据返回 HTTP 401，不能用于本轮模型验收；桌面应用的独立 DeepSeek 配置可调用，凭据仅进程内使用。保留真实输出、初轮 bad case 与修复后复测；角色仍有将自己的话归给用户的问题，不宣称人格全部通过。
+
+本批最终完整回归 1617 passed / 5 skipped，38 条契约全过；真实生成 12 次、36,723 provider token。纠正后旧地点已不进入后续 prompt，真实回答仅引用新计划地点。原始输出与警告说明在 `docs/modernization/evidence/backend-followup-20261030/README.md`。
+
 ## 2026-10-30：桌面记忆与陪伴优先
 
 手机已有提交与代码全部保留，暂停新增移动/观察/远控范围。当前后端从 `0f96f94` 继续；重新核对公开 main 仍为 `b9f2009`、开放 PR 为零。Claude 目录独立保留，其最新已见提交 `a1aabeb` 已包含桌面待确认提示；没有合并或修改其分支。

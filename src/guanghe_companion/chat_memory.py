@@ -43,6 +43,34 @@ _COMMON_FACTS = (
 )
 
 
+def forget_target(text: str) -> str | None:
+    # 先识别命令而不是按人称触发；话题可以位于动词前，且不必含“我”。
+    if re.search(r"假如|假设|如果|也许|可能|不确定|据说|他说|她说|朋友说|小说|故事里|梦里|游戏里|游戏中|角色扮演|"
+                 r"举例|假话|反话|的话|[？?]|吗|呢|什么意思|原话|这句话|不是|[‘’“”\"「」]|(?:不要|别|不能)忘", text):
+        return None
+    body = text.strip().rstrip("。！! ")
+    match = re.fullmatch(r"(?:请)?(?:忘记|忘掉|别再记|别记|不要再记|不要记|删掉|删除)(.+)", body)
+    if match:
+        target = match[1]
+    else:
+        match = re.fullmatch(r"(?:请)?(?:把)?(.+?)(?:请)?(?:忘了|忘掉|忘记|别再记|别记|不要再记|不要记|删掉|删除)(?:了|吧|就好)*", body)
+        if not match:
+            return None
+        target = match[1]
+    target = re.sub(r"^(?:我的?|关于)", "", target)
+    target = re.sub(r"(?:那件事|这件事|的事情|的事|这条信息|这条记忆)$", "", target)
+    return target.rstrip("了吧 ")
+
+
+def matches_forget_target(target: str, entry) -> bool:
+    if not target or target in {"这件事", "那件事", "那个事情", "事情", "刚才", "这条"}:
+        return False
+    if len(target) == 1 and target not in {"猫", "狗", "茶"}:
+        return False
+    summary = re.sub(r"^(?:用户|我)的?", "", entry.summary)
+    return target in summary or target in str(entry.metadata.get("fact_domain", ""))
+
+
 def _parse_fact(clause):
     preference = _PREFERENCE.fullmatch(clause)
     change = _CHANGE.fullmatch(clause)
@@ -107,14 +135,17 @@ class ChatMemory:
 
     def process(self, text: str, *, now: int) -> ChatMemoryResult:
         text = text.strip()
-        if _UNSUPPORTED.search(text):
-            return ChatMemoryResult()
         active = [_fact_view(m) for m in self.memory.store.load_memories()
                   if m.is_active(now=now) and (m.metadata.get("speaker") == "user"
                     or (m.user_confirmed and m.source in {"explicit_user_request", "user_correction"}))]
-        if (re.match(r"^(?:请)?(?:忘掉|忘记|别再记|不要再记|不要记)", text)
-                or re.fullmatch(r"(?:这件事|这条信息|刚才那件事)(?:请)?忘掉吧[。！!]?", text)):
+        if forget_target(text) is not None:
             return self._forget(text, active, now=now)
+        from .chat_memory_plans import prepare_plan, record_plan
+        plan = prepare_plan(text)
+        if plan is not None:
+            return record_plan(self.memory, plan, now=now, mode=self.mode)
+        if _UNSUPPORTED.search(text):
+            return ChatMemoryResult()
         if self.mode == "off":
             return ChatMemoryResult()
         correction = bool(_CORRECTION.match(text))
@@ -186,6 +217,7 @@ class ChatMemory:
         return ChatMemoryResult("saved" if written else "ignored", memory_ids=tuple(written))
 
     def _forget(self, text, active, *, now: int) -> ChatMemoryResult:
+        target = forget_target(text)
         candidates = {key: _fact_view(candidate) for key, candidate in self.memory.pending_candidates.items()}
         domains = {m.metadata.get("fact_domain") for m in [*active, *candidates.values()]}
         requested = {domain for domain in domains if domain and domain in text}
@@ -199,6 +231,10 @@ class ChatMemory:
         if not selected:
             selected = [m for m in active if m.metadata.get("fact_value")
                         and m.metadata["fact_value"] in text]
+        selected = list({m.memory_id: m for m in [*selected, *(m for m in active
+                         if matches_forget_target(target, m))]}.values())
+        pending_ids = list(dict.fromkeys([*pending_ids, *(key for key, candidate in candidates.items()
+                                         if matches_forget_target(target, candidate))]))
         if not selected and any(term in text for term in ("饮料", "饮品", "喝什么")):
             selected = [m for m in active if m.metadata.get("fact_domain") == "饮料偏好"]
         if not selected and any(term in text for term in ("这件事", "刚才", "这条")) and len(active) == 1:

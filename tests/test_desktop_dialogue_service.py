@@ -101,3 +101,31 @@ def test_first_input_after_memory_expiry_is_processed(tmp_path):
     finally:
         service.close()
         controller.close()
+
+
+def test_expiry_during_extraction_cannot_resume_with_stale_context(tmp_path):
+    app = QCoreApplication.instance() or QCoreApplication([])
+    controller = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+    service = DesktopDialogueService(controller)
+    try:
+        memory = controller.story_runtime.memory
+        memory.remember(kind="用户自述", title="短期安排", summary="周末去爬山",
+                        source="explicit_user_request", now=0, valid_until=5)
+        envelope = controller.chat_memory_extraction.prepare("我家有一只狗", now=0,
+            mode=controller.chat_memory.mode, generation=controller.host_context_generation)
+        result = Future()
+        service._active = {"result": result, "request": DialogueRequest("我家有一只狗"),
+            "include_ai": False, "generation": controller.host_context_generation,
+            "character": controller.state.character_id, "epoch": controller._dialogue_context_epoch(),
+            "ticket": None, "extraction": envelope, "extractor": controller.chat_memory_extraction}
+        controller.now = 10
+        work = Future()
+        work.set_result(())
+        service._deliver(("extracted", work))
+        with pytest.raises(HostDialogueStaleError):
+            result.result()
+        assert not controller.dialogue_history
+        assert service._active is None
+    finally:
+        service.close()
+        controller.close()

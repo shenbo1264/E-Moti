@@ -103,6 +103,10 @@ class DesktopDialogueService(QObject):
             result = c.chat_memory_extraction.apply(state["extraction"], work.result(), now=int(c.now),
                 generation=c.host_context_generation, mode=c.chat_memory.mode)
         except ValueError:
+            if (state["generation"] != c.host_context_generation
+                    or state["epoch"] != c._dialogue_context_epoch()
+                    or state["extraction"].mode != c.chat_memory.mode):
+                raise HostDialogueStaleError("extraction context changed before memory commit")
             # 模型提议未通过校验时不写入事实，但这不是用户消息的失败，聊天继续。
             state["extractor"].discard(state["extraction"])
             result = ChatMemoryResult("clarify", "这条没能确认要记或要忘什么，可以说得更具体，或在回忆册里操作。")

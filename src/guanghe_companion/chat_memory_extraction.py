@@ -7,8 +7,9 @@ import re
 from threading import get_ident
 from uuid import uuid4
 
-from .chat_memory import ChatMemoryResult, _fact_view, _DRINK
+from .chat_memory import ChatMemoryResult, _fact_view, _DRINK, forget_target, matches_forget_target
 from .emotional_memory_policy import MemoryCandidate
+from .chat_memory_plans import plan_view, correct_plan
 from .expression_clients import LLMClient
 
 
@@ -56,6 +57,8 @@ class MemoryProposal:
 
 
 def should_extract(text: str, mode: str = "auto") -> bool:
+    if forget_target(text) is not None:
+        return True
     return bool(text.strip() and not _UNSAFE.search(text)
                 and (_FORGET.search(text) or (mode != "off" and "我" in text and not _TEMPORARY.search(text))))
 
@@ -139,6 +142,9 @@ class ChatMemoryExtraction:
             raise ValueError("stale extraction context")
         if not should_extract(envelope.text, mode):
             return ChatMemoryResult()
+        is_forget = forget_target(envelope.text) is not None
+        if is_forget and (not proposals or any(p.action != "forget" for p in proposals)):
+            return ChatMemoryResult("clarify", "还没确定要忘记哪条信息，请说明内容或在回忆册里选择。")
         facts = {f.memory_id: f for f in envelope.facts}
         current = {m.memory_id: _fact_view(m) for m in self.memory.store.load_memories()
                    if m.is_active(now=now) and (m.metadata.get("speaker") == "user"
@@ -191,7 +197,7 @@ class ChatMemoryExtraction:
                 raise ValueError("multiple proposals target the same fact")
             touched.update(p.target_ids)
             if p.action == "forget":
-                if not _FORGET.search(envelope.text):
+                if not is_forget:
                     raise ValueError("forget requires an explicit user command")
                 target = current[p.target_ids[0]]
                 domain_aliases = {"居住地": ("住址", "住处", "地址"), "称呼": ("名字", "姓名"),
@@ -200,6 +206,7 @@ class ChatMemoryExtraction:
                 unique_domain = [m for m in current.values() if m.metadata.get("fact_domain") == p.domain]
                 value_matches = [m for m in current.values() if p.value and p.value in m.summary]
                 if not ((p.value and len(value_matches) == 1 and value_matches[0].memory_id == target.memory_id)
+                        or matches_forget_target(forget_target(envelope.text), target)
                         or (domain_named and len(unique_domain) == 1 and unique_domain[0].memory_id == target.memory_id)
                         or ("这件事" in envelope.text and len(facts) == 1)):
                     return ChatMemoryResult("clarify", "请明确要忘记的原始信息。")
@@ -209,6 +216,14 @@ class ChatMemoryExtraction:
                 continue
             if p.action == "correct" and not _CORRECT.search(envelope.text):
                 return ChatMemoryResult("clarify", "请明确这是纠正还是补充信息。")
+            if p.action == "correct" and plan_view(current[p.target_ids[0]]) is not None:
+                result = correct_plan(self.memory, current[p.target_ids[0]],
+                    summary=f"{p.domain}改为{p.value}", value=p.value, text=envelope.text, now=now, mode=mode)
+                if result.status == "clarify":
+                    return result
+                written.extend(result.memory_ids)
+                pending = pending or result.status == "pending"
+                continue
             slot, domain = _slot(p)
             metadata = {"speaker": "user", "original_quote": envelope.text, "evidence_quote": p.quote,
                         "fact_domain": domain, "fact_slot": slot, "fact_value": p.value,

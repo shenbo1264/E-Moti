@@ -143,7 +143,7 @@ def test_rejected_extraction_asks_user_instead_of_failing_the_turn(monkeypatch, 
     service.failed.connect(errors.append)
     controller.memory_album_controller.remember_explicit(
         "我的猫叫年糕。", now=100, expected_epoch=controller.story_runtime.memory.store.context_epoch)
-    future = service.submit(DialogueRequest(text="把我猫的事忘了吧。"), include_ai_expression=True)
+    future = service.submit(DialogueRequest(text="把那段往事忘了吧。"), include_ai_expression=True)
     assert wait(app, future.done)
     assert errors == []
     assert controller.get_chat_memory_status()["last_result"]["status"] == "clarify"

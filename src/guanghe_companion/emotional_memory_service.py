@@ -46,6 +46,7 @@ class EmotionalMemoryService:
             source_ids=entry.source_ids, tags=entry.tags, emotion=entry.emotion,
             importance=entry.importance, relationship_delta=entry.relationship_delta, pinned=entry.pinned,
             requires_user_confirmation=requires_confirmation, metadata=dict(entry.metadata),
+            valid_from=entry.valid_from, valid_until=entry.valid_until,
         ) for key, (entry, requires_confirmation, _epoch) in self.store.load_pending_candidates().items()}
 
     def record_event(self, event: object, *, now: int) -> EmotionalMemoryEntry | None:

@@ -134,10 +134,19 @@ def run_case(app, case: dict, new_client, meter: Meter, semantic_cache: Path | N
                 "pass" if not (missing or leaked or unanswered) else "fail")
             return {"id": case["id"], "category": case["category"], "turns": turns, "stored": stored,
                     "pending": pending, "missing": missing, "leaked": leaked, "unanswered": unanswered,
-                    "literal_status": literal, "rubric": case.get("rubric"), "calls": meter.case_calls}
+                    "literal_status": literal, "model_status": model_run_status(turns, meter.case_calls),
+                    "rubric": case.get("rubric"), "calls": meter.case_calls}
         finally:
             service.close()
             controller.close()
+
+
+def model_run_status(turns: list[dict], calls: list[dict]) -> str:
+    if not calls:
+        return "not_run"
+    if any(row.get("error") or row.get("fallback") for row in turns):
+        return "failed"
+    return "completed"
 
 
 def main() -> int:
