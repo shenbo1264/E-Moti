@@ -2,10 +2,11 @@ from __future__ import annotations
 
 import math
 import re
-from dataclasses import dataclass
-from typing import Iterable
+from dataclasses import dataclass, replace
+from typing import Iterable, Mapping
 
 from .emotional_memory import EmotionalMemoryEntry
+from .memory_fusion import reciprocal_rank_fusion
 
 DEFAULT_TOP_K = 4
 DEFAULT_MINIMUM_RELEVANCE = 0.12
@@ -21,6 +22,8 @@ class MemoryRetrievalScore:
     emotion: float
     relationship: float
     reinforcement: float
+    semantic: float = 0.0
+    fusion: float = 0.0
 
 
 def tokenize(text: str) -> tuple[str, ...]:
@@ -111,6 +114,9 @@ def rank_memories(
     relationship_stage: str = "初识",
     top_k: int = DEFAULT_TOP_K,
     minimum_relevance: float = DEFAULT_MINIMUM_RELEVANCE,
+    semantic_scores: Mapping[str, float] | None = None,
+    minimum_semantic_relevance: float = 0.65,
+    scope: str = "companion",
 ) -> list[tuple[EmotionalMemoryEntry, MemoryRetrievalScore]]:
     """Rank episodic memories without forcing unrelated nostalgia.
 
@@ -124,12 +130,16 @@ def rank_memories(
     has_query = bool(tokenize(query))
     threshold = max(0.0, min(1.0, float(minimum_relevance)))
     for memory in memories:
-        if memory.deleted:
+        if not memory.is_active(now=now, scope=scope):
             continue
         score = score_memory(memory, query, now=now, relationship_stage=relationship_stage)
-        if has_query and score.relevance < threshold:
+        semantic = (semantic_scores or {}).get(memory.memory_id, 0.0)
+        if isinstance(semantic, bool) or not isinstance(semantic, (int, float)) or not math.isfinite(semantic):
+            semantic = 0.0
+        semantic = max(0., min(1., semantic))
+        if has_query and score.relevance < threshold and semantic < minimum_semantic_relevance:
             continue
-        scored.append((memory, score))
+        scored.append((memory, replace(score, semantic=semantic)))
     scored.sort(
         key=lambda row: (
             row[1].total,
@@ -139,4 +149,14 @@ def rank_memories(
         ),
         reverse=True,
     )
-    return scored[: max(0, int(top_k))]
+    # The original weighted lexical rank remains the offline baseline. Fusion
+    # over one list preserves it exactly; an optional semantic provider adds a
+    # second ranked view, after all hard validity/scope gates have run.
+    lists = [[row[0].memory_id for row in scored]]
+    semantic_rank = sorted((row for row in scored if row[1].semantic >= minimum_semantic_relevance),
+                           key=lambda row: row[1].semantic, reverse=True)
+    if semantic_rank:
+        lists.append([row[0].memory_id for row in semantic_rank])
+    by_id = {memory.memory_id: (memory, score) for memory, score in scored}
+    return [(by_id[key][0], replace(by_id[key][1], fusion=fused))
+            for key, fused in reciprocal_rank_fusion(lists)[:max(0, int(top_k))]]

@@ -1,0 +1,30 @@
+{
+  "checked_at_utc": "2026-10-29 18:29:36 UTC",
+  "user_facing_date": "2026-10-29",
+  "user_timezone": "America/Los_Angeles",
+  "repository": "https://github.com/shenbo1264/E-Moti",
+  "main": "b9f200955123790a5c66abcaf4e2567b3659a90e",
+  "branches": [
+    {
+      "name": "codex/demo-worktree-cleanup",
+      "sha": "0861ac4e9f83769bf7def0d21964e16a5f089aea"
+    },
+    {
+      "name": "codex/demo-worktree-cleanup-pr",
+      "sha": "3dff2403482d6b68b375e831c3c5f76884055af7"
+    },
+    {
+      "name": "main",
+      "sha": "b9f200955123790a5c66abcaf4e2567b3659a90e"
+    }
+  ],
+  "open_prs": [],
+  "checked_user_date": "2026-10-29",
+  "local_production_commit": "078ef1ca8b4ab714b8c64f2f9cdbe645c80464a2",
+  "actions": "Read only. No remote mutation.",
+  "source_urls": [
+    "https://api.github.com/repos/shenbo1264/E-Moti/branches/main",
+    "https://api.github.com/repos/shenbo1264/E-Moti/branches?per_page=100",
+    "https://api.github.com/repos/shenbo1264/E-Moti/pulls?state=open&per_page=100"
+  ]
+}

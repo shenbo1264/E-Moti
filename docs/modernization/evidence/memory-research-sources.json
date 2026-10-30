@@ -1,0 +1,92 @@
+[
+  {
+    "repository": "letta-ai/letta",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": null,
+    "pushed_at": "2026-10-18T22:28:04Z",
+    "archived": false,
+    "license": "Apache-2.0",
+    "language": null
+  },
+  {
+    "repository": "letta-ai/letta-code",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": "6f4e4886caa0934341eea75c306fc0364509218e",
+    "pushed_at": "2026-10-25T14:24:41Z",
+    "archived": false,
+    "license": "Apache-2.0",
+    "language": "TypeScript"
+  },
+  {
+    "repository": "mem0ai/mem0",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": "2c81af3bbe27d9bccb09c772d583df9e9be72ee5",
+    "pushed_at": "2026-10-23T18:38:28Z",
+    "archived": false,
+    "license": "Apache-2.0",
+    "language": "Python"
+  },
+  {
+    "repository": "getzep/graphiti",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": "5c27edfa8d3e0f49b2571bcebb4261bcc89ee037",
+    "pushed_at": "2026-10-25T08:32:09Z",
+    "archived": false,
+    "license": "Apache-2.0",
+    "language": "Python"
+  },
+  {
+    "repository": "vectorize-io/hindsight",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": "fa359876bcf5ed652c001dac5d40bfcc51d1d41d",
+    "pushed_at": "2026-10-25T14:58:13Z",
+    "archived": false,
+    "license": "MIT",
+    "language": "Python"
+  },
+  {
+    "repository": "MemTensor/MemOS",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": "adcb9f270c982f2b9ff8db9714792829d3bd6ab8",
+    "pushed_at": "2026-10-24T15:17:53Z",
+    "archived": false,
+    "license": "Apache-2.0",
+    "language": "TypeScript"
+  },
+  {
+    "repository": "EverMind-AI/EverOS",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": "5b0979b1b7f3a0cbe235756ff098515ec490753e",
+    "pushed_at": "2026-10-22T12:57:16Z",
+    "archived": false,
+    "license": "Apache-2.0",
+    "language": "Python"
+  },
+  {
+    "repository": "volcengine/OpenViking",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": "4ab22a4923452362b60aef2826c2083ce36168d2",
+    "pushed_at": "2026-10-25T10:25:22Z",
+    "archived": false,
+    "license": "AGPL-3.0",
+    "language": "Python"
+  },
+  {
+    "repository": "plastic-labs/honcho",
+    "observed_at": "2026-10-25",
+    "default_branch": "main",
+    "revision": "39a53549cb269607dd63fe6a4fc90944efb774dc",
+    "pushed_at": "2026-10-25T14:44:29Z",
+    "archived": false,
+    "license": "AGPL-3.0",
+    "language": "Python"
+  }
+]

@@ -9,8 +9,10 @@ import subprocess
 import urllib.error
 import urllib.request
 from collections.abc import Callable
+from contextvars import ContextVar
 from dataclasses import dataclass, replace
 from pathlib import Path
+from threading import Event, RLock
 from typing import Protocol
 
 from .capability_settings import TTSSettings
@@ -25,6 +27,48 @@ class TTSResult:
     ok: bool
     message: str
     audio_path: str = ""
+
+
+_speech_cancel_event: ContextVar[Event | None] = ContextVar("tts_cancel_event", default=None)
+
+
+def _cancelled_result() -> TTSResult:
+    return TTSResult(False, "朗读已取消")
+
+
+def _run_cancellable_speech(speak: Callable[[str], TTSResult], text: str, cancelled: Event) -> TTSResult:
+    """Carry a queued job's cancellation through unchanged provider interfaces."""
+    token = _speech_cancel_event.set(cancelled)
+    try:
+        return _cancelled_result() if cancelled.is_set() else speak(text)
+    finally:
+        _speech_cancel_event.reset(token)
+
+
+class _PlaybackGeneration:
+    """Serialize stop with the short playback start, never with synthesis I/O."""
+
+    def __init__(self) -> None:
+        self._generation = 0
+        self._lock = RLock()
+
+    def current(self) -> int:
+        with self._lock:
+            return self._generation
+
+    def run(self, generation: int, action: Callable[[], object]) -> bool:
+        with self._lock:
+            cancelled = _speech_cancel_event.get()
+            if generation != self._generation or (cancelled is not None and cancelled.is_set()):
+                return False
+            action()
+            return True
+
+    def stop(self, action: Callable[[], object] | None = None) -> None:
+        with self._lock:
+            self._generation += 1
+            if action is not None:
+                action()
 
 
 class TTSProvider(Protocol):
@@ -106,8 +150,12 @@ class HttpQwen3TTSProvider:
         self._cache_dir = Path(cache_dir) if cache_dir is not None else user_data_dir() / "cache" / "tts"
         self._audio_player = audio_player or _QtAudioFilePlayer().play
         self._qt_player: _QtAudioFilePlayer | None = None
+        self._playback = _PlaybackGeneration()
 
     def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+        generation = self._playback.current()
+        if not self._playback.run(generation, lambda: None):
+            return _cancelled_result()
         endpoint = _tts_endpoint(settings.api_url)
         payload = _qwen3tts_payload(text, settings)
         try:
@@ -116,14 +164,16 @@ class HttpQwen3TTSProvider:
             latest_output = self._cache_dir / "qwen3tts_latest.wav"
             if output.exists() and output.stat().st_size > 0:
                 _write_latest_audio(latest_output, output.read_bytes())
-                self._audio_player(output)
+                if not self._playback.run(generation, lambda: self._audio_player(output)):
+                    return _cancelled_result()
                 return TTSResult(True, "朗读完成（缓存）", str(output))
             audio = self._post(endpoint, payload, 180)
             if not audio:
                 return TTSResult(False, "HTTP TTS 未返回音频")
             output.write_bytes(audio)
             _write_latest_audio(latest_output, audio)
-            self._audio_player(output)
+            if not self._playback.run(generation, lambda: self._audio_player(output)):
+                return _cancelled_result()
             return TTSResult(True, "朗读完成", str(output))
         except (OSError, ValueError, urllib.error.URLError, TimeoutError) as exc:
             return TTSResult(False, f"HTTP TTS 失败：{exc}")
@@ -131,8 +181,7 @@ class HttpQwen3TTSProvider:
     def stop(self) -> None:
         player = getattr(self._audio_player, "__self__", None)
         stop = getattr(player, "stop", None)
-        if callable(stop):
-            stop()
+        self._playback.stop(stop if callable(stop) else None)
 
 
 class HttpGPTSoVITSProvider:
@@ -146,8 +195,12 @@ class HttpGPTSoVITSProvider:
         self._post = post or _post_json_bytes
         self._cache_dir = Path(cache_dir) if cache_dir is not None else user_data_dir() / "cache" / "tts"
         self._audio_player = audio_player or _QtAudioFilePlayer().play
+        self._playback = _PlaybackGeneration()
 
     def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+        generation = self._playback.current()
+        if not self._playback.run(generation, lambda: None):
+            return _cancelled_result()
         if not settings.reference_audio:
             return TTSResult(False, "GPT-SoVITS reference_audio is required")
         if not settings.reference_text:
@@ -162,7 +215,8 @@ class HttpGPTSoVITSProvider:
                 cached_audio = output.read_bytes()
                 if _looks_like_gptsovits_audio(cached_audio):
                     _write_latest_audio(latest_output, cached_audio)
-                    self._audio_player(output)
+                    if not self._playback.run(generation, lambda: self._audio_player(output)):
+                        return _cancelled_result()
                     return TTSResult(True, "GPT-SoVITS speech complete（缓存）", str(output))
             audio = self._post(endpoint, payload, 180)
             if not audio:
@@ -171,7 +225,8 @@ class HttpGPTSoVITSProvider:
                 return TTSResult(False, "GPT-SoVITS returned invalid audio")
             output.write_bytes(audio)
             _write_latest_audio(latest_output, audio)
-            self._audio_player(output)
+            if not self._playback.run(generation, lambda: self._audio_player(output)):
+                return _cancelled_result()
             return TTSResult(True, "GPT-SoVITS speech complete", str(output))
         except (OSError, ValueError, urllib.error.URLError, TimeoutError) as exc:
             return TTSResult(False, f"GPT-SoVITS speech failed: {exc}")
@@ -179,8 +234,7 @@ class HttpGPTSoVITSProvider:
     def stop(self) -> None:
         player = getattr(self._audio_player, "__self__", None)
         stop = getattr(player, "stop", None)
-        if callable(stop):
-            stop()
+        self._playback.stop(stop if callable(stop) else None)
 
 
 class EmotiVoiceGatewayProvider:
@@ -211,7 +265,7 @@ class EmotiVoiceGatewayProvider:
         return provider.speak(select_synthesis_text(text, settings), backend_settings)
 
     def stop(self) -> None:
-        for provider in self._providers.values():
+        for provider in tuple(self._providers.values()):
             try:
                 provider.stop()
             except Exception:
@@ -240,9 +294,11 @@ class WindowsSapiTTSProvider:
     def __init__(self, powershell_executable: str = "powershell") -> None:
         self._powershell_executable = powershell_executable
         self._process: subprocess.Popen[bytes] | None = None
+        self._playback = _PlaybackGeneration()
 
     def speak(self, text: str, settings: TTSSettings) -> TTSResult:
         self.stop()
+        generation = self._playback.current()
         script = _windows_sapi_script(
             text=text,
             voice=settings.voice,
@@ -250,7 +306,7 @@ class WindowsSapiTTSProvider:
             volume=int(settings.volume * 100),
         )
         encoded = base64.b64encode(script.encode("utf-16le")).decode("ascii")
-        try:
+        def start() -> None:
             self._process = subprocess.Popen(
                 [
                     self._powershell_executable,
@@ -262,15 +318,20 @@ class WindowsSapiTTSProvider:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
             )
+        try:
+            if not self._playback.run(generation, start):
+                return _cancelled_result()
         except OSError as exc:
             return TTSResult(False, f"Windows SAPI TTS 失败：{exc}")
         return TTSResult(True, "朗读已开始")
 
     def stop(self) -> None:
-        process = self._process
-        if process is not None and process.poll() is None:
-            process.terminate()
-        self._process = None
+        def terminate() -> None:
+            process = self._process
+            if process is not None and process.poll() is None:
+                process.terminate()
+            self._process = None
+        self._playback.stop(terminate)
 
 
 class EdgeNeuralTTSProvider:
@@ -284,8 +345,12 @@ class EdgeNeuralTTSProvider:
         self._communicate_factory = communicate_factory
         self._cache_dir = Path(cache_dir) if cache_dir is not None else user_data_dir() / "cache" / "tts"
         self._audio_player = audio_player or _QtAudioFilePlayer().play
+        self._playback = _PlaybackGeneration()
 
     def speak(self, text: str, settings: TTSSettings) -> TTSResult:
+        generation = self._playback.current()
+        if not self._playback.run(generation, lambda: None):
+            return _cancelled_result()
         factory = self._communicate_factory or _edge_tts_communicate_factory()
         if factory is None:
             return TTSResult(False, "edge-tts 未安装，无法使用在线神经语音")
@@ -301,7 +366,8 @@ class EdgeNeuralTTSProvider:
             if not callable(save):
                 return TTSResult(False, "edge-tts provider 返回无效合成器")
             asyncio.run(save(str(output)))
-            self._audio_player(output)
+            if not self._playback.run(generation, lambda: self._audio_player(output)):
+                return _cancelled_result()
             return TTSResult(True, "朗读完成", str(output))
         except Exception as exc:
             return TTSResult(False, f"edge-tts 朗读失败：{exc}")
@@ -309,8 +375,7 @@ class EdgeNeuralTTSProvider:
     def stop(self) -> None:
         player = getattr(self._audio_player, "__self__", None)
         stop = getattr(player, "stop", None)
-        if callable(stop):
-            stop()
+        self._playback.stop(stop if callable(stop) else None)
 
 
 class _QtAudioFilePlayer:

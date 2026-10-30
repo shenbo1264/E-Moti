@@ -34,6 +34,22 @@ class CompanionDialoguePolicy:
     performance_profile: CharacterPerformanceProfile | None = None
 
     def prompt_lines(self, request: ExpressionRequest) -> tuple[str, ...]:
+        if request.persona:
+            guidance = tuple(line for line in PERFORMANCE_QUALITY_GUIDANCE if not line.startswith((
+                "Performance target:", "Character voice:", "Do not copy the player's prompt")))
+            lines = [
+                f"{request.character_name}是独立存在的个人伙伴；工作、游戏和设备能力都是可关闭的外部能力。",
+                "遵守 persona 中的身份与表达风格，不从用户事实、情绪或单次聊天重写人格。",
+                "优先自然回应当前话题，适度保留自己的观点；玩笑要贴合角色与情境，不讨好、不施压。",
+                *guidance,
+                f"当前互动距离：{self._style_line(request)}",
+            ]
+            lines.extend(self._profile_lines())
+            perception = _mask_state_write_terms(request.perception_summary)
+            if perception:
+                lines.append(f"只读屏幕观察：{perception}")
+            lines.extend(f"只读外部线索：{_format_tool_result(entry)}" for entry in request.tool_results)
+            return tuple(lines)
         lines = [
             "星汐是原创 OC 桌面伴侣，也是住在桌面角落的电子宠物；不要写成学习工具、效率助手、课程监督者或客服机器人。",
             "学习、专注、休息只是动作状态；回答要先像角色，再考虑是否提供轻量帮助。",
@@ -60,9 +76,9 @@ class CompanionDialoguePolicy:
 
     def _style_line(self, request: ExpressionRequest) -> str:
         if request.trust < 20:
-            return "保持一点距离感和慢热感，可以轻微停顿或害羞，不要突然过度亲昵。"
+            return "保持一点距离感，遵循角色原有风格，不要突然过度亲昵。"
         if request.trust >= 60:
-            return "更自然地承接玩家的情绪，可以有轻微撒娇或熟悉感。"
+            return "更自然地承接玩家的情绪与熟悉感，保持角色原有风格。"
         if request.mood < 40:
             return "状态偏低时句子更短、更安静，不讲大道理，也不要求玩家负责。"
         return "轻声回应，给玩家一点确认感。"

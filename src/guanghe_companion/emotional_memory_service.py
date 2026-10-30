@@ -1,10 +1,12 @@
 from __future__ import annotations
 
-from collections.abc import Iterable, Mapping
+from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from pathlib import Path
+from uuid import uuid4
 
 from .emotional_memory import (
+    MAX_SOURCE_IDS,
     CoreBondProfile,
     EmotionalMemoryEntry,
     EmotionalMemoryStore,
@@ -27,13 +29,25 @@ class EmotionalMemoryService:
         owner_id: str = "local_user",
         policy: EmotionalMemoryPolicy | None = None,
         reflection: MemoryReflectionService | None = None,
+        semantic_retriever: Callable[[str, tuple[EmotionalMemoryEntry, ...]], Mapping[str, float]] | None = None,
     ) -> None:
         self.store = EmotionalMemoryStore(root=root, character_id=character_id, owner_id=owner_id)
         self.character_id = character_id
         self.owner_id = owner_id
         self.policy = policy or EmotionalMemoryPolicy()
         self.reflection = reflection or MemoryReflectionService()
-        self.pending_candidates: dict[str, MemoryCandidate] = {}
+        self.semantic_retriever = semantic_retriever
+
+    @property
+    def pending_candidates(self) -> dict[str, MemoryCandidate]:
+        return {key: MemoryCandidate(
+            character_id=entry.character_id, owner_id=entry.owner_id, kind=entry.kind,
+            title=entry.title, summary=entry.summary, source=entry.source, occurred_at=entry.occurred_at,
+            source_ids=entry.source_ids, tags=entry.tags, emotion=entry.emotion,
+            importance=entry.importance, relationship_delta=entry.relationship_delta, pinned=entry.pinned,
+            requires_user_confirmation=requires_confirmation, metadata=dict(entry.metadata),
+            valid_from=entry.valid_from, valid_until=entry.valid_until,
+        ) for key, (entry, requires_confirmation, _epoch) in self.store.load_pending_candidates().items()}
 
     def record_event(self, event: object, *, now: int) -> EmotionalMemoryEntry | None:
         normalized_event = self._annotate_firsts(event)
@@ -47,7 +61,7 @@ class EmotionalMemoryService:
             return None
         if candidate.requires_user_confirmation:
             pending_id = candidate.to_memory(now=now).memory_id
-            self.pending_candidates[pending_id] = candidate
+            self.propose_candidate(candidate, pending_id=pending_id, expected_epoch=self.store.context_epoch)
             return None
         return self._persist_candidate(candidate, now=now, user_confirmed=False)
 
@@ -86,16 +100,51 @@ class EmotionalMemoryService:
         )
         if candidate is None:
             return None
+        # 每次明确的新陈述是独立来源；相同逻辑时刻重述也不是旧记录重放。
+        candidate = replace(candidate, source_ids=(f"explicit_statement:{uuid4().hex}",))
         pending_id = candidate.to_memory(now=now).memory_id
-        self.pending_candidates[pending_id] = candidate
-        return pending_id
+        return self.propose_candidate(candidate, pending_id=pending_id, expected_epoch=self.store.context_epoch)
 
     def confirm_candidate(self, pending_id: str, *, now: int) -> EmotionalMemoryEntry:
-        candidate = self.pending_candidates.pop(pending_id)
-        return self._persist_candidate(candidate, now=now, user_confirmed=True)
+        entry = self.store.confirm_pending_candidate(pending_id, now=now)
+        self.promote_sourced_alias(entry, now=now)
+        return entry
 
-    def reject_candidate(self, pending_id: str) -> bool:
-        return self.pending_candidates.pop(pending_id, None) is not None
+    def promote_sourced_alias(self, entry: EmotionalMemoryEntry, *, now: int) -> None:
+        if entry.metadata.get("fact_domain") != "称呼" or entry.metadata.get("speaker") != "user":
+            return
+        alias = entry.metadata.get("fact_value")
+        if not isinstance(alias, str) or not alias or _canonical_profile_value("player_alias", alias) != alias:
+            raise ValueError("nickname fact must contain a valid literal alias")
+        current = {m.memory_id: m for m in self.store.load_memories() if m.is_active(now=now)}
+        actual = current.get(entry.memory_id)
+        if actual is None or actual.evidence_fingerprint() != entry.evidence_fingerprint():
+            raise ValueError("nickname promotion requires current evidence")
+        profile = self.store.load_profile()
+        previous_sources = set(profile.evidence.get(f"player_alias:{profile.player_alias}", {}))
+        previous_sources.update(m.memory_id for m in current.values()
+                                if m.metadata.get("profile_field") == "player_alias")
+        # 旧称呼的事实与派生来源一起退役，沿用已有 epoch 传播和历史屏障。
+        for memory_id in previous_sources - {entry.memory_id}:
+            self.forget(memory_id, now=now, expected_epoch=self.store.context_epoch)
+        self.update_bond_profile(player_alias=alias, source_memory_ids=(entry.memory_id,),
+                                 now=now, expected_epoch=self.store.context_epoch)
+
+    def propose_candidate(self, candidate: MemoryCandidate, *, pending_id: str,
+                          expected_epoch: int, now: int | None = None) -> str:
+        """Host-only proposal boundary; a model/provider cannot confirm itself."""
+        if candidate.character_id != self.character_id or candidate.owner_id != self.owner_id:
+            raise ValueError("candidate belongs to another character or owner")
+        references = candidate.metadata.get("source_memory_ids", [])
+        if (not isinstance(references, (list, tuple)) or len(references) > 16
+                or any(not isinstance(key, str) or not key for key in references)):
+            raise ValueError("invalid memory candidate source references")
+        recorded_at = candidate.occurred_at if now is None else now
+        return self.store.save_pending_candidate(pending_id, candidate.to_memory(now=recorded_at),
+            requires_user_confirmation=candidate.requires_user_confirmation, expected_epoch=expected_epoch)
+
+    def reject_candidate(self, pending_id: str, *, revoke_context: bool = False) -> bool:
+        return self.store.reject_pending_candidate(pending_id, revoke_context=revoke_context)
 
     def remember(
         self,
@@ -111,7 +160,16 @@ class EmotionalMemoryService:
         user_confirmed: bool = True,
         supersedes: str = "",
         metadata: Mapping[str, object] | None = None,
+        source_ids: tuple[str, ...] = (),
+        scope: str = "companion",
+        confidence: float = 1.0,
+        valid_from: int = 0,
+        valid_until: int = 0,
+        expected_epoch: int | None = None,
+        preserve_occurred_at: bool = True,
     ) -> EmotionalMemoryEntry:
+        if source in {"model", "assistant", "llm", "llm_generated", "assistant_generated", "model_generated"} and not user_confirmed:
+            raise ValueError("model output is not evidence of a user fact or completed event")
         candidate = MemoryCandidate(
             character_id=self.character_id,
             owner_id=self.owner_id,
@@ -124,17 +182,32 @@ class EmotionalMemoryService:
             importance=importance,
             pinned=pinned,
             metadata=dict(metadata or {}),
+            source_ids=source_ids,
         )
-        memory = candidate.to_memory(now=now, user_confirmed=user_confirmed)
+        memory = replace(candidate.to_memory(now=now, user_confirmed=user_confirmed),
+                         scope=scope, confidence=confidence, valid_from=valid_from, valid_until=valid_until)
         if supersedes:
-            memory = replace(memory, supersedes=supersedes)
-            previous = next(
-                (entry for entry in self.store.load_memories() if entry.memory_id == supersedes),
-                None,
-            )
-            if previous is not None:
-                self.store.update_memory(replace(previous, deleted=True, updated_at=now))
-        return self.store.upsert_memory(memory)
+            return self.store.replace_memory(supersedes, memory, now=now, expected_epoch=expected_epoch,
+                                             preserve_occurred_at=preserve_occurred_at)
+        return self.store.upsert_memory(memory, expected_epoch=expected_epoch)
+
+    def correct(self, memory_id: str, *, title: str, summary: str, now: int,
+                expected_epoch: int | None = None, source_ids: tuple[str, ...] = (),
+                metadata: Mapping[str, object] | None = None) -> EmotionalMemoryEntry:
+        epoch = self.store.context_epoch if expected_epoch is None else expected_epoch
+        previous = next((entry for entry in self.store.load_memories()
+                         if entry.memory_id == memory_id and not entry.deleted), None)
+        if previous is None:
+            raise KeyError(f"active memory not found: {memory_id}")
+        combined_sources = tuple(dict.fromkeys((*previous.source_ids, *source_ids)))
+        if len(combined_sources) > MAX_SOURCE_IDS:
+            raise ValueError("correction source references exceed the supported limit")
+        return self.remember(kind=previous.kind, title=title, summary=summary,
+            source="user_correction", now=now, importance=previous.importance,
+            tags=previous.tags, pinned=previous.pinned, user_confirmed=True,
+            supersedes=memory_id, metadata={**previous.metadata, **dict(metadata or {}), "corrected_by_user": True},
+            source_ids=combined_sources, scope=previous.scope, confidence=1.0,
+            valid_from=previous.valid_from, valid_until=previous.valid_until, expected_epoch=epoch)
 
     def recall(
         self,
@@ -143,27 +216,34 @@ class EmotionalMemoryService:
         now: int,
         relationship_stage: str | None = None,
         top_k: int = 4,
+        scope: str = "companion",
     ) -> tuple[EmotionalMemoryEntry, ...]:
+        self.store.expire_memories(now=now)
         profile = self.store.load_profile()
         stage = relationship_stage or profile.relationship_stage
-        existing = self.store.load_memories()
+        existing = tuple(memory for memory in self.store.load_memories()
+                         if memory.is_active(now=now, scope=scope))
+        semantic_scores = {}
+        if self.semantic_retriever is not None:
+            try:
+                supplied = self.semantic_retriever(query, existing)
+                if isinstance(supplied, Mapping):
+                    semantic_scores = supplied
+            except Exception:
+                # Optional retrieval failures must not prevent local companionship.
+                semantic_scores = {}
         ranked = rank_memories(
             existing,
             query,
             now=now,
             relationship_stage=stage,
             top_k=top_k,
+            semantic_scores=semantic_scores,
+            scope=scope,
         )
         if not ranked:
             return ()
-        results: list[EmotionalMemoryEntry] = []
-        all_memories = {memory.memory_id: memory for memory in existing}
-        for memory, _score in ranked:
-            touched = memory.touch(now)
-            all_memories[touched.memory_id] = touched
-            results.append(touched)
-        self.store.save_memories(all_memories.values())
-        return tuple(results)
+        return self.store.touch_memories((memory.memory_id for memory, _ in ranked), now=now)
 
     def build_context(
         self,
@@ -173,24 +253,49 @@ class EmotionalMemoryService:
         relationship_stage: str | None = None,
         top_k: int = 4,
     ) -> MemoryContextBundle:
-        profile = self.store.load_profile()
-        if relationship_stage is not None and relationship_stage != profile.relationship_stage:
-            profile = replace(profile, relationship_stage=relationship_stage, updated_at=now)
-            self.store.save_profile(profile)
-        memories = self.recall(
-            query,
-            now=now,
-            relationship_stage=profile.relationship_stage,
-            top_k=top_k,
-        )
-        return MemoryContextBundle(
-            bond_profile=profile,
-            memories=memories,
-            chapter=self.latest_chapter(),
-        )
+        self.store.expire_memories(now=now)
+        # A writer may revoke a source while retrieval is running. Never emit
+        # a bundle assembled across two different revocation generations.
+        for _attempt in range(3):
+            epoch = self.store.context_epoch
+            profile = self.valid_profile(now=now)
+            if relationship_stage is not None:
+                profile = replace(profile, relationship_stage=relationship_stage)
+            memories = self.recall(query, now=now, relationship_stage=profile.relationship_stage, top_k=top_k)
+            chapter = self.latest_chapter(now=now)
+            if chapter is not None and not set(chapter.source_memory_ids).intersection(m.memory_id for m in memories):
+                chapter = None
+            if epoch == self.store.context_epoch:
+                return MemoryContextBundle(profile, memories, chapter, context_epoch=epoch)
+        return MemoryContextBundle(CoreBondProfile(self.character_id, self.owner_id),
+                                   context_epoch=self.store.context_epoch)
 
-    def consolidate(self, *, now: int) -> MemoryChapter | None:
-        memories = self.store.load_memories()
+    def valid_profile(self, *, now: int) -> CoreBondProfile:
+        profile = self.store.load_profile()
+        entries = {entry.memory_id: entry for entry in self.store.load_memories()
+                   if entry.is_active(now=now)}
+        def valid(field: str, value: str) -> bool:
+            refs = profile.evidence.get(f"{field}:{value}", {})
+            return bool(refs) and all(key in entries and entries[key].evidence_fingerprint() == fingerprint
+                                      for key, fingerprint in refs.items())
+        fields = {name: tuple(value for value in getattr(profile, name) if valid(name, value))
+                  for name in ("stable_preferences", "boundaries", "shared_rituals", "active_story_threads")}
+        alias = profile.player_alias if valid("player_alias", profile.player_alias) else ""
+        # The model needs only the active view. Keep lineage in the store and source inspector.
+        return replace(profile, player_alias=alias, evidence={}, **fields)
+
+    def valid_chapters(self, *, now: int) -> tuple[MemoryChapter, ...]:
+        entries = {entry.memory_id: entry for entry in self.store.load_memories() if entry.is_active(now=now)}
+        return tuple(chapter for chapter in self.store.load_chapters() if chapter.source_memory_ids and all(
+            key in entries and chapter.source_fingerprints.get(key) == entries[key].evidence_fingerprint()
+            for key in chapter.source_memory_ids))
+
+    def consolidate(self, *, now: int, shared_only: bool = False) -> MemoryChapter | None:
+        epoch = self.store.context_epoch
+        memories = tuple(entry for entry in self.store.load_memories() if entry.is_active(now=now))
+        if shared_only:
+            from .emotional_memory_reflection import is_shared_experience
+            memories = tuple(entry for entry in memories if is_shared_experience(entry))
         if not self.reflection.should_consolidate(memories):
             return None
         chapter = self.reflection.build_chapter(memories, character_id=self.character_id, now=now)
@@ -202,17 +307,19 @@ class EmotionalMemoryService:
         existing = next(
             (
                 item
-                for item in self.store.load_chapters()
+                for item in self.valid_chapters(now=now)
                 if frozenset(item.source_memory_ids) == source_set
             ),
             None,
         )
         if existing is not None:
             return existing
-        return self.store.upsert_chapter(chapter)
+        return self.store.upsert_chapter(chapter, expected_epoch=epoch)
 
-    def latest_chapter(self) -> MemoryChapter | None:
-        chapters = sorted(self.store.load_chapters(), key=lambda chapter: chapter.created_at, reverse=True)
+    def latest_chapter(self, *, now: int | None = None) -> MemoryChapter | None:
+        if now is None:
+            now = max((entry.updated_at for entry in self.store.load_memories()), default=0)
+        chapters = sorted(self.valid_chapters(now=now), key=lambda chapter: chapter.created_at, reverse=True)
         return chapters[0] if chapters else None
 
     def update_bond_profile(
@@ -225,18 +332,42 @@ class EmotionalMemoryService:
         new_boundary: str | None = None,
         new_ritual: str | None = None,
         active_story_thread: str | None = None,
+        source_memory_ids: tuple[str, ...] = (),
+        expected_epoch: int | None = None,
     ) -> CoreBondProfile:
+        epoch = self.store.context_epoch if expected_epoch is None else expected_epoch
+        old_profile = self.store.load_profile()
+        bindings = dict(old_profile.evidence)
+        updates = {field: _canonical_profile_value(field, value) for field, value in {
+            "player_alias": player_alias, "stable_preferences": new_preference,
+            "boundaries": new_boundary, "shared_rituals": new_ritual,
+            "active_story_threads": active_story_thread,
+        }.items()}
+        for field, value in updates.items():
+            if not value:
+                continue
+            entries = [entry for entry in self.store.load_memories() if entry.is_active(now=now)]
+            sources = [entry for entry in entries if entry.memory_id in source_memory_ids] if source_memory_ids else [
+                entry for entry in entries if entry.summary == value]
+            if source_memory_ids and len(sources) != len(set(source_memory_ids)):
+                raise ValueError("profile requires current, same-scope evidence")
+            if not sources:
+                # This API is a trusted user edit, never a model extraction path.
+                sources = [self.remember(kind="玩家希望被记住", title="你确认的一条个人信息",
+                    summary=value, source="profile_edit", now=now, tags=("关于你",), user_confirmed=True)]
+            bindings[f"{field}:{value}"] = {entry.memory_id: entry.evidence_fingerprint() for entry in sources}
         profile = self.reflection.update_bond_profile(
-            self.store.load_profile(),
-            player_alias=player_alias,
+            old_profile,
+            player_alias=updates["player_alias"],
             relationship_stage=relationship_stage,
-            new_preference=new_preference,
-            new_boundary=new_boundary,
-            new_ritual=new_ritual,
-            active_story_thread=active_story_thread,
+            new_preference=updates["stable_preferences"],
+            new_boundary=updates["boundaries"],
+            new_ritual=updates["shared_rituals"],
+            active_story_thread=updates["active_story_threads"],
             now=now,
         )
-        self.store.save_profile(profile)
+        profile = CoreBondProfile.from_dict(replace(profile, evidence=bindings).to_dict())
+        self.store.save_profile(profile, expected_epoch=epoch)
         return profile
 
     def reinforce(self, memory_id: str, *, now: int, amount: float = 0.08) -> EmotionalMemoryEntry | None:
@@ -259,8 +390,8 @@ class EmotionalMemoryService:
             self.store.save_memories(next_entries)
         return updated
 
-    def forget(self, memory_id: str, *, now: int) -> EmotionalMemoryEntry | None:
-        return self.store.forget_memory(memory_id, now=now)
+    def forget(self, memory_id: str, *, now: int, expected_epoch: int | None = None) -> EmotionalMemoryEntry | None:
+        return self.store.forget_memory(memory_id, now=now, expected_epoch=expected_epoch)
 
     def album(self) -> dict[str, tuple[EmotionalMemoryEntry, ...]]:
         visible = [memory for memory in self.store.load_memories() if not memory.deleted]
@@ -293,8 +424,11 @@ class EmotionalMemoryService:
         *,
         now: int,
         user_confirmed: bool,
-    ) -> EmotionalMemoryEntry:
-        return self.store.upsert_memory(candidate.to_memory(now=now, user_confirmed=user_confirmed))
+        expected_epoch: int | None = None,
+    ) -> EmotionalMemoryEntry | None:
+        memory = self.store.upsert_memory(candidate.to_memory(now=now, user_confirmed=user_confirmed),
+                                          expected_epoch=expected_epoch)
+        return None if memory.deleted else memory
 
     def _annotate_firsts(self, event: object) -> object:
         row = _event_to_mapping(event)
@@ -352,6 +486,15 @@ def _event_type(event: object) -> str:
 def _event_payload(event: object) -> dict[str, object]:
     payload = _event_to_mapping(event).get("payload")
     return dict(payload) if isinstance(payload, Mapping) else {}
+
+
+def _canonical_profile_value(field: str, value: str | None) -> str | None:
+    """Bind evidence to exactly the representation that survives persistence."""
+    if value is None:
+        return None
+    payload = {field: value if field == "player_alias" else [value]}
+    normalized = getattr(CoreBondProfile.from_dict(payload), field)
+    return normalized if isinstance(normalized, str) else next(iter(normalized), "")
 
 
 def _clean(value: object) -> str:

@@ -444,10 +444,58 @@ def test_control_panel_has_settings_center_navigation(monkeypatch, tmp_path):
         "回忆",
         "探头时刻",
         "插件",
+        "手机连接",
     ]
 
     window.close()
     app.processEvents()
+
+
+def test_mobile_link_page_is_opt_in_and_disabled_without_plugin_controller(monkeypatch, tmp_path):
+    app, window = make_window(monkeypatch, tmp_path)
+
+    window.navigation_buttons[12].click()
+    app.processEvents()
+
+    assert window.content_stack.currentWidget() is window.mobile_link_page
+    assert window.mobile_link_page.state == "unsupported"
+    assert window.mobile_link_page.start_button.isEnabled() is False
+
+    window.close()
+    app.processEvents()
+
+
+def test_mobile_link_page_uses_window_controller_and_stops_on_close(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    pytest.importorskip("fastapi")
+    import socket
+    from PySide6.QtWidgets import QApplication
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.plugin_enabled_controller import PluginEnabledCompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = PluginEnabledCompanionController(user_data_root=tmp_path)
+    window = CompanionWindow(controller=controller)
+    window.show()
+    with socket.socket() as listener:
+        listener.bind(("127.0.0.1", 0))
+        window.mobile_link_page.port = listener.getsockname()[1]
+    panel = window.mobile_link_page
+    assert panel.state == "stopped"
+    panel.start_button.click()
+    deadline = time.monotonic() + 10
+    while panel.state != "running" and time.monotonic() < deadline:
+        app.processEvents()
+        time.sleep(0.01)
+    assert panel.state == "running"
+    assert panel._host.controller is controller
+    server = panel._server
+
+    window.close()
+    app.processEvents()
+
+    assert server.thread.is_alive() is False
+    assert panel._host is None
 
 
 def test_control_panel_navigation_switches_right_hand_pages(monkeypatch, tmp_path):
@@ -4366,3 +4414,31 @@ def test_launch_with_user_data_override_enables_user_character_packs(monkeypatch
     assert captured["user_data_root"] == user_data_root
     assert captured["save_path"] == user_data_root / "companion_demo_save.json"
     assert captured["shown"] is True
+
+
+def test_pending_memory_hint_appears_after_chat_and_opens_album(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtWidgets import QApplication, QListWidget
+    from guanghe_companion.app import CompanionWindow
+    from guanghe_companion.dialogue import DialogueRequest
+    from guanghe_companion.plugin_enabled_controller import PluginEnabledCompanionController
+
+    app = QApplication.instance() or QApplication([])
+    controller = PluginEnabledCompanionController(user_data_root=tmp_path)
+    window = CompanionWindow(controller=controller)
+    window.show()
+    assert window.memory_pending_button.isHidden() is True
+
+    window._apply_snapshot(controller.submit_dialogue_request(
+        DialogueRequest(text="请记住我喜欢桂花茶", source="test"), include_ai_expression=False))
+    assert window.memory_pending_button.isHidden() is False
+    assert "1" in window.memory_pending_button.text()
+
+    window.memory_pending_button.click()
+    app.processEvents()
+    assert window.content_stack.currentWidget() is window.memory_album_page
+    items = window.memory_album_page.findChild(QListWidget)
+    assert any("桂花茶" in items.item(i).text() for i in range(items.count()))
+
+    window.close()
+    app.processEvents()

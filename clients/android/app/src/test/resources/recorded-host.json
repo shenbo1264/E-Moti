@@ -1,0 +1,466 @@
+{
+ "pair_bad": {
+  "status": 401,
+  "body": {
+   "error": {
+    "code": "invalid_invitation",
+    "message": "pairing invitation expired or already used"
+   }
+  }
+ },
+ "pair": {
+  "status": 200,
+  "body": {
+   "access_token": "recorded-token-redacted",
+   "token_type": "bearer",
+   "device_id": "44cd6068be964394b1dbc2150da658ae",
+   "expires_at": 1795930695.2292755
+  }
+ },
+ "session": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   }
+  }
+ },
+ "message_post": {
+  "status": 202,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "request_id": "m1",
+   "status": "running"
+  }
+ },
+ "message_result": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "request_id": "m1",
+   "status": "completed",
+   "events": [
+    {
+     "type": "speech",
+     "character_name": "星汐",
+     "speech": "唔，我听见了。你刚才说：你好",
+     "payload": {}
+    }
+   ],
+   "expression_mode": "local",
+   "fallback_reason": "disabled"
+  }
+ },
+ "message_chat_remember": {
+  "status": 202,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "request_id": "m2",
+   "status": "completed",
+   "events": [
+    {
+     "type": "speech",
+     "character_name": "星汐",
+     "speech": "这件事先放进待确认了，你可以在回忆册里确认或放弃。",
+     "payload": {}
+    }
+   ],
+   "expression_mode": "local",
+   "fallback_reason": "local_confirmation"
+  }
+ },
+ "message_result_remember": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "request_id": "m2",
+   "status": "completed",
+   "events": [
+    {
+     "type": "speech",
+     "character_name": "星汐",
+     "speech": "这件事先放进待确认了，你可以在回忆册里确认或放弃。",
+     "payload": {}
+    }
+   ],
+   "expression_mode": "local",
+   "fallback_reason": "local_confirmation"
+  }
+ },
+ "session_after_chat": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   }
+  }
+ },
+ "memory_with_pending": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "album": {
+    "title": "星屑回忆册",
+    "subtitle": "记住、珍藏、纠正或忘记你们共同留下的片段。",
+    "character_id": "xingxi_pixel_pet",
+    "context_epoch": 0,
+    "sections": [],
+    "pending_confirmation_count": 1,
+    "pending_candidates": [
+     {
+      "pending_id": "6c0e8d78d0397e7171e3",
+      "title": "你亲口交给她的一件事",
+      "summary": "我喜欢桂花茶",
+      "source": "explicit_user_request",
+      "source_ids": [],
+      "occurred_at": 0
+     }
+    ]
+   }
+  }
+ },
+ "remember": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "request_id": "r1",
+   "status": "completed",
+   "album": {
+    "title": "星屑回忆册",
+    "subtitle": "记住、珍藏、纠正或忘记你们共同留下的片段。",
+    "character_id": "xingxi_pixel_pet",
+    "context_epoch": 0,
+    "sections": [
+     {
+      "category": "关于你",
+      "cards": [
+       {
+        "card_id": "c060f438f6d38b7e243f",
+        "category": "关于你",
+        "title": "你亲口交给她的一件事",
+        "body": "我的饮品是桂花茶",
+        "when_label": "刚刚",
+        "mood_label": "认真 · 已珍藏",
+        "icon_key": "starshard",
+        "pinned": true,
+        "source_count": 1,
+        "actions": [
+         "固定",
+         "纠正",
+         "忘记"
+        ]
+       }
+      ]
+     }
+    ],
+    "pending_confirmation_count": 1,
+    "pending_candidates": [
+     {
+      "pending_id": "6c0e8d78d0397e7171e3",
+      "title": "你亲口交给她的一件事",
+      "summary": "我喜欢桂花茶",
+      "source": "explicit_user_request",
+      "source_ids": [],
+      "occurred_at": 0
+     }
+    ]
+   }
+  }
+ },
+ "stale_write": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "request_id": "r2",
+   "status": "completed",
+   "album": {
+    "title": "星屑回忆册",
+    "subtitle": "记住、珍藏、纠正或忘记你们共同留下的片段。",
+    "character_id": "xingxi_pixel_pet",
+    "context_epoch": 0,
+    "sections": [
+     {
+      "category": "关于你",
+      "cards": [
+       {
+        "card_id": "92041ab7a530f0d28107",
+        "category": "关于你",
+        "title": "你亲口交给她的一件事",
+        "body": "x",
+        "when_label": "刚刚",
+        "mood_label": "认真 · 已珍藏",
+        "icon_key": "starshard",
+        "pinned": true,
+        "source_count": 1,
+        "actions": [
+         "固定",
+         "纠正",
+         "忘记"
+        ]
+       },
+       {
+        "card_id": "c060f438f6d38b7e243f",
+        "category": "关于你",
+        "title": "你亲口交给她的一件事",
+        "body": "我的饮品是桂花茶",
+        "when_label": "刚刚",
+        "mood_label": "认真 · 已珍藏",
+        "icon_key": "starshard",
+        "pinned": true,
+        "source_count": 1,
+        "actions": [
+         "固定",
+         "纠正",
+         "忘记"
+        ]
+       }
+      ]
+     }
+    ],
+    "pending_confirmation_count": 1,
+    "pending_candidates": [
+     {
+      "pending_id": "6c0e8d78d0397e7171e3",
+      "title": "你亲口交给她的一件事",
+      "summary": "我喜欢桂花茶",
+      "source": "explicit_user_request",
+      "source_ids": [],
+      "occurred_at": 0
+     }
+    ]
+   }
+  }
+ },
+ "session2": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   }
+  }
+ },
+ "memory": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "album": {
+    "title": "星屑回忆册",
+    "subtitle": "记住、珍藏、纠正或忘记你们共同留下的片段。",
+    "character_id": "xingxi_pixel_pet",
+    "context_epoch": 0,
+    "sections": [
+     {
+      "category": "关于你",
+      "cards": [
+       {
+        "card_id": "92041ab7a530f0d28107",
+        "category": "关于你",
+        "title": "你亲口交给她的一件事",
+        "body": "x",
+        "when_label": "刚刚",
+        "mood_label": "认真 · 已珍藏",
+        "icon_key": "starshard",
+        "pinned": true,
+        "source_count": 1,
+        "actions": [
+         "固定",
+         "纠正",
+         "忘记"
+        ]
+       },
+       {
+        "card_id": "c060f438f6d38b7e243f",
+        "category": "关于你",
+        "title": "你亲口交给她的一件事",
+        "body": "我的饮品是桂花茶",
+        "when_label": "刚刚",
+        "mood_label": "认真 · 已珍藏",
+        "icon_key": "starshard",
+        "pinned": true,
+        "source_count": 1,
+        "actions": [
+         "固定",
+         "纠正",
+         "忘记"
+        ]
+       }
+      ]
+     }
+    ],
+    "pending_confirmation_count": 1,
+    "pending_candidates": [
+     {
+      "pending_id": "6c0e8d78d0397e7171e3",
+      "title": "你亲口交给她的一件事",
+      "summary": "我喜欢桂花茶",
+      "source": "explicit_user_request",
+      "source_ids": [],
+      "occurred_at": 0
+     }
+    ]
+   }
+  }
+ },
+ "events": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "events": [
+    {
+     "sequence": 1,
+     "type": "context_invalidated",
+     "character_id": "xingxi_pixel_pet",
+     "context_epoch": 0,
+     "clear_cached_content": true
+    }
+   ],
+   "resync_required": false
+  }
+ },
+ "events_ahead": {
+  "status": 200,
+  "body": {
+   "session_id": "44709d9da8374569ae9dda7bae7b048b",
+   "revision": 1,
+   "character_id": "xingxi_pixel_pet",
+   "context_epoch": 0,
+   "owner_id": "local_user",
+   "capabilities": {
+    "chat": true,
+    "memory": true,
+    "observations": false,
+    "relay": false,
+    "network_model_cancel": false
+   },
+   "events": [],
+   "resync_required": true
+  }
+ },
+ "_note": "Responses recorded from a real loopback CompanionHost (isolated temp data, local expression) on 2026-10-29; token redacted. Used as replay fixtures, not as end-to-end evidence."
+}

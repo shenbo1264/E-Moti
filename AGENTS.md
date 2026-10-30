@@ -2,6 +2,20 @@
 
 This repository is the Windows-first desktop AI companion demo for the original character Xingxi. Treat this file as the standing instruction set for future coding agents working in this workspace.
 
+## Priority Correction — 2026-10-30
+
+The active work is the existing Python/PySide6 desktop: ordinary-chat memory, grounded shared experiences/profile, bounded relationship expression and natural proactive companionship. Preserve completed mobile code, commits and local work; pause new mobile/pairing/push/remote/observation scope. The older mobile-first ordering below is superseded. Read `docs/handoff/20261029/core-integration-20261030.md` for the current backend contract and actual evidence. Claude owns desktop UI/experience; Codex owns core services and model comparisons. Never report model behavior as verified without actual model outputs.
+
+## Personal Agent And Mobile Handoff — 2026-10-29
+
+Read `docs/handoff/20261029/README.md` and its requirements before new modernization work. The user assigns Claude to product/frontend implementation and Codex to backend/host implementation; use separate worktrees and the documented single-writer file ownership.
+
+The current product scope is the existing Windows-first desktop plus Android/HyperOS phones, iPhone/iOS, and Huawei phones running native HarmonyOS. The earlier macOS request was a spoken mistake corrected by the user; do not schedule a Mac desktop client. A Mac/Xcode used to build iOS is only a build requirement. Keep Relay, Game Companion, and Body firmware independent.
+
+E-Moti remains an independently usable personal companion with stable persona and shared memories. Optional work and observation capabilities must not become prerequisites for companionship. Desktop core memory and companionship come first; mobile integration and long-running supervision remain later goals. The asset-production notes below remain constraints/reference for asset work, not a requirement to regenerate artwork before this route.
+
+The actual default in `character_pack.py` is currently `xingxi_pixel_pet`; preserve it and existing user selections. Older text naming `original_oc` as the default was stale. This documentation correction does not authorize replacing assets or changing any character's distribution rights.
+
 ## Current Product Route
 
 The near-term experience route is now a hatch-pet-style pixel-pet sequence workflow. The older spirit / GalGame-like portrait route remains a renderer and research path, but it is not the active art-production route.
@@ -10,7 +24,7 @@ Priority direction:
 
 1. Keep the existing sprite desktop pet as the tray-friendly baseline and regression-safe renderer.
 2. Build small pixel-adjacent character sequence packs first: one canonical base, one grounded animation row at a time, contact-sheet QA, then row repair.
-3. Treat Xingxi as the original distributable candidate after QA; `xingxi_pixel_pet` may exist as an optional bundled candidate, but do not replace `original_oc` as the default pack without a separate default-promotion package. Treat Ikaros and Nairong as local UGC workflow representatives only unless rights are cleared.
+3. Preserve the current `xingxi_pixel_pet` default and existing packs. Any future default replacement requires its own asset QA and integration change. Treat Ikaros and Nairong as local UGC workflow representatives only unless rights are cleared.
 4. Make LLM expression central to the perceived character performance: LLM output may choose speech, expression cues, motion cues, and read-only interaction intents through typed events.
 5. Do not let LLM, screen observation, search, ASR, or TTS own growth state, inventory, memory, relationship, goals, or saves.
 6. Keep portrait/spirit, AI-video, LivePortrait, and Live2D as research or later renderer paths. Do not let them block the pixel-pet sequence route.
@@ -87,7 +101,7 @@ Forbidden:
 
 Build the demo loop around official Xingxi plus local UGC packs:
 
-- Xingxi can become a bundled candidate after full QA. A bundled candidate is still not a default replacement unless a separate package updates the default route and passes UI, full test, and packaging gates.
+- Preserve the current Xingxi default. Future bundled candidates do not replace it unless a separate package updates the default route and passes UI, full test, and packaging gates.
 - Ikaros and Nairong remain local UGC workflow representatives unless rights are cleared.
 - Character library UI must keep provenance, license, and distribution boundaries visible.
 - Every character keeps independent art assets, character data, memory/save namespace, and QA notes.

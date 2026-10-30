@@ -23,6 +23,8 @@ class MemoryCandidate:
     pinned: bool = False
     requires_user_confirmation: bool = False
     metadata: dict[str, object] = field(default_factory=dict)
+    valid_from: int = 0
+    valid_until: int = 0
 
     def to_memory(self, *, now: int, user_confirmed: bool = False) -> EmotionalMemoryEntry:
         memory_id = make_memory_id(
@@ -53,6 +55,8 @@ class MemoryCandidate:
             pinned=self.pinned,
             user_confirmed=user_confirmed,
             metadata=dict(self.metadata),
+            valid_from=self.valid_from,
+            valid_until=self.valid_until,
         ).normalized()
 
 
@@ -151,7 +155,7 @@ class EmotionalMemoryPolicy:
                 return None
             # Inventory events are the authoritative source for feed/gift
             # memories; the paired generic memory event would duplicate them.
-            if kind in {"赠礼", "投喂", "使用"}:
+            if kind in {"赠礼", "投喂", "使用", "主动陪伴", "memory_recollection"}:
                 return None
             if kind == "互动" and not first_time and not bool(payload.get("milestone", False)):
                 return None
@@ -209,12 +213,14 @@ class EmotionalMemoryPolicy:
         owner_id: str = "local_user",
         now: int,
     ) -> MemoryCandidate | None:
-        cleaned = _clean(text)
+        if not isinstance(text, str):
+            return None
+        cleaned = " ".join(text.replace("\n", " ").replace("\r", " ").strip().split())
         markers = ("请记住", "记住这件事", "帮我记住", "你要记得")
         marker = next((item for item in markers if cleaned.startswith(item)), "")
         if not marker:
             return None
-        content = cleaned[len(marker) :].lstrip("：:，, ")
+        content = _clean(cleaned[len(marker) :].lstrip("：:，, "))
         if not content:
             return None
         return MemoryCandidate(

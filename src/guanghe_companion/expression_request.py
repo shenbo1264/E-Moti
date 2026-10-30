@@ -2,7 +2,8 @@ from __future__ import annotations
 
 import math
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+import json
 
 from .memory import MAX_LONG_TERM_MEMORY_SUMMARIES
 from .snapshot import CompanionSnapshot
@@ -51,6 +52,9 @@ class ExpressionRequest:
     long_term_memory: tuple[dict[str, str], ...] = ()
     perception_summary: str = ""
     tool_results: tuple[dict[str, str], ...] = ()
+    emotional_memory: dict[str, object] = field(default_factory=dict)
+    persona: dict[str, object] = field(default_factory=dict)
+    plugin_context: dict[str, object] = field(default_factory=dict)
 
     @classmethod
     def from_snapshot(
@@ -62,10 +66,25 @@ class ExpressionRequest:
         context_payload = _expression_payload_from_context(context)
         if context_payload:
             source = {**source, **context_payload}
+        if context_payload.get("memory_v2_authoritative"):
+            # Old logs have no evidence lineage. They remain in the user-facing
+            # save/archive but cannot bypass V2 revocation through a snapshot.
+            source["memory_log"] = []
+            source["long_term_memory"] = []
+            epoch = context_payload.get("emotional_memory", {}).get("context_epoch", 0)
+            if isinstance(epoch, int) and epoch > 0:
+                source["feedback"] = ""
+                source["delta_text"] = ""
         actions = _sanitize_actions(source.get("actions", []))
         recent_memory = _sanitize_recent_memory(source.get("memory_log", []))
         recent_dialogue = _sanitize_recent_dialogue(source.get("recent_dialogue", []))
         long_term_memory = _sanitize_long_term_memory(source.get("long_term_memory", []))
+        emotional_memory = _bounded_context(source.get("emotional_memory"), budget=6000)
+        development = _sanitize_relationship_development(source.get("relationship_development"),
+                                                         context_epoch=emotional_memory.get("context_epoch"))
+        if development:
+            emotional_memory["relationship_development"] = development
+            emotional_memory = _bounded_context(emotional_memory, budget=6000)
         return cls(
             character_name=_short_string(source.get("character_name", ""), MAX_CHARACTER_NAME_LENGTH),
             mode=_short_string(source.get("mode", ""), MAX_MODE_LENGTH),
@@ -85,10 +104,13 @@ class ExpressionRequest:
             long_term_memory=long_term_memory,
             perception_summary=_short_string(source.get("perception_summary", ""), MAX_PERCEPTION_SUMMARY_LENGTH),
             tool_results=_sanitize_tool_results(source.get("tool_results", [])),
+            emotional_memory=emotional_memory,
+            persona=_bounded_context(source.get("persona"), budget=5000),
+            plugin_context=_bounded_context(source.get("plugin_context"), budget=2400),
         )
 
     def to_prompt_dict(self) -> dict[str, object]:
-        return {
+        payload = {
             "character_name": self.character_name,
             "mode": self.mode,
             "motion": self.motion,
@@ -108,6 +130,13 @@ class ExpressionRequest:
             "perception_summary": self.perception_summary,
             "tool_results": [dict(entry) for entry in self.tool_results],
         }
+        # Preserve the original whitelist contract for callers that do not
+        # enable personal context. Populated extensions travel explicitly.
+        for key in ("emotional_memory", "persona", "plugin_context"):
+            value = getattr(self, key)
+            if value:
+                payload[key] = value
+        return payload
 
 
 def ensure_expression_request(snapshot: dict[str, object] | CompanionSnapshot | ExpressionRequest) -> ExpressionRequest:
@@ -144,10 +173,81 @@ def _expression_payload_from_context(context: Mapping[str, object] | None) -> di
     if not isinstance(context, Mapping):
         return {}
     payload: dict[str, object] = {}
-    for key in ("long_term_memory", "perception_summary", "recent_dialogue", "tool_results", "player_message"):
+    for key in ("long_term_memory", "perception_summary", "recent_dialogue", "tool_results", "player_message",
+                "emotional_memory", "persona", "plugin_context", "memory_v2_authoritative", "relationship_development"):
         if key in context:
             payload[key] = context[key]
     return payload
+
+
+def _sanitize_relationship_development(value: object, *, context_epoch: object) -> dict[str, object]:
+    if not isinstance(value, Mapping):
+        return {}
+    epoch = value.get("context_epoch")
+    count = value.get("shared_moment_count")
+    source_ids = value.get("source_memory_ids")
+    fingerprints = value.get("source_fingerprints")
+    if (type(epoch) is not int or epoch < 0 or epoch != context_epoch
+            or type(count) is not int or not 0 <= count <= 6
+            or not isinstance(source_ids, (list, tuple)) or len(source_ids) > 6
+            or not isinstance(fingerprints, Mapping)):
+        return {}
+    if any(not isinstance(key, str) or not key or len(key) > 80 for key in source_ids):
+        return {}
+    if len(set(source_ids)) != len(source_ids) or bool(count) != bool(source_ids):
+        return {}
+    if any(not isinstance(fingerprints.get(key), str) or len(fingerprints[key]) != 64
+           or any(char not in "0123456789abcdef" for char in fingerprints[key]) for key in source_ids):
+        return {}
+    stage = "familiar_shared_moments" if count >= 3 else "first_shared_moments" if count else "getting_acquainted"
+    if value.get("expression_stage") != stage:
+        return {}
+    return {
+        "shared_moment_count": count,
+        "expression_stage": stage,
+        "expression_hint": _short_string(value.get("expression_hint", ""), 160),
+        "source_memory_ids": list(source_ids),
+        "source_fingerprints": {key: fingerprints[key] for key in source_ids},
+        "context_epoch": epoch,
+    }
+
+
+def _bounded_context(value: object, *, budget: int) -> dict[str, object]:
+    """Bound structured, read-only evidence without cutting JSON mid-string.
+
+    The host supplies already scoped/revoked views. This is a size/type boundary,
+    not a model-based fact validator or a prompt-injection detector.
+    """
+    def clean(item: object, depth: int = 0) -> object:
+        if depth > 6:
+            return None
+        if isinstance(item, str):
+            return _short_string(item, 500)
+        if isinstance(item, bool) or item is None or isinstance(item, int):
+            return item
+        if isinstance(item, float):
+            return _finite_float(item)
+        if isinstance(item, Mapping):
+            return {_short_string(str(key), 80): clean(val, depth + 1)
+                    for key, val in list(item.items())[:24]}
+        if isinstance(item, (list, tuple)):
+            return [clean(val, depth + 1) for val in item[:12]]
+        return None
+    result = clean(value)
+    if not isinstance(result, dict):
+        return {}
+    # Prefer dropping a low-ranked memory/optional chapter to malformed JSON.
+    while len(json.dumps(result, ensure_ascii=False, separators=(",", ":"))) > budget:
+        memories = result.get("shared_memories")
+        if "relationship_development" in result:
+            result.pop("relationship_development")
+        elif isinstance(memories, list) and memories:
+            memories.pop()
+        elif "relationship_chapter" in result:
+            result.pop("relationship_chapter")
+        else:
+            result.pop(next(reversed(result)))
+    return result
 
 
 def _as_dict_list(value: object) -> list[dict[str, object]]:

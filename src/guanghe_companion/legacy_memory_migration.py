@@ -54,6 +54,14 @@ def migrate_legacy_entries(
             if key:
                 skipped.append(key)
             continue
+        if service.store.is_retired_origin(legacy_key=key):
+            skipped.append(key)
+            continue
+        existing = next((entry for entry in service.store.load_memories()
+                         if entry.metadata.get("legacy_key") == key), None)
+        if existing is not None:
+            migrated.append(existing.memory_id)
+            continue
         occurred_at = _timestamp(row.get("updated_at"), fallback=now)
         kind, tags = _kind_and_tags(key, category)
         memory = service.remember(

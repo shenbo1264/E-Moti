@@ -1,0 +1,293 @@
+{
+  "base_commit": "b9f200955123790a5c66abcaf4e2567b3659a90e",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.55-x86_64-with-glibc2.39",
+  "environment": {
+    "TZ": "UTC",
+    "QT_QPA_PLATFORM": "offscreen",
+    "QTWEBENGINE_DISABLE_SANDBOX": "1",
+    "loopback_http": "allowed",
+    "PYTHONPATH": "absolute repository src"
+  },
+  "baseline_normalized": {
+    "tests": 1185,
+    "passed": 1184,
+    "failures": 1,
+    "seconds": 90.09
+  },
+  "first_integrated_run": {
+    "tests": 1334,
+    "passed": 1332,
+    "failures": 2,
+    "seconds": 114.56,
+    "new_failure": "optional empty ExpressionRequest fields changed legacy whitelist shape; fixed without changing the original test"
+  },
+  "final_full_suite": {
+    "tests": 1334,
+    "failures": 1,
+    "errors": 0,
+    "skipped": 0,
+    "passed": 1333,
+    "seconds": 123.25,
+    "failed_tests": [
+      "tests.test_portrait_video_source_pack_import::test_import_portrait_video_to_source_pack_cli_runs_from_repo_root"
+    ]
+  },
+  "additional_tests": 149,
+  "benchmark_source_tree_sha256": "e4c06867aa6f2688c3bcd9141f7ae954feaf47bfe83d7641bca9e1488b9a25a7",
+  "benchmark_dataset_sha256": "76fabb6dc77f8a034c746fe5c25c76c1d87f8f7cf7fad635ad7220ab9bf72de2",
+  "benchmark_runner_sha256": "ed9c6b00f5a1110cc82a8035fa4e643a1f83ecc48cb425113782f907846da6f7",
+  "benchmark": {
+    "before": {
+      "cases": 38,
+      "passed": 12,
+      "failed": 26,
+      "categories": {
+        "recall": {
+          "cases": 6,
+          "passed": 0
+        },
+        "irrelevant": {
+          "cases": 3,
+          "passed": 3
+        },
+        "correction": {
+          "cases": 3,
+          "passed": 0
+        },
+        "forgetting": {
+          "cases": 5,
+          "passed": 2
+        },
+        "derived": {
+          "cases": 4,
+          "passed": 0
+        },
+        "isolation": {
+          "cases": 5,
+          "passed": 1
+        },
+        "temporal": {
+          "cases": 3,
+          "passed": 0
+        },
+        "fabrication": {
+          "cases": 6,
+          "passed": 5
+        },
+        "persona": {
+          "cases": 2,
+          "passed": 1
+        },
+        "migration": {
+          "cases": 1,
+          "passed": 0
+        }
+      },
+      "missing_capability_cases": 6,
+      "execution_error_cases": 0,
+      "correct_recall": {
+        "numerator": 11,
+        "denominator": 11,
+        "rate": 1.0
+      },
+      "final_prompt_delivery": {
+        "numerator": 0,
+        "denominator": 11,
+        "rate": 0.0
+      },
+      "irrelevant_recall": {
+        "numerator": 0,
+        "denominator": 3,
+        "rate": 0.0,
+        "note": "content assertions only; inspect missing_capability failures separately"
+      },
+      "outdated_fact_reference": {
+        "numerator": 4,
+        "denominator": 6,
+        "rate": 0.6666666666666666,
+        "note": "content assertions only; inspect missing_capability failures separately"
+      },
+      "forgotten_information_leak": {
+        "numerator": 8,
+        "denominator": 10,
+        "rate": 0.8,
+        "note": "content assertions only; inspect missing_capability failures separately"
+      },
+      "cross_role_owner_scene_contamination": {
+        "numerator": 4,
+        "denominator": 5,
+        "rate": 0.8,
+        "note": "content assertions only; inspect missing_capability failures separately"
+      },
+      "persona_configuration_stability": {
+        "numerator": 2,
+        "denominator": 2,
+        "rate": 1.0
+      },
+      "fabricated_event_write_acceptance": {
+        "numerator": 1,
+        "denominator": 6,
+        "note": "deterministic ingestion policy only; generated narrative factuality not run"
+      },
+      "context_and_prompt_latency_ms": {
+        "samples": 38,
+        "median": 1.0586465,
+        "p95_nearest_rank": 1.476624,
+        "includes": "controller context assembly, snapshot, typed request, prompt formatting; local disk included",
+        "excludes": "seeding, retrieval API pre-probe, model inference, network, UI paint, ASR and TTS"
+      },
+      "estimated_prompt_tokens": {
+        "median": 1078.0,
+        "maximum": 1142,
+        "estimator": "ceil(UTF-8 byte length / 4); heuristic, NOT provider tokenizer usage"
+      },
+      "model_persona_behavior": "not_run",
+      "model_fabricated_shared_experience": "not_run",
+      "model_response_latency": "not_run",
+      "model_actual_token_usage": "not_run"
+    },
+    "after": {
+      "cases": 38,
+      "passed": 38,
+      "failed": 0,
+      "categories": {
+        "recall": {
+          "cases": 6,
+          "passed": 6
+        },
+        "irrelevant": {
+          "cases": 3,
+          "passed": 3
+        },
+        "correction": {
+          "cases": 3,
+          "passed": 3
+        },
+        "forgetting": {
+          "cases": 5,
+          "passed": 5
+        },
+        "derived": {
+          "cases": 4,
+          "passed": 4
+        },
+        "isolation": {
+          "cases": 5,
+          "passed": 5
+        },
+        "temporal": {
+          "cases": 3,
+          "passed": 3
+        },
+        "fabrication": {
+          "cases": 6,
+          "passed": 6
+        },
+        "persona": {
+          "cases": 2,
+          "passed": 2
+        },
+        "migration": {
+          "cases": 1,
+          "passed": 1
+        }
+      },
+      "missing_capability_cases": 0,
+      "execution_error_cases": 0,
+      "correct_recall": {
+        "numerator": 11,
+        "denominator": 11,
+        "rate": 1.0
+      },
+      "final_prompt_delivery": {
+        "numerator": 11,
+        "denominator": 11,
+        "rate": 1.0
+      },
+      "irrelevant_recall": {
+        "numerator": 0,
+        "denominator": 3,
+        "rate": 0.0,
+        "note": "content assertions only; inspect missing_capability failures separately"
+      },
+      "outdated_fact_reference": {
+        "numerator": 0,
+        "denominator": 6,
+        "rate": 0.0,
+        "note": "content assertions only; inspect missing_capability failures separately"
+      },
+      "forgotten_information_leak": {
+        "numerator": 0,
+        "denominator": 10,
+        "rate": 0.0,
+        "note": "content assertions only; inspect missing_capability failures separately"
+      },
+      "cross_role_owner_scene_contamination": {
+        "numerator": 0,
+        "denominator": 5,
+        "rate": 0.0,
+        "note": "content assertions only; inspect missing_capability failures separately"
+      },
+      "persona_configuration_stability": {
+        "numerator": 2,
+        "denominator": 2,
+        "rate": 1.0
+      },
+      "fabricated_event_write_acceptance": {
+        "numerator": 0,
+        "denominator": 6,
+        "note": "deterministic ingestion policy only; generated narrative factuality not run"
+      },
+      "context_and_prompt_latency_ms": {
+        "samples": 38,
+        "median": 3.954876,
+        "p95_nearest_rank": 9.654373,
+        "includes": "controller context assembly, snapshot, typed request, prompt formatting; local disk included",
+        "excludes": "seeding, retrieval API pre-probe, model inference, network, UI paint, ASR and TTS"
+      },
+      "estimated_prompt_tokens": {
+        "median": 1593.5,
+        "maximum": 1710,
+        "estimator": "ceil(UTF-8 byte length / 4); heuristic, NOT provider tokenizer usage"
+      },
+      "model_persona_behavior": "not_run",
+      "model_fabricated_shared_experience": "not_run",
+      "model_response_latency": "not_run",
+      "model_actual_token_usage": "not_run"
+    }
+  },
+  "raw_logs": {
+    "pytest-baseline-raw-environment.txt.gz": {
+      "uncompressed_sha256": "ef4c26e45078bf46022da14689b49c42a88600da81e8175746a367af007a8319",
+      "compressed_sha256": "1ea153bc29a7566de0f2397fce369aae551d82e723099d587a9729d7e19781f7"
+    },
+    "pytest-baseline.txt.gz": {
+      "uncompressed_sha256": "483cd81e352bf359429b7b3d6fa6fe5cef2a5772aa2fc03d69004984bd2643f5",
+      "compressed_sha256": "2128b1021de99a350a72c8fed23ab11cca591f15d606b2e82f7a0336c58d82f7"
+    },
+    "pytest-after-initial.txt.gz": {
+      "uncompressed_sha256": "b4b53ef2cb132fac5234bf7e44c59871b69daa2eb475e2d12c70d95ec3283ca3",
+      "compressed_sha256": "b544a6688a0d6703e0febb6720b135efb86295f11f0f24fe12dcd13a0ae94bb9"
+    },
+    "pytest-after.txt.gz": {
+      "uncompressed_sha256": "a68a4865dfe35687ea15bb45e099d0ce44a5c4755d056cf1c5969589ed948208",
+      "compressed_sha256": "7dc37089750ffb9a5fdce5758254e954cff1ace9f27d113f52ee2a64a610ec12"
+    },
+    "pytest-after.xml.gz": {
+      "uncompressed_sha256": "fb8667252758ed92cda68c17c17afc22d0a5fc03ddeab4de76649ea8c9bfa2cf",
+      "compressed_sha256": "4c183cdc33ad9c65078811952e03889bbea9a34d887cea52e4a080141336c8c3"
+    }
+  },
+  "not_run": [
+    "real LLM answer quality",
+    "real embedding retrieval quality",
+    "Windows GUI/installer",
+    "real ASR/TTS/audio devices",
+    "camera/desktop capture with real user content",
+    "Relay or game integration",
+    "physical body firmware",
+    "power loss stress",
+    "physical deletion of archives/backups/remote copies"
+  ]
+}

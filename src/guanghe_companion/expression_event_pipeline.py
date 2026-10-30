@@ -29,6 +29,7 @@ class ExpressionEventPipeline:
     snapshot_provider: SnapshotProvider
     context_provider: ExpressionContextProvider
     actions_provider: ActionsProvider
+    context_guard: Callable[[ExpressionRequest], bool] = lambda request: True
 
     def build_events(
         self,
@@ -54,10 +55,33 @@ class ExpressionEventPipeline:
             self.snapshot_provider(),
             context=self.context_provider(),
         )
+        if not self.context_guard(expression_request):
+            return self._revoked_context_events(choices) + domain_event_list
         try:
             expressed_events = self.expressor.express(expression_request, effect=effect)
         except Exception:
+            if not self.context_guard(expression_request):
+                return self._revoked_context_events(choices) + domain_event_list
             return fallback_events + domain_event_list
+        return self.complete_events(expression_request, expressed_events, effect=effect,
+                                    feedback=feedback, domain_events=domain_event_list)
+
+    def complete_events(
+        self,
+        expression_request: ExpressionRequest,
+        expressed_events: list[dict[str, str]] | None,
+        *,
+        effect: str,
+        feedback: str,
+        domain_events: Iterable[CompanionEvent] = (),
+    ) -> list[CompanionEvent]:
+        domain_event_list = list(domain_events)
+        choices = self._choices()
+        fallback_events = build_typed_fallback_events(
+            state=self.state, feedback=feedback, choices=choices, effect=effect,
+        )
+        if not self.context_guard(expression_request):
+            return self._revoked_context_events(choices) + domain_event_list
         if not expressed_events:
             return fallback_events + domain_event_list
         if expressed_events == [event.to_legacy_dict() for event in fallback_events]:
@@ -83,6 +107,10 @@ class ExpressionEventPipeline:
 
     def _choices(self) -> list[str]:
         return [str(entry["label"]) for entry in self.actions_provider()]
+
+    def _revoked_context_events(self, choices: list[str]) -> list[CompanionEvent]:
+        return build_typed_fallback_events(state=self.state, choices=choices,
+            feedback="记忆已更新，我们接着聊。", effect="ATTENTION")
 
 
 def _is_local_fallback_expression(events: list[CompanionEvent], feedback: str) -> bool:

@@ -116,7 +116,7 @@ def _chapter_card(chapter: MemoryChapter) -> MemoryAlbumCard:
         icon_key="chapter",
         pinned=True,
         source_count=max(1, len(chapter.source_memory_ids)),
-        actions=("查看来源", "固定", "忘记"),
+        actions=("查看来源",),
     )
 
 

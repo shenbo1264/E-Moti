@@ -4,13 +4,13 @@
 
 ![E-Moti AI Architecture Overview](docs/assets/emoti-ai-architecture-overview.png)
 
-E-Moti is a Windows-first desktop AI companion pet built with Python and PySide6. It combines a lightweight virtual-pet loop, switchable character packs, emotional memory, proactive companion moments, and optional AI expression services. The game state is controlled by local rules; AI is used to make the companion speak, react, recall shared experiences, and perform with more personality.
+E-Moti is an independent personal AI companion, currently delivered as a Windows-first desktop pet built with Python and PySide6. It combines a lightweight virtual-pet loop, switchable character packs, emotional memory, proactive companion moments, and optional AI expression services. The game state is controlled by local rules; AI is used to make the companion speak, react, recall shared experiences, and perform with more personality. Mobile interaction and optional work capabilities are being developed incrementally.
 
 The current art-production route is a **hatch-pet-style pixel-pet sequence workflow**: lock one canonical character base, generate and review one animation row at a time, inspect contact sheets, repair failed rows, and only then promote a validated pack into the runtime.
 
 The bundled course-delivery role set includes **three visible switchable character packs**: `xingxi_pixel_pet`, `ikaros_pixel_pet`, and `nairong_pixel_pet`. Xingxi is the default companion. Ikaros and Nairong demonstrate the same character-pack, renderer, memory namespace, shop theme, and voice-profile contracts across different role styles.
 
-> Learning, resting, comforting, and playing are action states. E-Moti is not a productivity coach, course supervisor, mascot skin, or chatbot-only shell.
+> Users can spend time with E-Moti learning, resting, chatting or playing. Work, game and device capabilities are optional; the companion remains usable independently.
 
 ## Design Principle
 
@@ -19,6 +19,28 @@ The bundled course-delivery role set includes **three visible switchable charact
 - Optional perception, search, voice, and ASR features enhance presentation but never take over the growth state machine.
 
 ## Features
+
+### Personal companion memory lifecycle (October 2026)
+
+The first modernization increment connects Emotional Memory V2 to the actual model prompt and adds source/version tracking, time validity, transactional correction and forgetting, derived-profile/chapter invalidation, and context-epoch checks for old conversation context and late expression results. Stable persona is loaded from the active character pack and an optional `persona.json`; memory edits do not rewrite it.
+
+In the Memory Album, users can add a memory, inspect its source, correct it, or forget it. Clear statements about yourself in ordinary chat are saved or queued for review according to the memory mode, and can be corrected or forgotten in chat; proposals survive restarts. The album page offers the memory mode and optional on-device semantic recall (`pip install -e ".[semantic]"`, about 95 MB on first use). Everything still works fully locally by default.
+
+Existing memory JSON files are retained as one-time migration inputs. The active state is a single local SQLite document. Forgetting withdraws content from active retrieval and covered context paths; it does not physically erase historical chat archives, backups, audio files, or requests already sent to external providers. Read the [migration and recovery contract](docs/modernization/migration-and-recovery.md) before testing with a copy of an existing save.
+
+See the [research, source audit, architecture, benchmark and implementation handoff](docs/modernization/README.md). The 38-case deterministic benchmark checks lifecycle contracts and final prompt delivery; real-model answer quality, persona behavior, and Windows hardware validation are separate acceptance steps. E-Moti remains independently usable without Relay, a game agent, or a physical body.
+
+### Multi-device Personal Agent foundations (October 28, 2026)
+
+The next increment adds a durable Python task journal for suggestions, explicit approval, dispatch claims, external progress/evidence, cancellation acknowledgement and stale-state reporting. It also adds an opt-in, bounded RAM observation buffer with device/owner/character scoping, app/capability allowlists, expiry and revocation checks. Neither module automatically writes companion memory or changes persona.
+
+The desktop now has a phone connection page, an authenticated loopback host and [Android client source](clients/android/README.md), but this is **not a released mobile application and has not been accepted on a real device**. LAN TLS, a real Relay adapter, a background runner and end-to-end observation/history/TTS revocation remain to be implemented. New mobile work is paused while desktop memory and companionship are the main line. No mobile capture or network listener is enabled by default. See the [mobile research, architecture and test evidence](docs/modernization/mobile/README.md).
+
+The [2026-10-29 Claude/Codex handoff](docs/handoff/20261029/README.md) consolidates requirements and development prompts: Claude owns product/frontend work; Codex owns backend/host work. The corrected phone targets are **Android/HyperOS, iPhone/iOS, and native HarmonyOS on Huawei phones**. The earlier macOS reference was corrected by the user and is not a Mac desktop development task.
+
+Run the local demonstration with `python tools/run_personal_agent_smoke.py`. It uses the real Python cores and temporary storage, with explicitly simulated phone/executor inputs; it does not execute real work or call a model.
+
+### Existing desktop and companion capabilities
 
 - PySide6 control panel with status, actions, shop, inventory, relationship, memory, dialogue, and settings views.
 - Transparent always-on-top desktop pet mode.

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timedelta
+
 import pytest
 
 from guanghe_companion.focus_companion import FocusCompanionSettings
@@ -71,14 +73,18 @@ def test_snooze_blocks_immediate_repeat_but_allows_later_offer() -> None:
 
 
 def test_mute_today_blocks_more_offers_until_day_rollover() -> None:
+    # 产品按本地日历计算“今天”，测试时间也从本地日期构造。
+    local_noon = datetime(2026, 1, 15, 12)
+    today = local_noon.timestamp()
+    tomorrow = (local_noon + timedelta(days=1)).timestamp()
     coordinator = FocusCompanionCoordinator(settings())
-    coordinator.inject_demo_focus(now=40_000, focused_minutes=52)
-    muted = coordinator.mute_today(now=40_010)
+    coordinator.inject_demo_focus(now=today, focused_minutes=52)
+    muted = coordinator.mute_today(now=today + 10)
 
     assert muted.event_type == "focus_break_muted_today"
-    assert coordinator.snapshot(now=40_020).muted_today is True
-    assert coordinator.inject_demo_focus(now=41_000, focused_minutes=65) == ()
+    assert coordinator.snapshot(now=today + 20).muted_today is True
+    assert coordinator.inject_demo_focus(now=today + 1000, focused_minutes=65) == ()
 
-    next_day = coordinator.inject_demo_focus(now=100_000, focused_minutes=52)
+    next_day = coordinator.inject_demo_focus(now=tomorrow, focused_minutes=52)
     assert len(next_day) == 1
-    assert coordinator.snapshot(now=100_000).muted_today is False
+    assert coordinator.snapshot(now=tomorrow).muted_today is False

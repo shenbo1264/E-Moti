@@ -11,6 +11,28 @@ def _actions():
     return [{"label": "轻触"}, {"label": "休息"}]
 
 
+def test_provider_failure_after_context_revocation_does_not_replay_old_fallback():
+    state = create_initial_state()
+    current = [True]
+
+    class RevokedFailingExpressor:
+        def express(self, request, effect=None):
+            current[0] = False
+            raise RuntimeError("provider failed after memory changed")
+
+    pipeline = ExpressionEventPipeline(
+        state=state,
+        expressor=RevokedFailingExpressor(),
+        snapshot_provider=_snapshot_provider(state),
+        context_provider=lambda: {},
+        actions_provider=_actions,
+        context_guard=lambda request: current[0],
+    )
+    events = pipeline.build_events(effect="ATTENTION", feedback="你喜欢紫苏冰饮")
+    assert "紫苏冰饮" not in str([event.to_legacy_dict() for event in events])
+    assert events[0].speech == "记忆已更新，我们接着聊。"
+
+
 def _snapshot_provider(state):
     def build_snapshot():
         source = SnapshotContextFactory(

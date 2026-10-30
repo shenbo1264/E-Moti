@@ -1,0 +1,129 @@
+{
+  "schema_version": 1,
+  "generated_at_utc": "2026-10-29T06:14:55.406921+00:00",
+  "mode": "simulated_authority_and_phone_with_real_python_cores",
+  "passed": 18,
+  "total": 18,
+  "checks": [
+    {
+      "name": "unapproved_suggestion_not_dispatched",
+      "passed": true
+    },
+    {
+      "name": "duplicate_phone_request_same_task",
+      "passed": true
+    },
+    {
+      "name": "restart_does_not_redispatch_unknown_command",
+      "passed": true
+    },
+    {
+      "name": "lost_receipt_requires_reconciliation",
+      "passed": true
+    },
+    {
+      "name": "receipt_means_accepted_not_completed",
+      "passed": true
+    },
+    {
+      "name": "duplicate_progress_not_applied",
+      "passed": true
+    },
+    {
+      "name": "disconnection_is_stale_not_false_success",
+      "passed": true
+    },
+    {
+      "name": "cancel_request_is_not_stop_confirmation",
+      "passed": true
+    },
+    {
+      "name": "completion_cancel_race_preserves_authority_result",
+      "passed": true
+    },
+    {
+      "name": "completion_is_not_independent_acceptance",
+      "passed": true
+    },
+    {
+      "name": "observation_default_off",
+      "passed": true
+    },
+    {
+      "name": "typed_prompt_carries_bounded_observation",
+      "passed": true
+    },
+    {
+      "name": "observation_is_current_before_dispatch",
+      "passed": true
+    },
+    {
+      "name": "revoke_clears_observation_context",
+      "passed": true
+    },
+    {
+      "name": "late_derived_result_rejected_by_guard",
+      "passed": true
+    },
+    {
+      "name": "late_capture_with_old_ticket_rejected",
+      "passed": true
+    },
+    {
+      "name": "work_and_observations_do_not_write_long_term_memory",
+      "passed": true
+    },
+    {
+      "name": "persona_configuration_unchanged",
+      "passed": true
+    }
+  ],
+  "sample_stale_report": {
+    "task_id": "fbe69ff7-89e4-46aa-b1ba-9949d0cfbe43",
+    "title": "检查项目的阶段成果",
+    "state": "running",
+    "authority": "simulated_authority",
+    "external_task_id": "fixture-task-1",
+    "command_id": "6f961fec-abc5-4cc9-b933-56266d720114",
+    "last_external_status": "running",
+    "checkpoint": "模拟执行者报告：第一阶段已开始。",
+    "evidence_refs": [],
+    "last_observed_at": 107,
+    "last_received_at": 108,
+    "freshness": "stale",
+    "needs_reconciliation": true,
+    "completion_claim": null,
+    "cancel_requested_at": null,
+    "cancellation_outcome": null
+  },
+  "sample_completion_cancel_race_report": {
+    "task_id": "fbe69ff7-89e4-46aa-b1ba-9949d0cfbe43",
+    "title": "检查项目的阶段成果",
+    "state": "succeeded",
+    "authority": "simulated_authority",
+    "external_task_id": "fixture-task-1",
+    "command_id": "6f961fec-abc5-4cc9-b933-56266d720114",
+    "last_external_status": "succeeded",
+    "checkpoint": "模拟执行者报告：取消送达前已完成。",
+    "evidence_refs": [
+      "fixture:simulated-result-not-a-real-test-report"
+    ],
+    "last_observed_at": 502,
+    "last_received_at": 503,
+    "freshness": "terminal",
+    "needs_reconciliation": false,
+    "completion_claim": "reported_by_authority",
+    "cancel_requested_at": 501,
+    "cancellation_outcome": "completion_won_race"
+  },
+  "not_validated": [
+    "Android/HyperOS APK or physical phone",
+    "macOS application/TCC",
+    "HarmonyOS HAP",
+    "device authentication or transport",
+    "actual Relay/Codex/Claude execution",
+    "background scheduler or notifications",
+    "model behavior or response latency",
+    "observation-derived chat history or TTS revocation in the desktop UI"
+  ]
+}

@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 from collections.abc import Callable, Iterable
-from dataclasses import replace
+from dataclasses import dataclass, replace
 from pathlib import Path
+from threading import Event, get_ident
 from typing import Protocol
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
@@ -14,6 +15,7 @@ from .ai_expressor import (
 from .capability_settings import CapabilitySettings, CapabilitySettingsStore
 from .character_local_copy import load_character_local_copy
 from .character_pack import DEFAULT_CHARACTER_ID, resolve_motion_caption
+from .chat_memory import spoken_memory_result
 from .character_resources import CharacterResources, load_character_resources, load_character_resources_from_dir
 from .character_session import (
     CharacterSessionPaths,
@@ -44,6 +46,7 @@ from .expression_context import (
     RuntimeExpressionContextService,
 )
 from .expression_event_pipeline import ExpressionEventPipeline
+from .expression_request import ExpressionRequest
 from .expression_settings import (
     ExpressionSettings,
     ExpressionSettingsStore,
@@ -75,6 +78,31 @@ from .snapshot import CompanionSnapshot, SnapshotBuilder, SnapshotContextFactory
 from .storage import DEFAULT_SAVE_PATH, SaveManager, logical_time_from_state
 
 ExpressionContextProvider = Callable[[], dict[str, object]]
+
+
+class HostDialogueBusyError(RuntimeError):
+    pass
+
+
+class HostDialogueStaleError(RuntimeError):
+    pass
+
+
+class HostDialogueThreadError(RuntimeError):
+    pass
+
+
+@dataclass(frozen=True, slots=True)
+class HostDialogueTicket:
+    dialogue_request: DialogueRequest
+    expression_request: ExpressionRequest | None
+    expressor: ShinsekaiAIExpressor
+    character_id: str
+    context_epoch: int
+    generation: int
+    feedback: str
+    local_events: tuple[CompanionEvent, ...]
+    cancelled: Event
 
 
 class CompanionSaveManager(Protocol):
@@ -140,6 +168,9 @@ class CompanionController:
         character_resources: CharacterResources | None = None,
         user_data_root: Path | str | None = None,
     ) -> None:
+        self._controller_thread = get_ident()
+        self._host_dialogue_generation = 0
+        self._host_dialogue_ticket: HostDialogueTicket | None = None
         self._user_data_root = Path(user_data_root) if user_data_root is not None else None
         session_paths = (
             build_character_session_paths(character_id, user_data_root=self._user_data_root)
@@ -261,6 +292,7 @@ class CompanionController:
     def close(self) -> None:
         if self._closed:
             return
+        self._invalidate_host_dialogue()
         close = getattr(self.ai_expressor, "close", None)
         try:
             if callable(close):
@@ -300,6 +332,7 @@ class CompanionController:
         return default_expression_settings_path()
 
     def reset_demo_state(self, *, include_ai_expression: bool = True) -> dict[str, object]:
+        self._invalidate_host_dialogue()
         self.state = create_initial_state(
             now=0,
             character_id=self.character_pack.character_id,
@@ -378,6 +411,7 @@ class CompanionController:
         )
         if resources.character_pack.character_id != character_id:
             raise ValueError("character pack id does not match selected character")
+        self._invalidate_host_dialogue()
         session_paths = build_character_session_paths(character_id, user_data_root=self._user_data_root)
         self.resources = resources
         self.character_pack = resources.character_pack
@@ -449,6 +483,18 @@ class CompanionController:
         *,
         include_ai_expression: bool = False,
     ) -> dict[str, object]:
+        self._require_dialogue_idle()
+        text = self._begin_dialogue_feedback(request)
+        self._current_player_message = text
+        dialogue_epoch = self._dialogue_context_epoch()
+        try:
+            self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
+        finally:
+            self._current_player_message = ""
+        self._commit_dialogue_exchange(request, dialogue_epoch)
+        return self.get_snapshot()
+
+    def _begin_dialogue_feedback(self, request: DialogueRequest) -> str:
         text = request.normalized_text()
         self.last_motion = "Default"
         if text:
@@ -461,11 +507,10 @@ class CompanionController:
         self.last_item_feedback_icon = None
         self.last_proactive_feedback = None
         self.last_session_goal_reward = None
-        self._current_player_message = text
-        try:
-            self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
-        finally:
-            self._current_player_message = ""
+        return text
+
+    def _commit_dialogue_exchange(self, request: DialogueRequest, dialogue_epoch: int) -> None:
+        text = request.normalized_text()
         if text:
             assistant_text = _assistant_dialogue_text_from_events(
                 self.last_events,
@@ -479,10 +524,102 @@ class CompanionController:
                 assistant_text=assistant_text,
                 effect="ATTENTION",
                 source=request.source,
+                context_epoch=dialogue_epoch,
             )
             self.dialogue_history_store.save(self.dialogue_history)
         self._persist()
-        return self.get_snapshot()
+
+    def _require_host_thread(self) -> None:
+        if get_ident() != self._controller_thread:
+            raise HostDialogueThreadError("host dialogue must run on the controller owner thread")
+
+    @property
+    def host_context_generation(self) -> int:
+        self._require_host_thread()
+        return self._host_dialogue_generation
+
+    def _require_dialogue_idle(self) -> None:
+        if self._host_dialogue_ticket is not None or getattr(self, "_desktop_dialogue_pending", False):
+            raise HostDialogueBusyError("host dialogue is busy; wait for the current worker to finish")
+
+    def _prepare_host_memory(self, request: DialogueRequest) -> bool:
+        return False
+
+    def prepare_host_dialogue(
+        self, request: DialogueRequest, *, include_ai_expression: bool = True,
+        memory_prepared: bool | None = None,
+    ) -> HostDialogueTicket:
+        self._require_host_thread()
+        self._require_dialogue_idle()
+        if self._closed:
+            raise HostDialogueStaleError("stale host dialogue: controller is closed")
+        pending = self._prepare_host_memory(request) if memory_prepared is None else memory_prepared
+        text = self._begin_dialogue_feedback(request)
+        if pending:
+            result = getattr(self, "last_chat_memory_result", None)
+            self.last_feedback = spoken_memory_result(result)
+            self.last_delta_text = "记忆处理结果"
+        expression_request = None
+        self._current_player_message = text
+        try:
+            # 上下文读取会推进到期屏障，必须先于 ticket 的 epoch 捕获。
+            context = self._expression_context()
+            local_events = tuple(self._build_events(effect="ATTENTION", include_ai_expression=False))
+            if include_ai_expression and not pending:
+                expression_request = ExpressionRequest.from_snapshot(self.get_typed_snapshot(), context=context)
+        finally:
+            self._current_player_message = ""
+        ticket = HostDialogueTicket(
+            dialogue_request=request, expression_request=expression_request, expressor=self.ai_expressor,
+            character_id=self.state.character_id, context_epoch=self._dialogue_context_epoch(),
+            generation=self._host_dialogue_generation, feedback=self.last_feedback, local_events=local_events,
+            cancelled=Event(),
+        )
+        self._host_dialogue_ticket = ticket
+        return ticket
+
+    def complete_host_dialogue(
+        self, ticket: HostDialogueTicket, expressed_events: list[dict[str, str]] | None = None,
+    ) -> dict[str, object]:
+        self._require_host_thread()
+        if self._host_dialogue_ticket is not ticket:
+            raise HostDialogueStaleError("stale host dialogue ticket")
+        try:
+            self._expression_context()
+            if (self._closed or ticket.generation != self._host_dialogue_generation
+                    or ticket.character_id != self.state.character_id
+                    or ticket.context_epoch != self._dialogue_context_epoch()):
+                raise HostDialogueStaleError("stale host dialogue context")
+            self.last_feedback = ticket.feedback
+            if ticket.expression_request is None:
+                self.last_events = list(ticket.local_events)
+            else:
+                self.last_events = ExpressionEventPipeline(
+                    state=self.state, expressor=ticket.expressor, snapshot_provider=self.get_typed_snapshot,
+                    context_provider=self._expression_context, actions_provider=self._build_actions,
+                    context_guard=self._expression_context_is_current,
+                ).complete_events(ticket.expression_request, expressed_events,
+                                  effect="ATTENTION", feedback=ticket.feedback)
+            self._commit_dialogue_exchange(ticket.dialogue_request, ticket.context_epoch)
+            return self.get_snapshot()
+        finally:
+            self._host_dialogue_ticket = None
+
+    def cancel_host_dialogue(self) -> None:
+        self._require_host_thread()
+        # 保留当前 ticket 到 worker 回收，避免复用尚在运行的 expressor。
+        self._invalidate_host_dialogue()
+
+    def _invalidate_host_dialogue(self) -> None:
+        self._host_dialogue_generation += 1
+        if self._host_dialogue_ticket is not None:
+            self._host_dialogue_ticket.cancelled.set()
+
+    def _dialogue_context_epoch(self) -> int:
+        return 0
+
+    def _expression_context_is_current(self, request) -> bool:
+        return True
 
     def copy_dialogue_history_text(self) -> str:
         return format_dialogue_history_text(self.dialogue_history)
@@ -547,6 +684,7 @@ class CompanionController:
         return self.get_snapshot()
 
     def test_expression_provider(self) -> dict[str, object]:
+        self._require_dialogue_idle()
         return self._expression_diagnostics().test_provider().to_public_dict()
 
     def fetch_expression_models(
@@ -556,6 +694,7 @@ class CompanionController:
         return self._expression_diagnostics().fetch_models(settings)
 
     def clear_dialogue_history(self) -> dict[str, object]:
+        self._invalidate_host_dialogue()
         self.dialogue_history = ()
         self.dialogue_history_store.clear()
         self._set_dialogue_history_feedback(
@@ -582,6 +721,7 @@ class CompanionController:
         return self.get_snapshot()
 
     def revert_dialogue_history(self) -> dict[str, object]:
+        self._invalidate_host_dialogue()
         self.dialogue_history, entry = revert_latest_exchange(self.dialogue_history)
         self.dialogue_history_store.save(self.dialogue_history)
         if entry is None:
@@ -926,6 +1066,7 @@ class CompanionController:
         )
 
     def _replace_ai_expressor(self, next_expressor: ShinsekaiAIExpressor) -> None:
+        self._invalidate_host_dialogue()
         current = self.ai_expressor
         if current is not next_expressor:
             close = getattr(current, "close", None)
@@ -963,12 +1104,15 @@ class CompanionController:
         *,
         include_ai_expression: bool = True,
     ) -> list[CompanionEvent]:
+        if self._host_dialogue_ticket is not None:
+            include_ai_expression = False
         return ExpressionEventPipeline(
             state=self.state,
             expressor=self.ai_expressor,
             snapshot_provider=self.get_typed_snapshot,
             context_provider=self._expression_context,
             actions_provider=self._build_actions,
+            context_guard=self._expression_context_is_current,
         ).build_events(
             effect=effect,
             feedback=self.last_feedback,
@@ -1127,8 +1271,13 @@ class CompanionController:
             perception_summary=str(expression_context.get("perception_summary", "")),
             tool_results=expression_context.get("tool_results", []),
             forced_kind=forced_kind,
+            memory_candidate=self._memory_recollection_candidate(),
+            last_dialogue_at=getattr(self, "_last_dialogue_at", None),
         ).select_decision(motion=self.last_motion)
         return self._with_character_proactive_copy(decision)
+
+    def _memory_recollection_candidate(self):
+        return None
 
     def _with_character_proactive_copy(self, decision: ProactiveCompanionDecision) -> ProactiveCompanionDecision:
         if decision.feedback is None:
@@ -1146,6 +1295,7 @@ class CompanionController:
                 kind=decision.feedback.kind,
                 speech=speech,
                 summary=decision.feedback.summary,
+                memory_source=decision.feedback.memory_source,
             ),
             now=decision.now,
             motion=decision.motion,
