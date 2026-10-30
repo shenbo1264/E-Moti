@@ -2,13 +2,17 @@
 
 This repository is the Windows-first desktop AI companion demo for the original character Xingxi. Treat this file as the standing instruction set for future coding agents working in this workspace.
 
+## Priority Correction — 2026-10-30
+
+The active work is the existing Python/PySide6 desktop: ordinary-chat memory, grounded shared experiences/profile, bounded relationship expression and natural proactive companionship. Preserve completed mobile code, commits and local work; pause new mobile/pairing/push/remote/observation scope. The older mobile-first ordering below is superseded. Read `docs/handoff/20261029/core-integration-20261030.md` for the current backend contract and actual evidence. Claude owns desktop UI/experience; Codex owns core services and model comparisons. Never report model behavior as verified without actual model outputs.
+
 ## Personal Agent And Mobile Handoff — 2026-10-29
 
 Read `docs/handoff/20261029/README.md` and its requirements before new modernization work. The user assigns Claude to product/frontend implementation and Codex to backend/host implementation; use separate worktrees and the documented single-writer file ownership.
 
 The current product scope is the existing Windows-first desktop plus Android/HyperOS phones, iPhone/iOS, and Huawei phones running native HarmonyOS. The earlier macOS request was a spoken mistake corrected by the user; do not schedule a Mac desktop client. A Mac/Xcode used to build iOS is only a build requirement. Keep Relay, Game Companion, and Body firmware independent.
 
-E-Moti remains an independently usable personal companion with stable persona and shared memories. Optional work and observation capabilities must not become prerequisites for companionship. The next integration route is real mobile chat and memory management, then authorized external tasks and long-running supervision. The asset-production notes below remain constraints/reference for asset work, not a requirement to regenerate artwork before this route.
+E-Moti remains an independently usable personal companion with stable persona and shared memories. Optional work and observation capabilities must not become prerequisites for companionship. Desktop core memory and companionship come first; mobile integration and long-running supervision remain later goals. The asset-production notes below remain constraints/reference for asset work, not a requirement to regenerate artwork before this route.
 
 The actual default in `character_pack.py` is currently `xingxi_pixel_pet`; preserve it and existing user selections. Older text naming `original_oc` as the default was stale. This documentation correction does not authorize replacing assets or changing any character's distribution rights.
 

@@ -3,8 +3,10 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable, Mapping
 from dataclasses import replace
 from pathlib import Path
+from uuid import uuid4
 
 from .emotional_memory import (
+    MAX_SOURCE_IDS,
     CoreBondProfile,
     EmotionalMemoryEntry,
     EmotionalMemoryStore,
@@ -35,8 +37,16 @@ class EmotionalMemoryService:
         self.policy = policy or EmotionalMemoryPolicy()
         self.reflection = reflection or MemoryReflectionService()
         self.semantic_retriever = semantic_retriever
-        self.pending_candidates: dict[str, MemoryCandidate] = {}
-        self._pending_epochs: dict[str, int] = {}
+
+    @property
+    def pending_candidates(self) -> dict[str, MemoryCandidate]:
+        return {key: MemoryCandidate(
+            character_id=entry.character_id, owner_id=entry.owner_id, kind=entry.kind,
+            title=entry.title, summary=entry.summary, source=entry.source, occurred_at=entry.occurred_at,
+            source_ids=entry.source_ids, tags=entry.tags, emotion=entry.emotion,
+            importance=entry.importance, relationship_delta=entry.relationship_delta, pinned=entry.pinned,
+            requires_user_confirmation=requires_confirmation, metadata=dict(entry.metadata),
+        ) for key, (entry, requires_confirmation, _epoch) in self.store.load_pending_candidates().items()}
 
     def record_event(self, event: object, *, now: int) -> EmotionalMemoryEntry | None:
         normalized_event = self._annotate_firsts(event)
@@ -50,8 +60,7 @@ class EmotionalMemoryService:
             return None
         if candidate.requires_user_confirmation:
             pending_id = candidate.to_memory(now=now).memory_id
-            self.pending_candidates[pending_id] = candidate
-            self._pending_epochs[pending_id] = self.store.context_epoch
+            self.propose_candidate(candidate, pending_id=pending_id, expected_epoch=self.store.context_epoch)
             return None
         return self._persist_candidate(candidate, now=now, user_confirmed=False)
 
@@ -90,33 +99,51 @@ class EmotionalMemoryService:
         )
         if candidate is None:
             return None
+        # 每次明确的新陈述是独立来源；相同逻辑时刻重述也不是旧记录重放。
+        candidate = replace(candidate, source_ids=(f"explicit_statement:{uuid4().hex}",))
         pending_id = candidate.to_memory(now=now).memory_id
-        self.pending_candidates[pending_id] = candidate
-        self._pending_epochs[pending_id] = self.store.context_epoch
-        return pending_id
+        return self.propose_candidate(candidate, pending_id=pending_id, expected_epoch=self.store.context_epoch)
 
     def confirm_candidate(self, pending_id: str, *, now: int) -> EmotionalMemoryEntry:
-        candidate = self.pending_candidates.pop(pending_id)
-        epoch = self._pending_epochs.pop(pending_id, -1)
-        memory = self._persist_candidate(candidate, now=now, user_confirmed=True, expected_epoch=epoch)
-        if memory is None:
-            raise ValueError("stale memory proposal source")
-        return memory
+        entry = self.store.confirm_pending_candidate(pending_id, now=now)
+        self.promote_sourced_alias(entry, now=now)
+        return entry
+
+    def promote_sourced_alias(self, entry: EmotionalMemoryEntry, *, now: int) -> None:
+        if entry.metadata.get("fact_domain") != "称呼" or entry.metadata.get("speaker") != "user":
+            return
+        alias = entry.metadata.get("fact_value")
+        if not isinstance(alias, str) or not alias or _canonical_profile_value("player_alias", alias) != alias:
+            raise ValueError("nickname fact must contain a valid literal alias")
+        current = {m.memory_id: m for m in self.store.load_memories() if m.is_active(now=now)}
+        actual = current.get(entry.memory_id)
+        if actual is None or actual.evidence_fingerprint() != entry.evidence_fingerprint():
+            raise ValueError("nickname promotion requires current evidence")
+        profile = self.store.load_profile()
+        previous_sources = set(profile.evidence.get(f"player_alias:{profile.player_alias}", {}))
+        previous_sources.update(m.memory_id for m in current.values()
+                                if m.metadata.get("profile_field") == "player_alias")
+        # 旧称呼的事实与派生来源一起退役，沿用已有 epoch 传播和历史屏障。
+        for memory_id in previous_sources - {entry.memory_id}:
+            self.forget(memory_id, now=now, expected_epoch=self.store.context_epoch)
+        self.update_bond_profile(player_alias=alias, source_memory_ids=(entry.memory_id,),
+                                 now=now, expected_epoch=self.store.context_epoch)
 
     def propose_candidate(self, candidate: MemoryCandidate, *, pending_id: str,
-                          expected_epoch: int) -> str:
+                          expected_epoch: int, now: int | None = None) -> str:
         """Host-only proposal boundary; a model/provider cannot confirm itself."""
         if candidate.character_id != self.character_id or candidate.owner_id != self.owner_id:
             raise ValueError("candidate belongs to another character or owner")
-        if expected_epoch != self.store.context_epoch:
-            raise ValueError("stale memory proposal epoch")
-        self.pending_candidates[pending_id] = candidate
-        self._pending_epochs[pending_id] = expected_epoch
-        return pending_id
+        references = candidate.metadata.get("source_memory_ids", [])
+        if (not isinstance(references, (list, tuple)) or len(references) > 16
+                or any(not isinstance(key, str) or not key for key in references)):
+            raise ValueError("invalid memory candidate source references")
+        recorded_at = candidate.occurred_at if now is None else now
+        return self.store.save_pending_candidate(pending_id, candidate.to_memory(now=recorded_at),
+            requires_user_confirmation=candidate.requires_user_confirmation, expected_epoch=expected_epoch)
 
-    def reject_candidate(self, pending_id: str) -> bool:
-        self._pending_epochs.pop(pending_id, None)
-        return self.pending_candidates.pop(pending_id, None) is not None
+    def reject_candidate(self, pending_id: str, *, revoke_context: bool = False) -> bool:
+        return self.store.reject_pending_candidate(pending_id, revoke_context=revoke_context)
 
     def remember(
         self,
@@ -138,6 +165,7 @@ class EmotionalMemoryService:
         valid_from: int = 0,
         valid_until: int = 0,
         expected_epoch: int | None = None,
+        preserve_occurred_at: bool = True,
     ) -> EmotionalMemoryEntry:
         if source in {"model", "assistant", "llm", "llm_generated", "assistant_generated", "model_generated"} and not user_confirmed:
             raise ValueError("model output is not evidence of a user fact or completed event")
@@ -158,21 +186,26 @@ class EmotionalMemoryService:
         memory = replace(candidate.to_memory(now=now, user_confirmed=user_confirmed),
                          scope=scope, confidence=confidence, valid_from=valid_from, valid_until=valid_until)
         if supersedes:
-            return self.store.replace_memory(supersedes, memory, now=now, expected_epoch=expected_epoch)
+            return self.store.replace_memory(supersedes, memory, now=now, expected_epoch=expected_epoch,
+                                             preserve_occurred_at=preserve_occurred_at)
         return self.store.upsert_memory(memory, expected_epoch=expected_epoch)
 
     def correct(self, memory_id: str, *, title: str, summary: str, now: int,
-                expected_epoch: int | None = None) -> EmotionalMemoryEntry:
+                expected_epoch: int | None = None, source_ids: tuple[str, ...] = (),
+                metadata: Mapping[str, object] | None = None) -> EmotionalMemoryEntry:
         epoch = self.store.context_epoch if expected_epoch is None else expected_epoch
         previous = next((entry for entry in self.store.load_memories()
                          if entry.memory_id == memory_id and not entry.deleted), None)
         if previous is None:
             raise KeyError(f"active memory not found: {memory_id}")
+        combined_sources = tuple(dict.fromkeys((*previous.source_ids, *source_ids)))
+        if len(combined_sources) > MAX_SOURCE_IDS:
+            raise ValueError("correction source references exceed the supported limit")
         return self.remember(kind=previous.kind, title=title, summary=summary,
             source="user_correction", now=now, importance=previous.importance,
             tags=previous.tags, pinned=previous.pinned, user_confirmed=True,
-            supersedes=memory_id, metadata={**previous.metadata, "corrected_by_user": True},
-            source_ids=previous.source_ids, scope=previous.scope, confidence=1.0,
+            supersedes=memory_id, metadata={**previous.metadata, **dict(metadata or {}), "corrected_by_user": True},
+            source_ids=combined_sources, scope=previous.scope, confidence=1.0,
             valid_from=previous.valid_from, valid_until=previous.valid_until, expected_epoch=epoch)
 
     def recall(
@@ -256,9 +289,12 @@ class EmotionalMemoryService:
             key in entries and chapter.source_fingerprints.get(key) == entries[key].evidence_fingerprint()
             for key in chapter.source_memory_ids))
 
-    def consolidate(self, *, now: int) -> MemoryChapter | None:
+    def consolidate(self, *, now: int, shared_only: bool = False) -> MemoryChapter | None:
         epoch = self.store.context_epoch
         memories = tuple(entry for entry in self.store.load_memories() if entry.is_active(now=now))
+        if shared_only:
+            from .emotional_memory_reflection import is_shared_experience
+            memories = tuple(entry for entry in memories if is_shared_experience(entry))
         if not self.reflection.should_consolidate(memories):
             return None
         chapter = self.reflection.build_chapter(memories, character_id=self.character_id, now=now)

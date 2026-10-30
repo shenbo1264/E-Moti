@@ -1,0 +1,129 @@
+{
+  "model": "BAAI/bge-small-zh-v1.5",
+  "backend": "FastEmbed 0.9.1 / ONNX Runtime CPU",
+  "minimum_cosine": 0.45,
+  "load_or_download_ms": 1155.356400005985,
+  "facts": [
+    [
+      "allergy",
+      "饮食边界",
+      "我对花生过敏，不能吃含有花生的食品。"
+    ],
+    [
+      "rest",
+      "放松方式",
+      "我喜欢在树林里慢慢走路，听鸟叫声。"
+    ],
+    [
+      "noise",
+      "休息边界",
+      "晚上睡觉时我需要安静，不喜欢大声的音乐。"
+    ],
+    [
+      "pet",
+      "宠物",
+      "我的猫叫芝麻，今年两岁。"
+    ]
+  ],
+  "results": [
+    {
+      "query": "点餐时应该避开什么食材？",
+      "expected": "allergy",
+      "lexical": [],
+      "combined": [
+        "饮食边界"
+      ],
+      "cosines": {
+        "6a526c68e79c54a3302c": 0.23591600358486176,
+        "1d8963673f9f4bb531e5": 0.29623863101005554,
+        "fd5f50ebfcbb38298090": 0.29531973600387573,
+        "e7cd39dbe343e3078aa4": 0.506135880947113
+      },
+      "fusion_scores_above_threshold": {
+        "e7cd39dbe343e3078aa4": 0.8271475583314896
+      },
+      "target_lexical_similarity": 0.0331306990881459,
+      "lexical_pass": false,
+      "combined_pass": true,
+      "preparation_ms": 14.25310003105551
+    },
+    {
+      "query": "心情烦躁时有什么适合我的舒缓活动？",
+      "expected": "rest",
+      "lexical": [],
+      "combined": [
+        "休息边界",
+        "放松方式"
+      ],
+      "cosines": {
+        "6a526c68e79c54a3302c": 0.3502175807952881,
+        "1d8963673f9f4bb531e5": 0.518467366695404,
+        "fd5f50ebfcbb38298090": 0.5393000841140747,
+        "e7cd39dbe343e3078aa4": 0.35549840331077576
+      },
+      "fusion_scores_above_threshold": {
+        "1d8963673f9f4bb531e5": 0.8314635783433915,
+        "fd5f50ebfcbb38298090": 0.8387550294399262
+      },
+      "target_lexical_similarity": 0.02416525183927561,
+      "lexical_pass": false,
+      "combined_pass": true,
+      "preparation_ms": 3.0308000277727842
+    },
+    {
+      "query": "准备就寝了，周围环境怎样才合适？",
+      "expected": "noise",
+      "lexical": [],
+      "combined": [],
+      "cosines": {
+        "6a526c68e79c54a3302c": 0.26670601963996887,
+        "1d8963673f9f4bb531e5": 0.43848633766174316,
+        "fd5f50ebfcbb38298090": 0.4351927936077118,
+        "e7cd39dbe343e3078aa4": 0.3546300530433655
+      },
+      "fusion_scores_above_threshold": {},
+      "target_lexical_similarity": 0.0,
+      "lexical_pass": false,
+      "combined_pass": false,
+      "preparation_ms": 2.8674000059254467
+    },
+    {
+      "query": "如何计算三角形的面积？",
+      "expected": null,
+      "lexical": [],
+      "combined": [],
+      "cosines": {
+        "6a526c68e79c54a3302c": 0.21260181069374084,
+        "1d8963673f9f4bb531e5": 0.21841035783290863,
+        "fd5f50ebfcbb38298090": 0.24017633497714996,
+        "e7cd39dbe343e3078aa4": 0.23259133100509644
+      },
+      "fusion_scores_above_threshold": {},
+      "target_lexical_similarity": null,
+      "lexical_pass": true,
+      "combined_pass": true,
+      "preparation_ms": 3.0744000105187297
+    },
+    {
+      "query": "月球为什么总有一面朝向地球？",
+      "expected": null,
+      "lexical": [],
+      "combined": [],
+      "cosines": {
+        "6a526c68e79c54a3302c": 0.1683506965637207,
+        "1d8963673f9f4bb531e5": 0.2953757047653198,
+        "fd5f50ebfcbb38298090": 0.32458585500717163,
+        "e7cd39dbe343e3078aa4": 0.2568416893482208
+      },
+      "fusion_scores_above_threshold": {},
+      "target_lexical_similarity": null,
+      "lexical_pass": true,
+      "combined_pass": true,
+      "preparation_ms": 3.1708000460639596
+    }
+  ],
+  "lexical_pass": 2,
+  "combined_pass": 4,
+  "total": 5,
+  "scope": "synthetic development probes; real local embedding, no generation model"
+}
