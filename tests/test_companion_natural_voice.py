@@ -21,6 +21,12 @@ def test_desktop_prompt_keeps_character_and_history_without_forcing_staged_speec
         assert "无需为每句添加" in prompt
         assert "不要替用户安排" in prompt
         assert "用户明确求助时" in prompt
-        assert "不把猜测的情绪" in prompt
+        assert "不要把猜测的情绪" in prompt
+        assert "未知细节留空" in prompt
+        assert "只针对观点本身" in prompt
+        assert "区分用户更新与自己答错" in prompt
+        assert "收到新事实后直接确认新事实" in prompt
+        assert "未亲历的感官体验" in prompt
+        assert "没有求助就不追加行动安排" in prompt
     finally:
         controller.close()

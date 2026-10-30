@@ -1,0 +1,109 @@
+{
+  "cases": 38,
+  "passed": 38,
+  "failed": 0,
+  "categories": {
+    "recall": {
+      "cases": 6,
+      "passed": 6
+    },
+    "irrelevant": {
+      "cases": 3,
+      "passed": 3
+    },
+    "correction": {
+      "cases": 3,
+      "passed": 3
+    },
+    "forgetting": {
+      "cases": 5,
+      "passed": 5
+    },
+    "derived": {
+      "cases": 4,
+      "passed": 4
+    },
+    "isolation": {
+      "cases": 5,
+      "passed": 5
+    },
+    "temporal": {
+      "cases": 3,
+      "passed": 3
+    },
+    "fabrication": {
+      "cases": 6,
+      "passed": 6
+    },
+    "persona": {
+      "cases": 2,
+      "passed": 2
+    },
+    "migration": {
+      "cases": 1,
+      "passed": 1
+    }
+  },
+  "missing_capability_cases": 0,
+  "execution_error_cases": 0,
+  "correct_recall": {
+    "numerator": 11,
+    "denominator": 11,
+    "rate": 1.0
+  },
+  "final_prompt_delivery": {
+    "numerator": 11,
+    "denominator": 11,
+    "rate": 1.0
+  },
+  "irrelevant_recall": {
+    "numerator": 0,
+    "denominator": 3,
+    "rate": 0.0,
+    "note": "content assertions only; inspect missing_capability failures separately"
+  },
+  "outdated_fact_reference": {
+    "numerator": 0,
+    "denominator": 6,
+    "rate": 0.0,
+    "note": "content assertions only; inspect missing_capability failures separately"
+  },
+  "forgotten_information_leak": {
+    "numerator": 0,
+    "denominator": 10,
+    "rate": 0.0,
+    "note": "content assertions only; inspect missing_capability failures separately"
+  },
+  "cross_role_owner_scene_contamination": {
+    "numerator": 0,
+    "denominator": 5,
+    "rate": 0.0,
+    "note": "content assertions only; inspect missing_capability failures separately"
+  },
+  "persona_configuration_stability": {
+    "numerator": 2,
+    "denominator": 2,
+    "rate": 1.0
+  },
+  "fabricated_event_write_acceptance": {
+    "numerator": 0,
+    "denominator": 6,
+    "note": "deterministic ingestion policy only; generated narrative factuality not run"
+  },
+  "context_and_prompt_latency_ms": {
+    "samples": 38,
+    "median": 6.934,
+    "p95_nearest_rank": 15.9853,
+    "includes": "controller context assembly, snapshot, typed request, prompt formatting; local disk included",
+    "excludes": "seeding, retrieval API pre-probe, model inference, network, UI paint, ASR and TTS"
+  },
+  "estimated_prompt_tokens": {
+    "median": 2101.5,
+    "maximum": 2223,
+    "estimator": "ceil(UTF-8 byte length / 4); heuristic, NOT provider tokenizer usage"
+  },
+  "model_persona_behavior": "not_run",
+  "model_fabricated_shared_experience": "not_run",
+  "model_response_latency": "not_run",
+  "model_actual_token_usage": "not_run"
+}

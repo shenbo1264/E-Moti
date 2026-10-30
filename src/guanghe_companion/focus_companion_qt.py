@@ -7,7 +7,7 @@ from typing import Callable
 
 def create_focus_companion_widget(controller: object, on_changed=None, parent: object | None = None):
     try:
-        from PySide6.QtCore import QTimer
+        from PySide6.QtCore import QTimer, Qt
         from PySide6.QtWidgets import QApplication, QCheckBox, QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
     except ImportError as exc:  # pragma: no cover - exercised by contract tests without Qt
         raise RuntimeError("PySide6 is required for the focus companion widget") from exc
@@ -17,17 +17,24 @@ def create_focus_companion_widget(controller: object, on_changed=None, parent: o
     widget = QWidget(parent)
     layout = QVBoxLayout(widget)
     title = QLabel("探头时刻")
+    title.setProperty("role", "section")
     enabled_check = QCheckBox("启用低频探头判断")
     status = QLabel()
     status.setWordWrap(True)
+    status.setProperty("role", "status")
     buttons = QHBoxLayout()
     demo = QPushButton("模拟专注 52 分钟")
     accept = QPushButton("陪她歇一会儿")
     snooze = QPushButton("再等一会儿")
     mute = QPushButton("今天先别管我")
-    for button in (demo, accept, snooze, mute):
+    for button in (accept, snooze, mute):
         buttons.addWidget(button)
-    layout.addWidget(title); layout.addWidget(enabled_check); layout.addWidget(status); layout.addLayout(buttons); layout.addStretch(1)
+    buttons.addStretch(1)
+    accept.setProperty("role", "primary")
+    layout.addWidget(title); layout.addWidget(enabled_check); layout.addWidget(status); layout.addLayout(buttons)
+    layout.addStretch(1)
+    demo.setToolTip("仅注入一次演示状态，不读取屏幕或前台应用。")
+    layout.addWidget(demo, alignment=Qt.AlignmentFlag.AlignLeft)
 
     story = getattr(controller, "story_runtime", None) or getattr(controller, "story", None)
     coordinator = getattr(story, "focus", None)

@@ -22,6 +22,20 @@ _DOMAINS = {"like": "个人偏好", "avoid": "个人偏好", "allergy": "过敏"
 _TEMPLATES = {"like": "用户喜欢{}", "avoid": "用户不喜欢{}", "allergy": "用户对{}过敏",
               "diet": "用户长期不吃{}", "residence": "用户住在{}", "occupation": "用户职业是{}",
               "name": "用户希望被称呼为{}", "legal_name": "用户的姓名是{}", "pet": "用户的宠物信息：{}"}
+_PET_KIND = r"猫|狗|兔子|鹦鹉|仓鼠"
+
+
+def _pet_name_summary(proposal, current):
+    name_tail = r"(?:的)?(?:名字(?:是|叫)|名叫|叫)(?:做)?" + re.escape(proposal.value)
+    direct = re.search(r"(" + _PET_KIND + r")" + name_tail, proposal.quote)
+    kind = direct.group(1) if direct else ""
+    if not kind and re.search(name_tail, proposal.quote) and len(proposal.target_ids) == 1:
+        previous = current[proposal.target_ids[0]]
+        # 新原话只改名字时，只继承当前绑定事实中的宠物种类，不复制旧名字。
+        kinds = set(re.findall(r"(" + _PET_KIND + r")(?:的)?(?:名字|名叫|叫)", previous.summary))
+        if len(kinds) == 1:
+            kind = kinds.pop()
+    return f"用户的{kind}叫{proposal.value}" if kind else None
 
 
 @dataclass(frozen=True, slots=True)
@@ -232,6 +246,8 @@ class ChatMemoryExtraction:
                         "scene": "companion_chat", "extraction": "semantic"}
             refs = (f"chat-extraction:{envelope.request_id}:{index}",)
             summary = _TEMPLATES[p.predicate].format(p.value)
+            if p.predicate == "pet":
+                summary = _pet_name_summary(p, current) or summary
             if mode == "review" or (p.action == "remember" and p.target_ids):
                 metadata["source_memory_ids"] = list(p.target_ids)
                 if len(p.target_ids) == 1:

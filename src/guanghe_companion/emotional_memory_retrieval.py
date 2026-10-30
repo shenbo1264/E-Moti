@@ -69,10 +69,11 @@ def score_memory(
     now: int,
     relationship_stage: str = "初识",
 ) -> MemoryRetrievalScore:
-    relevance = lexical_similarity(
-        query,
-        " ".join((memory.title, memory.summary, " ".join(memory.tags))),
-    )
+    searchable = " ".join((memory.title, memory.summary, " ".join(memory.tags)))
+    queries = [query, *(part.strip() for part in re.split(r"[。！？!?；;\n]", query)
+                       if len(tokenize(part)) >= 4)]
+    # 独立问句不能被后附的回答要求稀释；仍须通过原有相关性与来源有效性门槛。
+    relevance = max(lexical_similarity(part, searchable) for part in queries)
     age_days = max(0.0, (max(0, int(now)) - memory.occurred_at) / 86_400)
     recency = math.pow(0.5, age_days / 21.0)
     importance = memory.importance

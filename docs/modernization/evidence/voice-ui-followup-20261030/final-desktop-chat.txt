@@ -1,0 +1,17 @@
+Window: "星汐 E-Moti 桌面伴侣", App: python.exe.
+	0 窗口 (settable, string) 星汐 E-Moti 桌面伴侣 Secondary Actions: Raise ID: QApplication.CompanionWindow
+		1 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot
+			2 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget
+				3 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget
+					4 窗格 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget
+						5 组 (settable, string) 总览 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget
+							6 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox
+								7 图像 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox.SpriteInteractionLabel
+								12 文本 星汐: 桂花乌龙啊，香气先甜后清，挺会挑的。我只在边上闻过那股桂花味。 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox.QLabel
+								8 自定义 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar
+									9 编辑 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar.QLineEdit
+									10 按钮 (disabled, settable, string) Mic ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar.DialogueAsrButton
+									11 按钮 (settable, string) 发送 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar.QPushButton
+								13 按钮 (settable, string) 记下了 · 查看回忆 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox.MemoryReceiptButton
+
+The focused UI element is 9 编辑 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar.QLineEdit.

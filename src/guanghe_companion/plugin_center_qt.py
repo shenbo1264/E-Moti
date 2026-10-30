@@ -34,39 +34,61 @@ def create_plugin_center_widget(controller: object, on_changed=None, parent: obj
     widget = QWidget(parent)
     root = QVBoxLayout(widget)
     title = QLabel("E-Moti 插件中心")
+    title.setProperty("role", "section")
     hint = QLabel("插件可扩展互动、记忆、角色表达和本地能力。启用第三方插件前，请查看权限和审计结果。")
     hint.setWordWrap(True)
+    hint.setProperty("role", "secondary")
     trust_notice = QLabel("同进程 Python 插件属于可信代码；只启用你了解来源并审阅过权限的插件。")
     trust_notice.setWordWrap(True)
+    trust_notice.setProperty("role", "secondary")
     root.addWidget(title); root.addWidget(hint); root.addWidget(trust_notice)
 
     splitter = QSplitter(Qt.Orientation.Horizontal)
     plugin_list = QListWidget()
+    plugin_list.setAccessibleName("插件列表")
+    plugin_list.setWordWrap(True)
     detail = QTextEdit(); detail.setReadOnly(True)
+    detail.setAccessibleName("插件详情与权限")
     splitter.addWidget(plugin_list); splitter.addWidget(detail); splitter.setStretchFactor(1, 1)
     root.addWidget(splitter, stretch=1)
 
     settings_editor = QTextEdit(); settings_editor.setPlaceholderText("插件设置 JSON 对象")
+    settings_editor.setObjectName("CodeEditor")
+    settings_editor.setAccessibleName("插件设置 JSON")
     settings_editor.setMaximumHeight(130)
+    settings_label = QLabel("插件设置（JSON）")
+    settings_label.setBuddy(settings_editor)
+    root.addWidget(settings_label)
     root.addWidget(settings_editor)
     panels = QTextEdit()
     panels.setReadOnly(True)
     panels.setMaximumHeight(150)
     panels.setPlaceholderText("当前没有插件提供页面内容。")
+    panels.setAccessibleName("插件提供的内容")
+    root.addWidget(QLabel("插件提供的内容"))
     root.addWidget(panels)
     buttons = QHBoxLayout()
     enable = QPushButton("启用")
     disable = QPushButton("停用")
     save_settings = QPushButton("保存设置")
+    save_settings.setProperty("role", "primary")
     refresh_button = QPushButton("刷新")
     install_button = QPushButton("安装插件包")
     uninstall_button = QPushButton("卸载")
     clear_data = QPushButton("清除数据")
+    uninstall_button.setProperty("role", "danger")
+    clear_data.setProperty("role", "danger")
     clear_quarantine = QPushButton("解除隔离")
     action_buttons = (enable, disable, save_settings, refresh_button, install_button, uninstall_button, clear_data, clear_quarantine)
-    for button in action_buttons:
+    for button in action_buttons[:4]:
         buttons.addWidget(button)
+    buttons.addStretch(1)
     root.addLayout(buttons)
+    management = QHBoxLayout()
+    for button in action_buttons[4:]:
+        management.addWidget(button)
+    management.addStretch(1)
+    root.addLayout(management)
 
     cache: dict[str, dict[str, object]] = {}
 
@@ -77,6 +99,8 @@ def create_plugin_center_widget(controller: object, on_changed=None, parent: obj
     def show_selected(*_args: object) -> None:
         plugin_id = selected_id()
         row = cache.get(plugin_id)
+        for button in (enable, disable, save_settings, uninstall_button, clear_data, clear_quarantine):
+            button.setEnabled(row is not None)
         if row is None:
             detail.clear(); settings_editor.clear(); return
         detail.setPlainText(json.dumps(row, ensure_ascii=False, indent=2))

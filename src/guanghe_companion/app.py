@@ -24,7 +24,6 @@ from PySide6.QtGui import (
 from PySide6.QtWidgets import (
     QApplication,
     QCheckBox,
-    QComboBox,
     QDoubleSpinBox,
     QFileDialog,
     QFrame,
@@ -51,6 +50,7 @@ from PySide6.QtWidgets import (
 )
 
 from .ai_expressor import build_expression_prompt_preview
+from .ui_controls import CompanionComboBox as QComboBox
 from .capability_runtime import CapabilityRuntime
 from .capability_panels import CapabilitySettingsPanel, ManualPerceptionPanel, VoiceSettingsPanel
 from .capability_settings import CapabilitySettings
@@ -151,7 +151,8 @@ APP_STYLE_SHEET = """
 QWidget {
     font-family: "Microsoft YaHei UI", "Microsoft YaHei", "SimHei", "Arial";
     color: #263238;
-    font-size: 13px;
+    font-size: 14px;
+    font-weight: 400;
 }
 #CompanionRoot {
     background: #f4f7f8;
@@ -161,9 +162,8 @@ QFrame#LauncherCard {
     border-bottom: 1px solid #d6e1e7;
 }
 QFrame#SidebarCard {
-    background: #ffffff;
-    border: 1px solid #d6e1e7;
-    border-radius: 8px;
+    background: transparent;
+    border: none;
 }
 QLabel#NavigationHint {
     color: #445b66;
@@ -172,8 +172,12 @@ QLabel#NavigationHint {
 }
 QPushButton#NavigationButton {
     text-align: left;
-    padding: 9px 12px;
+    padding: 7px 12px;
+    background: transparent;
+    border: 1px solid transparent;
+    font-weight: 500;
 }
+QPushButton#NavigationButton:hover { background: #e9f0f2; }
 QPushButton#NavigationButton:checked {
     background: #e6f2f5;
     border-color: #7ba5b5;
@@ -186,8 +190,8 @@ QLabel#LauncherEyebrow {
 }
 QLabel#LauncherTitle {
     color: #1f343d;
-    font-size: 26px;
-    font-weight: 800;
+    font-size: 24px;
+    font-weight: 600;
 }
 QLabel#LauncherSubtitle {
     color: #536a75;
@@ -207,10 +211,10 @@ QPushButton#PrimaryLaunchButton:hover {
 QGroupBox {
     background: #ffffff;
     border: 1px solid #d6e1e7;
-    border-radius: 8px;
-    margin-top: 16px;
-    padding: 12px;
-    font-weight: 600;
+    border-radius: 12px;
+    margin-top: 14px;
+    padding: 14px;
+    font-weight: 500;
 }
 QGroupBox::title {
     subcontrol-origin: margin;
@@ -234,7 +238,7 @@ QPushButton:pressed {
     background: #dfecef;
 }
 QPushButton:disabled {
-    color: #94a3ab;
+    color: #71838b;
     background: #f4f6f7;
     border-color: #d7e0e5;
 }
@@ -264,6 +268,79 @@ QListWidget::item:selected {
     background: #e6f2f5;
     color: #20333c;
 }
+QLabel#PageTitle { color: #1f343d; font-size: 20px; font-weight: 600; }
+QLabel[role="section"] { color: #29444f; font-size: 16px; font-weight: 600; }
+QLabel[role="secondary"] { color: #536a75; font-size: 13px; }
+QLabel[role="status"] { background: #edf5f7; color: #29444f; padding: 10px; border-radius: 8px; }
+QPushButton[role="primary"] { background: #1f7a8c; border-color: #1f7a8c; color: white; }
+QPushButton[role="primary"]:hover { background: #256f7c; }
+QPushButton[role="primary"]:disabled { background: #e7edef; color: #71838b; border-color: #ccd7dc; }
+QPushButton[role="danger"] { color: #9a3d37; }
+QPushButton:focus { border-color: #1f7a8c; background: #e6f2f5; }
+QPushButton[role="primary"]:focus, QPushButton#PrimaryLaunchButton:focus { border: 2px solid #153f4a; background: #1f7a8c; color: white; }
+QLineEdit, QComboBox, QSpinBox, QDoubleSpinBox {
+    background: #ffffff;
+    color: #263238;
+    border: 1px solid #8ca2ad;
+    border-radius: 6px;
+    padding: 6px 10px;
+    min-height: 18px;
+    selection-background-color: #d6ecef;
+    selection-color: #20333c;
+}
+QLineEdit:focus, QComboBox:focus, QSpinBox:focus, QDoubleSpinBox:focus, QTextEdit:focus {
+    border-color: #1f7a8c;
+    background: #f8fcfd;
+}
+QLineEdit:disabled, QComboBox:disabled, QSpinBox:disabled, QDoubleSpinBox:disabled {
+    background: #eef2f4;
+    color: #71838b;
+    border-color: #ccd7dc;
+}
+QComboBox { padding-right: 38px; }
+QComboBox::down-arrow { image: none; }
+QComboBox::drop-down {
+    subcontrol-origin: padding;
+    subcontrol-position: top right;
+    width: 28px;
+    border-left: 1px solid #d6e1e7;
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+QComboBox QAbstractItemView {
+    background: #ffffff;
+    color: #263238;
+    border: 1px solid #8ca2ad;
+    padding: 4px;
+    selection-background-color: #d6ecef;
+    selection-color: #20333c;
+    outline: 0;
+}
+QComboBox QAbstractItemView::item { min-height: 30px; padding: 3px 8px; }
+QTextEdit, QPlainTextEdit {
+    background: #ffffff;
+    color: #263238;
+    border: 1px solid #8ca2ad;
+    border-radius: 6px;
+    padding: 8px;
+    selection-background-color: #d6ecef;
+    selection-color: #20333c;
+}
+QTextEdit[readOnly="true"] { background: #f8fbfc; border-color: #d6e1e7; }
+QTextEdit#CodeEditor { font-family: "Consolas", "Microsoft YaHei UI"; font-size: 13px; }
+QCheckBox { spacing: 8px; min-height: 26px; }
+QCheckBox:focus { color: #1f5360; outline: 1px solid #1f7a8c; }
+QScrollArea { border: none; background: transparent; }
+QScrollBar:vertical { background: #edf2f4; width: 12px; margin: 0; }
+QScrollBar::handle:vertical { background: #9aafb8; border-radius: 5px; min-height: 32px; margin: 2px; }
+QScrollBar::handle:vertical:hover { background: #6d8e9b; }
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical { height: 0; }
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical { background: none; }
+QMenu { background: #ffffff; color: #263238; border: 1px solid #b8c9d2; padding: 5px; }
+QMenu::item { padding: 7px 20px; border-radius: 4px; }
+QMenu::item:selected { background: #e6f2f5; }
+QMenu::item:disabled { color: #71838b; }
+QToolTip { background: #ffffff; color: #263238; border: 1px solid #b8c9d2; padding: 6px; }
 """
 
 
@@ -759,15 +836,29 @@ class CompanionWindow(QMainWindow):
         self.control_panel_scroll.setObjectName("ControlPanelScroll")
         self.control_panel_scroll.setWidgetResizable(True)
         self.control_panel_scroll.setFrameShape(QFrame.Shape.NoFrame)
-        self.control_panel_scroll.setWidget(content)
-        shell.addWidget(self.control_panel_scroll, stretch=1)
+        shell.addWidget(content, stretch=1)
 
         self.sidebar_card = self._build_sidebar_card()
-        content_layout.addWidget(self.sidebar_card)
+        self.sidebar_scroll = QScrollArea()
+        self.sidebar_scroll.setWidgetResizable(True)
+        self.sidebar_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.sidebar_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.sidebar_scroll.setFixedWidth(178)
+        self.sidebar_scroll.setWidget(self.sidebar_card)
+        content_layout.addWidget(self.sidebar_scroll)
 
         self.content_stack = QStackedWidget()
         self.control_panel_page_layouts: list[QVBoxLayout] = []
-        content_layout.addWidget(self.content_stack, stretch=1)
+        self.page_panel = QWidget()
+        page_column = QVBoxLayout(self.page_panel)
+        page_column.setContentsMargins(0, 0, 0, 0)
+        page_column.setSpacing(12)
+        self.page_title_label = QLabel("总览")
+        self.page_title_label.setObjectName("PageTitle")
+        page_column.addWidget(self.page_title_label)
+        page_column.addWidget(self.content_stack, stretch=1)
+        self.control_panel_scroll.setWidget(self.page_panel)
+        content_layout.addWidget(self.control_panel_scroll, stretch=1)
 
         overview_page = QWidget()
         overview_layout = QVBoxLayout(overview_page)
@@ -936,6 +1027,12 @@ class CompanionWindow(QMainWindow):
             on_snapshot=self._apply_snapshot,
         )
         self.content_stack.addWidget(self.mobile_link_page)
+        for index, button in enumerate(self.navigation_buttons):
+            page = self.content_stack.widget(index)
+            page.setAccessibleName(button.text())
+            if page.layout() is not None:
+                page.layout().setContentsMargins(0, 0, 0, 0)
+                page.layout().setSpacing(12)
         self._load_capability_settings_into_ui()
 
     def _alias_capability_settings_panel_widgets(self) -> None:
@@ -1013,7 +1110,7 @@ class CompanionWindow(QMainWindow):
     def _build_sidebar_card(self) -> QFrame:
         frame = QFrame()
         frame.setObjectName("SidebarCard")
-        frame.setFixedWidth(154)
+        frame.setFixedWidth(164)
         layout = QVBoxLayout(frame)
         layout.setContentsMargins(12, 14, 12, 14)
         layout.setSpacing(8)
@@ -1067,13 +1164,14 @@ class CompanionWindow(QMainWindow):
         self.character_detail_scroll_area.setMinimumHeight(220)
         self.character_detail_scroll_area.setWidget(self.character_detail_label)
         self.character_switch_button = QPushButton("切换到此角色")
+        self.character_switch_button.setProperty("role", "primary")
         self.character_switch_button.clicked.connect(self._handle_character_switch)
         self.character_import_button = QPushButton("导入角色包")
         self.character_import_button.clicked.connect(self._handle_character_import)
-        self.character_import_button.setToolTip("P4：本地导入角色包，先校验再启用。")
+        self.character_import_button.setToolTip("导入本地角色包，校验通过后才可启用。")
         self.character_generate_button = QPushButton("生成新角色")
         self.character_generate_button.setEnabled(False)
-        self.character_generate_button.setToolTip("P5：AI 生成工作流输出到临时目录，人工 QA 后导入。")
+        self.character_generate_button.setToolTip("当前版本尚未开放角色生成。")
         detail_layout.addWidget(self.character_preview_label)
         detail_layout.addWidget(self.character_detail_scroll_area, stretch=1)
         detail_layout.addWidget(self.character_switch_button)
@@ -1093,6 +1191,8 @@ class CompanionWindow(QMainWindow):
             button.setChecked(index == selected_index)
         if hasattr(self, "content_stack"):
             self.content_stack.setCurrentIndex(selected_index)
+            self.page_title_label.setText(self.navigation_buttons[selected_index].text())
+            self.control_panel_scroll.verticalScrollBar().setValue(0)
 
     def _refresh_character_library(self) -> None:
         if not hasattr(self, "character_list"):
@@ -1241,16 +1341,16 @@ class CompanionWindow(QMainWindow):
         frame = QFrame()
         frame.setObjectName("LauncherCard")
         layout = QHBoxLayout(frame)
-        layout.setContentsMargins(24, 18, 24, 18)
+        layout.setContentsMargins(24, 12, 24, 12)
         layout.setSpacing(16)
 
         copy = QVBoxLayout()
         copy.setSpacing(4)
-        self.launcher_eyebrow_label = QLabel("原创 OC 桌面伴侣 Demo")
+        self.launcher_eyebrow_label = QLabel("个人 AI 伙伴")
         self.launcher_eyebrow_label.setObjectName("LauncherEyebrow")
         self.launcher_title_label = QLabel("星汐 E-Moti")
         self.launcher_title_label.setObjectName("LauncherTitle")
-        self.launcher_subtitle_label = QLabel("控制面板用于演示状态、背包和关系；桌宠模式是独立桌面演出窗口。")
+        self.launcher_subtitle_label = QLabel("一起聊天，留下共同回忆。")
         self.launcher_subtitle_label.setObjectName("LauncherSubtitle")
         self.launcher_subtitle_label.setWordWrap(True)
         copy.addWidget(self.launcher_eyebrow_label)
@@ -1378,16 +1478,17 @@ class CompanionWindow(QMainWindow):
         self.item_feedback_label.hide()
         layout.addWidget(self.item_feedback_label, alignment=Qt.AlignmentFlag.AlignCenter)
         self.character_label = QLabel()
+        self.character_label.setWordWrap(True)
         self.character_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.character_label.setStyleSheet(
-            "QLabel { border: 1px solid #d7e3ea; border-radius: 14px; padding: 18px; background: #ffffff; font-size: 16px; }"
+            "QLabel { padding: 10px; color: #39525f; background: #f4f8fa; border-radius: 8px; font-size: 14px; }"
         )
-        self.character_label.setMinimumHeight(160)
+        self.character_label.setMinimumHeight(80)
         layout.addWidget(self.character_label)
         return box
 
     def _build_status_card(self) -> QGroupBox:
-        box = QGroupBox("星汐状态")
+        box = QGroupBox("当前状态")
         layout = QVBoxLayout(box)
 
         self.mode_label = QLabel()
@@ -1411,6 +1512,7 @@ class CompanionWindow(QMainWindow):
         alias_row = QHBoxLayout()
         self.player_alias_input = QLineEdit()
         self.player_alias_input.setPlaceholderText("本地称呼")
+        self.player_alias_input.setAccessibleName("希望角色使用的称呼")
         self.player_alias_save_button = QPushButton("记住称呼")
         self.player_alias_save_button.clicked.connect(self._handle_player_alias_save)
         alias_row.addWidget(self.player_alias_input, stretch=1)
@@ -1445,7 +1547,7 @@ class CompanionWindow(QMainWindow):
         self.memory_label = QLabel()
         self.memory_label.setWordWrap(True)
         self.memory_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-        self.memory_label.setStyleSheet("font-size: 13px; background: #fff8ef; padding: 8px; border-radius: 8px;")
+        self.memory_label.setStyleSheet("font-size: 13px; background: #f7fbfd; padding: 8px; border-radius: 8px;")
         layout.addWidget(self.feedback_label)
         layout.addWidget(self.delta_label)
         layout.addWidget(self.events_label)
@@ -1546,11 +1648,22 @@ class CompanionWindow(QMainWindow):
         self.expression_test_button.clicked.connect(self._handle_expression_settings_test)
         self.expression_settings_status_label = QLabel(expression_settings_status_text(current_expression_settings))
         self.expression_settings_status_label.setWordWrap(True)
+        self.expression_settings_status_label.setProperty("role", "status")
+        self.expression_save_button.setProperty("role", "primary")
         self.expression_provider_label = QLabel("服务商")
         self.expression_model_label = QLabel("模型 ID")
-        self.expression_base_url_label = QLabel("Base URL")
-        self.expression_api_key_label = QLabel("API Key")
+        self.expression_base_url_label = QLabel("服务地址")
+        self.expression_api_key_label = QLabel("API 密钥")
         self.expression_timeout_label = QLabel("超时（秒）")
+        for label, field in (
+            (self.expression_provider_label, self.expression_provider_combo),
+            (self.expression_model_label, self.expression_model_input),
+            (self.expression_base_url_label, self.expression_base_url_input),
+            (self.expression_api_key_label, self.expression_api_key_input),
+            (self.expression_timeout_label, self.expression_timeout_input),
+        ):
+            label.setBuddy(field)
+            field.setAccessibleName(label.text())
 
         layout.addWidget(self.expression_enabled_checkbox, 0, 0, 1, 2)
         layout.addWidget(self.expression_provider_label, 1, 0)
@@ -1574,6 +1687,7 @@ class CompanionWindow(QMainWindow):
         box = QGroupBox("表达规则")
         layout = QVBoxLayout(box)
         self.expression_rule_preview_text = QTextEdit()
+        self.expression_rule_preview_text.setAccessibleName("当前角色的表达规则，只读")
         self.expression_rule_preview_text.setReadOnly(True)
         self.expression_rule_preview_text.setPlainText(
             build_expression_prompt_preview(character_name=self.controller.state.character_name)
@@ -1591,6 +1705,8 @@ class CompanionWindow(QMainWindow):
         box = QGroupBox("轻量商店")
         layout = QVBoxLayout(box)
         self.shop_list = QListWidget()
+        self.shop_list.setAccessibleName("商店物品")
+        self.shop_list.setWordWrap(True)
         self.shop_list.setIconSize(QSize(36, 36))
         layout.addWidget(self.shop_list)
         self.buy_button = QPushButton("购买选中物品")
@@ -1602,6 +1718,8 @@ class CompanionWindow(QMainWindow):
         box = QGroupBox("轻量背包")
         layout = QVBoxLayout(box)
         self.inventory_list = QListWidget()
+        self.inventory_list.setAccessibleName("背包物品")
+        self.inventory_list.setWordWrap(True)
         self.inventory_list.setIconSize(QSize(36, 36))
         layout.addWidget(self.inventory_list)
         actions = QHBoxLayout()
@@ -1621,9 +1739,10 @@ class CompanionWindow(QMainWindow):
         self.desktop_mode = True
         # 桌宠保持透明紧凑布局，控制面板的滚动容器只在主窗口使用。
         self.control_panel_scroll.takeWidget()
-        self.shell_layout.removeWidget(self.control_panel_scroll)
+        self.control_panel_content_layout.removeWidget(self.control_panel_scroll)
         self.control_panel_scroll.hide()
-        self.shell_layout.addWidget(self.control_panel_content, stretch=1)
+        self.control_panel_content_layout.addWidget(self.page_panel, stretch=1)
+        self.sidebar_scroll.hide()
         self.screen_observation_timer.stop()
         self.setWindowFlags(
             self.windowFlags()
@@ -1644,6 +1763,7 @@ class CompanionWindow(QMainWindow):
         for page_layout in self.control_panel_page_layouts:
             page_layout.setSpacing(0)
         self.launcher_card.hide()
+        self.page_title_label.hide()
         self.sidebar_card.hide()
         self.status_card.hide()
         self.feedback_card.hide()
@@ -1807,9 +1927,10 @@ class CompanionWindow(QMainWindow):
             self.close()
             return
         self.desktop_mode = False
-        self.shell_layout.removeWidget(self.control_panel_content)
-        self.control_panel_scroll.setWidget(self.control_panel_content)
-        self.shell_layout.addWidget(self.control_panel_scroll, stretch=1)
+        self.control_panel_content_layout.removeWidget(self.page_panel)
+        self.control_panel_scroll.setWidget(self.page_panel)
+        self.control_panel_content_layout.addWidget(self.control_panel_scroll, stretch=1)
+        self.sidebar_scroll.show()
         self.control_panel_scroll.show()
         flags = self.windowFlags()
         flags &= ~Qt.WindowType.FramelessWindowHint
@@ -1831,6 +1952,7 @@ class CompanionWindow(QMainWindow):
         for page_layout in self.control_panel_page_layouts:
             page_layout.setSpacing(12)
         self.launcher_card.show()
+        self.page_title_label.show()
         self.sidebar_card.show()
         for card in (
             self.status_card,
@@ -1889,7 +2011,7 @@ class CompanionWindow(QMainWindow):
     def _update_countdown(self) -> None:
         self.remaining_seconds = 15 if self.remaining_seconds <= 1 else self.remaining_seconds - 1
         snapshot = self.controller.get_snapshot()
-        self.tick_label.setText(f"15 秒 tick：已结算 {snapshot['tick_count']} 次，下一轮 {self.remaining_seconds} 秒后")
+        self.tick_label.setText(f"状态更新：{snapshot['tick_count']} 次 · 下次 {self.remaining_seconds} 秒后")
 
     def _reset_countdown(self) -> None:
         self.remaining_seconds = 15
@@ -2307,12 +2429,12 @@ class CompanionWindow(QMainWindow):
         session_goal = snapshot.get("session_goal")
         next_action = snapshot.get("next_suggested_action")
         if isinstance(session_goal, dict) and session_goal:
-            goal_id = str(session_goal.get("goal_id", ""))
+            goal_id = str(session_goal.get("label") or session_goal.get("goal_id", ""))
             progress = session_goal.get("progress", 0)
             target = session_goal.get("target", 0)
             action_id = ""
             if isinstance(next_action, dict):
-                action_id = str(next_action.get("action_id", ""))
+                action_id = str(next_action.get("label") or next_action.get("action_id", ""))
             self.session_goal_label.setText(f"会话目标：{goal_id} {progress}/{target}；建议：{action_id}")
         else:
             self.session_goal_label.setText("会话目标：无")
@@ -2320,19 +2442,23 @@ class CompanionWindow(QMainWindow):
         if isinstance(recent_moment, dict) and recent_moment:
             moment_id = str(recent_moment.get("moment_id", ""))
             source = str(recent_moment.get("source", ""))
-            self.recent_moment_label.setText(f"最近片段 recent_moment:{moment_id} source:{source}")
+            summary = str(recent_moment.get("summary") or recent_moment.get("speech") or moment_id)
+            self.recent_moment_label.setText(f"最近片段：{summary}")
+            self.recent_moment_label.setToolTip(f"片段标识：{moment_id}\n来源：{source}")
         else:
-            self.recent_moment_label.setText("最近片段 recent_moment:none")
+            self.recent_moment_label.setText("最近片段：暂无")
+            self.recent_moment_label.setToolTip("")
         self.relationship_label.setText(self.snapshot_renderer.format_relationship_presentation(snapshot))
         if not self.player_alias_input.hasFocus():
             self.player_alias_input.setText(str(snapshot.get("player_alias") or ""))
-        self.tick_label.setText(f"15 秒 tick：已结算 {snapshot['tick_count']} 次，下一轮 {self.remaining_seconds} 秒后")
+        self.tick_label.setText(f"状态更新：{snapshot['tick_count']} 次 · 下次 {self.remaining_seconds} 秒后")
 
         for stat_name, bar in self.status_bars.items():
             bar.setValue(int(float(snapshot[stat_name])))
 
         self.feedback_label.setText(str(snapshot["feedback"]))
-        self.delta_label.setText(f"最近变化：{snapshot['delta_text']}")
+        delta = str(snapshot['delta_text'])
+        self.delta_label.setText(f"最近变化：{'时间推进 15 秒' if delta == 'tick -15s' else delta}")
         self.events_label.setText(self.snapshot_renderer.format_event_summary(snapshot["events"]))
         self.memory_label.setText(self.snapshot_renderer.format_memory_log(snapshot["memory_log"]))
         desktop_speech = self.snapshot_renderer.snapshot_tts_speech(snapshot) or str(snapshot["feedback"])

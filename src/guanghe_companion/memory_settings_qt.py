@@ -6,7 +6,8 @@ import json
 from pathlib import Path
 
 from PySide6.QtCore import QTimer
-from PySide6.QtWidgets import QCheckBox, QComboBox, QGroupBox, QLabel, QVBoxLayout
+from PySide6.QtWidgets import QCheckBox, QGridLayout, QGroupBox, QLabel
+from .ui_controls import CompanionComboBox as QComboBox
 
 from .memory_settings_view_model import CHAT_MEMORY_MODES, MODE_HELP, semantic_status_text
 
@@ -21,17 +22,28 @@ class MemorySettingsPanel(QGroupBox):
         self._on_changed = on_changed
         self._warmup = None
         self._syncing = False
-        layout = QVBoxLayout(self)
+        layout = QGridLayout(self)
+        layout.setHorizontalSpacing(12)
+        layout.setVerticalSpacing(8)
         self.mode_combo = QComboBox()
+        self.mode_combo.setAccessibleName("聊天记忆方式")
+        mode_label = QLabel("聊天记忆方式")
+        mode_label.setBuddy(self.mode_combo)
         for mode, label in CHAT_MEMORY_MODES:
             self.mode_combo.addItem(label, mode)
         self.mode_help_label = QLabel()
         self.mode_help_label.setWordWrap(True)
-        self.semantic_check = QCheckBox("语义召回（换种说法也能想起来，模型在本机运行）")
+        self.mode_help_label.setProperty("role", "secondary")
+        self.semantic_check = QCheckBox("语义召回（本机模型）")
         self.semantic_status_label = QLabel()
         self.semantic_status_label.setWordWrap(True)
-        for widget in (self.mode_combo, self.mode_help_label, self.semantic_check, self.semantic_status_label):
-            layout.addWidget(widget)
+        self.semantic_status_label.setProperty("role", "secondary")
+        layout.addWidget(mode_label, 0, 0)
+        layout.addWidget(self.mode_combo, 0, 1)
+        layout.addWidget(self.mode_help_label, 1, 0, 1, 2)
+        layout.addWidget(self.semantic_check, 2, 0)
+        layout.addWidget(self.semantic_status_label, 2, 1)
+        layout.setColumnStretch(1, 1)
         self.mode_combo.currentIndexChanged.connect(self._mode_selected)
         self.semantic_check.toggled.connect(self._semantic_toggled)
         self._poll = QTimer(self)

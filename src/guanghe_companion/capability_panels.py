@@ -6,7 +6,6 @@ from dataclasses import replace
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
     QCheckBox,
-    QComboBox,
     QGridLayout,
     QGroupBox,
     QHBoxLayout,
@@ -19,6 +18,7 @@ from PySide6.QtWidgets import (
 )
 
 from .capability_settings import CapabilitySettings
+from .ui_controls import CompanionComboBox as QComboBox
 from .voice_provider_catalog import asr_provider_ids, tts_provider_ids
 
 
@@ -42,6 +42,7 @@ class CapabilitySettingsPanel(QWidget):
 
         capability_save_row = QHBoxLayout()
         self.capability_save_button = QPushButton("保存能力设置")
+        self.capability_save_button.setProperty("role", "primary")
         self.capability_save_button.clicked.connect(self.saveRequested)
         self.capability_feedback_label = QLabel("")
         self.capability_feedback_label.setWordWrap(True)
@@ -147,15 +148,15 @@ class CapabilitySettingsPanel(QWidget):
 
         layout.addWidget(self.screen_observation_enabled_check, 0, 0)
         layout.addWidget(self.screen_observation_auto_check, 0, 1)
-        layout.addWidget(QLabel("间隔秒数"), 1, 0)
+        layout.addWidget(QLabel("间隔（秒）"), 1, 0)
         layout.addWidget(self.screen_observation_interval_input, 1, 1)
-        layout.addWidget(QLabel("最长边"), 1, 2)
+        layout.addWidget(QLabel("最长边（像素）"), 1, 2)
         layout.addWidget(self.screen_observation_max_width_input, 1, 3)
         layout.addWidget(QLabel("模型"), 2, 0)
         layout.addWidget(self.screen_observation_model_input, 2, 1, 1, 3)
-        layout.addWidget(QLabel("Base URL"), 3, 0)
+        layout.addWidget(QLabel("服务地址"), 3, 0)
         layout.addWidget(self.screen_observation_base_url_input, 3, 1, 1, 3)
-        layout.addWidget(QLabel("API Key"), 4, 0)
+        layout.addWidget(QLabel("API 密钥"), 4, 0)
         layout.addWidget(self.screen_observation_api_key_input, 4, 1, 1, 3)
         layout.addWidget(self.screen_observation_run_button, 5, 0)
         layout.addWidget(self.screen_observation_status_label, 5, 1, 1, 3)
@@ -211,9 +212,9 @@ class CapabilitySettingsPanel(QWidget):
 
         layout.addWidget(self.proactive_companion_enabled_check, 0, 0, 1, 2)
         layout.addWidget(self.proactive_allow_context_topic_check, 0, 2, 1, 2)
-        layout.addWidget(QLabel("最小间隔秒数"), 1, 0)
+        layout.addWidget(QLabel("最小间隔（秒）"), 1, 0)
         layout.addWidget(self.proactive_interval_input, 1, 1)
-        layout.addWidget(QLabel("全局冷却秒数"), 1, 2)
+        layout.addWidget(QLabel("全局冷却（秒）"), 1, 2)
         layout.addWidget(self.proactive_global_cooldown_input, 1, 3)
         layout.addWidget(QLabel("每日上限"), 2, 0)
         layout.addWidget(self.proactive_daily_limit_input, 2, 1)
@@ -235,6 +236,7 @@ class ManualPerceptionPanel(QGroupBox):
         self.perception_status_label.setWordWrap(True)
         self.perception_privacy_label = QLabel("默认不会读取屏幕；只在手动触发时显示隐私提示。本轮不会自动截图，不会自动点击、输入或操作电脑。")
         self.perception_privacy_label.setWordWrap(True)
+        self.perception_privacy_label.setProperty("role", "secondary")
         self.observe_screen_button = QPushButton("手动触发屏幕感知")
         self.observe_screen_button.setMinimumHeight(36)
         self.observe_screen_button.clicked.connect(self.manualPerceptionRequested)
@@ -271,6 +273,7 @@ class VoiceSettingsPanel(QGroupBox):
 
         self.voice_status_label = QLabel("TTS 暂未启用 / ASR 暂未启用")
         self.voice_status_label.setWordWrap(True)
+        self.voice_status_label.setProperty("role", "status")
         self.voice_tts_provider_label = QLabel("tts_provider: disabled")
         self.voice_asr_provider_label = QLabel("asr_provider: disabled")
         self.voice_character_profile_label = QLabel("")
@@ -329,23 +332,23 @@ class VoiceSettingsPanel(QGroupBox):
         layout.addWidget(self.voice_asr_provider_label, 1, 2, 1, 2)
         layout.addWidget(self.voice_character_profile_label, 2, 0, 1, 4)
         layout.addWidget(self.tts_enabled_check, 3, 0)
-        layout.addWidget(QLabel("TTS provider"), 4, 0)
+        layout.addWidget(QLabel("朗读服务"), 4, 0)
         layout.addWidget(self.tts_provider_combo, 4, 1)
-        layout.addWidget(QLabel("TTS API URL"), 5, 0)
+        layout.addWidget(QLabel("朗读地址"), 5, 0)
         layout.addWidget(self.tts_api_url_input, 5, 1, 1, 3)
-        layout.addWidget(QLabel("TTS model/profile"), 6, 0)
+        layout.addWidget(QLabel("朗读模型"), 6, 0)
         layout.addWidget(self.tts_model_variant_combo, 6, 1)
         layout.addWidget(self.tts_auto_speak_check, 7, 0)
         layout.addWidget(self.tts_test_button, 7, 1)
         layout.addWidget(self.tts_stop_button, 7, 2)
         layout.addWidget(self.asr_enabled_check, 8, 0)
-        layout.addWidget(QLabel("ASR provider"), 9, 0)
+        layout.addWidget(QLabel("识别服务"), 9, 0)
         layout.addWidget(self.asr_provider_combo, 9, 1)
-        layout.addWidget(QLabel("ASR model"), 9, 2)
+        layout.addWidget(QLabel("识别模型"), 9, 2)
         layout.addWidget(self.asr_model_input, 9, 3)
-        layout.addWidget(QLabel("ASR Base URL"), 10, 0)
+        layout.addWidget(QLabel("识别地址"), 10, 0)
         layout.addWidget(self.asr_base_url_input, 10, 1, 1, 3)
-        layout.addWidget(QLabel("ASR API Key"), 11, 0)
+        layout.addWidget(QLabel("识别 API 密钥"), 11, 0)
         layout.addWidget(self.asr_api_key_input, 11, 1, 1, 3)
         layout.addWidget(self.asr_auto_send_check, 12, 0)
         layout.addWidget(self.asr_start_button, 12, 1)
