@@ -1,0 +1,17 @@
+Window: "星汐 E-Moti 桌面伴侣", App: python.exe.
+	0 窗口 (settable, string) 星汐 E-Moti 桌面伴侣 Secondary Actions: Raise ID: QApplication.CompanionWindow
+		1 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot
+			2 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget
+				3 窗格 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget
+					4 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget
+						5 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox
+							6 图像 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.SpriteInteractionLabel
+							11 文本 星汐: 这件事我先放进待确认了，你看一眼回忆册？ ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.QLabel
+							7 自定义 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar
+								8 编辑 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar.QLineEdit
+								9 按钮 (disabled, settable, string) Mic ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar.DialogueAsrButton
+								10 按钮 (settable, string) 发送 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar.QPushButton
+							12 按钮 (settable, string) 待确认 · 查看回忆 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.MemoryReceiptButton
+							13 按钮 (settable, string) 待确认回忆 1 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.MemoryPendingButton
+
+The focused UI element is 8 编辑 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QGroupBox.DesktopDialogueBar.QLineEdit.

@@ -232,6 +232,9 @@ class PluginEnabledCompanionController(_BaseController):
 
     def submit_dialogue_request(self, request, *, include_ai_expression: bool = False):
         self._require_dialogue_idle()
+        if self.is_quiet_request(request):
+            self.last_chat_memory_result = ChatMemoryResult("ignored")
+            return super().submit_dialogue_request(request, include_ai_expression=False)
         pending = self.story_runtime.memory.propose_explicit_user_memory(request.normalized_text(), now=int(self.now))
         result = ChatMemoryResult("pending") if pending else self._process_chat_memory(request)
         self.last_chat_memory_result = result
@@ -331,6 +334,9 @@ class PluginEnabledCompanionController(_BaseController):
         return self.last_chat_memory_result
 
     def _prepare_host_memory(self, request) -> bool:
+        if self.is_quiet_request(request):
+            self.last_chat_memory_result = ChatMemoryResult("ignored")
+            return False
         pending = self.story_runtime.memory.propose_explicit_user_memory(
             request.normalized_text(), now=int(self.now),
         )

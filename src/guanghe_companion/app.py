@@ -1345,7 +1345,6 @@ class CompanionWindow(QMainWindow):
         self.memory_pending_button.setToolTip("确认后才会长期记住")
         self.memory_pending_button.clicked.connect(self._open_pending_memories)
         self.memory_pending_button.hide()
-        dialogue_layout.addWidget(self.memory_pending_button)
         dialogue_layout.addWidget(self.dialogue_input, stretch=1)
         dialogue_layout.addWidget(self.dialogue_asr_button)
         dialogue_layout.addWidget(self.dialogue_send_button)
@@ -1353,11 +1352,17 @@ class CompanionWindow(QMainWindow):
         layout.addWidget(self.dialogue_bar)
         self.memory_receipt_button = QPushButton()
         self.memory_receipt_button.setObjectName("MemoryReceiptButton")
-        self.memory_receipt_button.setFlat(True)
+        self.memory_receipt_button.setMinimumHeight(30)
+        self.memory_receipt_button.setStyleSheet(
+            "QPushButton { border: 1px solid #b8c9d2; border-radius: 8px; "
+            "padding: 4px 8px; background: #ffffff; color: #29444f; }"
+            "QPushButton:hover { background: #edf7f8; }"
+        )
         self.memory_receipt_button.setToolTip("打开回忆册查看或修改")
         self.memory_receipt_button.clicked.connect(self._open_pending_memories)
         self.memory_receipt_button.hide()
         layout.addWidget(self.memory_receipt_button)
+        layout.addWidget(self.memory_pending_button)
         self.item_feedback_label = QLabel()
         self.item_feedback_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.item_feedback_label.setFixedSize(72, 72)
@@ -1666,6 +1671,16 @@ class CompanionWindow(QMainWindow):
         self.desktop_feedback_label.setFixedWidth(DESKTOP_WINDOW_WIDTH)
         self.dialogue_bar.setFixedWidth(DESKTOP_WINDOW_WIDTH)
         self.setFixedSize(DESKTOP_WINDOW_WIDTH, DESKTOP_WINDOW_HEIGHT)
+        self._fit_desktop_content()
+
+    def _fit_desktop_content(self) -> None:
+        if not self.desktop_mode:
+            return
+        self.hero_layout.invalidate()
+        height = self.hero_layout.totalHeightForWidth(DESKTOP_WINDOW_WIDTH)
+        if height < 0:
+            height = self.hero_layout.sizeHint().height()
+        self.setFixedHeight(max(DESKTOP_WINDOW_HEIGHT, height))
 
     def _enter_desktop_mode(self) -> None:
         if self.desktop_mode:
@@ -1947,15 +1962,21 @@ class CompanionWindow(QMainWindow):
         self._set_dialogue_busy(False)
         self._apply_snapshot(snapshot)
         self.desktop_feedback_label.show()
-        receipt = memory_receipt(self.controller.get_chat_memory_status()["last_result"])
-        self.memory_receipt_button.setText(receipt)
+        result = self.controller.get_chat_memory_status()["last_result"]
+        receipt = memory_receipt(result)
+        labels = {"saved": "记下了 · 查看回忆", "pending": "待确认 · 查看回忆",
+                  "clarify": "需要说明 · 查看回忆", "forgotten": "已忘记 · 查看回忆"}
+        self.memory_receipt_button.setText(labels.get(result.get("status"), receipt))
+        self.memory_receipt_button.setToolTip(receipt + "\n打开回忆册查看或修改")
         self.memory_receipt_button.setVisible(bool(receipt))
+        self._fit_desktop_content()
 
     def _handle_dialogue_failed(self, reason: str) -> None:
         self._set_dialogue_busy(False)
         self.dialogue_input.setText(self._dialogue_draft)
         self.desktop_feedback_label.setText(f"这句没有送达：{reason}")
         self.desktop_feedback_label.show()
+        self._fit_desktop_content()
 
     def _cancel_dialogue(self) -> None:
         self.desktop_dialogue.cancel()
@@ -2313,6 +2334,7 @@ class CompanionWindow(QMainWindow):
         self._sync_inventory_buttons(snapshot["inventory_items"])
         self._show_item_feedback(str(snapshot.get("item_feedback_icon") or ""))
         self._maybe_auto_speak_snapshot(snapshot)
+        self._fit_desktop_content()
 
     def _maybe_auto_speak_snapshot(self, snapshot: dict[str, object]) -> None:
         settings = self.controller.get_capability_settings().tts

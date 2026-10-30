@@ -24,6 +24,8 @@ def spoken_memory_result(result) -> str:
         return "……嗯，这件事我不记了。"
     if result is not None and result.status == "pending":
         return "这件事我先放进待确认了，你看一眼回忆册？"
+    if result is not None and result.status == "clarify":
+        return "唔，我还没弄清你说的是哪件事……再说具体一点，好吗？"
     return getattr(result, "message", "") or "这件事先放进待确认了，你可以在回忆册里确认或放弃。"
 
 
@@ -161,23 +163,30 @@ class ChatMemory:
         body = _CORRECTION.sub("", text)
         complete = body.rstrip("。！!")
         clauses = ([complete] if _parse_fact(complete) else
-                   [part.strip() for part in re.split(r"[，。；！]", body) if part.strip()])
+                   [part.strip() for part in re.split(r"([，。；！])", body) if part.strip()])
         source_id = f"chat:{uuid4().hex}"
         written: list[str] = []
         pending: list[str] = []
         inherited_subject = False
         for index, clause in enumerate(clauses):
-            if inherited_subject and clause.startswith(("喜欢", "不喜欢", "不太喜欢", "讨厌", "偏爱")):
-                clause = "我" + clause
+            if clause in {"，", "；"}:
+                continue
+            if clause in {"。", "！"}:
+                inherited_subject = False
+                continue
+            if inherited_subject and re.match(r"^(?:也|还)?(?:喜欢|不再喜欢|不喜欢|不太喜欢|讨厌|偏爱)", clause):
+                clause = "我" + re.sub(r"^(?:也|还)", "", clause)
             parsed = _parse_fact(clause)
             if parsed is None:
                 inherited_subject = False
                 continue
-            inherited_subject = True
+            inherited_subject = False
             value, domain, slot, summary, preference, change = parsed
             # 复句、转述及未解析的指代不落为独立原子事实。
             if any(word in value for word in ("但是", "因为", "所以", "他说", "她说", "觉得", "希望", "喜欢", "不喜欢", "不叫", "不是")):
                 continue
+            # 只有同句内已解析的第一人称自述允许省略主语；重复事实仍能引出后句。
+            inherited_subject = clause.startswith("我")
             related = [m for m in active if m.metadata.get("fact_slot") == slot]
             reversal = [m for m in active if preference and m.metadata.get("fact_value") == value
                         and str(m.metadata.get("fact_slot", "")).startswith(f"preference:{domain}:")

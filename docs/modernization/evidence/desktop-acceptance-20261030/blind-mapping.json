@@ -1,0 +1,72 @@
+[
+  {
+    "id": "answer_01",
+    "source": "gpt-6.1-terra-after-fix.json",
+    "case_id": "persona_rest"
+  },
+  {
+    "id": "answer_02",
+    "source": "gpt-6.1-terra-after-fix.json",
+    "case_id": "persona_work"
+  },
+  {
+    "id": "answer_03",
+    "source": "gpt-6-luna-after-fix.json",
+    "case_id": "persona_tease"
+  },
+  {
+    "id": "answer_04",
+    "source": "gpt-6.1-terra-after-fix.json",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "answer_05",
+    "source": "gpt-6.1-terra-after-fix.json",
+    "case_id": "persona_game"
+  },
+  {
+    "id": "answer_06",
+    "source": "gpt-6-luna-after-fix.json",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "answer_07",
+    "source": "gpt-6.1-terra-after-fix.json",
+    "case_id": "persona_refusal"
+  },
+  {
+    "id": "answer_08",
+    "source": "gpt-6-luna-after-fix.json",
+    "case_id": "persona_game"
+  },
+  {
+    "id": "answer_09",
+    "source": "gpt-6-luna-after-fix.json",
+    "case_id": "persona_rest"
+  },
+  {
+    "id": "answer_10",
+    "source": "gpt-6-luna-after-fix.json",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "answer_11",
+    "source": "gpt-6-luna-after-fix.json",
+    "case_id": "persona_work"
+  },
+  {
+    "id": "answer_12",
+    "source": "gpt-6.1-terra-after-fix.json",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "answer_13",
+    "source": "gpt-6-luna-after-fix.json",
+    "case_id": "persona_refusal"
+  },
+  {
+    "id": "answer_14",
+    "source": "gpt-6.1-terra-after-fix.json",
+    "case_id": "persona_tease"
+  }
+]
