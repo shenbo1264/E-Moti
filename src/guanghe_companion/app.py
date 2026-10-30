@@ -70,7 +70,11 @@ from .character_registry import (
 )
 from .plugin_enabled_controller import PluginEnabledCompanionController as CompanionController
 from .focus_companion_qt import create_focus_companion_widget
+from .controller import HostDialogueBusyError
+from .desktop_dialogue_service import DesktopDialogueService
 from .memory_album_qt import create_memory_album_widget
+from .memory_settings_qt import MemorySettingsPanel
+from .memory_settings_view_model import memory_receipt
 from .mobile_link_qt import MobileLinkPanel
 from .plugin_center_qt import create_plugin_center_widget
 from .dialogue import DialogueRequest
@@ -626,6 +630,13 @@ class CompanionWindow(QMainWindow):
         self._base_expression_context_provider = self.controller.expression_context_provider
         self._manual_expression_context_provider = self.controller.expression_context_provider
         self._install_manual_expression_context_provider()
+        self._dialogue_busy = False
+        self._dialogue_draft = ""
+        self.desktop_dialogue: DesktopDialogueService | None = None
+        if hasattr(self.controller, "prepare_semantic_recall"):
+            self.desktop_dialogue = DesktopDialogueService(self.controller, parent=self)
+            self.desktop_dialogue.snapshot_changed.connect(self._handle_dialogue_finished)
+            self.desktop_dialogue.failed.connect(self._handle_dialogue_failed)
 
         configure_application_style(QApplication.instance())
         self.setWindowTitle("星汐 E-Moti 桌面伴侣")
@@ -674,6 +685,8 @@ class CompanionWindow(QMainWindow):
         self.countdown_timer.stop()
         self.screen_observation_timer.stop()
         try:
+            if self.desktop_dialogue is not None:
+                self.desktop_dialogue.close()
             self.mobile_link_page.close_link()
         except Exception:
             pass
@@ -865,12 +878,20 @@ class CompanionWindow(QMainWindow):
         voice_layout.addStretch(1)
         self.content_stack.addWidget(voice_page)
 
+        self.memory_settings_panel = None
         memory_album_controller = getattr(self.controller, "memory_album_controller", None)
         if memory_album_controller is not None:
             self.memory_album_page = create_memory_album_widget(
                 self.controller,
                 on_changed=lambda: self._apply_snapshot(self.controller.get_snapshot()),
             )
+            if hasattr(self.controller, "get_chat_memory_status"):
+                self.memory_settings_panel = MemorySettingsPanel(
+                    self.controller,
+                    data_root=self.controller.user_data_root,
+                    on_changed=lambda: self._apply_snapshot(self.controller.get_snapshot()),
+                )
+                self.memory_album_page.layout().insertWidget(0, self.memory_settings_panel)
         else:
             self.memory_album_page = QWidget()
             memory_album_layout = QVBoxLayout(self.memory_album_page)
@@ -1330,6 +1351,13 @@ class CompanionWindow(QMainWindow):
         dialogue_layout.addWidget(self.dialogue_send_button)
         self.dialogue_bar.hide()
         layout.addWidget(self.dialogue_bar)
+        self.memory_receipt_button = QPushButton()
+        self.memory_receipt_button.setObjectName("MemoryReceiptButton")
+        self.memory_receipt_button.setFlat(True)
+        self.memory_receipt_button.setToolTip("打开回忆册查看或修改")
+        self.memory_receipt_button.clicked.connect(self._open_pending_memories)
+        self.memory_receipt_button.hide()
+        layout.addWidget(self.memory_receipt_button)
         self.item_feedback_label = QLabel()
         self.item_feedback_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.item_feedback_label.setFixedSize(72, 72)
@@ -1876,20 +1904,63 @@ class CompanionWindow(QMainWindow):
 
     @Slot()
     def _handle_dialogue_submit(self) -> None:
+        if self._dialogue_busy:
+            self._cancel_dialogue()
+            return
         text = self.dialogue_input.text().strip()
         if text.startswith("/search "):
             query = text[len("/search ") :].strip()
             self.dialogue_input.clear()
             self._run_web_search(query)
             return
-        request = DialogueRequest(text=text)
-        snapshot = self.controller.submit_dialogue_request(
-            request,
-            include_ai_expression=self._llm_expression_enabled(),
-        )
+        self._submit_dialogue(DialogueRequest(text=text))
+
+    def _submit_dialogue(self, request: DialogueRequest) -> None:
+        self.memory_receipt_button.hide()
+        if self.desktop_dialogue is None:
+            snapshot = self.controller.submit_dialogue_request(
+                request,
+                include_ai_expression=self._llm_expression_enabled(),
+            )
+            self.dialogue_input.clear()
+            self._apply_snapshot(snapshot)
+            self.desktop_feedback_label.show()
+            return
+        try:
+            self.desktop_dialogue.submit(request, include_ai_expression=self._llm_expression_enabled())
+        except HostDialogueBusyError:
+            self.desktop_feedback_label.setText(f"{self.controller.state.character_name}还在回上一句，等一下。")
+            self.desktop_feedback_label.show()
+            return
+        self._dialogue_draft = self.dialogue_input.text()
         self.dialogue_input.clear()
+        self._set_dialogue_busy(True)
+
+    def _set_dialogue_busy(self, busy: bool) -> None:
+        self._dialogue_busy = busy
+        self.dialogue_input.setEnabled(not busy)
+        self.dialogue_send_button.setText("取消" if busy else "发送")
+        if not busy:
+            self.dialogue_input.setFocus()
+
+    def _handle_dialogue_finished(self, snapshot: dict[str, object]) -> None:
+        self._set_dialogue_busy(False)
         self._apply_snapshot(snapshot)
         self.desktop_feedback_label.show()
+        receipt = memory_receipt(self.controller.get_chat_memory_status()["last_result"])
+        self.memory_receipt_button.setText(receipt)
+        self.memory_receipt_button.setVisible(bool(receipt))
+
+    def _handle_dialogue_failed(self, reason: str) -> None:
+        self._set_dialogue_busy(False)
+        self.dialogue_input.setText(self._dialogue_draft)
+        self.desktop_feedback_label.setText(f"这句没有送达：{reason}")
+        self.desktop_feedback_label.show()
+
+    def _cancel_dialogue(self) -> None:
+        self.desktop_dialogue.cancel()
+        self._set_dialogue_busy(False)
+        self.dialogue_input.setText(self._dialogue_draft)
 
     def _handle_player_alias_save(self) -> None:
         snapshot = self.controller.set_player_alias(
@@ -2025,13 +2096,7 @@ class CompanionWindow(QMainWindow):
             return
         self.dialogue_input.setText(result.text)
         if result.dialogue_request is not None:
-            snapshot = self.controller.submit_dialogue_request(
-                result.dialogue_request,
-                include_ai_expression=self._llm_expression_enabled(),
-            )
-            self.dialogue_input.clear()
-            self._apply_snapshot(snapshot)
-            self.desktop_feedback_label.show()
+            self._submit_dialogue(result.dialogue_request)
 
     def _handle_expression_settings_save(self) -> None:
         settings = self._save_expression_settings_from_form()
