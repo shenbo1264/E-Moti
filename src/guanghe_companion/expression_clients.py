@@ -157,7 +157,7 @@ class OpenAICompatibleChatClient:
     def __call__(self, prompt: str) -> str:
         return self.complete(prompt)
 
-    def complete(self, prompt: str, *, system_prompt: str = "") -> str:
+    def complete(self, prompt: str, *, system_prompt: str = "", timeout_seconds: float | None = None) -> str:
         if self._closed:
             raise _provider_error("OpenAI-compatible expression provider failed", "closed")
         if self.require_api_key and not self.api_key:
@@ -195,7 +195,7 @@ class OpenAICompatibleChatClient:
             method="POST",
         )
         try:
-            raw = self.transport(api_request, self.timeout_seconds)
+            raw = self.transport(api_request, self.timeout_seconds if timeout_seconds is None else min(self.timeout_seconds, timeout_seconds))
             if not isinstance(raw, (bytes, bytearray)):
                 raise _provider_error("OpenAI-compatible expression provider failed", "invalid_response_bytes")
             if len(raw) > MAX_OPENAI_RESPONSE_BYTES:

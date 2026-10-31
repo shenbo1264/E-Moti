@@ -1,0 +1,167 @@
+[
+  {
+    "id": "sample_01",
+    "phase": "after",
+    "case_id": "grounded_allergy_control"
+  },
+  {
+    "id": "sample_02",
+    "phase": "before",
+    "case_id": "community_stapler_joke"
+  },
+  {
+    "id": "sample_03",
+    "phase": "before",
+    "case_id": "community_slow_reply_disagreement"
+  },
+  {
+    "id": "sample_04",
+    "phase": "before",
+    "case_id": "voice_user_typo"
+  },
+  {
+    "id": "sample_05",
+    "phase": "after",
+    "case_id": "voice_requested_intro"
+  },
+  {
+    "id": "sample_06",
+    "phase": "after",
+    "case_id": "voice_user_typo"
+  },
+  {
+    "id": "sample_07",
+    "phase": "after",
+    "case_id": "community_stapler_joke"
+  },
+  {
+    "id": "sample_08",
+    "phase": "before",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "sample_09",
+    "phase": "after",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "sample_10",
+    "phase": "before",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "sample_11",
+    "phase": "before",
+    "case_id": "voice_requested_intro"
+  },
+  {
+    "id": "sample_12",
+    "phase": "before",
+    "case_id": "community_paper_crane_share"
+  },
+  {
+    "id": "sample_13",
+    "phase": "after",
+    "case_id": "persona_tease"
+  },
+  {
+    "id": "sample_14",
+    "phase": "after",
+    "case_id": "community_music_box_senses"
+  },
+  {
+    "id": "sample_15",
+    "phase": "before",
+    "case_id": "holdout_unhealthy_claim"
+  },
+  {
+    "id": "sample_16",
+    "phase": "before",
+    "case_id": "persona_tease"
+  },
+  {
+    "id": "sample_17",
+    "phase": "after",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "sample_18",
+    "phase": "after",
+    "case_id": "holdout_corrected_plan"
+  },
+  {
+    "id": "sample_19",
+    "phase": "before",
+    "case_id": "community_vending_vent"
+  },
+  {
+    "id": "sample_20",
+    "phase": "after",
+    "case_id": "community_scarf_typo"
+  },
+  {
+    "id": "sample_21",
+    "phase": "before",
+    "case_id": "community_scarf_typo"
+  },
+  {
+    "id": "sample_22",
+    "phase": "after",
+    "case_id": "community_corrected_teacher"
+  },
+  {
+    "id": "sample_23",
+    "phase": "after",
+    "case_id": "community_paper_crane_share"
+  },
+  {
+    "id": "sample_24",
+    "phase": "after",
+    "case_id": "community_slow_reply_disagreement"
+  },
+  {
+    "id": "sample_25",
+    "phase": "before",
+    "case_id": "holdout_corrected_plan"
+  },
+  {
+    "id": "sample_26",
+    "phase": "after",
+    "case_id": "holdout_unhealthy_claim"
+  },
+  {
+    "id": "sample_27",
+    "phase": "after",
+    "case_id": "community_thanks_wording"
+  },
+  {
+    "id": "sample_28",
+    "phase": "before",
+    "case_id": "community_thanks_wording"
+  },
+  {
+    "id": "sample_29",
+    "phase": "before",
+    "case_id": "holdout_cloud_chat"
+  },
+  {
+    "id": "sample_30",
+    "phase": "after",
+    "case_id": "holdout_cloud_chat"
+  },
+  {
+    "id": "sample_31",
+    "phase": "after",
+    "case_id": "community_vending_vent"
+  },
+  {
+    "id": "sample_32",
+    "phase": "before",
+    "case_id": "community_music_box_senses"
+  },
+  {
+    "id": "sample_33",
+    "phase": "before",
+    "case_id": "community_corrected_teacher"
+  }
+]

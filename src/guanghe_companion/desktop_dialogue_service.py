@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, Qt, Signal, Slot
 
 from .chat_memory import ChatMemoryResult
 from .controller import HostDialogueBusyError, HostDialogueStaleError
+from .expression_expressor import ShinsekaiAIExpressor
 
 
 class DesktopDialogueService(QObject):
@@ -134,6 +135,8 @@ class DesktopDialogueService(QObject):
     def _express(ticket):
         if ticket.cancelled.is_set():
             raise HostDialogueStaleError("cancelled before expression")
+        if isinstance(ticket.expressor, ShinsekaiAIExpressor):
+            return ticket.expressor.express(ticket.expression_request, effect="ATTENTION", cancel_event=ticket.cancelled)
         return ticket.expressor.express(ticket.expression_request, effect="ATTENTION")
 
     def _complete(self, work):

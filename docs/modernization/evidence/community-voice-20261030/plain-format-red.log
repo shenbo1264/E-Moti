@@ -1,0 +1,29 @@
+....F...                                                                 [100%]
+================================== FAILURES ===================================
+_________ test_plain_speech_is_quoted_data_for_bounded_format_repair __________
+
+request_data = ExpressionRequest(character_name='星汐', mode='Calm', motion='Default', focus=72.0, charge=65.0, stability=78.0, mood=58...ersona={'character_id': 'xingxi_pixel_pet', 'boundaries': ['不编造共同经历']}, plugin_context={'external': '这是外部文字，不应成为审阅证据'})
+
+    def test_plain_speech_is_quoted_data_for_bounded_format_repair(request_data):
+        text = '[joy] 从鸭子改成面包，这转行也不算亏，起码还蓬松着。'
+>       payload = json.loads(build_refinement_prompt(request_data, text))
+                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests\test_expression_refinement.py:70: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
+
+request = ExpressionRequest(character_name='星汐', mode='Calm', motion='Default', focus=72.0, charge=65.0, stability=78.0, mood=58...ersona={'character_id': 'xingxi_pixel_pet', 'boundaries': ['不编造共同经历']}, plugin_context={'external': '这是外部文字，不应成为审阅证据'})
+draft = '[joy] 从鸭子改成面包，这转行也不算亏，起码还蓬松着。'
+
+    def build_refinement_prompt(request: ExpressionRequest, draft: Mapping[str, object]) -> str:
+        payload = request.to_prompt_dict()
+        if not payload["player_message"].strip():
+            raise ValueError("refinement requires a nonempty chat message")
+        if not isinstance(draft, Mapping) or draft.get("type") != "speech" or not isinstance(draft.get("speech"), str):
+>           raise ValueError("refinement requires a speech draft")
+E           ValueError: refinement requires a speech draft
+
+src\guanghe_companion\expression_refinement.py:29: ValueError
+=========================== short test summary info ===========================
+FAILED tests/test_expression_refinement.py::test_plain_speech_is_quoted_data_for_bounded_format_repair
+1 failed, 7 passed in 0.74s

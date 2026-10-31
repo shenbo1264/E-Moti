@@ -1,0 +1,42 @@
+F.                                                                       [100%]
+================================== FAILURES ===================================
+____ test_chat_refines_once_with_remaining_budget_and_cancellation[False] _____
+
+tmp_path = WindowsPath('E:/Temp/19970/pytest-of-19970/pytest-2710/test_chat_refines_once_with_re0')
+recorded_answer = '{"type":"speech","speech":"[calm] 那就不做，今天先让脑子空着。我在桌角待着，不吵你。","effect":"ATTENTION","motion_hint":"Default","intent_hint":"offer_rest"}'
+cancel_after_draft = False
+
+    @pytest.mark.parametrize('cancel_after_draft', [False, True])
+    def test_chat_refines_once_with_remaining_budget_and_cancellation(tmp_path, recorded_answer, cancel_after_draft):
+        captured = []
+        cancel = Event()
+    
+        def transport(request, timeout):
+            captured.append((json.loads(request.data), timeout))
+            if cancel_after_draft:
+                cancel.set()
+            # 回放已保存的真实模型文本，只检查调用契约，不代表模型效果验收。
+            content = recorded_answer if len(captured) == 1 else json.dumps({
+                'edits': [], 'speech': json.loads(recorded_answer)['speech'],
+            }, ensure_ascii=False)
+            return json.dumps({'choices': [{'message': {'content': content}}]}).encode()
+    
+        client = OpenAICompatibleChatClient(api_key='protocol', json_response=True, transport=transport)
+        expressor = ShinsekaiAIExpressor(llm_client=client, timeout_seconds=10)
+        controller = PluginEnabledCompanionController(user_data_root=tmp_path)
+        try:
+            controller._current_player_message = '今天什么都不想做。'
+            request = ExpressionRequest.from_snapshot(controller.get_typed_snapshot(), context=controller.get_expression_context())
+            expressor.express(request, cancel_event=cancel)
+            assert len(captured) == (1 if cancel_after_draft else 2)
+            if cancel_after_draft:
+                assert expressor.last_fallback_reason == 'cancelled'
+            else:
+>               assert expressor.last_fallback_reason is None
+E               AssertionError: assert 'unsafe_event' is None
+E                +  where 'unsafe_event' = <guanghe_companion.expression_expressor.ShinsekaiAIExpressor object at 0x0000023EFE4B1B10>.last_fallback_reason
+
+tests\test_dialogue_refinement_flow.py:45: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_dialogue_refinement_flow.py::test_chat_refines_once_with_remaining_budget_and_cancellation[False]
+1 failed, 1 passed in 0.30s

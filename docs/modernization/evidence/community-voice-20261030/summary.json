@@ -1,0 +1,214 @@
+{
+  "dev-before": {
+    "cases": 8,
+    "status": {
+      "completed": 8
+    },
+    "calls": 16,
+    "tokens": 35152,
+    "median_call_ms": 1405.5,
+    "median_case_ms": 3991.5,
+    "missing": {},
+    "leaked": {}
+  },
+  "dev-positive": {
+    "cases": 8,
+    "status": {
+      "completed": 8
+    },
+    "calls": 16,
+    "tokens": 29150,
+    "median_call_ms": 1459.5,
+    "median_case_ms": 3045.0,
+    "missing": {},
+    "leaked": {}
+  },
+  "dev-examples": {
+    "cases": 8,
+    "status": {
+      "completed": 7,
+      "failed": 1
+    },
+    "calls": 16,
+    "tokens": 30414,
+    "median_call_ms": 1353.5,
+    "median_case_ms": 3276.5,
+    "missing": {},
+    "leaked": {}
+  },
+  "dev-refine": {
+    "cases": 8,
+    "status": {
+      "completed": 8
+    },
+    "calls": 28,
+    "tokens": 71934,
+    "median_call_ms": 2631.5,
+    "median_case_ms": 8327.0,
+    "missing": {},
+    "leaked": {}
+  },
+  "dev-refine-evidence": {
+    "cases": 8,
+    "status": {
+      "completed": 8
+    },
+    "calls": 28,
+    "tokens": 49497,
+    "median_call_ms": 1565.5,
+    "median_case_ms": 6993.0,
+    "missing": {},
+    "leaked": {}
+  },
+  "holdout-before": {
+    "cases": 8,
+    "status": {
+      "completed": 8
+    },
+    "calls": 18,
+    "tokens": 36794,
+    "median_call_ms": 1202.0,
+    "median_case_ms": 3518.5,
+    "missing": {
+      "community_corrected_teacher": [
+        "江屿"
+      ]
+    },
+    "leaked": {
+      "community_corrected_teacher": [
+        "老师叫林澈"
+      ]
+    }
+  },
+  "final": {
+    "cases": 17,
+    "status": {
+      "completed": 16,
+      "failed": 1
+    },
+    "calls": 57,
+    "tokens": 100379,
+    "median_call_ms": 2007,
+    "median_case_ms": 7372,
+    "missing": {
+      "community_corrected_teacher": [
+        "江屿"
+      ]
+    },
+    "leaked": {
+      "community_corrected_teacher": [
+        "老师叫林澈"
+      ]
+    }
+  },
+  "production-final": {
+    "cases": 17,
+    "status": {
+      "completed": 17
+    },
+    "calls": 58,
+    "tokens": 106364,
+    "median_call_ms": 2124.5,
+    "median_case_ms": 6094,
+    "missing": {
+      "community_corrected_teacher": [
+        "江屿"
+      ]
+    },
+    "leaked": {
+      "community_corrected_teacher": [
+        "老师叫林澈"
+      ]
+    }
+  },
+  "structured-final": {
+    "cases": 17,
+    "status": {
+      "completed": 17
+    },
+    "calls": 58,
+    "tokens": 111195,
+    "median_call_ms": 2277.5,
+    "median_case_ms": 9588,
+    "missing": {
+      "community_corrected_teacher": [
+        "江屿"
+      ]
+    },
+    "leaked": {
+      "community_corrected_teacher": [
+        "老师叫林澈"
+      ]
+    }
+  },
+  "accepted-final": {
+    "cases": 17,
+    "status": {
+      "completed": 17
+    },
+    "calls": 60,
+    "tokens": 126863,
+    "median_call_ms": 2379.5,
+    "median_case_ms": 11736,
+    "missing": {
+      "community_corrected_teacher": [
+        "江屿"
+      ]
+    },
+    "leaked": {
+      "community_corrected_teacher": [
+        "老师叫林澈"
+      ]
+    }
+  },
+  "before_dev_review": {
+    "partial": 4,
+    "pass": 4
+  },
+  "before_holdout_review": {
+    "pass": 5,
+    "partial": 2,
+    "fail": 1
+  },
+  "before_control_review": {},
+  "after_dev_review": {
+    "pass": 7,
+    "partial": 1
+  },
+  "after_holdout_review": {
+    "pass": 6,
+    "partial": 2
+  },
+  "after_control_review": {
+    "pass": 1
+  },
+  "accepted-before_dev_review": {
+    "partial": 5,
+    "pass": 3
+  },
+  "accepted-before_holdout_review": {
+    "partial": 2,
+    "pass": 5,
+    "fail": 1
+  },
+  "accepted-before_control_review": {},
+  "accepted-after_dev_review": {
+    "pass": 8
+  },
+  "accepted-after_holdout_review": {
+    "pass": 8
+  },
+  "accepted-after_control_review": {
+    "pass": 1
+  },
+  "accepted_dev_paired": {
+    "tokens": 58286,
+    "median_case_ms": 11321.0,
+    "calls": 28
+  },
+  "accepted_holdout_paired": {
+    "tokens": 64032,
+    "median_case_ms": 14448.0,
+    "calls": 30
+  }
+}

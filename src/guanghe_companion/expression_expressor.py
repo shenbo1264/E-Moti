@@ -2,6 +2,8 @@ from __future__ import annotations
 
 import json
 import sys
+from threading import Event
+from time import monotonic
 from collections.abc import Mapping
 from concurrent.futures import ThreadPoolExecutor, TimeoutError
 
@@ -11,6 +13,7 @@ from .companion_dialogue_policy import (
     PERFORMANCE_QUALITY_GUIDANCE,
 )
 from .engine import create_initial_state
+from .expression_refinement import build_refinement_prompt, review_rules
 from .events import build_fallback_events, validate_events
 from .expression_clients import (
     DEFAULT_TIMEOUT_SECONDS,
@@ -157,6 +160,7 @@ class ShinsekaiAIExpressor:
         self,
         snapshot: dict[str, object] | CompanionSnapshot | ExpressionRequest,
         effect: str | None = None,
+        *, cancel_event: Event | None = None,
     ) -> list[dict[str, str]]:
         self.last_visual_actions = ()
         self.last_interaction_intents = ()
@@ -179,7 +183,11 @@ class ShinsekaiAIExpressor:
             return build_fallback_events(state, fallback_feedback, choices, effect=fallback_effect)
 
         try:
-            raw = self._call_llm(self.build_prompt(snapshot))
+            raw = self._call_llm(
+                self.build_prompt(snapshot),
+                review_request=expression_request if expression_request.player_message.strip() else None,
+                cancel_event=cancel_event,
+            )
             raw = _json_candidate_from_llm_text(_validated_llm_response_text(raw))
             try:
                 payload = json.loads(raw)
@@ -233,7 +241,8 @@ class ShinsekaiAIExpressor:
             self.last_interaction_intents = interaction_intents
         return validated_events
 
-    def _call_llm(self, prompt: str) -> str:
+    def _call_llm(self, prompt: str, *, review_request: ExpressionRequest | None = None,
+                  cancel_event: Event | None = None) -> str:
         if self._closed:
             raise LLMProviderError("LLM expression provider failed: closed")
         if self.llm_client is None:
@@ -243,8 +252,8 @@ class ShinsekaiAIExpressor:
             if isinstance(self.llm_client, OpenAICompatibleChatClient):
                 # 仅表达调用携带固定规则；用户/角色/记忆仍留在原始只读输入中。
                 future = executor.submit(
-                    self.llm_client.complete, prompt,
-                    system_prompt="\n".join(EXPRESSION_DIALOGUE_GUARDRAILS),
+                    self._complete_chat, self.llm_client, prompt, review_request,
+                    cancel_event, monotonic() + self.timeout_seconds,
                 )
             else:
                 future = executor.submit(self.llm_client, prompt)
@@ -266,6 +275,47 @@ class ShinsekaiAIExpressor:
             except Exception:
                 pass
             raise
+
+    def _complete_chat(self, client, prompt, review_request, cancel_event, deadline):
+        def remaining():
+            if self._closed or (cancel_event is not None and cancel_event.is_set()):
+                raise _ExpressionPayloadError("cancelled")
+            budget = deadline - monotonic()
+            if budget <= 0:
+                raise TimeoutError()
+            return budget
+
+        draft = client.complete(prompt, system_prompt="\n".join(EXPRESSION_DIALOGUE_GUARDRAILS),
+                                timeout_seconds=remaining())
+        if review_request is None or not client.json_response:
+            return draft
+        remaining()
+        # 模型偶尔输出普通台词；同一次修订兼顾格式，不新增第三次调用。
+        candidate = _json_candidate_from_llm_text(_validated_llm_response_text(draft))
+        try:
+            event = json.loads(candidate)
+        except json.JSONDecodeError:
+            event = candidate
+        state = _state_from_snapshot(review_request.to_prompt_dict())
+        if not isinstance(event, str) and (not isinstance(event, dict) or _normalize_expression_event(state, event) is None):
+            return draft
+        try:
+            refinement = build_refinement_prompt(review_request, event)
+        except ValueError as exc:
+            raise _ExpressionPayloadError("refinement_context_too_large") from exc
+        # 同一个 future、deadline 和不可变请求；草稿从不进入事件、历史或 TTS。
+        reviewed = client.complete(refinement, system_prompt=review_rules(), timeout_seconds=remaining())
+        try:
+            result = json.loads(_json_candidate_from_llm_text(_validated_llm_response_text(reviewed)))
+        except json.JSONDecodeError as exc:
+            raise _ExpressionPayloadError("invalid_refinement") from exc
+        if (not isinstance(result, dict) or set(result) != {"edits", "speech"}
+                or not isinstance(result["edits"], list) or not isinstance(result["speech"], str)):
+            raise _ExpressionPayloadError("invalid_refinement")
+        # 修订只能改台词；演出提示沿用草稿，最终仍统一执行事件校验。
+        final = dict(event) if isinstance(event, dict) else {"type": "speech", "effect": "ATTENTION"}
+        final["speech"] = result["speech"]
+        return json.dumps(final, ensure_ascii=False)
 
     def _ensure_executor(self) -> ThreadPoolExecutor:
         if self._executor is None:
