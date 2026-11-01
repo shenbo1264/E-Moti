@@ -19,11 +19,11 @@ ____ test_json_client_sends_format_system_message_without_promoting_input _____
 
     def test_json_client_sends_format_system_message_without_promoting_input():
         captured = {}
-    
+
         def stop_before_network(request, timeout):
             captured.update(json.loads(request.data))
             raise LLMProviderError("contract inspection; no network response")
-    
+
         settings = normalize_expression_settings({
             "enabled": True, "provider": "deepseek", "api_key": "contract-only",
             "model": "deepseek-flash",
@@ -35,7 +35,7 @@ ____ test_json_client_sends_format_system_message_without_promoting_input _____
         assert captured["response_format"] == {"type": "json_object"}
 >       assert captured["messages"][0]["role"] == "system"
 E       AssertionError: assert 'user' == 'system'
-E         
+E
 E         - system
 E         + user
 

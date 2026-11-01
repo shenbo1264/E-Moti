@@ -10,14 +10,14 @@ cancel_after_draft = False
     def test_chat_refines_once_with_remaining_budget_and_cancellation(tmp_path, recorded_answer, cancel_after_draft):
         captured = []
         cancel = Event()
-    
+
         def transport(request, timeout):
             captured.append((json.loads(request.data), timeout))
             if cancel_after_draft:
                 cancel.set()
             # 回放已保存的真实模型文本，只检查调用契约，不代表模型效果验收。
             return json.dumps({'choices': [{'message': {'content': recorded_answer}}]}).encode()
-    
+
         client = OpenAICompatibleChatClient(api_key='protocol', json_response=True, transport=transport)
         expressor = ShinsekaiAIExpressor(llm_client=client, timeout_seconds=10)
         controller = PluginEnabledCompanionController(user_data_root=tmp_path)
@@ -38,14 +38,14 @@ cancel_after_draft = True
     def test_chat_refines_once_with_remaining_budget_and_cancellation(tmp_path, recorded_answer, cancel_after_draft):
         captured = []
         cancel = Event()
-    
+
         def transport(request, timeout):
             captured.append((json.loads(request.data), timeout))
             if cancel_after_draft:
                 cancel.set()
             # 回放已保存的真实模型文本，只检查调用契约，不代表模型效果验收。
             return json.dumps({'choices': [{'message': {'content': recorded_answer}}]}).encode()
-    
+
         client = OpenAICompatibleChatClient(api_key='protocol', json_response=True, transport=transport)
         expressor = ShinsekaiAIExpressor(llm_client=client, timeout_seconds=10)
         controller = PluginEnabledCompanionController(user_data_root=tmp_path)

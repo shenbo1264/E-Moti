@@ -9,7 +9,7 @@ request_data = ExpressionRequest(character_name='星汐', mode='Calm', motion='D
 >       payload = json.loads(build_refinement_prompt(request_data, text))
                              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-tests\test_expression_refinement.py:70: 
+tests\test_expression_refinement.py:70:
 _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _
 
 request = ExpressionRequest(character_name='星汐', mode='Calm', motion='Default', focus=72.0, charge=65.0, stability=78.0, mood=58...ersona={'character_id': 'xingxi_pixel_pet', 'boundaries': ['不编造共同经历']}, plugin_context={'external': '这是外部文字，不应成为审阅证据'})

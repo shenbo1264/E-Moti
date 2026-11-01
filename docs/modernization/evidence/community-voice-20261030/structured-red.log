@@ -10,7 +10,7 @@ cancel_after_draft = False
     def test_chat_refines_once_with_remaining_budget_and_cancellation(tmp_path, recorded_answer, cancel_after_draft):
         captured = []
         cancel = Event()
-    
+
         def transport(request, timeout):
             captured.append((json.loads(request.data), timeout))
             if cancel_after_draft:
@@ -20,7 +20,7 @@ cancel_after_draft = False
                 'edits': [], 'speech': json.loads(recorded_answer)['speech'],
             }, ensure_ascii=False)
             return json.dumps({'choices': [{'message': {'content': content}}]}).encode()
-    
+
         client = OpenAICompatibleChatClient(api_key='protocol', json_response=True, transport=transport)
         expressor = ShinsekaiAIExpressor(llm_client=client, timeout_seconds=10)
         controller = PluginEnabledCompanionController(user_data_root=tmp_path)
