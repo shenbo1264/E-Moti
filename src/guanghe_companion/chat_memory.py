@@ -40,6 +40,7 @@ _CHANGE = re.compile(r"^我(?:现在|以后|已经)?改(?:喝|吃|用)(?P<value>
 _FACT = re.compile(r"^我(?:现在|目前)?(?P<verb>住在|从事|的职业是|的工作是)(?P<value>[^，。；！!?？]{1,40})$")
 _DRINK = re.compile(r"茶|咖啡|饮料|饮品|汽水|果汁|牛奶|可乐|豆浆|白开水")
 _CORRECTION = re.compile(r"^(?:刚才说错了|之前说错了|我说错了|我记错了|更正一下|纠正一下)[，,:： ]*")
+_WEEKLY = re.compile(r"^我(?:(?P<change>(?:以后|现在|今后)?改(?:成|为))每?|每)(?:周|星期)(?P<day>[一二三四五六日天])去(?P<activity>[\u4e00-\u9fff]{1,20}?)(?:了)?$")
 _COMMON_FACTS = (
     (re.compile(r"^我对(?P<value>[^，。；！!?？]{1,30})过敏$"), "过敏", "用户对{value}过敏", False),
     (re.compile(r"^我(?:长期|一直|从来)(?:都)?不吃(?P<value>[^，。；！!?？]{1,30})$"), "长期忌口", "用户长期不吃{value}", False),
@@ -78,11 +79,20 @@ def matches_forget_target(target: str, entry) -> bool:
         return False
     if len(target) == 1 and target not in {"猫", "狗", "茶"}:
         return False
+    slot = str(entry.metadata.get("fact_slot", ""))
+    if slot.startswith("weekly:") and target in {slot[7:] + "安排", slot[7:] + "时间"}:
+        return True
     summary = re.sub(r"^(?:用户|我)的?", "", entry.summary)
     return target in summary or target in str(entry.metadata.get("fact_domain", ""))
 
 
 def _parse_fact(clause):
+    weekly = _WEEKLY.fullmatch(clause)
+    if weekly and not re.search(r"不|没|或|和|然后|但是|因为|所以", weekly["activity"]):
+        activity = weekly["activity"]
+        day = "日" if weekly["day"] == "天" else weekly["day"]
+        value = f"每周{day}去{activity}"
+        return value, "每周安排", f"weekly:{activity}", f"用户{value}", False, bool(weekly["change"])
     preference = _PREFERENCE.fullmatch(clause)
     change = _CHANGE.fullmatch(clause)
     fact = _FACT.fullmatch(clause)
@@ -196,6 +206,9 @@ class ChatMemory:
             if any(m.summary == summary for m in related):
                 continue
             target = related[0] if len(related) == 1 else None
+            if slot.startswith("weekly:") and change and target is None:
+                # 单个星期日不能凭空提升为每周重复；改期只继承同一活动的已授权频率。
+                return ChatMemoryResult("clarify", "请说明原来的每周安排，以及要改到哪一天。", tuple(written))
             metadata = {"speaker": "user", "scene": "companion_chat", "original_quote": text,
                         "message_id": source_id, "recorded_at": datetime.now(timezone.utc).isoformat(),
                         "fact_slot": slot, "fact_domain": domain, "fact_value": value,

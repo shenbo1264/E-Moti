@@ -16,13 +16,20 @@ from .expression_clients import LLMClient
 _UNSAFE = re.compile(r"假如|假设|如果|也许|可能|据说|他说|她说|朋友说|我(?:的)?(?:朋友|家人|同事|妈妈|爸爸|同学)|小说|角色扮演|游戏里|游戏中|故事里|梦里|[？?]|吗|举例|原话|才怪|假话|反话|[‘’“”\"「」]")
 _TEMPORARY = re.compile(r"打算|准备|计划|今天|明天|最近|暂时")
 _FORGET = re.compile(r"忘记|忘掉|不要再记|别再记|不要记|删掉|删除")
-_CORRECT = re.compile(r"说错|记错|更正|纠正|改成|改叫|改为|不对|其实|搬到|搬家|不再|现在")
+_CORRECT = re.compile(r"说错|写错|记错|更正|纠正|改成|改叫|改为|不对|其实|搬到|搬家|不再|现在")
 _DOMAINS = {"like": "个人偏好", "avoid": "个人偏好", "allergy": "过敏", "diet": "长期忌口",
-            "residence": "居住地", "occupation": "职业", "name": "称呼", "legal_name": "姓名", "pet": "宠物"}
+            "residence": "居住地", "occupation": "职业", "name": "称呼", "legal_name": "姓名", "pet": "宠物",
+            "teacher_name": "教师姓名"}
 _TEMPLATES = {"like": "用户喜欢{}", "avoid": "用户不喜欢{}", "allergy": "用户对{}过敏",
               "diet": "用户长期不吃{}", "residence": "用户住在{}", "occupation": "用户职业是{}",
               "name": "用户希望被称呼为{}", "legal_name": "用户的姓名是{}", "pet": "用户的宠物信息：{}"}
 _PET_KIND = r"猫|狗|兔子|鹦鹉|仓鼠"
+_TEACHER = re.compile(r"(?:我|用户)的([\u4e00-\u9fff]{0,12}?老师)")
+
+
+def _teacher_subject(text):
+    subjects = _TEACHER.findall(text)
+    return subjects[0] if len(subjects) == 1 else None
 
 
 def _pet_name_summary(proposal, current):
@@ -79,6 +86,8 @@ def should_extract(text: str, mode: str = "auto") -> bool:
 
 def _slot(p):
     domain = p.domain
+    if p.predicate == "teacher_name":
+        return f"teacher_name:{_teacher_subject(p.quote)}", domain
     if p.predicate in {"like", "avoid"}:
         domain = "饮料偏好" if _DRINK.search(p.value) else "个人偏好"
         return f"preference:{domain}:{p.predicate}", domain
@@ -94,6 +103,8 @@ def extract_memory(envelope: ExtractionInput, client: LLMClient) -> tuple[Memory
         "certainty(explicit/uncertain),scene(personal/other)。predicate与domain只能使用以下映射："
         + json.dumps(_DOMAINS, ensure_ascii=False)
         + "。宠物value保留完整宠物及名字字面片段。普通冲突用remember并引用冲突事实；明确改正才correct。"
+        "已有用户授权的教师姓名事实可以纠正或遗忘：teacher_name只用于现有事实，quote保留我的某某老师这个关系，"
+        "correct的value只取新名字，绑定同一老师的唯一事实ID，scene=personal。不能把老师名字当作用户姓名。"
         "forget仅引用确切匹配的事实；目标不明确certainty=uncertain，禁止猜测。ignore可以空字符串字段。"
         "不要输出owner、角色、权限或任意额外字段。没有事实时proposals为空。\n"
         + json.dumps({"text": envelope.text, "facts": [{"id": f.memory_id, "summary": f.summary}
@@ -181,6 +192,18 @@ class ChatMemoryExtraction:
                 if (target not in facts or target not in current
                         or current[target].evidence_fingerprint() != facts[target].fingerprint):
                     raise ValueError("stale or unknown extraction target")
+            teacher = _teacher_subject(p.quote)
+            teacher_target = any(_teacher_subject(current[t].summary) for t in p.target_ids)
+            if p.predicate == "teacher_name" or ((teacher or teacher_target) and p.predicate in {"name", "legal_name"}):
+                # 模型分类不能改变人物主语；只允许修改已有、同一关系的授权事实。
+                if (p.action not in {"correct", "forget"} or len(p.target_ids) != 1 or not teacher
+                        or _teacher_subject(current[p.target_ids[0]].summary) != teacher):
+                    return ChatMemoryResult("clarify", "请说明要更正或忘记的哪位老师的信息。")
+                if p.action == "correct" and not re.search(
+                        re.escape(teacher) + r"(?:的)?(?:名字(?:是|叫)|名叫|叫)(?:做)?" + re.escape(p.value)
+                        + r"(?:[。！!，,；;\s]|$)", p.quote):
+                    return ChatMemoryResult("clarify", "请说明这位老师更正后的名字。")
+                p = replace(p, predicate="teacher_name", domain="教师姓名", scene="personal")
             if p.predicate == "name" and p.action != "forget" and not re.search(r"叫我|称呼|管我叫|喊我|昵称", envelope.text):
                 p = replace(p, predicate="legal_name", domain="姓名")
             slot, _ = _slot(p)
@@ -245,7 +268,8 @@ class ChatMemoryExtraction:
                         "confidence_reason": "用户直接自述；语义候选通过原话、身份和来源校验",
                         "scene": "companion_chat", "extraction": "semantic"}
             refs = (f"chat-extraction:{envelope.request_id}:{index}",)
-            summary = _TEMPLATES[p.predicate].format(p.value)
+            summary = (f"用户的{_teacher_subject(p.quote)}叫{p.value}" if p.predicate == "teacher_name"
+                       else _TEMPLATES[p.predicate].format(p.value))
             if p.predicate == "pet":
                 summary = _pet_name_summary(p, current) or summary
             if mode == "review" or (p.action == "remember" and p.target_ids):
