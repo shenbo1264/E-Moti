@@ -7,7 +7,7 @@ from guanghe_companion.plugin_enabled_controller import PluginEnabledCompanionCo
 
 @pytest.mark.parametrize("mode", ["auto", "review"])
 @pytest.mark.parametrize("scene", ["personal", "other"])
-@pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("teacher_name", "教师姓名")])
+@pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
 def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
     c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
     memory = c.story_runtime.memory
@@ -28,7 +28,7 @@ def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, sce
         current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
         assert len(current) == 1
         assert current[0].summary == "用户的吉他老师叫江屿"
-        assert current[0].metadata["fact_slot"] == "teacher_name:吉他老师"
+        assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
         restarted._current_player_message = "我学吉他的老师叫什么？"
         def prompt():
             return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
@@ -70,7 +70,7 @@ def test_teacher_forget_works_with_memory_off_and_keeps_user_identity(tmp_path):
         extractor = ChatMemoryExtraction(memory)
         text = "请忘掉我的吉他老师"
         envelope = extractor.prepare(text, now=0, mode="off", generation=0)
-        p = MemoryProposal("forget", text, "", "teacher_name", "教师姓名", (teacher.memory_id,), "explicit", "other")
+        p = MemoryProposal("forget", text, "", "relation_name", "人物姓名", (teacher.memory_id,), "explicit", "other")
         result = extractor.apply(envelope, (p,), now=0, mode="off", generation=0)
         assert result.status == "forgotten"
         active = [m for m in memory.store.load_memories() if not m.deleted]
