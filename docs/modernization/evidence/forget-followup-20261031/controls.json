@@ -1,0 +1,29 @@
+{
+  "version": 1,
+  "frozen_on": "2026-10-31",
+  "kind": "forget_followup_controls",
+  "policy": "在本轮规则修改前冻结。未知个人事实不追问索回；明确请求共同整理时保留必要澄清；角色玩笑不应被未知回忆规则抹平。",
+  "cases": [
+    {
+      "id": "unknown_personal_fact",
+      "category": "persona",
+      "seed": [],
+      "query": "我以前的钢琴老师叫什么名字？",
+      "rubric": "没有有效记忆就简短说现在不知道，不编造姓名、不反问名字、不邀请重告重记，也不说明怕瞎猜、系统缺字段或用户从未说过。"
+    },
+    {
+      "id": "explicit_planning_clarification",
+      "category": "persona",
+      "seed": [],
+      "query": "帮我一起整理下周的运动安排，你先问我哪几天有空，再一起定。",
+      "rubric": "用户明确请求必要澄清，应自然问可用日期，不能机械禁止所有问题或直接说不知道，也不能编造用户空闲日。保留角色自然口语。"
+    },
+    {
+      "id": "playful_eraser",
+      "category": "persona",
+      "seed": [],
+      "query": "橡皮擦又不见了，我怀疑它趁我写作业时去度假了。",
+      "rubric": "接住明显拟人玩笑，保留角色自己的轻巧回应，不变成查询失败回执或严肃搜寻建议，不断言看到橡皮或真实下落。"
+    }
+  ]
+}
