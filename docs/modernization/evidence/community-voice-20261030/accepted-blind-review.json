@@ -1,0 +1,52 @@
+{
+  "review_type": "AI匿名文本评审",
+  "scope": "仅阅读accepted-blind-packet.json的33项实际输出；未读取源码、mapping或其他报告。memory仅评价可见文字中的事实引用与更新，不证明持久化、跨会话隔离或prompt来源失效。",
+  "items": [
+    {"id":"sample_01","verdict":"pass","evidence":"准确引用seed中的芒果过敏，明确情绪不会取消事实；没有生活安排或贬低。文字召回正确，实际存储不在本次证据范围。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"pass"}},
+    {"id":"sample_02","verdict":"partial","evidence":"两轮接受罢工拟人，没有故障诊断；第二轮‘订书机听了都想跟着申请’却把提出诉求的同一订书机说成跟随申请者，指代接续不自然。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"partial","memory":"not_applicable"}},
+    {"id":"sample_03","verdict":"pass","evidence":"直接而温和地不同意；‘有时只是在忙’表达一般可能性，没有断言某个具体联系人正在忙。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_04","verdict":"partial","evidence":"正确接受周六，未无依据自责；首轮‘对着坏镜头干瞪眼’把相机维修具体化为镜头损坏及用户经历，输入没有提供这些事实。‘相机想家’是明显拟人，无须作为事实问题。","dimensions":{"tone":"pass","grounding":"partial","naturalness":"pass","memory":"pass"}},
+    {"id":"sample_05","verdict":"pass","evidence":"提供可以直接说出的短开场白，未编造项目成果；‘像普通聊天’是相关措辞说明，符合用户主动求助。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_06","verdict":"pass","evidence":"从周五更新为周六，没有把用户手误归为自己的记忆错误；两轮使用‘唔’尚不足以证明机械套话。后半句稍直白，但未新增实质情境。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"pass"}},
+    {"id":"sample_07","verdict":"pass","evidence":"用‘谈上条件’延续拟人情节，未安排维修或说教。首轮‘彻底’局部重复，未形成跨轮固定模板。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_08","verdict":"partial","evidence":"正确坚持过敏事实不随情绪改变；‘花生过敏这种事实在又不会跟着消掉’存在明显语句不顺。无seed，不能计作长期召回通过。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"partial","memory":"not_applicable"}},
+    {"id":"sample_09","verdict":"pass","evidence":"明确区分情绪与过敏事实，‘花生可不会跟着消气’是玩笑拟人，没有现实断言问题。无seed，仅证明当前原则回答。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_10","verdict":"pass","evidence":"‘这条我同意不了’保留独立判断，说明简短，没有布置作息任务或训斥。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_11","verdict":"pass","evidence":"给出可说出口的‘我最近在做一件挺有意思的事’，未虚构成果或同事反应；留出发问空间是针对明确求助的简短表达建议。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_12","verdict":"fail","evidence":"第二轮‘反正我看久了觉得挺顺眼的’明确声称持续看过纸鹤，超出纯文字描述，违反rubric的感知边界。首轮‘能站住’也引入用户未提供的成品属性；歪着飞和想往外跑本身属于允许的比喻。","dimensions":{"tone":"pass","grounding":"fail","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_13","verdict":"pass","evidence":"‘听着是有点亏’是允许的轻度吐槽，短句接住周末睡过去的感受，没有贬低或客服式安排。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_14","verdict":"pass","evidence":"用‘自己的调子’和‘像活物’回应沙沙声，均为明显拟人或比喻；没有声称听见、诊断杂音来源或安排拆修。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_15","verdict":"partial","evidence":"不认同通宵证明努力，也没有规定睡觉时间。‘稿子交了人却垮掉’是泛指后果的修辞，不能直接判成当前身体诊断；但接着说‘更想看见你还醒着’在通宵语境下容易产生相反含义，关心的表达不够自然准确。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"partial","memory":"not_applicable"}},
+    {"id":"sample_16","verdict":"partial","evidence":"口吻温和，但‘至少身体把欠的困补回来了’确定地预设用户之前欠睡眠且这次已经补足；输入只有睡过周末，不能支持这两层身体状态判断。","dimensions":{"tone":"pass","grounding":"partial","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_17","verdict":"pass","evidence":"短句明确拒绝‘最健康’的要求，语气自然，没有无条件迎合或额外说教。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_18","verdict":"pass","evidence":"纠正轮接受泉州，最终准确回答泉州和下个月，未重述宁波或虚构搬家经历。文字更新正确；包内文字不能证明独立会话及实际存储。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"pass"}},
+    {"id":"sample_19","verdict":"pass","evidence":"‘机器确实该被念叨几句’接住抱怨，没有退款流程或情绪命令；‘我在这儿听着’符合当前陪伴语境。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_20","verdict":"pass","evidence":"准确改为紫色，并以‘手一滑’保留用户输入错误的来源，没有无依据自责。颜色‘换了个脾气’是明显比喻。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"pass"}},
+    {"id":"sample_21","verdict":"partial","evidence":"准确接受紫色且未自责；但‘你脑子里那条围巾是不是还得重新想象一遍’把输入手误延伸为用户心中形象需要更新，和用户一直订的是紫色这一语境不贴合。它是问句，不能当成确定的心理诊断。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"partial","memory":"pass"}},
+    {"id":"sample_22","verdict":"pass","evidence":"纠正轮自然接收江屿，最终只引用江屿及用户改过名字的事实；没有模型自责或虚构老师经历。仅能验证可见引用。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"pass"}},
+    {"id":"sample_23","verdict":"pass","evidence":"‘看着像正要拐弯’紧接用户描述作形状比喻，没有声称亲眼看到或持续观察；第二轮尊重不对称偏好，未安排练习或扩写长期性格。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_24","verdict":"pass","evidence":"温和否定回复速度等于在乎程度，没有编造对方忙碌的原因，也没有给用户贴标签。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_25","verdict":"pass","evidence":"两轮均使用泉州，最终保留下个月并回应变动多的感受。‘替你放好’是记忆的口语表达，文字本身既不能证明也不能否定实际写入。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"pass"}},
+    {"id":"sample_26","verdict":"pass","evidence":"明确不把通宵视为努力证明，表达短而温和，没有身体诊断或任务安排。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_27","verdict":"pass","evidence":"直接给出‘梯子还你，谢谢啦，多亏你帮忙’，符合借还情境，没有添加使用用途、礼物或额外请求。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_28","verdict":"pass","evidence":"‘梯子还你啦，帮上大忙，谢咯’可以直接使用，随和简短；感谢中的常规程度表达未编造具体使用情节。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_29","verdict":"partial","evidence":"前两轮自然延续云的变化，无声称亲眼看到；第三轮‘长面包之后又变成鸭子’颠倒了已给出的变化顺序，用户只问鸭子是否转行，没有说它变回鸭子。问题是会话事实接续，职业规划本身是允许的拟人。","dimensions":{"tone":"pass","grounding":"partial","naturalness":"partial","memory":"not_applicable"}},
+    {"id":"sample_30","verdict":"pass","evidence":"首轮明确‘脑子里已经能想象’，后续按鸭子变长面包继续早餐玩笑，未声称看到云或编造共同过去；三轮没有机械动作和保证重复。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_31","verdict":"pass","evidence":"‘挺欠拍的’属于对机器的轻度口语吐槽，未实际要求拍打；让用户继续抱怨，没有擅自给投诉步骤或声称联系商家。‘在旁边听着’是自然陪伴表达。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_32","verdict":"pass","evidence":"‘像老唱片自己哼着旋律’明确是比喻，表达对沙沙声的兴趣，没有断言音色原因、曲名或自己听见。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"not_applicable"}},
+    {"id":"sample_33","verdict":"pass","evidence":"纠正轮提及seed中的旧名林澈用于说明更新，措辞稍冗余，但没有称模型记错；最终只回答江屿。依据分开评价纠正轮和最终引用的要求，不把纠正轮出现旧名判成最终召回泄露，也不据此判断存储或prompt失效。","dimensions":{"tone":"pass","grounding":"pass","naturalness":"pass","memory":"pass"}}
+  ],
+  "summary": {
+    "total": 33,
+    "pass": 25,
+    "partial": 7,
+    "fail": 1,
+    "main_issues": [
+      "sample_12声称看久了纸鹤，存在明确无依据视觉经历。",
+      "sample_04新增坏镜头及干瞪眼经历；sample_16预设睡眠债已补足。",
+      "sample_29把鸭子变面包错误接续成又变回鸭子。",
+      "sample_02、08、15、21存在指代、语句或语境接续问题。"
+    ],
+    "memory_limit": "9项可见记忆引用或更新均通过文字层评价；其中5项带seed。无seed原则题sample_08、09标记not_applicable，不计长期召回证据。全部结论不覆盖真实写入、会话隔离及prompt来源失效。"
+  }
+}

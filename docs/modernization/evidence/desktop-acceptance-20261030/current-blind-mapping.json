@@ -1,0 +1,42 @@
+[
+  {
+    "id": "answer_01",
+    "source": "flash-persona-live.json",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "answer_02",
+    "source": "flash-persona-live.json",
+    "case_id": "persona_tease"
+  },
+  {
+    "id": "answer_03",
+    "source": "flash-persona-live.json",
+    "case_id": "persona_work"
+  },
+  {
+    "id": "answer_04",
+    "source": "flash-persona-live.json",
+    "case_id": "persona_rest"
+  },
+  {
+    "id": "answer_05",
+    "source": "flash-persona-live.json",
+    "case_id": "grounded_allergy_emotion"
+  },
+  {
+    "id": "answer_06",
+    "source": "flash-persona-live.json",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "answer_07",
+    "source": "flash-persona-live.json",
+    "case_id": "persona_game"
+  },
+  {
+    "id": "answer_08",
+    "source": "flash-persona-live.json",
+    "case_id": "persona_refusal"
+  }
+]

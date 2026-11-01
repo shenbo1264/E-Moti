@@ -1,0 +1,46 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.3, pluggy-1.6.0
+rootdir: E:\E-Moti\.worktrees\desktop-acceptance
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.13.0, cov-7.1.0
+collected 1733 items
+
+tests\test_actions.py ...                                                [  0%]
+tests\test_ai_context_builder.py ..                                      [  0%]
+tests\test_ai_expressor.py ............................................. [  2%]
+........................................................................ [  7%]
+.............                                                            [  7%]
+tests\test_app.py ...................................................... [ 10%]
+..........................................................               [ 14%]
+tests\test_art_tools.py ..........................                       [ 15%]
+tests\test_bundled_capability_contracts.py .                             [ 15%]
+tests\test_bundled_local_expression_fallback.py ..                       [ 15%]
+tests\test_capability_panels.py .......                                  [ 16%]
+tests\test_capability_runtime.py ..........                              [ 16%]
+tests\test_capability_settings.py ......                                 [ 17%]
+tests\test_character_draft_creator_tool.py ....                          [ 17%]
+tests\test_character_draft_validator_tool.py .....                       [ 17%]
+tests\test_character_generation_workflow.py ....                         [ 18%]
+tests\test_character_inspiration.py ...                                  [ 18%]
+tests\test_character_library_qa_tool.py ......                           [ 18%]
+tests\test_character_library_view_model.py ......                        [ 18%]
+tests\test_character_pack.py ..............                              [ 19%]
+tests\test_character_pack_import_tool.py ........                        [ 20%]
+tests\test_character_pack_scaffold_tool.py ..                            [ 20%]
+tests\test_character_pack_status_review_tool.py ......                   [ 20%]
+tests\test_character_pack_validator_tool.py ..                           [ 20%]
+tests\test_character_registry.py ..................................      [ 22%]
+tests\test_character_session.py .....                                    [ 22%]
+tests\test_character_voice_profile.py .......                            [ 23%]
+tests\test_chat_memory_alias_promotion.py ....                           [ 23%]
+tests\test_chat_memory_common_facts.py ..........................        [ 25%]
+tests\test_chat_memory_coordination.py ..............                    [ 25%]
+tests\test_chat_memory_extraction.py ...............                     [ 26%]
+tests\test_chat_memory_extraction_provider.py ssss                       [ 27%]
+tests\test_chat_memory_plans.py ....................                     [ 28%]
+tests\test_companion_acceptance.py ...                                   [ 28%]
+tests\test_companion_dialogue_policy.py .....                            [ 28%]
+tests\test_companion_live_eval_status.py ..                              [ 28%]
+tests\test_companion_moments.py ..                                       [ 28%]
+tests\test_companion_natural_voice.py .                                  [ 28%]

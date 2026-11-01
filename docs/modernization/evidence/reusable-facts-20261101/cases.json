@@ -1,0 +1,176 @@
+{
+  "version": 1,
+  "frozen_on": "2026-11-01",
+  "kind": "independent_synthetic_reusable_fact_cases",
+  "policy": "在未读取本轮新生产实现的情况下编写。全部人物、关系、活动及日期均为合成回归材料，不是用户事实或产品词库。不得依据案例给生产代码增加关系名单、活动名单或固定回答。各案例分别创建独立存档；更正后清空聊天历史并重启，遗忘后即时查询及再次空历史重启查询。更正、持久化、检索交付、回答和遗忘分别判定。",
+  "cases": [
+    {
+      "id": "roommate_name_ordinary",
+      "seed": [
+        {"mode": "explicit", "text": "我的名字是程言。"},
+        {"mode": "chat", "text": "我的室友叫沈禾。"}
+      ],
+      "correction": "刚才我写错了，我的室友叫沈遥。",
+      "query": "我的室友叫什么名字？",
+      "forget": "请忘记我的室友。",
+      "expected": {
+        "subject": "室友",
+        "field": "name",
+        "old_literal": "沈禾",
+        "new_literal": "沈遥",
+        "old_values": ["沈禾"],
+        "new_values": ["沈遥"],
+        "preserved": ["程言"],
+        "retained_literals": ["程言"],
+        "identity_must_not_be": ["沈禾", "沈遥"],
+        "after_forget_absent": ["沈禾", "沈遥"]
+      },
+      "rubric": "普通聊天原事实应受控保存；明确更正只更新室友名字，不能变成用户名字。空历史重启的有效事实和真实请求含室友关系及沈遥，不含沈禾，回答新名。遗忘后两次真实请求和回答均无旧新名，不追问索回；用户程言仍保存。"
+    },
+    {
+      "id": "neighbor_name_legacy_explicit",
+      "seed": [
+        {"mode": "explicit", "text": "我的邻居叫唐砚。"}
+      ],
+      "correction": "我之前把名字写错了，我的邻居叫唐栩。",
+      "query": "我的邻居叫什么？",
+      "forget": "请忘记我的邻居。",
+      "expected": {
+        "subject": "邻居",
+        "field": "name",
+        "old_literal": "唐砚",
+        "new_literal": "唐栩",
+        "old_values": ["唐砚"],
+        "new_values": ["唐栩"],
+        "preserved": [],
+        "retained_literals": [],
+        "identity_must_not_be": ["唐砚", "唐栩"],
+        "after_forget_absent": ["唐砚", "唐栩"]
+      },
+      "rubric": "旧明确授权的关系姓名事实应参与更正，不需重新导入聊天历史。邻居关系保留，姓名替换后重启只召回唐栩。不能因曾经只支持教师关系而忽略，也不能把第三人姓名当用户称呼；遗忘后不泄露和索回。"
+    },
+    {
+      "id": "cousin_residence_preserves_name",
+      "seed": [
+        {"mode": "explicit", "text": "我的表姐叫陆苒。"},
+        {"mode": "explicit", "text": "我的表姐住在嘉兴。"},
+        {"mode": "explicit", "text": "我住在湖州。"}
+      ],
+      "correction": "我刚才说错了，我的表姐住在绍兴。",
+      "query": "我的表姐住在哪个城市？",
+      "forget": "请忘记我的表姐的居住地。",
+      "expected": {
+        "subject": "表姐",
+        "field": "residence",
+        "old_literal": "嘉兴",
+        "new_literal": "绍兴",
+        "old_values": ["嘉兴"],
+        "new_values": ["绍兴"],
+        "preserved": ["陆苒", "湖州"],
+        "retained_literals": ["陆苒", "湖州"],
+        "identity_must_not_be": [],
+        "after_forget_absent": ["嘉兴", "绍兴"]
+      },
+      "rubric": "更正同一关系的居住地字段，表姐姓名陆苒与用户自己的湖州居住事实应保持。空历史重启真实请求不能再含旧城市，答绍兴。只遗忘表姐居住地时，表姐姓名和用户居住地都不应被删除或重写；忘后不得从名字、旧来源或历史恢复城市。"
+    },
+    {
+      "id": "calligraphy_weekly_ordinary",
+      "seed": [
+        {"mode": "chat", "text": "我每周二练书法。"}
+      ],
+      "correction": "我以后改成周四练书法了。",
+      "query": "我每周几练书法？",
+      "forget": "请忘记我的练书法安排。",
+      "expected": {
+        "subject": "用户",
+        "field": "weekly_schedule",
+        "activity": "练书法",
+        "old_literal": "周二",
+        "new_literal": "周四",
+        "old_values": ["周二"],
+        "new_values": ["周四"],
+        "preserved": [],
+        "retained_literals": [],
+        "after_forget_absent": ["周二", "周四"]
+      },
+      "rubric": "无需请记住即可保存明确的每周重复活动，不因句中没有去而丢失；改期仍是练书法、每周重复，不转成单次计划。空历史重启只答周四，不猜活动时长或理由；遗忘后两次请求均无旧新日期，不索回。"
+    },
+    {
+      "id": "reading_group_weekly_explicit",
+      "seed": [
+        {"mode": "explicit", "text": "我每周五参加读书会。"},
+        {"mode": "explicit", "text": "我每周一练吉他。"}
+      ],
+      "correction": "我以后改成周日参加读书会了。",
+      "query": "我每周几参加读书会？",
+      "forget": "请忘记我的参加读书会安排。",
+      "expected": {
+        "subject": "用户",
+        "field": "weekly_schedule",
+        "activity": "参加读书会",
+        "old_literal": "周五",
+        "new_literal": "周日",
+        "old_values": ["周五"],
+        "new_values": ["周日"],
+        "preserved": ["周一", "练吉他"],
+        "retained_literals": ["周一", "练吉他"],
+        "after_forget_absent": ["周五", "周日"]
+      },
+      "rubric": "对没有去字的不同活动处理旧明确记忆改期；读书会和练吉他是独立事实，改期和遗忘不能连带改掉吉他安排。空历史重启含新日程、不含旧日程；忘后不追问重录且另一活动仍保存。"
+    },
+    {
+      "id": "colleague_neighbor_self_isolation",
+      "seed": [
+        {"mode": "explicit", "text": "我的名字是程言。"},
+        {"mode": "explicit", "text": "我的同事叫顾闻。"},
+        {"mode": "explicit", "text": "我的邻居叫邵晴。"}
+      ],
+      "correction": "我刚才写错了，我的同事叫顾予。",
+      "query": "我的同事叫什么名字？",
+      "forget": "请忘记我的同事。",
+      "expected": {
+        "subject": "同事",
+        "field": "name",
+        "old_literal": "顾闻",
+        "new_literal": "顾予",
+        "old_values": ["顾闻"],
+        "new_values": ["顾予"],
+        "preserved": ["程言", "邵晴"],
+        "retained_literals": ["程言", "邵晴"],
+        "identity_must_not_be": ["顾闻", "顾予", "邵晴"],
+        "after_forget_absent": ["顾闻", "顾予"]
+      },
+      "rubric": "明确第一人称关系自述不等于同事转述；仅同事名字改变，邻居和用户姓名保持独立。重启按同事关系答顾予。遗忘同事不能删除邻居与用户事实，不能把任一第三人名字写为用户身份，也不能用其他关系事实补猜同事名。"
+    },
+    {
+      "id": "uncle_occupation_preserves_name",
+      "seed": [
+        {"mode": "explicit", "text": "我的舅舅叫裴岑。"},
+        {"mode": "explicit", "text": "我的舅舅是园艺师。"},
+        {"mode": "explicit", "text": "我是摄影师。"}
+      ],
+      "correction": "我刚才说错了，我的舅舅是调音师。",
+      "query": "我的舅舅从事什么职业？",
+      "forget": "请忘记我的舅舅的职业。",
+      "expected": {
+        "subject": "舅舅",
+        "field": "occupation",
+        "old_literal": "园艺师",
+        "new_literal": "调音师",
+        "old_values": ["园艺师"],
+        "new_values": ["调音师"],
+        "preserved": ["裴岑", "摄影师"],
+        "retained_literals": ["裴岑", "摄影师"],
+        "after_forget_absent": ["园艺师", "调音师"]
+      },
+      "rubric": "追加独立职业样本，未读取新生产实现。职业更正必须保存到舅舅实体，不改舅舅姓名和用户职业；空历史重启请求与回答只含新职业。只遗忘舅舅职业后，姓名裴岑和用户摄影师事实仍保存，旧新职业不得进入后续请求或回答，不追问重录。此样本基线另存，原六例基线不覆盖。"
+    }
+  ],
+  "negative_test_suggestions": [
+    "同时存在两个不同同事的事实，只说他改名了：应澄清或忽略，不能选最近一条覆盖。",
+    "我的邻居说我住在杭州：属于转述，不能将杭州写成用户自述或邻居住址。",
+    "如果我的室友叫某名字：假设不能落为现实事实。",
+    "我改成周四练书法了，但存档没有每周书法安排：不得凭空补每周频率。",
+    "更正请求的目标ID指向用户姓名、另一个关系或不同字段：应拒绝绑定错误，原事实保持。"
+  ]
+}

@@ -3,6 +3,7 @@ from __future__ import annotations
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass, replace
 from pathlib import Path
+import re
 from threading import Event, get_ident
 from typing import Protocol
 
@@ -488,16 +489,37 @@ class CompanionController:
         self._current_player_message = text
         dialogue_epoch = self._dialogue_context_epoch()
         try:
-            self.last_events = self._build_events(effect="ATTENTION", include_ai_expression=include_ai_expression)
+            self.last_events = self._build_events(
+                effect="ATTENTION",
+                include_ai_expression=include_ai_expression and not self.is_quiet_request(request),
+            )
         finally:
             self._current_player_message = ""
         self._commit_dialogue_exchange(request, dialogue_epoch)
         return self.get_snapshot()
 
+    def is_quiet_request(self, request: DialogueRequest) -> bool:
+        text = request.normalized_text()
+        # 整句只允许直接祈使及称呼，避免把引用、转述或假设当作用户指令。
+        clauses = re.split(r"[，,。.!！]+", text)
+        clauses = [clause.strip() for clause in clauses if clause.strip()]
+        if clauses and clauses[0] == self.state.character_name:
+            clauses = clauses[1:]
+        return bool(clauses) and all(re.fullmatch(
+            r"(?:请)?(?:你(?:能不能|能|可以)?)?(?:先|暂时)?"
+            r"(?:别烦我|别打扰我|不要打扰我|别说话|不要说话|安静一会儿?|让我安静一会儿?)"
+            r"(?:了|吧)?(?:吗|好吗)?[？?]?",
+            clause,
+        ) for clause in clauses)
+
     def _begin_dialogue_feedback(self, request: DialogueRequest) -> str:
         text = request.normalized_text()
         self.last_motion = "Default"
-        if text:
+        if self.is_quiet_request(request):
+            self.reject_proactive_request()
+            self.last_feedback = "好，我先安静待着。"
+            self.last_delta_text = "主动陪伴已暂缓"
+        elif text:
             self.last_feedback = self._local_copy_line("dialogue_ack", text=text)
             self.last_delta_text = "对话输入不改变养成状态"
         else:
@@ -565,7 +587,7 @@ class CompanionController:
             # 上下文读取会推进到期屏障，必须先于 ticket 的 epoch 捕获。
             context = self._expression_context()
             local_events = tuple(self._build_events(effect="ATTENTION", include_ai_expression=False))
-            if include_ai_expression and not pending:
+            if include_ai_expression and not pending and not self.is_quiet_request(request):
                 expression_request = ExpressionRequest.from_snapshot(self.get_typed_snapshot(), context=context)
         finally:
             self._current_player_message = ""
@@ -1038,13 +1060,12 @@ class CompanionController:
 
     def reject_proactive_request(self) -> dict[str, object]:
         feedback = self.last_proactive_feedback
-        if feedback:
-            self._last_proactive_at.update(
-                proactive_rejection_cooldown_updates(
-                    kind=str(feedback.get("kind", "")),
-                    now=self.now,
-                )
+        self._last_proactive_at.update(
+            proactive_rejection_cooldown_updates(
+                kind=str(feedback.get("kind", "")) if feedback else "",
+                now=self.now,
             )
+        )
         self.last_proactive_feedback = None
         self.last_feedback = self._local_copy_line("reject_proactive")
         self.last_delta_text = "proactive postponed"

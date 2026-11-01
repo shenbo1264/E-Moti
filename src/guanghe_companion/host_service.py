@@ -9,6 +9,7 @@ from PySide6.QtCore import QObject, Signal, Slot, Qt, QTimer
 
 from .dialogue import DialogueRequest
 from .controller import HostDialogueStaleError
+from .expression_expressor import ShinsekaiAIExpressor
 from .host_auth import AuthenticationError, DeviceCredentials
 from .memory_album_controller import MemoryAlbumStaleError
 from .plugin_enabled_controller import PluginEnabledCompanionController
@@ -242,6 +243,8 @@ class CompanionHost(QObject):
     def _express(ticket):
         if ticket.cancelled.is_set():
             raise HostDialogueStaleError("reply was cancelled before model submission")
+        if isinstance(ticket.expressor, ShinsekaiAIExpressor):
+            return ticket.expressor.express(ticket.expression_request, effect="ATTENTION", cancel_event=ticket.cancelled)
         return ticket.expressor.express(ticket.expression_request, effect="ATTENTION")
 
     def close(self):

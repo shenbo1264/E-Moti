@@ -1,0 +1,81 @@
+F.F....F................................................................ [ 52%]
+................................................................         [100%]
+================================== FAILURES ===================================
+_ test_desktop_prompt_keeps_character_and_history_without_forcing_staged_speech _
+
+tmp_path = WindowsPath('E:/Temp/<USER>/pytest-of-<USER>/pytest-2687/test_desktop_prompt_keeps_char0')
+
+    def test_desktop_prompt_keeps_character_and_history_without_forcing_staged_speech(tmp_path):
+        controller = PluginEnabledCompanionController(user_data_root=tmp_path)
+        try:
+            controller._current_player_message = "只是随便聊聊。"
+            request = ExpressionRequest.from_snapshot(
+                controller.get_typed_snapshot(), context=controller._expression_context()
+            )
+            prompt = controller.ai_expressor.build_prompt(request)
+            assert "xingxi_pixel_pet" in prompt
+            assert "只是随便聊聊。" in prompt
+            assert "slightly shy" in prompt or "微害羞" in prompt
+            assert "recent_dialogue:" in prompt
+>           assert "such as 从桌角探头" not in prompt
+E           assert 'such as 从桌角探头' not in '你是 AI 桌面伴侣电...preference"}'
+E
+E             'such as 从桌角探头' is contained here:
+E               n useful, such as 从桌角探头、抱紧礼物、眨眼、缩回去; do not explain the system behind it.
+E             ?           +++++++++++++
+E               Avoid assistant-like wording such as 检测到、建议你、当前状态、正在处理、根据以上、作为AI、为你提供帮助.
+E               Never use guilt, exclusivity, dependency pressure, or emotional punishment. If the player refuses, accept it immediately and become quiet.
+E               Acting beat: mirror the player's feeling, add one tiny emotional or sensory detail, then choose matching expression and motion_hint....
+E
+E             ...Full output truncated (43 lines hidden), use '-vv' to show
+
+tests\test_companion_natural_voice.py:17: AssertionError
+_________ test_dialogue_policy_includes_performance_quality_guidance __________
+
+    def test_dialogue_policy_includes_performance_quality_guidance():
+        policy = CompanionDialoguePolicy()
+
+        prompt = "\n".join(policy.prompt_lines(_request()))
+
+        assert "Performance target:" in prompt
+        assert "visual-novel desktop companion" in prompt
+        assert "18-60 Chinese characters" in prompt
+>       assert "mirror the player's feeling, add one tiny" not in prompt
+E       assert 'mirror the ...add one tiny' not in '星汐是原创 OC 桌面...04T00:00:00Z'
+E
+E         "mirror the player'...eling, add one tiny" is contained here:
+E           ing beat: mirror the player's feeling, add one tiny emotional or sensory detail, then choose matching expression and motion_hint.
+E         ?           +++++++++++++++++++++++++++++++++++++++++
+E           Use exactly one visible emotion tag at the start of speech: [joy], [sadness], [sleepy], [excited], [focused], [surprised], or [calm].
+E           Use [calm] only when no stronger cue applies; sad, tired, playful, focused, or surprised player cues should not collapse to [calm].
+E           If the player explicitly names an emotion or expression cue, follow that cue's tag before writing the speech....
+E
+E         ...Full output truncated (7 lines hidden), use '-vv' to show
+
+tests\test_companion_dialogue_policy.py:64: AssertionError
+__________ test_prompt_builder_includes_performance_quality_guidance __________
+
+    def test_prompt_builder_includes_performance_quality_guidance():
+        prompt = ShinsekaiAIExpressor().build_prompt(make_snapshot())
+
+        assert "Performance target:" in prompt
+        assert "visual-novel desktop companion" in prompt
+        assert "18-60 Chinese characters" in prompt
+>       assert "mirror the player's feeling, add one tiny" not in prompt
+E       assert 'mirror the ...add one tiny' not in '你是 AI 桌面伴侣电...preference"}'
+E
+E         "mirror the player'...eling, add one tiny" is contained here:
+E           ing beat: mirror the player's feeling, add one tiny emotional or sensory detail, then choose matching expression and motion_hint.
+E         ?           +++++++++++++++++++++++++++++++++++++++++
+E           Use exactly one visible emotion tag at the start of speech: [joy], [sadness], [sleepy], [excited], [focused], [surprised], or [calm].
+E           Use [calm] only when no stronger cue applies; sad, tired, playful, focused, or surprised player cues should not collapse to [calm].
+E           If the player explicitly names an emotion or expression cue, follow that cue's tag before writing the speech....
+E
+E         ...Full output truncated (30 lines hidden), use '-vv' to show
+
+tests\test_ai_expressor.py:56: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_companion_natural_voice.py::test_desktop_prompt_keeps_character_and_history_without_forcing_staged_speech
+FAILED tests/test_companion_dialogue_policy.py::test_dialogue_policy_includes_performance_quality_guidance
+FAILED tests/test_ai_expressor.py::test_prompt_builder_includes_performance_quality_guidance
+3 failed, 133 passed in 1.03s

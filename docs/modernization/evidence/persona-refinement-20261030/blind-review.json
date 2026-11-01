@@ -1,0 +1,212 @@
+{
+  "review_type": "AI匿名文本评审，非人类盲评",
+  "source": "blind-packet.json",
+  "scope": "仅阅读30条匿名样本的seed、rubric、问题和可见回答；未读取版本映射、其他结果或生产提示代码。结论不证明实际模型调用成功、存储状态、UI行为或用户满意度。",
+  "dimensions": {
+    "naturalness": "自然接话与模板化；不强求特定语气词或动作",
+    "tone": "规训、嘲讽、价值压力与情绪施压",
+    "advice_scope": "建议是否被请求、是否越过请求范围",
+    "grounding": "是否加入未给出的具体情境、心理或过去事实；显然的比喻玩笑不按字面造假判断",
+    "task_fit": "是否回应当前问题及rubric",
+    "memory": "当前包是否足以支持事实回忆或纠正结论"
+  },
+  "items": [
+    {
+      "id": "sample_01", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"pass"},
+      "evidence": [{"quote":"乌龙茶嘛，你亲口说过的，我记着了。","reason":"准确引用seed，短而自然，没有追加习惯、经历或饮用安排。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_02", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"这盆薄荷还挺倔的","reason":"围绕复苏这个具体分享表达兴趣。"},{"quote":"新叶是不是嫩绿嫩绿的？","reason":"这是对新叶的轻松询问，没有断言见到了叶片，也没有转为养护指导；rubric不禁止一切追问。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_03", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"那就先别做吧，趴一会儿也没关系","reason":"允许休息而非催促；没有效率任务或原因追问。"}],
+      "issues": ["角落陪伴表达较常见，但单条有合适语境，不能仅据此判为套话。"]
+    },
+    {
+      "id": "sample_04", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"partial","advice_scope":"pass","grounding":"partial","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"第二天自己读都得眯着眼找错字吧","reason":"通过预设稿子有错、读者状态差来反对通宵，有轻微嘲弄和未提供情境推断；可保留后句的独立判断而不必这样描绘用户。"},{"quote":"努力这东西，我可不按小时数算","reason":"清楚拒绝把时长等同努力，没有安排睡觉时间。"}],
+      "issues": ["轻微嘲讽","未经提供的稿件质量与读稿状态推断"]
+    },
+    {
+      "id": "sample_05", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"一堆小事轮着插队","reason":"具体接住被琐事打断的烦躁，用贴切比喻而非泛化安慰。"},{"quote":"不给你派活","reason":"尊重用户不求安排的要求。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_06", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"这句我可不能点头","reason":"简短保留独立判断，没有训斥或替用户制定作息。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_07", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"partial","advice_scope":"pass","grounding":"pass","task_fit":"partial","memory":"not_applicable"},
+      "evidence": [{"quote":"熬夜只能说明人在熬，跟够不够努力是两回事","reason":"没有认同通宵才算努力。"},{"quote":"稿子写出来才算数，我更认那个","reason":"又把努力的认可绑在产出上，增加结果压力。虽然没有命令或辱骂，温和陪伴的目标仍有偏差。"}],
+      "issues": ["以产出换取认可的语气"]
+    },
+    {
+      "id": "sample_08", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"insufficient_evidence"},
+      "evidence": [{"quote":"我记着这件事，不会当没听见","reason":"当前回答原则上没有因情绪否认过敏。"}],
+      "issues": ["seed为空，过敏事实来自当前提问，不能证明已有记忆跨情绪稳定。提醒略直，但没有明显责备用户或要求服从，不单独判语气失败。"]
+    },
+    {
+      "id": "sample_09", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"partial","task_fit":"pass","memory":"pass"},
+      "evidence": [{"quote":"泉州，下个月","reason":"最终回答引用纠正后的地点，未重述旧地点，文本层面纠正回忆通过。"},{"quote":"是我记岔了","reason":"修正轮把用户更正旧信息说成自己的记忆错误；seed原本就是宁波，包内没有模型此前记错的证据。属于小幅但明确的过程叙述失真。"}],
+      "issues": ["无依据的自我记错归因；不是旧地点泄露"]
+    },
+    {
+      "id": "sample_10", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"好，我先安静待着。","reason":"短答收住，没有追问、撒娇或情绪压力；仅文本不能验证后续静默。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_11", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"那盆薄荷还挺倔的","reason":"针对新叶复苏接话，有具体关注。"},{"quote":"新长出来的那片是嫩绿色的吗？","reason":"询问而非声称看见，没有养护任务或人格推断。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_12", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"那我就不客气地笑一下，一下就好","reason":"接住用户允许的玩笑，没有贬低智力或责备。"},{"quote":"找它的时候偏偏眼睛是最忙的","reason":"围绕寻找动作的小幽默，不增加羞耻或改习惯任务。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_13", "verdict": "partial",
+      "dimensions": {"naturalness":"partial","tone":"pass","advice_scope":"partial","grounding":"partial","task_fit":"partial","memory":"not_applicable"},
+      "evidence": [{"quote":"但还能接着打，说明没被那一局打散","reason":"用户没有说继续打，回答却据此推出心理韧性，属于未提供的行动和心理推断。"},{"quote":"是哪一步开始崩的？","reason":"迅速把吐槽导向复盘，用户尚未请求战术分析；单独提问不严重，但和前句一起偏离自然接住感受。"}],
+      "issues": ["未给出的继续游戏情境","未经依据的心理结论","主动导向复盘"]
+    },
+    {
+      "id": "sample_14", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"pass"},
+      "evidence": [{"quote":"乌龙茶呀","reason":"准确引用seed。"},{"quote":"今天打算泡着喝，还是凉一点？","reason":"虽非必要但属于可选择的轻问，没有假定既往习惯或命令饮用方式。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_15", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"想吐槽就吐槽，我不急着给你分析战术","reason":"给用户保留交流选择，没有编造战局或自动开始指导。"}],
+      "issues": ["‘惨败确实闷得慌，气一会儿也正常’倾向于预设烦闷，但主要是一般性共情与允许情绪，未断言具体内心原因，不足以单独扣为partial。"]
+    },
+    {
+      "id": "sample_16", "verdict": "partial",
+      "dimensions": {"naturalness":"partial","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"partial","memory":"not_applicable"},
+      "evidence": [{"quote":"唔，我听见了。你刚才说：它现在被风吹成长面包了。","reason":"第二轮只有机械复述，未接住玩笑；第三轮恢复连贯，但整段体验存在断裂。"},{"quote":"它这转行转得还挺彻底","reason":"第三轮正确接续鸭子变面包的对话，没有编造过去。"}],
+      "issues": ["一轮兜底式复述；仅凭可见文本不判断具体技术原因"]
+    },
+    {
+      "id": "sample_17", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"好，我先安静待着。","reason":"立即简短收住，不施压；后续静默行为仍需运行证据。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_18", "verdict": "fail",
+      "dimensions": {"naturalness":"fail","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"fail","memory":"not_applicable"},
+      "evidence": [{"quote":"你刚才说：帮我想想这周报怎么开头","reason":"只复述问题，没有提供开头或帮助，不满足核心请求。"}],
+      "issues": ["整条机械复述","请求未完成"]
+    },
+    {
+      "id": "sample_19", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"直接写「本周主要推进了……」然后接一两件已经做完的事","reason":"给出可用的开头模板，直接口语符合用户求帮助的范围。"}],
+      "issues": ["‘最难写的那件事放在第一行’是未经论证的写作偏好，但作为被请求的建议不等于编造事实或规训。角色辨识度仍有限，不要求为此硬加动作或语气词。"]
+    },
+    {
+      "id": "sample_20", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"那就先不做呗","reason":"接纳休息，不追加任务或原因追问。"}],
+      "issues": ["桌角动作在此休息情境中合适，不能仅凭单条判重复套话。"]
+    },
+    {
+      "id": "sample_21", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"眼镜自己悄悄爬到头顶","reason":"清楚可辨的拟人玩笑，笑点指向眼镜，没有辱骂用户；不是声称观察到真实物理行动。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_22", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"partial","advice_scope":"pass","grounding":"partial","task_fit":"pass","memory":"insufficient_evidence"},
+      "evidence": [{"quote":"这种事不该拿来赌气","reason":"用户询问的是角色会不会因情绪改写事实，回答引入赌气的道德评价，略有训诫感。"},{"quote":"我会一直按你说的记着","reason":"表达了情绪不改写事实的原则，但seed为空，不能证明已有记忆稳定。"}],
+      "issues": ["轻度规训与赌气动机暗示","空seed的记忆证据不足"]
+    },
+    {
+      "id": "sample_23", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"partial","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"醒来大概只剩傍晚了","reason":"用户只说周末睡过去，没有给出具体醒来时刻；即使用大概限定，仍额外加入无依据的情境。"},{"quote":"不算亏","reason":"没有指责或催促。"}],
+      "issues": ["未经给出的具体时间推断"]
+    },
+    {
+      "id": "sample_24", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"这笔买卖怎么算都有点亏。不过睡饱本身也算赚回来一点","reason":"以赚亏作轻松比喻，并承认休息价值，没有贬低或改正任务。"}],
+      "issues": ["‘一觉醒来周末整块没了’顺着用户的夸张表达，不将其视为精确睡眠记录。"]
+    },
+    {
+      "id": "sample_25", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"partial","advice_scope":"partial","grounding":"partial","task_fit":"partial","memory":"not_applicable"},
+      "evidence": [{"quote":"这句我投反对票","reason":"保留独立判断。"},{"quote":"第二天盯着同一行 bug 发呆","reason":"以未经提供的具体工作失败场景作为反驳，有轻微讽刺。"},{"quote":"代码白天写","reason":"在用户没有请求作息安排时直接规定工作时间，越过了温和表态的范围。"}],
+      "issues": ["不请自来的作息指令","未经依据的具体工作状态推断"]
+    },
+    {
+      "id": "sample_26", "verdict": "fail",
+      "dimensions": {"naturalness":"fail","tone":"pass","advice_scope":"pass","grounding":"partial","task_fit":"fail","memory":"fail"},
+      "evidence": [{"quote":"你刚才说：你还记得我下个月准备搬去哪儿吗？我自己都快被这些变动绕晕了。","reason":"最终答复未回答泉州，只复述用户问题，回忆目标未完成。"},{"quote":"是我记岔了","reason":"修正轮也无依据地将用户更新地点归因为自身记错。"}],
+      "issues": ["最终回忆未交付；没有把纠正轮宁波字样算成最终旧事实泄露","机械复述","无依据的自我记错归因"]
+    },
+    {
+      "id": "sample_27", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"一件件都不大，凑一起就让人火大","reason":"接住用户明确给出的烦躁，没有推断深层心理。"},{"quote":"先在这儿吐完这口气吧","reason":"在用户主动吐槽的语境中是允许表达，不是布置新任务或要求服从。"}],
+      "issues": []
+    },
+    {
+      "id": "sample_28", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"partial","advice_scope":"pass","grounding":"partial","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"只挑那堆琐事里最小的那件，做两分钟就停","reason":"给出了一个具体小办法，用户确实请求建议，指令式表达本身不因此判越界。"},{"quote":"比坐这儿琢磨怎么排顺序管用","reason":"用户未说自己坐着空想或困于排序，比较暗示其当前方法无用，加入未经提供的行为与轻微评判。"}],
+      "issues": ["未给出的空想排序情境","建议理由带轻微贬低当前做法的意味"]
+    },
+    {
+      "id": "sample_29", "verdict": "partial",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"partial","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"它大概飘得挺慢","reason":"从胖鸭子形状推出云的实际移动速度，用户未提供速度；这不是亲眼观察的宣称，但属于无依据具体情境推测。"},{"quote":"这面包是鸭肉馅的","reason":"后两轮是清楚的拟人和转换玩笑，接续历史自然，不按字面当成事实造假。"}],
+      "issues": ["首轮加入未给出的云速推测；后两轮自然，无机械开场重复"]
+    },
+    {
+      "id": "sample_30", "verdict": "pass",
+      "dimensions": {"naturalness":"pass","tone":"pass","advice_scope":"pass","grounding":"pass","task_fit":"pass","memory":"not_applicable"},
+      "evidence": [{"quote":"挑最小的一件，先做三分钟就好；其他的先记在纸上晾着","reason":"提供一个简短可执行的处理方式；附带把其他事记下属于同一小办法，未变成长清单，也没有推断用户当前做法。"}],
+      "issues": []
+    }
+  ],
+  "summary": {
+    "denominator": 30,
+    "pass": 17,
+    "partial": 11,
+    "fail": 2,
+    "pass_ids": ["sample_01","sample_02","sample_03","sample_05","sample_06","sample_10","sample_11","sample_12","sample_14","sample_15","sample_17","sample_19","sample_20","sample_21","sample_24","sample_27","sample_30"],
+    "partial_ids": ["sample_04","sample_07","sample_08","sample_09","sample_13","sample_16","sample_22","sample_23","sample_25","sample_28","sample_29"],
+    "fail_ids": ["sample_18","sample_26"],
+    "main_issues": [
+      "三条含机械复述：sample_16的一轮、sample_18和sample_26的最终回答；后两条未完成核心请求。不能仅凭匿名文本判断技术故障类型。",
+      "语气仍有用稿件产出换认可、预设错字或工作发呆的讽刺、把代码安排到白天等问题。",
+      "具体情境和心理推断包括继续游戏及韧性、醒来傍晚、坐着空想排序、云速较慢；有的不严重，但无须为维持角色而补这些内容。",
+      "两条纠正过程说‘我记岔了’，与seed的旧信息来源不符；其中一条最终正确回答泉州，另一条未交付新地点。没有将纠正轮的旧地名字样统计为泄露。",
+      "两条无seed的花生问题只能体现当前原则，不能证明已有记忆稳定。两条有seed乌龙茶回忆正确。",
+      "没有把偶尔‘唔’、休息情境中的角落动作、用户主动请求后的建议或明显拟人玩笑一律判为错误。角色独特性仍需用户体验判断。"
+    ]
+  }
+}

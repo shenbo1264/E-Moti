@@ -1,0 +1,280 @@
+============================= test session starts =============================
+platform win32 -- Python 3.11.9, pytest-9.0.3, pluggy-1.6.0
+rootdir: E:\E-Moti\.worktrees\desktop-acceptance
+configfile: pyproject.toml
+testpaths: tests
+plugins: anyio-4.13.0, cov-7.1.0
+collected 1700 items
+
+tests\test_actions.py ...                                                [  0%]
+tests\test_ai_context_builder.py ..                                      [  0%]
+tests\test_ai_expressor.py ............................................. [  2%]
+........................................................................ [  7%]
+.............                                                            [  7%]
+tests\test_app.py ...................................................... [ 11%]
+..........................................................               [ 14%]
+tests\test_art_tools.py ..........................                       [ 16%]
+tests\test_bundled_capability_contracts.py .                             [ 16%]
+tests\test_bundled_local_expression_fallback.py ..                       [ 16%]
+tests\test_capability_panels.py .......                                  [ 16%]
+tests\test_capability_runtime.py ..........                              [ 17%]
+tests\test_capability_settings.py ......                                 [ 17%]
+tests\test_character_draft_creator_tool.py ....                          [ 17%]
+tests\test_character_draft_validator_tool.py .....                       [ 18%]
+tests\test_character_generation_workflow.py ....                         [ 18%]
+tests\test_character_inspiration.py ...                                  [ 18%]
+tests\test_character_library_qa_tool.py ......                           [ 18%]
+tests\test_character_library_view_model.py ......                        [ 19%]
+tests\test_character_pack.py ..............                              [ 20%]
+tests\test_character_pack_import_tool.py ........                        [ 20%]
+tests\test_character_pack_scaffold_tool.py ..                            [ 20%]
+tests\test_character_pack_status_review_tool.py ......                   [ 21%]
+tests\test_character_pack_validator_tool.py ..                           [ 21%]
+tests\test_character_registry.py ..................................      [ 23%]
+tests\test_character_session.py .....                                    [ 23%]
+tests\test_character_voice_profile.py .......                            [ 23%]
+tests\test_chat_memory_alias_promotion.py ....                           [ 24%]
+tests\test_chat_memory_common_facts.py ..........................        [ 25%]
+tests\test_chat_memory_coordination.py ..............                    [ 26%]
+tests\test_chat_memory_extraction.py ...............                     [ 27%]
+tests\test_chat_memory_extraction_provider.py ssss                       [ 27%]
+tests\test_chat_memory_plans.py ....................                     [ 28%]
+tests\test_companion_acceptance.py ...                                   [ 28%]
+tests\test_companion_dialogue_policy.py .....                            [ 29%]
+tests\test_companion_live_eval_status.py ..                              [ 29%]
+tests\test_companion_moments.py ..                                       [ 29%]
+tests\test_companion_natural_voice.py .                                  [ 29%]
+tests\test_control_panel_layout.py ...                                   [ 29%]
+tests\test_controller.py ............................................... [ 32%]
+....................                                                     [ 33%]
+tests\test_controller_memory_compatibility.py ........                   [ 34%]
+tests\test_course_submission_package_tool.py .....                       [ 34%]
+tests\test_desktop_chat_memory_ui.py ..........                          [ 34%]
+tests\test_desktop_dialogue_service.py ......                            [ 35%]
+tests\test_desktop_memory_layout.py ....                                 [ 35%]
+tests\test_desktop_pet_smoke.py ......                                   [ 35%]
+tests\test_desktop_shell.py ..                                           [ 36%]
+tests\test_device_context.py ..............................              [ 37%]
+tests\test_dialogue.py .....                                             [ 38%]
+tests\test_dialogue_history.py ..                                        [ 38%]
+tests\test_dialogue_quiet_request.py ..............                      [ 39%]
+tests\test_dialogue_refinement_flow.py ..                                [ 39%]
+tests\test_emotional_memory.py ......                                    [ 39%]
+tests\test_emotional_memory_policy.py ......                             [ 39%]
+tests\test_emotional_memory_service.py ..........                        [ 40%]
+tests\test_engine.py .........                                           [ 40%]
+tests\test_events.py ....................                                [ 42%]
+tests\test_expression_clients.py .....                                   [ 42%]
+tests\test_expression_context.py .........................               [ 43%]
+tests\test_expression_diagnostic_view.py .......                         [ 44%]
+tests\test_expression_diagnostics.py .......                             [ 44%]
+tests\test_expression_event_pipeline.py .......                          [ 45%]
+tests\test_expression_expressor.py ...                                   [ 45%]
+tests\test_expression_json_contract.py ...                               [ 45%]
+tests\test_expression_parser.py ....                                     [ 45%]
+tests\test_expression_provider_diagnostics.py ...                        [ 45%]
+tests\test_expression_refinement.py ........                             [ 46%]
+tests\test_expression_request.py ..                                      [ 46%]
+tests\test_expression_settings.py ......                                 [ 46%]
+tests\test_focus_companion.py ............                               [ 47%]
+tests\test_focus_companion_runtime.py .....                              [ 47%]
+tests\test_gptsovits_voice_service_script.py .                           [ 47%]
+tests\test_grounded_companion_development.py ..............              [ 48%]
+tests\test_hatch_pet_base_intake_preflight.py ......                     [ 49%]
+tests\test_hatch_pet_imagegen_readiness.py ...                           [ 49%]
+tests\test_hatch_pet_imagegen_route_preflight.py ..                      [ 49%]
+tests\test_host_auth.py ...                                              [ 49%]
+tests\test_host_dialogue.py .............                                [ 50%]
+tests\test_host_process.py .                                             [ 50%]
+tests\test_host_service.py ...                                           [ 50%]
+tests\test_host_transport.py ...                                         [ 50%]
+tests\test_integrated_story_runtime.py ............                      [ 51%]
+tests\test_integrated_story_smoke_tool.py .                              [ 51%]
+tests\test_interaction_intents.py ..                                     [ 51%]
+tests\test_inventory.py ....                                             [ 51%]
+tests\test_live2d_web.py ....                                            [ 52%]
+tests\test_liveportrait_preflight.py .....                               [ 52%]
+tests\test_llm_provider_matrix_tool.py ..                                [ 52%]
+tests\test_llm_session_quality_review.py ....                            [ 52%]
+tests\test_llm_smoke.py ...................                              [ 53%]
+tests\test_llm_smoke_review.py .........                                 [ 54%]
+tests\test_memory.py .........                                           [ 54%]
+tests\test_memory_adversarial.py ....................................... [ 57%]
+.                                                                        [ 57%]
+tests\test_memory_album_controller.py .....                              [ 57%]
+tests\test_memory_album_lifecycle.py ......................              [ 58%]
+tests\test_memory_benchmark.py ....                                      [ 59%]
+tests\test_memory_fusion.py .........                                    [ 59%]
+tests\test_memory_holdout.py ...                                         [ 59%]
+tests\test_memory_lifecycle.py .........................                 [ 61%]
+tests\test_memory_prompt_budget.py .                                     [ 61%]
+tests\test_memory_prompt_lifecycle.py .....                              [ 61%]
+tests\test_memory_retrieval_fusion.py ..                                 [ 61%]
+tests\test_mentor_preview_smoke.py ...                                   [ 61%]
+tests\test_mobile_link_qt.py ............                                [ 62%]
+tests\test_motion.py .....                                               [ 62%]
+tests\test_natural_chat_memory.py ..................                     [ 63%]
+tests\test_natural_chat_memory_adversarial.py ...............            [ 64%]
+tests\test_natural_forget_commands.py ............                       [ 65%]
+tests\test_packaging_entrypoints.py ...                                  [ 65%]
+tests\test_persistent_memory_candidates.py ...................           [ 66%]
+tests\test_persona.py .............s...                                  [ 67%]
+tests\test_personal_task_runner.py ..........                            [ 68%]
+tests\test_personal_tasks.py ...........................                 [ 70%]
+tests\test_pet_correction_recall.py ....                                 [ 70%]
+tests\test_pixel_pet_base_review.py ......                               [ 70%]
+tests\test_pixel_pet_edge_halo_cleanup.py ...                            [ 70%]
+tests\test_pixel_pet_edge_style_brief.py ...                             [ 70%]
+tests\test_pixel_pet_emote_mapping.py ...                                [ 71%]
+tests\test_pixel_pet_pack_validator_tool.py ......                       [ 71%]
+tests\test_pixel_pet_promotion_gate.py ....                              [ 71%]
+tests\test_pixel_pet_promotion_preflight.py ...                          [ 71%]
+tests\test_pixel_pet_row_review.py ...                                   [ 72%]
+tests\test_pixel_pet_sequence_status_tool.py ..                          [ 72%]
+tests\test_pixel_pet_visual_qa.py ...                                    [ 72%]
+tests\test_plan_extraction_correction.py .....                           [ 72%]
+tests\test_plugin_audit.py .....                                         [ 72%]
+tests\test_plugin_catalog_view_model.py .                                [ 73%]
+tests\test_plugin_center_controller.py .....                             [ 73%]
+tests\test_plugin_cli.py .                                               [ 73%]
+tests\test_plugin_configuration.py ....                                  [ 73%]
+tests\test_plugin_enabled_controller_contract.py ........                [ 74%]
+tests\test_plugin_health.py ....                                         [ 74%]
+tests\test_plugin_host.py .......                                        [ 74%]
+tests\test_plugin_journal.py ...                                         [ 74%]
+tests\test_plugin_manifest.py .........                                  [ 75%]
+tests\test_plugin_memory_lifecycle.py ....                               [ 75%]
+tests\test_plugin_package.py .....                                       [ 75%]
+tests\test_plugin_provider_adapters.py ....                              [ 76%]
+tests\test_plugin_runtime.py ..................                          [ 77%]
+tests\test_plugin_services.py ...                                        [ 77%]
+tests\test_plugin_smoke_tool.py .                                        [ 77%]
+tests\test_plugin_story_bridge.py ....                                   [ 77%]
+tests\test_plugin_subsystem.py ....                                      [ 77%]
+tests\test_plugin_tooling.py ....                                        [ 78%]
+tests\test_portrait_candidate_decision_brief.py ...                      [ 78%]
+tests\test_portrait_candidate_edge_cleanup.py ...                        [ 78%]
+tests\test_portrait_candidate_preparation.py ........                    [ 79%]
+tests\test_portrait_candidate_review.py ..                               [ 79%]
+tests\test_portrait_motion_frame_extractor.py ..                         [ 79%]
+tests\test_portrait_pack_smoke.py ...                                    [ 79%]
+tests\test_portrait_promotion_gate.py ......                             [ 79%]
+tests\test_portrait_video_frame_normalization.py ...                     [ 79%]
+tests\test_portrait_video_frame_preflight.py ......                      [ 80%]
+tests\test_portrait_video_frame_visual_qa.py ....                        [ 80%]
+tests\test_portrait_video_regeneration_brief.py ...                      [ 80%]
+tests\test_portrait_video_retry_handoff.py ...                           [ 80%]
+tests\test_portrait_video_source_batch.py ....                           [ 81%]
+tests\test_portrait_video_source_pack.py ...                             [ 81%]
+tests\test_portrait_video_source_pack_batch_create.py ...                [ 81%]
+tests\test_portrait_video_source_pack_handoff.py ...                     [ 81%]
+tests\test_portrait_video_source_pack_import.py ....                     [ 81%]
+tests\test_portrait_video_source_pack_processing.py .......              [ 82%]
+tests\test_portrait_video_workflow_status.py ........                    [ 82%]
+tests\test_presentation_renderer.py .........                            [ 83%]
+tests\test_private_provider_smoke_tool.py .                              [ 83%]
+tests\test_proactive_companion.py ......                                 [ 83%]
+tests\test_proactive_restart_state.py .                                  [ 83%]
+tests\test_qt_optional_contracts.py ...                                  [ 83%]
+tests\test_qwen3_tts_local_server.py ........                            [ 84%]
+tests\test_relationship.py .....                                         [ 84%]
+tests\test_relationship_development_prompt.py ....                       [ 84%]
+tests\test_release_readiness_report.py ................................. [ 86%]
+.....................                                                    [ 88%]
+tests\test_release_security_cli.py ......                                [ 88%]
+tests\test_render_tools.py .....                                         [ 88%]
+tests\test_repository_hygiene.py .....                                   [ 89%]
+tests\test_runtime_copy_hygiene.py ..                                    [ 89%]
+tests\test_runtime_paths.py ........                                     [ 89%]
+tests\test_screen_observation.py .....                                   [ 89%]
+tests\test_semantic_memory.py ...                                        [ 90%]
+tests\test_session_goals.py ..                                           [ 90%]
+tests\test_session_imagegen_result_extractor.py ....                     [ 90%]
+tests\test_shop_items.py .                                               [ 90%]
+tests\test_simulate_companion_playthrough_tool.py .                      [ 90%]
+tests\test_snapshot.py ...........                                       [ 91%]
+tests\test_snapshot_renderer.py ...                                      [ 91%]
+tests\test_spirit_stage.py .........                                     [ 91%]
+tests\test_storage.py ...............                                    [ 92%]
+tests\test_story_plugin_qt_integration.py ...                            [ 93%]
+tests\test_teacher_correction_recall.py ............                     [ 93%]
+tests\test_test_isolation.py .                                           [ 93%]
+tests\test_topic_scout.py .....                                          [ 94%]
+tests\test_tray_controller.py ..                                         [ 94%]
+tests\test_ui_design.py .....                                            [ 94%]
+tests\test_visual_actions.py .......                                     [ 94%]
+tests\test_voice_asr.py ......                                           [ 95%]
+tests\test_voice_async.py .                                              [ 95%]
+tests\test_voice_capability_smoke_tool.py ........                       [ 95%]
+tests\test_voice_invalidation.py ...........                             [ 96%]
+tests\test_voice_provider_catalog.py ..                                  [ 96%]
+tests\test_voice_service_control.py ....                                 [ 96%]
+tests\test_voice_service_deployment_scripts.py ....                      [ 97%]
+tests\test_voice_service_preflight_tool.py ...                           [ 97%]
+tests\test_voice_tts.py ...............                                  [ 98%]
+tests\test_web_search.py ....                                            [ 98%]
+tests\test_weekly_schedule_memory.py .......                             [ 98%]
+tests\test_windows_build_validator.py ......                             [ 99%]
+tests\test_windows_packaging_scripts.py ........                         [ 99%]
+tests\test_xingxi_product_copy.py ........                               [100%]
+
+============================== warnings summary ===============================
+tests/test_app.py::test_mobile_link_page_uses_window_controller_and_stops_on_close
+  C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\websockets\legacy\__init__.py:6: DeprecationWarning: websockets.legacy is deprecated; see https://websockets.readthedocs.io/en/stable/howto/upgrade.html for upgrade instructions
+    warnings.warn(  # deprecated in 14.0 - 2024-11-09
+
+tests/test_app.py::test_mobile_link_page_uses_window_controller_and_stops_on_close
+  C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\protocols\websockets\websockets_impl.py:17: DeprecationWarning: websockets.server.WebSocketServerProtocol is deprecated
+    from websockets.server import WebSocketServerProtocol
+
+tests/test_mobile_link_qt.py::test_panel_reports_port_in_use
+  C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\_pytest\threadexception.py:58: PytestUnhandledThreadExceptionWarning: Exception in thread companion-http
+
+  Traceback (most recent call last):
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 172, in startup
+      server = await loop.create_server(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 1536, in create_server
+      raise OSError(err.errno, msg) from None
+  OSError: [Errno 10048] error while attempting to bind on address ('127.0.0.1', 55716): 通常每个套接字地址(协议/网络地址/端口)只允许使用一次。
+
+  During handling of the above exception, another exception occurred:
+
+  Traceback (most recent call last):
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 1045, in _bootstrap_inner
+      self.run()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\threading.py", line 982, in run
+      self._target(*self._args, **self._kwargs)
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 75, in run
+      return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\_compat.py", line 30, in asyncio_run
+      return runner.run(main)
+             ^^^^^^^^^^^^^^^^
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\runners.py", line 118, in run
+      return self._loop.run_until_complete(task)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 641, in run_until_complete
+      self.run_forever()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\windows_events.py", line 321, in run_forever
+      super().run_forever()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 608, in run_forever
+      self._run_once()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\base_events.py", line 1936, in _run_once
+      handle._run()
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\asyncio\events.py", line 84, in _run
+      self._context.run(self._callback, *self._args)
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 79, in serve
+      await self._serve(sockets)
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 94, in _serve
+      await self.startup(sockets=sockets)
+    File "C:\Users\19970\AppData\Local\Programs\Python\Python311\Lib\site-packages\uvicorn\server.py", line 182, in startup
+      sys.exit(1)
+  SystemExit: 1
+
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+=========== 1695 passed, 5 skipped, 3 warnings in 297.23s (0:04:57) ===========

@@ -1,0 +1,64 @@
+Window: "E-Moti 验证副本 — 独立测试存档", App: python.exe.
+	0 窗口 (settable, string) E-Moti 验证副本 — 独立测试存档 Secondary Actions: Raise ID: QApplication.CompanionWindow
+		1 标题栏 (settable, string) Value: E-Moti 验证副本 — 独立测试存档
+			2 菜单栏 系统 ID: MenuBar
+				3 菜单项 系统
+			4 按钮 最小化
+			5 按钮 还原
+			6 按钮 关闭
+		7 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot
+			8 自定义 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.LauncherCard
+				9 文本 原创 OC 桌面伴侣 Demo ID: QApplication.CompanionWindow.CompanionRoot.LauncherCard.LauncherEyebrow
+				10 文本 星汐 E-Moti ID: QApplication.CompanionWindow.CompanionRoot.LauncherCard.LauncherTitle
+				11 文本 控制面板用于演示状态、背包和关系；桌宠模式是独立桌面演出窗口。 ID: QApplication.CompanionWindow.CompanionRoot.LauncherCard.LauncherSubtitle
+				12 按钮 (settable, string) 进入桌宠模式 ID: QApplication.CompanionWindow.CompanionRoot.LauncherCard.PrimaryLaunchButton
+			13 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget
+				14 自定义 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard
+					15 文本 控制中心 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationHint
+					16 复选框 (settable, string) 总览 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					17 复选框 (settable, string) 互动 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					18 复选框 (settable, string) 背包 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					19 复选框 (settable, string) 角色库 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					20 复选框 (settable, string) 感知与搜索 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					21 复选框 (settable, string) 隐私 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					22 复选框 (settable, string) LLM表达 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					23 复选框 (settable, string) 表达规则 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					24 复选框 (settable, string) 语音 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					25 复选框 (settable, string) 回忆 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					26 复选框 (settable, string) 探头时刻 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					27 复选框 (settable, string) 插件 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+					28 复选框 (settable, string) 手机连接 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.SidebarCard.NavigationButton
+				29 窗格 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget
+					59 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget
+						60 文本 星屑回忆册 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QLabel
+						61 按钮 (settable, string) 记住一件事 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QPushButton
+						62 文本 待确认 1 条 · 只有确认后才会长期记住。 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QLabel
+						63 列表 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QListWidget
+							64 列表项目 (selectable, settable, string) 【等待你的确认】 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QListWidget
+							65 列表项目 (selectable, settable, string) 个人偏好 用户不喜欢油腻 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QListWidget
+							66 列表项目 (selectable, settable, string) 【关于你】 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QListWidget
+							67 列表项目 (selectable, settable, string) 饮料偏好 用户喜欢桂花茶 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QListWidget
+							68 列表项目 (selectable, settable, string) 个人偏好 用户喜欢蓝莓 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QListWidget
+						70 按钮 (disabled, settable, string) 确认记住 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QPushButton
+						71 按钮 (disabled, settable, string) 不记住 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QPushButton
+						72 编辑 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QTextEdit
+							73 组 (settable, string) ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QTextEdit.qt_scrollarea_viewport
+						74 按钮 (settable, string) 固定 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QPushButton
+						75 按钮 (settable, string) 纠正 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QPushButton
+						76 按钮 (settable, string) 忘记 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QPushButton
+						77 按钮 (settable, string) 查看来源 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QPushButton
+						78 按钮 (settable, string) 刷新回忆 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.QPushButton
+						79 组 (settable, string) 记忆设置 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.MemorySettingsPanel
+							80 组合框 (settable, string) 记忆设置 Value: 自动记住明确的自述 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.MemorySettingsPanel.QComboBox
+							81 文本 你明确说起自己的事会直接记下，并提示一句；有冲突或说不清时才来问你。 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.MemorySettingsPanel.QLabel
+							82 复选框 (settable, string) 语义召回（换种说法也能想起来，模型在本机运行） ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.MemorySettingsPanel.QCheckBox
+							83 文本 语义召回未开启，目前按字面匹配回忆。 ID: QApplication.CompanionWindow.CompanionRoot.QWidget.QStackedWidget.QWidget.MemorySettingsPanel.QLabel
+
+Document text: ```
+用户喜欢桂花茶
+来源：普通聊天
+你的原话：我喜欢桂花茶。
+记下的理由：明确第一人称自述，原话直接支持；未推断共同经历
+未经你逐条确认
+版本：1
+```

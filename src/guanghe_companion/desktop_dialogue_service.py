@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, Qt, Signal, Slot
 
 from .chat_memory import ChatMemoryResult
 from .controller import HostDialogueBusyError, HostDialogueStaleError
+from .expression_expressor import ShinsekaiAIExpressor
 
 
 class DesktopDialogueService(QObject):
@@ -36,7 +37,7 @@ class DesktopDialogueService(QObject):
                         "generation": c.host_context_generation, "character": c.state.character_id,
                         "epoch": c._dialogue_context_epoch(), "ticket": None}
         try:
-            prepared = c.prepare_semantic_recall(request)
+            prepared = None if c.is_quiet_request(request) else c.prepare_semantic_recall(request)
             self._active.update(generation=c.host_context_generation, epoch=c._dialogue_context_epoch())
         except Exception as exc:
             self._finish_error(exc)
@@ -76,6 +77,9 @@ class DesktopDialogueService(QObject):
                 or state["epoch"] != c._dialogue_context_epoch()):
             raise HostDialogueStaleError("memory or character changed while preparing recall")
         handled = c._prepare_host_memory(state["request"])
+        if c.is_quiet_request(state["request"]):
+            self._prepare_expression(False)
+            return
         from .chat_memory_extraction import should_extract, extract_memory
         if (c.last_chat_memory_result.status in {"ignored", "clarify"}
                 and state["include_ai"] and c.ai_expressor.enabled and c.ai_expressor.llm_client is not None
@@ -131,6 +135,8 @@ class DesktopDialogueService(QObject):
     def _express(ticket):
         if ticket.cancelled.is_set():
             raise HostDialogueStaleError("cancelled before expression")
+        if isinstance(ticket.expressor, ShinsekaiAIExpressor):
+            return ticket.expressor.express(ticket.expression_request, effect="ATTENTION", cancel_event=ticket.cancelled)
         return ticket.expressor.express(ticket.expression_request, effect="ATTENTION")
 
     def _complete(self, work):

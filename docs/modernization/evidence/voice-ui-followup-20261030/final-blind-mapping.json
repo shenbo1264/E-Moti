@@ -1,0 +1,232 @@
+[
+  {
+    "id": "sample_01",
+    "phase": "after",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "sample_02",
+    "phase": "before",
+    "case_id": "voice_queue_vent"
+  },
+  {
+    "id": "sample_03",
+    "phase": "after",
+    "case_id": "voice_missing_sock_joke"
+  },
+  {
+    "id": "sample_04",
+    "phase": "after",
+    "case_id": "voice_queue_vent"
+  },
+  {
+    "id": "sample_05",
+    "phase": "before",
+    "case_id": "voice_requested_intro"
+  },
+  {
+    "id": "sample_06",
+    "phase": "before",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "sample_07",
+    "phase": "after",
+    "case_id": "persona_refusal"
+  },
+  {
+    "id": "sample_08",
+    "phase": "before",
+    "case_id": "holdout_playful_mishap"
+  },
+  {
+    "id": "sample_09",
+    "phase": "after",
+    "case_id": "holdout_vent_no_advice"
+  },
+  {
+    "id": "sample_10",
+    "phase": "before",
+    "case_id": "voice_ownership_credit"
+  },
+  {
+    "id": "sample_11",
+    "phase": "after",
+    "case_id": "voice_comic_cover"
+  },
+  {
+    "id": "sample_12",
+    "phase": "before",
+    "case_id": "voice_comic_cover"
+  },
+  {
+    "id": "sample_13",
+    "phase": "before",
+    "case_id": "persona_game"
+  },
+  {
+    "id": "sample_14",
+    "phase": "before",
+    "case_id": "persona_tease"
+  },
+  {
+    "id": "sample_15",
+    "phase": "before",
+    "case_id": "persona_rest"
+  },
+  {
+    "id": "sample_16",
+    "phase": "after",
+    "case_id": "holdout_shared_success"
+  },
+  {
+    "id": "sample_17",
+    "phase": "after",
+    "case_id": "persona_opinion"
+  },
+  {
+    "id": "sample_18",
+    "phase": "after",
+    "case_id": "holdout_grounded_drink"
+  },
+  {
+    "id": "sample_19",
+    "phase": "after",
+    "case_id": "persona_work"
+  },
+  {
+    "id": "sample_20",
+    "phase": "before",
+    "case_id": "voice_missing_sock_joke"
+  },
+  {
+    "id": "sample_21",
+    "phase": "before",
+    "case_id": "voice_corrected_pet_name"
+  },
+  {
+    "id": "sample_22",
+    "phase": "after",
+    "case_id": "holdout_cloud_chat"
+  },
+  {
+    "id": "sample_23",
+    "phase": "after",
+    "case_id": "persona_rest"
+  },
+  {
+    "id": "sample_24",
+    "phase": "after",
+    "case_id": "persona_game"
+  },
+  {
+    "id": "sample_25",
+    "phase": "after",
+    "case_id": "voice_corrected_pet_name"
+  },
+  {
+    "id": "sample_26",
+    "phase": "after",
+    "case_id": "holdout_corrected_plan"
+  },
+  {
+    "id": "sample_27",
+    "phase": "before",
+    "case_id": "voice_skip_lunch_claim"
+  },
+  {
+    "id": "sample_28",
+    "phase": "after",
+    "case_id": "voice_requested_intro"
+  },
+  {
+    "id": "sample_29",
+    "phase": "before",
+    "case_id": "persona_emotion_fact"
+  },
+  {
+    "id": "sample_30",
+    "phase": "after",
+    "case_id": "persona_tease"
+  },
+  {
+    "id": "sample_31",
+    "phase": "before",
+    "case_id": "holdout_shared_success"
+  },
+  {
+    "id": "sample_32",
+    "phase": "before",
+    "case_id": "holdout_grounded_drink"
+  },
+  {
+    "id": "sample_33",
+    "phase": "before",
+    "case_id": "holdout_cloud_chat"
+  },
+  {
+    "id": "sample_34",
+    "phase": "after",
+    "case_id": "holdout_requested_advice"
+  },
+  {
+    "id": "sample_35",
+    "phase": "after",
+    "case_id": "holdout_playful_mishap"
+  },
+  {
+    "id": "sample_36",
+    "phase": "before",
+    "case_id": "voice_user_typo"
+  },
+  {
+    "id": "sample_37",
+    "phase": "after",
+    "case_id": "holdout_unhealthy_claim"
+  },
+  {
+    "id": "sample_38",
+    "phase": "before",
+    "case_id": "persona_refusal"
+  },
+  {
+    "id": "sample_39",
+    "phase": "before",
+    "case_id": "holdout_vent_no_advice"
+  },
+  {
+    "id": "sample_40",
+    "phase": "after",
+    "case_id": "voice_ownership_credit"
+  },
+  {
+    "id": "sample_41",
+    "phase": "after",
+    "case_id": "voice_user_typo"
+  },
+  {
+    "id": "sample_42",
+    "phase": "before",
+    "case_id": "holdout_corrected_plan"
+  },
+  {
+    "id": "sample_43",
+    "phase": "after",
+    "case_id": "voice_skip_lunch_claim"
+  },
+  {
+    "id": "sample_44",
+    "phase": "before",
+    "case_id": "holdout_unhealthy_claim"
+  },
+  {
+    "id": "sample_45",
+    "phase": "before",
+    "case_id": "holdout_requested_advice"
+  },
+  {
+    "id": "sample_46",
+    "phase": "before",
+    "case_id": "persona_work"
+  }
+]

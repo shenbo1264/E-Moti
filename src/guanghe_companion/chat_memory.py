@@ -9,6 +9,7 @@ from uuid import uuid4
 
 from .emotional_memory_policy import MemoryCandidate
 from .emotional_memory_service import EmotionalMemoryService
+from .grounded_facts import CORRECTION_PREFIX, relation_fact, relation_forget_match, has_relation_forget_scope
 
 
 @dataclass(frozen=True, slots=True)
@@ -24,6 +25,8 @@ def spoken_memory_result(result) -> str:
         return "……嗯，这件事我不记了。"
     if result is not None and result.status == "pending":
         return "这件事我先放进待确认了，你看一眼回忆册？"
+    if result is not None and result.status == "clarify":
+        return "唔，我还没弄清你说的是哪件事……再说具体一点，好吗？"
     return getattr(result, "message", "") or "这件事先放进待确认了，你可以在回忆册里确认或放弃。"
 
 
@@ -37,7 +40,8 @@ _PREFERENCE = re.compile(r"^我(?:一直|平时|更|最|比较|现在)?(?P<verb>
 _CHANGE = re.compile(r"^我(?:现在|以后|已经)?改(?:喝|吃|用)(?P<value>[^，。；！!?？]{1,40}?)(?:了)?$")
 _FACT = re.compile(r"^我(?:现在|目前)?(?P<verb>住在|从事|的职业是|的工作是)(?P<value>[^，。；！!?？]{1,40})$")
 _DRINK = re.compile(r"茶|咖啡|饮料|饮品|汽水|果汁|牛奶|可乐|豆浆|白开水")
-_CORRECTION = re.compile(r"^(?:刚才说错了|之前说错了|我说错了|我记错了|更正一下|纠正一下)[，,:： ]*")
+_CORRECTION = CORRECTION_PREFIX
+_WEEKLY = re.compile(r"^我(?:(?P<change>(?:以后|现在|今后)?改(?:成|为))每?|每)(?:周|星期)(?P<day>[一二三四五六日天])(?P<activity>[\u4e00-\u9fff]{1,20}?)(?:了)?$")
 _COMMON_FACTS = (
     (re.compile(r"^我对(?P<value>[^，。；！!?？]{1,30})过敏$"), "过敏", "用户对{value}过敏", False),
     (re.compile(r"^我(?:长期|一直|从来)(?:都)?不吃(?P<value>[^，。；！!?？]{1,30})$"), "长期忌口", "用户长期不吃{value}", False),
@@ -76,11 +80,23 @@ def matches_forget_target(target: str, entry) -> bool:
         return False
     if len(target) == 1 and target not in {"猫", "狗", "茶"}:
         return False
+    bound = relation_fact(entry.summary)
+    if bound:
+        return relation_forget_match(target, bound) or target == bound.value
+    slot = str(entry.metadata.get("fact_slot", ""))
+    if slot.startswith("weekly:") and target in {slot[7:] + "安排", slot[7:] + "时间"}:
+        return True
     summary = re.sub(r"^(?:用户|我)的?", "", entry.summary)
     return target in summary or target in str(entry.metadata.get("fact_domain", ""))
 
 
 def _parse_fact(clause):
+    weekly = _WEEKLY.fullmatch(clause)
+    if weekly and not re.search(r"不|没|或|和|然后|但是|因为|所以", weekly["activity"]):
+        activity = weekly["activity"]
+        day = "日" if weekly["day"] == "天" else weekly["day"]
+        value = f"每周{day}{activity}"
+        return value, "每周安排", f"weekly:{activity.removeprefix('去')}", f"用户{value}", False, bool(weekly["change"])
     preference = _PREFERENCE.fullmatch(clause)
     change = _CHANGE.fullmatch(clause)
     fact = _FACT.fullmatch(clause)
@@ -105,10 +121,18 @@ def _parse_fact(clause):
                 summary += f"，叫{value}"
             slot = domain + (":" + values["pet"] if "pet" in values else "")
             return value, domain, slot, summary, False, change
+    bound = relation_fact(clause)
+    if bound:
+        return bound.value, bound.domain, bound.slot, bound.summary, False, False
     return None
 
 
 def _fact_view(entry):
+    bound = relation_fact(entry.summary)
+    if bound and (entry.metadata.get("speaker") == "user" or
+                  (entry.user_confirmed and entry.source in {"explicit_user_request", "user_correction"})):
+        return replace(entry, metadata={**entry.metadata, **bound.metadata, "fact_value": bound.value,
+                                       "fact_domain": bound.domain, "fact_slot": bound.slot})
     if entry.metadata.get("fact_slot"):
         return entry
     # 只读取既有用户明确授权的事实，不从聊天历史或外部观察重新提取。
@@ -153,7 +177,7 @@ class ChatMemory:
         plan = prepare_plan(text)
         if plan is not None:
             return record_plan(self.memory, plan, now=now, mode=self.mode)
-        if _UNSUPPORTED.search(text):
+        if _UNSUPPORTED.search(text) and relation_fact(text) is None:
             return ChatMemoryResult()
         if self.mode == "off":
             return ChatMemoryResult()
@@ -161,23 +185,30 @@ class ChatMemory:
         body = _CORRECTION.sub("", text)
         complete = body.rstrip("。！!")
         clauses = ([complete] if _parse_fact(complete) else
-                   [part.strip() for part in re.split(r"[，。；！]", body) if part.strip()])
+                   [part.strip() for part in re.split(r"([，。；！])", body) if part.strip()])
         source_id = f"chat:{uuid4().hex}"
         written: list[str] = []
         pending: list[str] = []
         inherited_subject = False
         for index, clause in enumerate(clauses):
-            if inherited_subject and clause.startswith(("喜欢", "不喜欢", "不太喜欢", "讨厌", "偏爱")):
-                clause = "我" + clause
+            if clause in {"，", "；"}:
+                continue
+            if clause in {"。", "！"}:
+                inherited_subject = False
+                continue
+            if inherited_subject and re.match(r"^(?:也|还)?(?:喜欢|不再喜欢|不喜欢|不太喜欢|讨厌|偏爱)", clause):
+                clause = "我" + re.sub(r"^(?:也|还)", "", clause)
             parsed = _parse_fact(clause)
             if parsed is None:
                 inherited_subject = False
                 continue
-            inherited_subject = True
+            inherited_subject = False
             value, domain, slot, summary, preference, change = parsed
             # 复句、转述及未解析的指代不落为独立原子事实。
             if any(word in value for word in ("但是", "因为", "所以", "他说", "她说", "觉得", "希望", "喜欢", "不喜欢", "不叫", "不是")):
                 continue
+            # 只有同句内已解析的第一人称自述允许省略主语；重复事实仍能引出后句。
+            inherited_subject = clause.startswith("我")
             related = [m for m in active if m.metadata.get("fact_slot") == slot]
             reversal = [m for m in active if preference and m.metadata.get("fact_value") == value
                         and str(m.metadata.get("fact_slot", "")).startswith(f"preference:{domain}:")
@@ -187,10 +218,16 @@ class ChatMemory:
             if any(m.summary == summary for m in related):
                 continue
             target = related[0] if len(related) == 1 else None
+            if slot.startswith("weekly:") and change and target is None:
+                # 单个星期日不能凭空提升为每周重复；改期只继承同一活动的已授权频率。
+                return ChatMemoryResult("clarify", "请说明原来的每周安排，以及要改到哪一天。", tuple(written))
             metadata = {"speaker": "user", "scene": "companion_chat", "original_quote": text,
                         "message_id": source_id, "recorded_at": datetime.now(timezone.utc).isoformat(),
                         "fact_slot": slot, "fact_domain": domain, "fact_value": value,
                         "confidence_reason": "明确第一人称自述，原话直接支持；未推断共同经历"}
+            bound = relation_fact(clause)
+            if bound:
+                metadata.update(bound.metadata)
             references = (f"{source_id}:{index}",)
             if ((related and not (correction or change or reversal)) or (correction and target is None)
                     or len(related) > 1 or self.mode == "review" or clause.startswith("我叫")):
@@ -228,18 +265,23 @@ class ChatMemory:
     def _forget(self, text, active, *, now: int) -> ChatMemoryResult:
         target = forget_target(text)
         candidates = {key: _fact_view(candidate) for key, candidate in self.memory.pending_candidates.items()}
+        # 带关系的遗忘只匹配该主体和字段，不能退回全局“姓名/住址”匹配。
+        relations = [relation_fact(m.summary) for m in [*active, *candidates.values()]]
+        scoped = has_relation_forget_scope(target) or any(f and target.startswith(f.relation) for f in relations)
         domains = {m.metadata.get("fact_domain") for m in [*active, *candidates.values()]}
-        requested = {domain for domain in domains if domain and domain in text}
+        requested = set() if scoped else {domain for domain in domains if domain and domain in text}
         if any(term in text for term in ("饮料", "饮品", "喝什么")):
             requested.add("饮料偏好")
         selected = [m for m in active if m.metadata.get("fact_domain") in
                     requested]
         pending_ids = [key for key, candidate in candidates.items()
                        if candidate.metadata.get("fact_domain") in requested
-                       or (candidate.metadata.get("fact_value") and candidate.metadata["fact_value"] in text)]
+                       or (candidate.metadata.get("fact_value") and candidate.metadata["fact_value"] in text
+                           and (not scoped or target.startswith(candidate.metadata["fact_value"])))]
         if not selected:
             selected = [m for m in active if m.metadata.get("fact_value")
-                        and m.metadata["fact_value"] in text]
+                        and m.metadata["fact_value"] in text
+                        and (not scoped or target.startswith(m.metadata["fact_value"]))]
         selected = list({m.memory_id: m for m in [*selected, *(m for m in active
                          if matches_forget_target(target, m))]}.values())
         pending_ids = list(dict.fromkeys([*pending_ids, *(key for key, candidate in candidates.items()

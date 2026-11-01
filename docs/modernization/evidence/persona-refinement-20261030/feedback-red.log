@@ -1,0 +1,35 @@
+F                                                                        [100%]
+================================== FAILURES ===================================
+_ test_desktop_prompt_keeps_character_and_history_without_forcing_staged_speech _
+
+tmp_path = WindowsPath('<WORKSPACE>/artifacts/codex_handoff/persona-refinement/feedback-red/test_desktop_prompt_keeps_char0')
+
+    def test_desktop_prompt_keeps_character_and_history_without_forcing_staged_speech(tmp_path):
+        controller = PluginEnabledCompanionController(user_data_root=tmp_path)
+        try:
+            controller._current_player_message = "只是随便聊聊。"
+            controller.last_feedback = "唔，我听见了。你刚才说：只是随便聊聊。"
+            request = ExpressionRequest.from_snapshot(
+                controller.get_typed_snapshot(), context=controller._expression_context()
+            )
+            prompt = controller.ai_expressor.build_prompt(request)
+            assert "xingxi_pixel_pet" in prompt
+            assert "只是随便聊聊。" in prompt
+            assert "slightly shy" in prompt or "微害羞" in prompt
+            assert "recent_dialogue:" in prompt
+>           assert "唔，我听见了。你刚才说" not in prompt
+E           assert '唔，我听见了。你刚才说' not in '你是 AI 桌面伴侣电...preference"}'
+E
+E             '唔，我听见了。你刚才说' is contained here:
+E               feedback: 唔，我听见了。你刚才说：只是随便聊聊。
+E             ?           +++++++++++
+E               player_message: 只是随便聊聊。
+E               delta: 暂无变化
+E               goal: 目标：让信任达到 20，解锁第一次主动称呼。...
+E
+E             ...Full output truncated (13 lines hidden), use '-vv' to show
+
+tests\test_companion_natural_voice.py:18: AssertionError
+=========================== short test summary info ===========================
+FAILED tests/test_companion_natural_voice.py::test_desktop_prompt_keeps_character_and_history_without_forcing_staged_speech
+1 failed in 0.23s

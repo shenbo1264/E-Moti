@@ -365,7 +365,7 @@ def test_control_panel_presents_desktop_pet_as_primary_launch(monkeypatch, tmp_p
     app, window = make_window(monkeypatch, tmp_path)
 
     assert window.launcher_title_label.text() == "星汐 E-Moti"
-    assert "桌宠模式" in window.launcher_subtitle_label.text()
+    assert "共同回忆" in window.launcher_subtitle_label.text()
     assert window.enter_desktop_mode_button.text() == "进入桌宠模式"
     assert window.enter_desktop_mode_button.objectName() == "PrimaryLaunchButton"
 
@@ -413,15 +413,16 @@ def test_control_panel_uses_readable_chinese_status_labels(monkeypatch, tmp_path
 def test_control_panel_surfaces_session_goal_and_recent_moment(monkeypatch, tmp_path):
     app, window = make_window(monkeypatch, tmp_path)
 
-    assert "interact_twice" in window.session_goal_label.text()
-    assert "touch" in window.session_goal_label.text()
-    assert "recent_moment:none" in window.recent_moment_label.text()
+    assert "互动两次" in window.session_goal_label.text()
+    assert "轻触" in window.session_goal_label.text()
+    assert "暂无" in window.recent_moment_label.text()
 
     snapshot = window.controller.trigger_demo_proactive("return_idle", include_ai_expression=False)
     window._apply_snapshot(snapshot)
 
-    assert "return_after_idle" in window.recent_moment_label.text()
-    assert "deterministic_proactive" in window.recent_moment_label.text()
+    assert snapshot["recent_moment"]["summary"] in window.recent_moment_label.text()
+    assert "return_after_idle" in window.recent_moment_label.toolTip()
+    assert "deterministic_proactive" in window.recent_moment_label.toolTip()
 
     window.close()
     app.processEvents()
@@ -2834,8 +2835,8 @@ def test_expression_settings_page_shows_required_fields_and_saves_local_config(m
     assert window.expression_enabled_checkbox.text() == "启用 LLM 表达增强"
     assert window.expression_provider_label.text() == "服务商"
     assert window.expression_model_label.text() == "模型 ID"
-    assert window.expression_base_url_label.text() == "Base URL"
-    assert window.expression_api_key_label.text() == "API Key"
+    assert window.expression_base_url_label.text() == "服务地址"
+    assert window.expression_api_key_label.text() == "API 密钥"
     assert window.expression_timeout_label.text() == "超时（秒）"
     assert window.expression_provider_combo.currentText() == "openai"
     assert window.expression_model_input.text()

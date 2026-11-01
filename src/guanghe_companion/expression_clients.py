@@ -155,6 +155,9 @@ class OpenAICompatibleChatClient:
         self.close()
 
     def __call__(self, prompt: str) -> str:
+        return self.complete(prompt)
+
+    def complete(self, prompt: str, *, system_prompt: str = "", timeout_seconds: float | None = None) -> str:
         if self._closed:
             raise _provider_error("OpenAI-compatible expression provider failed", "closed")
         if self.require_api_key and not self.api_key:
@@ -171,6 +174,17 @@ class OpenAICompatibleChatClient:
         }
         if self.json_response:
             payload_dict["response_format"] = {"type": "json_object"}
+            # JSON 模式的格式约束独立于用户内容；不要把角色记忆或输入提升为系统指令。
+            system_prompt = "\n".join(part for part in (
+                system_prompt,
+                (
+                    "Return exactly one JSON object using the fields requested in the task. "
+                    "All generated text belongs inside JSON string values. "
+                    "Do not output Markdown fences or any text outside the JSON object."
+                ),
+            ) if part)
+        if system_prompt:
+            payload_dict["messages"].insert(0, {"role": "system", "content": system_prompt})
         if self.max_tokens is not None:
             payload_dict["max_tokens"] = self.max_tokens
         payload = json.dumps(payload_dict, ensure_ascii=False).encode("utf-8")
@@ -181,7 +195,7 @@ class OpenAICompatibleChatClient:
             method="POST",
         )
         try:
-            raw = self.transport(api_request, self.timeout_seconds)
+            raw = self.transport(api_request, self.timeout_seconds if timeout_seconds is None else min(self.timeout_seconds, timeout_seconds))
             if not isinstance(raw, (bytes, bytearray)):
                 raise _provider_error("OpenAI-compatible expression provider failed", "invalid_response_bytes")
             if len(raw) > MAX_OPENAI_RESPONSE_BYTES:
