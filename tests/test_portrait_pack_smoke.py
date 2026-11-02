@@ -169,6 +169,29 @@ def test_portrait_pack_smoke_reports_idle_motion_sequence(monkeypatch, tmp_path)
     assert payload["idle_sequence"] == ["idle_0001.png", "idle_0002.png"]
 
 
+def test_idle_smoke_sequence_is_independent_of_event_dispatch_delay(monkeypatch, tmp_path):
+    monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
+    from PySide6.QtTest import QTest
+    from PySide6.QtWidgets import QApplication
+    from tools.portrait_pack_smoke import run_portrait_pack_smoke
+
+    original = QApplication.processEvents
+    delayed = False
+
+    def delayed_events(*args, **kwargs):
+        nonlocal delayed
+        if not delayed:
+            delayed = True
+            QTest.qWait(200)
+        return original(*args, **kwargs)
+
+    monkeypatch.setattr(QApplication, "processEvents", staticmethod(delayed_events))
+    pack_dir = write_blink_portrait_pack(tmp_path / "idle_dispatch_delay", include_idle_frames=True)
+    report = run_portrait_pack_smoke(pack_dir)
+    assert report.ok
+    assert report.idle_sequence == ("idle_0001.png", "idle_0002.png")
+
+
 def test_portrait_pack_smoke_cli_runs_from_repo_root_without_pythonpath(monkeypatch, tmp_path):
     monkeypatch.setenv("QT_QPA_PLATFORM", "offscreen")
     pack_dir = write_blink_portrait_pack(tmp_path / "xingxi_vn_blink_candidate")

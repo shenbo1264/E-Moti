@@ -1,3 +1,4 @@
+import argparse
 import json
 from dataclasses import asdict
 from pathlib import Path
@@ -19,14 +20,19 @@ CASES = (
 
 
 def main():
-    OUTPUT.mkdir(parents=True, exist_ok=False)
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--app-settings", required=True, type=Path)
+    parser.add_argument("--output-dir", type=Path, default=OUTPUT)
+    args = parser.parse_args()
+    output = args.output_dir
+    output.mkdir(parents=True, exist_ok=False)
     client, meter, metadata, secret = recorded_app_client(
-        Path("C:/Users/19970/AppData/Local/E-Moti/expression_settings.json"), max_requests=8, max_output_tokens=4096)
+        args.app_settings, max_requests=8, max_output_tokens=4096)
     report = {"evaluation_kind": "targeted_development_regression_not_sealed",
         "measurement_scope": "真实Flash判据及最终来源交付；卡片标题保留原查询以控制候选可达性，不测候选召回泛化。不是最终角色生成评测。",
         "provider": metadata, "rows": []}
     for key, query, summary, expected in CASES:
-        service = EmotionalMemoryService(root=OUTPUT / "archives" / key, character_id="xingxi_pixel_pet")
+        service = EmotionalMemoryService(root=output / "archives" / key, character_id="xingxi_pixel_pet")
         entry = service.remember(kind="用户事实", title=query, summary=summary,
             source="explicit_user_request", source_ids=("development:" + key,), now=10,
             metadata={"event_status": "planned", "fact_subject": "user:self", "fact_predicate": "活动或设备状态"})
@@ -44,12 +50,12 @@ def main():
                 "passed": (entry.memory_id in ids) is expected, "judge_status": judge.status,
                 "trace": asdict(result.trace), "elapsed_ms": (perf_counter() - started) * 1000,
                 "requests": redact(meter.records[start_record:], secret)})
-            (OUTPUT / "results.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+            (output / "results.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
             print(key, judge.status, report["rows"][-1]["passed"], flush=True)
         finally:
-            judge.close()
+            service.close(wait=True)
     report["summary"] = {"passed": sum(row["passed"] for row in report["rows"]), "total": len(CASES)}
-    (OUTPUT / "results.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
+    (output / "results.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
 
 if __name__ == "__main__":

@@ -86,6 +86,8 @@ def run_portrait_pack_smoke(
             )
             window = CompanionWindow(controller=controller, desktop_mode=True)
             try:
+                # 后面逐帧手动推进；先停止自动计时，避免慢速窗口显示抢先消耗首帧。
+                window.spirit_surface._idle_frame_timer.stop()
                 window.show()
                 app.processEvents()
                 renderer_backend = window.presentation_renderer.backend
