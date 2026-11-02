@@ -7,7 +7,7 @@ from .emotional_memory import EmotionalMemoryEntry
 from .emotional_memory_reflection import is_shared_experience
 from .emotional_memory_retrieval import lexical_similarity
 from .retrieval_contract import EvidenceDecision, RetrievalIntent
-from .retrieval_fact_schema import read_fact_view
+from .retrieval_fact_schema import owned_pet_name, read_fact_view
 from .retrieval_literal import has_fact_value, literal_field_support, literal_subject_match
 
 
@@ -110,10 +110,17 @@ def _legacy_literal_support(entry: EmotionalMemoryEntry, intent: RetrievalIntent
 def _field_matches(intent: RetrievalIntent, entry: EmotionalMemoryEntry) -> bool:
     meta = entry.metadata
     fields = {str(meta.get(key, "")) for key in ("fact_predicate", "fact_slot", "fact_domain")}
+    if (any(field.startswith("宠物") for field in fields)
+            and set(intent.predicates).intersection({"name", "姓名", "名字", "称呼"})):
+        return False
     if not fields.intersection(intent.predicates):
         return literal_field_support(entry, intent.query)
     pet_species = next((field.split(":", 1)[1] for field in intent.predicates if field.startswith("宠物称呼:")), "")
     if pet_species:
+        explicit_name = owned_pet_name(entry.summary)
+        if explicit_name is not None:
+            species, name = explicit_name
+            return (pet_species in {species, "宠物"} and str(meta.get("fact_value", "")) == name)
         # Old extraction used the broad `pet` slot. It is only a name answer
         # when the saved literal actually connects this species to that name.
         species = r"猫|狗|兔子|鹦鹉|仓鼠|宠物" if pet_species == "宠物" else re.escape(pet_species)

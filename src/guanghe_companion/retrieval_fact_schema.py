@@ -8,10 +8,31 @@ from dataclasses import replace
 import re
 
 
+def owned_pet_name(text):
+    text = text.strip().rstrip("。！! ")
+    reverse = re.fullmatch(r"(?:我|用户)(?:养|拥有)(?:了)?(?:一[只条个])?叫(?P<name>[^，。；！!?？的]{1,20})的(?P<kind>[^，。；！!?？的]{1,16})", text)
+    forward = re.fullmatch(r"(?:我|用户)(?:的|养的|拥有的)(?P<kind>[^，。；！!?？的]{1,16}?)(?:的名字)?叫(?P<name>[^，。；！!?？]{1,20})", text)
+    match = reverse or forward
+    if match is None:
+        return None
+    # 复用现有宠物字段支持的物种；毛色等修饰语不能变成用户姓名。
+    species = re.search(r"(兔子|鹦鹉|仓鼠|宠物|猫|狗)$", match["kind"])
+    if species is None:
+        return None
+    return species[1], match["name"].strip()
+
+
 def read_fact_view(entry):
     from .chat_memory import _fact_view, _parse_fact, _UNSUPPORTED
-    view = _fact_view(entry)
     trusted = entry.source in {"explicit_user_request", "user_correction", "profile_edit"}
+    if trusted and not entry.metadata.get("fact_slot") and not entry.metadata.get("fact_predicate"):
+        named = owned_pet_name(entry.summary)
+        if named is not None:
+            species, name = named
+            return replace(entry, metadata={**entry.metadata, "fact_subject": "user:self",
+                "fact_predicate": "宠物称呼:" + species, "fact_slot": "宠物称呼:" + species,
+                "fact_domain": "宠物称呼", "fact_value": name})
+    view = _fact_view(entry)
     # Original structured fields remain authoritative. A known literal title
     # can disambiguate an untyped, explicitly saved preference (named blends
     # need not contain a hard-coded drink noun).
