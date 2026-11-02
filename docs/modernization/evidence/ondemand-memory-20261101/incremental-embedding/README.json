@@ -1,0 +1,91 @@
+{
+  "prototype_batch256_results": "incremental-embedding-performance.json",
+  "parameter_experiment_only": "incremental-embedding-batch64-300.json",
+  "protocol_tests": {
+    "result": "66 passed, 0 skipped in 2.36s",
+    "log": "persistent-semantic-focused.log",
+    "scope": "51 semantic/persistent protocol tests, 4 real BGE tests, 11 generation-runner contract tests"
+  },
+  "measurement_conditions": {
+    "processes": "3 independent processes per scale: cold, reopen_mutate, reopen_verify; 9 child processes total",
+    "workload": "real same SQLite and pinned BGE512; same synthetic six-template Chinese text as the historical RAM-only baseline",
+    "query_repetitions": "3 warm queries per phase, one cold encoding and one correction/forget per scale",
+    "cpu": "heavy jobs coordinated; not exclusive CPU",
+    "model_load": "local pinned weights; reported separately; no first-download measurement",
+    "hash_integrity": "all 7 tracked production source hashes unchanged during each phase and identical across 3 phases per scale",
+    "not_measured": [
+      "LLM generation correctness",
+      "persona behavior",
+      "desktop actual user interaction",
+      "mobile devices",
+      "production p95 latency"
+    ],
+    "cost_boundary": "cache recovery + first prepare, model load, process wall, and authoritative correction/forget writes reported separately",
+    "environment": "persistent-measurement-environment.json"
+  },
+  "recorded_files": [
+    "generation-final-prompt-not-run.json",
+    "generation-not-run.json",
+    "generation-runner-tests.log",
+    "incremental-embedding-batch64-300.json",
+    "incremental-embedding-batch64-300.log",
+    "incremental-embedding-performance-10000.json",
+    "incremental-embedding-performance-300.json",
+    "incremental-embedding-performance-3000.json",
+    "incremental-embedding-performance-batch64-10000.json",
+    "incremental-embedding-performance-batch64-300.json",
+    "incremental-embedding-performance-batch64-3000.json",
+    "incremental-embedding-performance-batch64.json",
+    "incremental-embedding-performance-batch64.log",
+    "incremental-embedding-performance.json",
+    "incremental-embedding-performance.log",
+    "persistent-embedding-performance-10000-cold.json",
+    "persistent-embedding-performance-10000-cold.log",
+    "persistent-embedding-performance-10000-reopen_mutate.json",
+    "persistent-embedding-performance-10000-reopen_mutate.log",
+    "persistent-embedding-performance-10000-reopen_verify.json",
+    "persistent-embedding-performance-10000-reopen_verify.log",
+    "persistent-embedding-performance-300-cold.json",
+    "persistent-embedding-performance-300-cold.log",
+    "persistent-embedding-performance-300-reopen_mutate.json",
+    "persistent-embedding-performance-300-reopen_mutate.log",
+    "persistent-embedding-performance-300-reopen_verify.json",
+    "persistent-embedding-performance-300-reopen_verify.log",
+    "persistent-embedding-performance-3000-cold.json",
+    "persistent-embedding-performance-3000-cold.log",
+    "persistent-embedding-performance-3000-reopen_mutate.json",
+    "persistent-embedding-performance-3000-reopen_mutate.log",
+    "persistent-embedding-performance-3000-reopen_verify.json",
+    "persistent-embedding-performance-3000-reopen_verify.log",
+    "persistent-embedding-performance.json",
+    "persistent-embedding-performance.log",
+    "persistent-measurement-environment.json",
+    "persistent-semantic-focused.log",
+    "profile_incremental_embeddings.py",
+    "profile_small_embedding_batch.py",
+    "semantic-focused.log",
+    "semantic-generation-focused-final.log",
+    "semantic-index-notes.md"
+  ],
+  "historical_ram_only_batch64_results": "incremental-embedding-performance-batch64.json",
+  "final_production_results": "persistent-embedding-performance.json",
+  "historical_protocol_tests": {
+    "result": "36 passed, 0 skipped in 1.41s",
+    "log": "semantic-generation-focused-final.log",
+    "scope": "22 deterministic/cache tests, 3 real BGE tests, 11 generation-runner contract tests"
+  },
+  "historical_measurement_conditions": {
+    "processes": "each scale runs in a fresh process",
+    "workload": "real SQLite + pinned BGE, synthetic six-template Chinese text",
+    "query_repetitions": "3 warm queries, one cold run and one correction/forget point per scale",
+    "cpu": "heavy benchmark jobs coordinated; not an exclusive CPU or zero-background-load measurement",
+    "known_interference": "one approximately 0.2-second Qt cancellation regression may overlap final cold preparation",
+    "not_measured": [
+      "LLM generation",
+      "human persona behavior",
+      "desktop real-user interaction",
+      "mobile devices"
+    ],
+    "cost_boundary": "warm/correction/forget prepare times exclude their separately reported authoritative JSON writes"
+  }
+}

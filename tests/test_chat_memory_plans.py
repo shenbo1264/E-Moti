@@ -84,7 +84,10 @@ def test_correct_legacy_plan_preserves_future_time_and_retires_derived(memory, m
     assert replacement.metadata["plan_status"] == "planned"
     assert "洛阳" in replacement.summary and "南昌" not in replacement.summary
     assert "未确认完成" in replacement.summary and "下个月" in replacement.summary
-    assert old.source_ids[0] in replacement.source_ids
+    assert len(replacement.source_ids) == 1
+    assert replacement.source_ids[0].startswith("chat-plan-correction:")
+    predecessor = next(m for m in memory.store.load_memories() if m.memory_id == replacement.supersedes)
+    assert predecessor.source_ids == old.source_ids and predecessor.deleted
     assert not memory.valid_profile(now=22).stable_preferences
     assert memory.store.upsert_memory(old).deleted
 

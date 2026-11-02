@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-11-01",
+  "policy": "Freeze before candidate run; do not tune production on holdout; after inspection any targeted repair promotes affected cases to regression.",
+  "files": {
+    "ondemand_memory_development.json": "c1f9358406a399ec24e863b48d3027c66348db8f9b53abba587f9b125ad40a01",
+    "ondemand_memory_validation.json": "408625996eeb69ff22e81c0ece92e3dcc1479853034d54d4a1e2eae61294bd97",
+    "ondemand_memory_holdout.json": "c9c5c37f5c839f3c259f9a038563d24f1ee1ffbc01b54584ae3575cd3265695e"
+  },
+  "predeclared_scale_subset": {
+    "sizes": [
+      3000,
+      10000
+    ],
+    "split": "development",
+    "story_ids": [
+      "d02",
+      "d06",
+      "d08"
+    ],
+    "queries": 18,
+    "selection_reason": "Structured relation fields, genuine shared episodes, and task experience; selected before final candidate scores; no population or full-holdout scaling claim."
+  },
+  "split_usage": {
+    "development": "development_seen_during_tuning",
+    "validation": "development-validation_seen_during_diagnostics_and_tuning",
+    "holdout": "seen_regression_after_f7_first_independent_scoring"
+  },
+  "data_validity_repair": {
+    "revision": "holdout-v2",
+    "old_sha256": "f7468d5534a493b5d7a1f073d445edea98debe509e84b30578c530d02420fcb6",
+    "new_sha256": "c9c5c37f5c839f3c259f9a038563d24f1ee1ffbc01b54584ae3575cd3265695e",
+    "changes": [
+      {
+        "memory_id": "choir_m4",
+        "field": "valid_until",
+        "before": 1780304400,
+        "after": 0,
+        "reason": "0 is the production API no-end sentinel; deleted source remains irrevocably ineligible at all times"
+      },
+      {
+        "memory_id": "pottery_m4",
+        "field": "valid_until",
+        "before": 1781164800,
+        "after": 0,
+        "reason": "0 is the production API no-end sentinel; deleted source remains irrevocably ineligible at all times"
+      }
+    ],
+    "questions_gold_forbidden_routes_unchanged": true,
+    "production_unchanged": true,
+    "first_attempt_scored_queries": 0,
+    "old_dataset_directory": "docs/modernization/evidence/ondemand-memory-20261101/final-holdout-300/dataset-v1"
+  }
+}

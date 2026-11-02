@@ -1,0 +1,24 @@
+{
+  "recorded_at_utc": "2026-11-01T18:42:55.762137+00:00",
+  "note": "host metadata collected immediately after the completed benchmark; per-child actual timings and RSS remain in original phase JSON",
+  "python": "3.12.14",
+  "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+  "sqlite_version": "3.53.1",
+  "logical_cpus_visible": 9,
+  "cpu": {
+    "vendor_id": "AuthenticAMD",
+    "cpu family": "25",
+    "model": "17",
+    "model name": "AMD EPYC 9V74 80-Core Processor"
+  },
+  "cgroup": {
+    "cpu.max": "800000 100000",
+    "memory.max": "8589934592"
+  },
+  "packages": {
+    "fastembed": "0.9.1",
+    "numpy": "2.5.4",
+    "onnxruntime": "1.31.1",
+    "huggingface-hub": "1.33.0"
+  }
+}

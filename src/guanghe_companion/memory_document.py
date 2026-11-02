@@ -94,10 +94,22 @@ def memory_document(path: Path, initial: Callable[[], dict]) -> Iterator[dict]:
         _write_initialization_receipt(receipt)
         if version != 2:
             connection.execute("PRAGMA user_version = 2")
+        # Derived tables are disposable. Preparing them before the canonical
+        # UPDATE also repairs a missing table referenced by a dirty trigger.
+        from .memory_index_schema import ensure_schema
+        ensure_schema(connection)
+        # An external/old SQL writer may already have dirtied the canonical
+        # document without advancing its revocation epoch. Reconcile before a
+        # legacy reader returns that epoch or a write checks expected_epoch.
+        # Clean projections return immediately; this opens no second database
+        # transaction and never makes a projection a second fact authority.
+        from .memory_index import sync_projection
+        sync_projection(connection, document)
         yield document
         after = json.dumps(document, ensure_ascii=False, separators=(",", ":"), allow_nan=False)
         if after != before:
             connection.execute("INSERT INTO memory_state(id,payload) VALUES(1,?) ON CONFLICT(id) DO UPDATE SET payload=excluded.payload", (after,))
+        sync_projection(connection, document)
         connection.commit()
     except (OSError, sqlite3.Error, json.JSONDecodeError) as exc:
         if connection is not None:

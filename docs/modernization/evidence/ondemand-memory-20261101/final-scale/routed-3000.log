@@ -1,0 +1,2 @@
+[0;93m2026-11-02 03:50:34.377635315 [W:onnxruntime:Default, telemetry_1ds.cc:600 operator()] Failed to persist telemetry device ID; using an in-memory identifier[m
+{"event": "worker_complete", "method": "routed", "size": 3000, "status": "measured_synthetic_retrieval", "output": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/routed-3000.json"}

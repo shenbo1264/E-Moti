@@ -1,0 +1,1858 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "methods": [
+    "none",
+    "lexical",
+    "bge_rrf",
+    "routed",
+    "layered"
+  ],
+  "sizes": [
+    300
+  ],
+  "started_at_utc": "2026-11-01T19:52:54.768822+00:00",
+  "splits": [
+    "development",
+    "validation",
+    "holdout"
+  ],
+  "dataset_sha256": {
+    "development": "c1f9358406a399ec24e863b48d3027c66348db8f9b53abba587f9b125ad40a01",
+    "validation": "408625996eeb69ff22e81c0ece92e3dcc1479853034d54d4a1e2eae61294bd97",
+    "holdout": "c9c5c37f5c839f3c259f9a038563d24f1ee1ffbc01b54584ae3575cd3265695e"
+  },
+  "split_roles": {
+    "development": "post_existing_regression_fix_seen_replay",
+    "validation": "post_existing_regression_fix_seen_replay",
+    "holdout": "post_existing_regression_fix_seen_replay"
+  },
+  "story_filter": null,
+  "script_sha256": "cefd087931b34e4fdaa89efcfcb9aa54ba866c6b32ce9b979ac9c173349c72fb",
+  "baseline_expected_commit": "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb",
+  "baseline_actual_commit": "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb",
+  "new_source_start_sha256": {
+    "src/guanghe_companion/__init__.py": "05d083ba16c64028a324d6651c762c9f2a026a761ced00b1934006de8b0a3147",
+    "src/guanghe_companion/actions.py": "c88a4b75700a598960b415d67fcb0ccad07da44b344f1a226f549eb5c7c1467d",
+    "src/guanghe_companion/ai_context_builder.py": "b4f5eea89e2f87638e28dc2e87482819bea161e75d7f21fb312a1eb9f3989fff",
+    "src/guanghe_companion/ai_expressor.py": "9df5a429804bcfd4e92a7c6c68615547bbc7c015daafa5130fd983fbc72768c3",
+    "src/guanghe_companion/app.py": "30d6f5253bb9a358f0f020091b4564444a3133b9615134134f78475de2d12ff4",
+    "src/guanghe_companion/capability_panels.py": "5f2a7102d13be4d88484650eef28237c81d8b71f32630a066ece260992be26cc",
+    "src/guanghe_companion/capability_runtime.py": "df94a4a2677743d069ce9e205e7a4df1535ca54a492d55dbc3c8d07977b56a9d",
+    "src/guanghe_companion/capability_settings.py": "78876e9e566cf8b655cdd95d288b27c1fae37e63c268380872c5cc3fa5701a2f",
+    "src/guanghe_companion/character_generation_workflow.py": "fbd56a9a3acd00ae91800150fe1f93a306c66f3921619df33296942a1ba1bf97",
+    "src/guanghe_companion/character_inspiration.py": "e6a8e5b946c3ee4645b0dadfc6bfe022538c54f5b2f562ad3504c44adff463d6",
+    "src/guanghe_companion/character_library_view_model.py": "58fb7a018ad657a6693755f7b6df6c9b87575cc11f90c385a6e574add9cba8b3",
+    "src/guanghe_companion/character_local_copy.py": "a81b3feb64ec0c5762b2e27948abdcbfabdaef56c7196e12fea172edc8092ed8",
+    "src/guanghe_companion/character_pack.py": "bb83b729d5852baa5f4a5e656b65fb51819e029dfe836ad7085b9104eab6682e",
+    "src/guanghe_companion/character_pack_import.py": "2faaef1182a4a7a605e373067c825ab68426daafe3cdc6e21821f6a2dc5119ea",
+    "src/guanghe_companion/character_performance_profile.py": "6c46a148fc87e0f08f0d43f5d30b3105ee26c9b33aff26634e5dbaae4b674cd8",
+    "src/guanghe_companion/character_registry.py": "2c03fc9b99c0b130406d94fe108d6b570fba3dbfe41eafb4804c317c4a421c9b",
+    "src/guanghe_companion/character_resources.py": "7af6b04a8c6e0460a6e09861a8414f10a52d910b97afcd8a698e46fcb617093f",
+    "src/guanghe_companion/character_session.py": "da5868ddfb59bcd4a14a095edde01369f00cca61dc7580a49b592c36c5e195c3",
+    "src/guanghe_companion/character_voice_profile.py": "9b05f20ee4b92bc843d4279080fa078db21cbd7924b18b8924bdebca3e53a3f2",
+    "src/guanghe_companion/chat_memory.py": "93421776778c342b02e90f328d71584866f91d0fee9c9547c93e54b795f5ec51",
+    "src/guanghe_companion/chat_memory_extraction.py": "36aff4a30c2c609bdb6d186be44b272db354426ab3ab12f845aed2643bc51e55",
+    "src/guanghe_companion/chat_memory_plans.py": "ddc28a5a2bb93a556e9d0dd6ef39d042ff3a8222afc33d8bbbf40205d9d5ed58",
+    "src/guanghe_companion/companion_dialogue_policy.py": "843efd1fcb8f14429282032e0a7f63be26532b6fb8803ee9d184985440f05784",
+    "src/guanghe_companion/companion_moments.py": "f4fc274a88c873b14e9ccc3a78d07fb445782cf13181b3e0b52796cfa74dcded",
+    "src/guanghe_companion/companion_story_runtime.py": "690fcd76d35772a05db7971135ba21c93a343da3d07fa4631622d25a4127b2a9",
+    "src/guanghe_companion/controller.py": "b3bce33efc560ba94de3fa1a04153c4c9da6b788836053d25fc7d72bcf815272",
+    "src/guanghe_companion/demo.py": "47b2abf2c72c80e08e4663e589f532a173c12c5215759080f5a793c896d9aa86",
+    "src/guanghe_companion/desktop_dialogue_service.py": "c8d9bf024dacd8749afdcc320689282d41cf5b76e27cb0aa4300ebb4cb5cad65",
+    "src/guanghe_companion/desktop_shell.py": "de35fb5e98f140cec8f843794061d6a7a7847437944b51ba6f269b7506dcb9fb",
+    "src/guanghe_companion/device_context.py": "edf75c73b976339ed65be7d1d7008476e5489e8f7bbe98b334ac4a1564265336",
+    "src/guanghe_companion/dialogue.py": "fa3c3965d12ed9b8c91c14ecf8246e71bbd7282788a89c61fcdf266183b4024b",
+    "src/guanghe_companion/dialogue_history.py": "80877f89e62bcc99104327eeb3251e7e0785cb3dcdcf25215458214773671a68",
+    "src/guanghe_companion/dialogue_parser.py": "eae12a37b3cd83ec98c877a0ddbbc1ff866afc3568ce2ac8667c4b7930406644",
+    "src/guanghe_companion/distribution_boundaries.py": "29cb735a34e0d51d8537cc4a2a2e005525768a985990213f0e319e18388f7cc5",
+    "src/guanghe_companion/emotional_memory.py": "3f5b0e077fad7d4752410e23bfe7d16a7423baa67c07650e196478fa2a0aa560",
+    "src/guanghe_companion/emotional_memory_policy.py": "32ab7dd27582c31c74ac8f367727562a2eaa1b8124bcf6d94076b5e4e4e46290",
+    "src/guanghe_companion/emotional_memory_reflection.py": "4b7f9471eb56eb879b6d1594405e03ed1a455a784fca066aced6f999bc157b73",
+    "src/guanghe_companion/emotional_memory_retrieval.py": "f5b6481c44e32409fefbe8fcafc305f1d34750ddf598ee4d4849042828509849",
+    "src/guanghe_companion/emotional_memory_service.py": "96d45cece5e843f7248d599ccd94403a07eb9dea032f2a5bf83ee6811798c2fc",
+    "src/guanghe_companion/engine.py": "4f60bd606cc8303f387e9f9e64d25a109d42c4f820b5cd9c1d502e87b728d455",
+    "src/guanghe_companion/events.py": "66b3e663f047b8b841573233adc1ce21c282fb7fdbd9a4f4c9ea8b06bcdf9c5d",
+    "src/guanghe_companion/expression_clients.py": "346c5fe87c536cd00a88d7835991ceee00a4c8245cdd2147c4b18e3e5e9c5403",
+    "src/guanghe_companion/expression_context.py": "d36e13724cdf8fca60468bc71a9cd739a66d424591b56699c424588c1fda54af",
+    "src/guanghe_companion/expression_diagnostic_view.py": "d021a2921a9d3303197c39d93f39603e5c22a217bb07ccab458adc13b1f2f778",
+    "src/guanghe_companion/expression_diagnostics.py": "c1d4f46ff3a50aa47356f502f5211436453b0519320cd00789ce82dba026f031",
+    "src/guanghe_companion/expression_event_pipeline.py": "5aecfbf055635c7f743b59787937b506f4a4954364224b0a73843207b3ddf7fe",
+    "src/guanghe_companion/expression_expressor.py": "7c069440d3344d2903e370f042972b56082899dfc8f426db6c45ebdb0c218788",
+    "src/guanghe_companion/expression_parser.py": "dbd28eaaa14613624dd2674ddb812b5ea47c737ff1e6ddb41a1d7ee228e02e4e",
+    "src/guanghe_companion/expression_prompt_budget.py": "5c950027b7429acf8ac62e0a6887173adb5b93799fad0d5b2bea1f7e6d2f2af0",
+    "src/guanghe_companion/expression_provider_diagnostics.py": "cb3463ea2f0912b8bcf4627cafb93322529e296100065016221c46d735c0e6a9",
+    "src/guanghe_companion/expression_refinement.py": "0f88b279ab946269fd2ff4e0f838097868c992f00e19fe636df13a2164119d6f",
+    "src/guanghe_companion/expression_request.py": "3e32cf98cf45d813ab6c3bc53c628f4c785de447dceba9c3449677f03ef71179",
+    "src/guanghe_companion/expression_settings.py": "534a2204684a1c33ba445b2369f6dd5593477826dcdb3792a88dc909dbcc3c9d",
+    "src/guanghe_companion/focus_companion.py": "40d695af9927ab9f47e574d11fd2a8cce978f00788930629988bb8da69263fb9",
+    "src/guanghe_companion/focus_companion_qt.py": "ace9300b2ff4b51016b57414cc345d12e9cb7accb58ea6a8a31e789c9e4be66d",
+    "src/guanghe_companion/focus_companion_runtime.py": "82435a1a4f8389198ff95b24e4e2577b6345b43d8dc557d1047f74511f4bcd89",
+    "src/guanghe_companion/grounded_facts.py": "3084835d82df8c23eadbe27feca6ddd5a402cc58a68e722d54ba6e4f0fcd0b77",
+    "src/guanghe_companion/host_auth.py": "6c4f0f3cac336a82b29469571e8df7cc90f94c0e2ff8b695df54837a427bd301",
+    "src/guanghe_companion/host_runtime.py": "e03b2990e07ba5d8601daba0c86ad0a515a52949a44de760325621a54033f935",
+    "src/guanghe_companion/host_service.py": "3bbed8db26a9fb9422be7d3227a3ddaa8ef7b52778c3b311ea38de84b45d9f13",
+    "src/guanghe_companion/host_transport.py": "54cb67fcdfa4408976cb172583293d3ee008bfd3248e179851fb44fa631b6f1f",
+    "src/guanghe_companion/interaction_intents.py": "fa1747388abaeae02dfcc55da7bce50c08ba2bb7dfa62253671752ad0703a678",
+    "src/guanghe_companion/inventory.py": "9fa14648d2512ece2d7e7ae766f9db51fd6681ee242bf2615dd1c3fd8bff73ad",
+    "src/guanghe_companion/legacy_memory_migration.py": "f31a505654eac09cbba1b5ee6cf39e9c16cf68d24c38185034479512cf143a78",
+    "src/guanghe_companion/live2d_web.py": "1b0beb2bd935567258161740907a604da1a78f06dd0e042073603c6a6af12541",
+    "src/guanghe_companion/llm_smoke.py": "48b673d1df66c4c31da090ba487bb5fbeeae5b34c664e1d1597fd13044b18798",
+    "src/guanghe_companion/memory.py": "00f6db899c8ac3c965533a625b88cebc38f0b25e69ea50b6efddd9a37a87097b",
+    "src/guanghe_companion/memory_album_controller.py": "a6538f823f5b478bb1a742dbe39f9c46c0d36d6bf75904ba54854cfde7b9a7f5",
+    "src/guanghe_companion/memory_album_qt.py": "4521dbc464317d4c869f248b81f50ba55746d5cb60e51b2ddb15e2825c47dc79",
+    "src/guanghe_companion/memory_album_view_model.py": "9353322d280b7715ddce0a45397a2e85fa139a5871c47d8f15836b6224d1c7d5",
+    "src/guanghe_companion/memory_correction.py": "efce5bd37ccf2413fb7e9ac98a235d3b44e4866931cac7cebb8ea05126d9cf41",
+    "src/guanghe_companion/memory_document.py": "d5f41b6303f11deede918328c00eb977e2328f207a5d6d96bf02639e7dff3276",
+    "src/guanghe_companion/memory_fusion.py": "391c2583ec70aee49fa1e4436bda34e385563c2b50ae4629198e7d85fc1eb0c2",
+    "src/guanghe_companion/memory_hierarchy.py": "eac1d0ea73cef41f86198ce354e3e9d58593313ceff4f758c5a6abfd5387f3d1",
+    "src/guanghe_companion/memory_index.py": "767fe33ccddbebbc81bc65694c2da9058291f44301aacad084f0601cda3e9617",
+    "src/guanghe_companion/memory_index_schema.py": "6595958bc917a27689966655be005a590d90039c0dab5cdff627397244afb1db",
+    "src/guanghe_companion/memory_integration_bridge.py": "6356fc2a0acf0147b1f6e749c87d6bc0d7bcaedad8a927e05fbc3db186aab1d4",
+    "src/guanghe_companion/memory_maintenance.py": "6a2a9b2a847eac4f5871dea2e26c8015668ba7f1b90f55aa74755db2948031bc",
+    "src/guanghe_companion/memory_prompt_budget.py": "7ae98df25742bef8e49c334b9f045ea773155da0b3210858ca2923357eecc2fd",
+    "src/guanghe_companion/memory_settings_qt.py": "9268a8ab8ce3d4e401c34aa45b597cac11cb9a3b805b4197b82af2e7531b3f82",
+    "src/guanghe_companion/memory_settings_view_model.py": "31ffb5fed4de84b727062aa12119d06023073f7355a78dedc36100c4acfedd4b",
+    "src/guanghe_companion/memory_vector_cache.py": "db7247234eb78277173ce43c1380b2d91333368e57e80fd26fc909d6784885c9",
+    "src/guanghe_companion/mobile_link_qt.py": "c626d837766a9848d63a54d4b5d04a3c0b3e1226677bb4d5fc8c514e8e552ff5",
+    "src/guanghe_companion/mobile_link_view_model.py": "d8cf9ce76a7678c9fabc80ac4d3de3da7a887c26c8f882b2483bab83d9b0f5b9",
+    "src/guanghe_companion/models.py": "d508b9506097ba9f4589546e81a9b473e9ee8574a84edfc24d901c368eb6861c",
+    "src/guanghe_companion/motion.py": "eb9240350b50d1653fab7f4f32e57c3def43955f6d4474a351bf92688ce679b6",
+    "src/guanghe_companion/ondemand_memory.py": "9d977086c2c8256ceab1e2b6866f2436277c745b85ed879d4bdafaf64b9bbfbd",
+    "src/guanghe_companion/persona.py": "9e8ee73bd7add19011ae0163db5d0064c70131870a7e318917254b74c5550878",
+    "src/guanghe_companion/personal_task_runner.py": "e7820edda92b9de7ea58f617ff85d517335a048a6e86dbe60efe10f7fedefb8a",
+    "src/guanghe_companion/personal_tasks.py": "87e1657ad9e811d7d87ec5d1c3c56c7e9de460072a691cbd3c1a2ce72763572f",
+    "src/guanghe_companion/plugin_api.py": "97fcce67b2d7227ccd4df8e4836c4aa0b8e5be440de6dfbf888515518f42df33",
+    "src/guanghe_companion/plugin_audit.py": "2c4c7abfe9beefee7016eaf34b259440014137863c3fe8c9ab60889820d01b12",
+    "src/guanghe_companion/plugin_catalog_view_model.py": "84bef6f56dc1aa4d43a7edb2c4093f1e45b48eda8a9ea61092de2d06729d601c",
+    "src/guanghe_companion/plugin_center_app.py": "31adf09d32592eda73cc88f00f44693c4e63ea9bc5f7264aac2b2a6fc3676106",
+    "src/guanghe_companion/plugin_center_controller.py": "b9330fdf805ff41ba0c8d421f6f4ddb2f0805a2057f67306f20b109b4beb9237",
+    "src/guanghe_companion/plugin_center_qt.py": "83d24a99aeb4d4eec534f7055dd55aa48becf67e90ed936fa48ebd0a625912ec",
+    "src/guanghe_companion/plugin_configuration.py": "a57cf090236e6005cfe9b7f17b9d7b9879f17b360e2083f17d59ad8d34de5233",
+    "src/guanghe_companion/plugin_enabled_controller.py": "ebde1920e3be3a7ca522ab1a5a1be8185b111848edac0c21d2c1fff429d4662c",
+    "src/guanghe_companion/plugin_health.py": "fe12f15c8dd0165baf383668017f3c4e407de14f24d9c446579accc62d4cf970",
+    "src/guanghe_companion/plugin_host.py": "a68b9fd72afdd386f1f1b02443898979eea7aafeac862bd0a0570ef90c6932b4",
+    "src/guanghe_companion/plugin_journal.py": "63981a7176009fe74f61ce096073761c25036e0ed577e07761609206204a7324",
+    "src/guanghe_companion/plugin_manifest.py": "db749b4eed5bd7bfa6084c204fb38d5d6d56c2590669c7b87673273c5c418e52",
+    "src/guanghe_companion/plugin_package.py": "86f9740819c1c94ee1d9c30deb264b33f51cf9a260ce97f981ed69d3014c5cb6",
+    "src/guanghe_companion/plugin_provider_adapters.py": "522d28bdc1dbcf907dce3865f764d2208fe08278470d672bf2963c9a5d0a6bba",
+    "src/guanghe_companion/plugin_runtime.py": "2e9e1aa3ff135391558cc50477932ab65a08eb9b65397139d309733a09b8af1e",
+    "src/guanghe_companion/plugin_story_bridge.py": "0ae638faf86f3ee0355f099e071e9a786c2d5f2b9b63ec24aeb305a76cd15da5",
+    "src/guanghe_companion/plugin_subsystem.py": "37afce07bc0803906004fe7089955da4a0c03ad412c6137b6cf7ab9212e61100",
+    "src/guanghe_companion/presentation_renderer.py": "a82ee711e83c4fdc81d9a7f05c20c31cc460a7dd74762bb58584c720cc3537b9",
+    "src/guanghe_companion/proactive_companion.py": "e00ef472fdccba181f45ab8c2378ae6cabfb38ed8d41a414f0865e0a74b0b8dc",
+    "src/guanghe_companion/relationship.py": "82f7327ce25fd2f3a6c181f4f095c97dec8adfc9382f21660584174deebda22a",
+    "src/guanghe_companion/release_security.py": "67f8f29478a5fbc23213e8841cab037fc7585945343dceabf65565715247626e",
+    "src/guanghe_companion/retrieval_contract.py": "4f1dc1efa5e36cfbd6e0edcfb4d9f2e443fc515af38c0ecc37e234f7323268dc",
+    "src/guanghe_companion/retrieval_evidence.py": "07f49c94ed915a050c183f26ff02fd56fc8a315fe956db67a7b3f8385459aac8",
+    "src/guanghe_companion/retrieval_fact_schema.py": "ca84e0a4232b250169e55f6fb76f715e5c3db30dff5f444bf1eb3d4a087ec00c",
+    "src/guanghe_companion/retrieval_literal.py": "fd2f021920230f81be37bcf893f7572866e6e51f776af528b5b119586aaa23db",
+    "src/guanghe_companion/retrieval_router.py": "e8ef1f4e6327510b6a97e0fdcc91f856a4d7ee88adb9862aaff67edda84a060d",
+    "src/guanghe_companion/runtime_paths.py": "a17994a0abec95e3c971417a5ad7a089e3c5a2dc7cb0084ea6458eab00e83db0",
+    "src/guanghe_companion/screen_observation.py": "b3ab107d67e346a22097fbf70bbb74bdab9ea5c16b336de80e40b29f316bd2a3",
+    "src/guanghe_companion/semantic_memory.py": "8027188bfe01845aedf7a00f87f23a849c79fb4e33fcae663cf605a24e32085f",
+    "src/guanghe_companion/session_goals.py": "4cbe930a04b1353ea8b0df5c7d75a6d290650390b16df65b01df82c4ee3ed8f2",
+    "src/guanghe_companion/shop_items.py": "b280112754ec75ccf0bccad497616d1a180167627ebd67f6ef4b8ed9c875939b",
+    "src/guanghe_companion/snapshot.py": "7f8440b891ef2fe58deb56d9f2349fe5a850f1c082865f994ff1e0239a07a2e2",
+    "src/guanghe_companion/snapshot_renderer.py": "c6e4cbf5b71dacd8c34cd979af77760ea7800ca6e8df15d416a03a773a41e0c9",
+    "src/guanghe_companion/spirit_stage.py": "6f53c03d4c43a102b517dc10c15d0d28b1d1d28780a776285811a31a471e3bf2",
+    "src/guanghe_companion/storage.py": "21f0a470014e26317917e9a50d4f71a0c3bbf54496b9a3290bf1ee3ef7a4e723",
+    "src/guanghe_companion/topic_scout.py": "bad5cf48350b2cdaba4aac1072f6dfc3ae876440855833bd67108d50f81ac2e5",
+    "src/guanghe_companion/tray_controller.py": "3f0b758afa99dc32a8d7b56a63a25ca0113b3302db090f83fce6bd1530dc70f1",
+    "src/guanghe_companion/ui_controls.py": "fa1882ff81794b0872b38d817f914166b090abf37887f9e72f8fcc7a1a7004d6",
+    "src/guanghe_companion/visual_actions.py": "ab661a746e8d46e0a5865146af6eeaa7c4e1d85ad7b324bfa11ead04798a4a4d",
+    "src/guanghe_companion/voice_asr.py": "d1efc7b36c24e91dc5ab815338ba9087f22c0d7976726e72062b7d90b2eda3ca",
+    "src/guanghe_companion/voice_async.py": "31f6438859e8acfb0f68b4a8cb275ea477d2aa88d9e6d86b5d5ce4f0e033ba45",
+    "src/guanghe_companion/voice_provider_catalog.py": "e9113941cb32da07f98eb8a0803fba786e2a6a1ed0e390233531a5fb1523a0f8",
+    "src/guanghe_companion/voice_service_control.py": "f359b03c14bcd1e995fc78b78c89c5f87233a553e50ad4fbf0220acb1787aa7e",
+    "src/guanghe_companion/voice_tts.py": "98435c2c2d4798a3491f554928144b92ac07f07e52ee676ef545606e6a60d8ff",
+    "src/guanghe_companion/web_search.py": "9166301ec4b3300591648bcdf93699b893144fc266e9053f3a3b69e13de26daa"
+  },
+  "runs": [
+    {
+      "method": "none",
+      "size": 300,
+      "output": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/none-300.json",
+      "command": [
+        "/tmp/emoti-retrieval-venv/bin/python",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py",
+        "--worker",
+        "none",
+        "--size",
+        "300",
+        "--worker-output",
+        "/tmp/emoti-final-round2-quality/final-round2-regression-300/none/none-300.json",
+        "--source-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+        "--baseline-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-benchmark-baseline",
+        "--dataset-dir",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tests/fixtures",
+        "--splits",
+        "development",
+        "validation",
+        "holdout",
+        "--model-cache",
+        "/tmp/emoti-bge-model-cache",
+        "--local-files-only"
+      ],
+      "console_log": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/none-300.log",
+      "returncode": 0,
+      "elapsed_ms": 8354.639012,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 192,
+        "stories": 32,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "macro_recall_at_4": 0.0,
+        "delivered_recall": 0.0,
+        "precision_returned": 0.0,
+        "ndcg_at_4_binary": 0.0,
+        "mrr": 0.0,
+        "all_gold_delivered": {
+          "numerator": 0,
+          "denominator": 104,
+          "rate": 0.0
+        },
+        "supported_delivery": {
+          "numerator": 0,
+          "denominator": 104,
+          "rate": 0.0
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 0,
+          "denominator": 6,
+          "rate": 0.0
+        },
+        "mixed_request_source_delivery": {
+          "numerator": 0,
+          "denominator": 7,
+          "rate": 0.0
+        },
+        "unrecorded_episode_injection": {
+          "numerator": 0,
+          "denominator": 16,
+          "rate": 0.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "unnecessary_retrieval": {
+          "numerator": 0,
+          "denominator": 38,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "status_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 104,
+          "denominator": 104,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "structured_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "isolation_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "provider_context_lost_evidence": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_source_fingerprint": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_literal_binding": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_source_fingerprint": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 192,
+            "p50": 0.24787949999999997,
+            "p95": 0.34142645,
+            "p99": 1.3134354300000166,
+            "min": 0.136847,
+            "max": 9.885425
+          },
+          "provider_prompt_assembly": {
+            "n": 192,
+            "p50": 0.1425505,
+            "p95": 0.20058704999999993,
+            "p99": 0.3182000200000001,
+            "min": 0.071077,
+            "max": 0.388748
+          },
+          "total": {
+            "n": 192,
+            "p50": 0.5070714999999999,
+            "p95": 0.6743567999999999,
+            "p99": 2.341091550000014,
+            "min": 0.263188,
+            "max": 10.120551
+          }
+        },
+        "warm_total_ms": {
+          "n": 192,
+          "p50": 0.5070714999999999,
+          "p95": 0.6743567999999999,
+          "p99": 2.341091550000014,
+          "min": 0.263188,
+          "max": 10.120551
+        },
+        "cold_query_total_ms": {
+          "n": 0
+        },
+        "embedding_query_calls": 0,
+        "passage_encoded_entries": 0,
+        "rows_loaded": {
+          "n": 192,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "context_chars": {
+          "n": 192,
+          "p50": 250.0,
+          "p95": 250.0,
+          "p99": 250.0,
+          "min": 250.0,
+          "max": 250.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 192,
+          "p50": 2908.5,
+          "p95": 2920.0,
+          "p99": 2931.27,
+          "min": 2900.0,
+          "max": 2942.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "51f354f2e49e1d48c584a943e774a55b04ff89bf24819aea7312992239d73446",
+      "staging_output": "/tmp/emoti-final-round2-quality/final-round2-regression-300/none/none-300.json",
+      "staging_console_log": "/tmp/emoti-final-round2-quality/final-round2-regression-300/none/none-300.log",
+      "evaluation_role": "post_existing_regression_fix_seen_replay",
+      "new_measurement": false,
+      "reused_from": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/none-300.json",
+      "reuse_reason": "Frozen baseline299 production, evaluator53, model/budget/data inputs and method are unchanged by candidate-only router regression fix"
+    },
+    {
+      "method": "lexical",
+      "size": 300,
+      "output": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/lexical-300.json",
+      "command": [
+        "/tmp/emoti-retrieval-venv/bin/python",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py",
+        "--worker",
+        "lexical",
+        "--size",
+        "300",
+        "--worker-output",
+        "/tmp/emoti-final-round2-quality/final-round2-regression-300/lexical/lexical-300.json",
+        "--source-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+        "--baseline-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-benchmark-baseline",
+        "--dataset-dir",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tests/fixtures",
+        "--splits",
+        "development",
+        "validation",
+        "holdout",
+        "--model-cache",
+        "/tmp/emoti-bge-model-cache",
+        "--local-files-only"
+      ],
+      "console_log": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/lexical-300.log",
+      "returncode": 0,
+      "elapsed_ms": 23652.506796,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 192,
+        "stories": 32,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "macro_recall_at_4": 0.6875,
+        "delivered_recall": 0.6875,
+        "precision_returned": 0.46474358974358976,
+        "ndcg_at_4_binary": 0.6639970832480626,
+        "mrr": 0.6658653846153846,
+        "all_gold_delivered": {
+          "numerator": 70,
+          "denominator": 104,
+          "rate": 0.6730769230769231
+        },
+        "supported_delivery": {
+          "numerator": 54,
+          "denominator": 104,
+          "rate": 0.5192307692307693
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 5,
+          "denominator": 10,
+          "rate": 0.5
+        },
+        "followup_complete_delivery": {
+          "numerator": 2,
+          "denominator": 6,
+          "rate": 0.3333333333333333
+        },
+        "mixed_request_source_delivery": {
+          "numerator": 2,
+          "denominator": 7,
+          "rate": 0.2857142857142857
+        },
+        "unrecorded_episode_injection": {
+          "numerator": 11,
+          "denominator": 16,
+          "rate": 0.6875
+        },
+        "no_answer_injection": {
+          "numerator": 32,
+          "denominator": 49,
+          "rate": 0.6530612244897959
+        },
+        "unnecessary_retrieval": {
+          "numerator": 38,
+          "denominator": 38,
+          "rate": 1.0
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "status_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 25,
+          "denominator": 104,
+          "rate": 0.2403846153846154
+        },
+        "forbidden_injection": {
+          "numerator": 22,
+          "denominator": 192,
+          "rate": 0.11458333333333333
+        },
+        "structured_wrong_injection": {
+          "numerator": 51,
+          "denominator": 192,
+          "rate": 0.265625
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 5,
+          "denominator": 192,
+          "rate": 0.026041666666666668
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "isolation_injection": {
+          "numerator": 1,
+          "denominator": 192,
+          "rate": 0.005208333333333333
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "provider_context_lost_evidence": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_source_fingerprint": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_literal_binding": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_source_fingerprint": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 192,
+            "p50": 0.30067,
+            "p95": 0.55178695,
+            "p99": 1.7232817000000087,
+            "min": 0.162856,
+            "max": 9.878614
+          },
+          "database_read": {
+            "n": 192,
+            "p50": 45.255962999999994,
+            "p95": 62.29173919999999,
+            "p99": 85.14378173000004,
+            "min": 26.441035,
+            "max": 111.259602
+          },
+          "finalize_recall": {
+            "n": 192,
+            "p50": 8.909762,
+            "p95": 18.62549305,
+            "p99": 26.993639280000004,
+            "min": 3.748921,
+            "max": 33.990022
+          },
+          "lexical_and_fusion": {
+            "n": 192,
+            "p50": 29.249028000000003,
+            "p95": 44.164626899999995,
+            "p99": 56.129673920000016,
+            "min": 18.005796,
+            "max": 69.507075
+          },
+          "provider_prompt_assembly": {
+            "n": 192,
+            "p50": 0.15875,
+            "p95": 0.25341634999999996,
+            "p99": 0.5982283100000001,
+            "min": 0.09924,
+            "max": 1.675396
+          },
+          "qualification": {
+            "n": 192,
+            "p50": 0.23010799999999998,
+            "p95": 0.34592419999999985,
+            "p99": 0.5704840100000003,
+            "min": 0.088624,
+            "max": 1.057118
+          },
+          "total": {
+            "n": 192,
+            "p50": 85.77958749999999,
+            "p95": 118.88790134999999,
+            "p99": 148.64704582000002,
+            "min": 51.133366,
+            "max": 160.453862
+          }
+        },
+        "warm_total_ms": {
+          "n": 192,
+          "p50": 85.77958749999999,
+          "p95": 118.88790134999999,
+          "p99": 148.64704582000002,
+          "min": 51.133366,
+          "max": 160.453862
+        },
+        "cold_query_total_ms": {
+          "n": 0
+        },
+        "embedding_query_calls": 0,
+        "passage_encoded_entries": 0,
+        "rows_loaded": {
+          "n": 192,
+          "p50": 300.0,
+          "p95": 300.0,
+          "p99": 300.0,
+          "min": 298.0,
+          "max": 300.0
+        },
+        "context_chars": {
+          "n": 192,
+          "p50": 583.0,
+          "p95": 1625.0,
+          "p99": 1658.45,
+          "min": 250.0,
+          "max": 1663.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 192,
+          "p50": 3120.0,
+          "p95": 3842.35,
+          "p99": 3885.0,
+          "min": 2900.0,
+          "max": 3890.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "f3a45f58868c2e788f3c8c92fc0875ab23cea9b39b0d0d500d90f34c0737d0ee",
+      "staging_output": "/tmp/emoti-final-round2-quality/final-round2-regression-300/lexical/lexical-300.json",
+      "staging_console_log": "/tmp/emoti-final-round2-quality/final-round2-regression-300/lexical/lexical-300.log",
+      "evaluation_role": "post_existing_regression_fix_seen_replay",
+      "new_measurement": false,
+      "reused_from": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/lexical-300.json",
+      "reuse_reason": "Frozen baseline299 production, evaluator53, model/budget/data inputs and method are unchanged by candidate-only router regression fix"
+    },
+    {
+      "method": "bge_rrf",
+      "size": 300,
+      "output": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/bge_rrf-300.json",
+      "command": [
+        "/tmp/emoti-retrieval-venv/bin/python",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py",
+        "--worker",
+        "bge_rrf",
+        "--size",
+        "300",
+        "--worker-output",
+        "/tmp/emoti-final-round2-quality/final-round2-regression-300/bge_rrf/bge_rrf-300.json",
+        "--source-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+        "--baseline-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-benchmark-baseline",
+        "--dataset-dir",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tests/fixtures",
+        "--splits",
+        "development",
+        "validation",
+        "holdout",
+        "--model-cache",
+        "/tmp/emoti-bge-model-cache",
+        "--local-files-only"
+      ],
+      "console_log": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/bge_rrf-300.log",
+      "returncode": 0,
+      "elapsed_ms": 33110.650469,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 192,
+        "stories": 32,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "macro_recall_at_4": 0.6875,
+        "delivered_recall": 0.6875,
+        "precision_returned": 0.39823717948717946,
+        "ndcg_at_4_binary": 0.6659225947432363,
+        "mrr": 0.6682692307692307,
+        "all_gold_delivered": {
+          "numerator": 70,
+          "denominator": 104,
+          "rate": 0.6730769230769231
+        },
+        "supported_delivery": {
+          "numerator": 53,
+          "denominator": 104,
+          "rate": 0.5096153846153846
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 5,
+          "denominator": 10,
+          "rate": 0.5
+        },
+        "followup_complete_delivery": {
+          "numerator": 2,
+          "denominator": 6,
+          "rate": 0.3333333333333333
+        },
+        "mixed_request_source_delivery": {
+          "numerator": 2,
+          "denominator": 7,
+          "rate": 0.2857142857142857
+        },
+        "unrecorded_episode_injection": {
+          "numerator": 13,
+          "denominator": 16,
+          "rate": 0.8125
+        },
+        "no_answer_injection": {
+          "numerator": 39,
+          "denominator": 49,
+          "rate": 0.7959183673469388
+        },
+        "unnecessary_retrieval": {
+          "numerator": 38,
+          "denominator": 38,
+          "rate": 1.0
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "status_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 16,
+          "denominator": 104,
+          "rate": 0.15384615384615385
+        },
+        "forbidden_injection": {
+          "numerator": 27,
+          "denominator": 192,
+          "rate": 0.140625
+        },
+        "structured_wrong_injection": {
+          "numerator": 57,
+          "denominator": 192,
+          "rate": 0.296875
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 6,
+          "denominator": 192,
+          "rate": 0.03125
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "isolation_injection": {
+          "numerator": 10,
+          "denominator": 192,
+          "rate": 0.052083333333333336
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "provider_context_lost_evidence": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_source_fingerprint": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_literal_binding": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_source_fingerprint": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 192,
+            "p50": 0.34508700000000003,
+            "p95": 0.60940885,
+            "p99": 0.7464540000000003,
+            "min": 0.154894,
+            "max": 0.940132
+          },
+          "database_read": {
+            "n": 192,
+            "p50": 43.085066999999995,
+            "p95": 55.82831655,
+            "p99": 87.84125594000002,
+            "min": 27.686323,
+            "max": 111.6008
+          },
+          "finalize_recall": {
+            "n": 192,
+            "p50": 9.9814335,
+            "p95": 18.068301299999998,
+            "p99": 31.14750380000007,
+            "min": 4.054039,
+            "max": 62.904271
+          },
+          "index_and_query_prepare": {
+            "n": 192,
+            "p50": 8.9947725,
+            "p95": 17.85664455,
+            "p99": 22.019519460000016,
+            "min": 5.127952,
+            "max": 31.351939
+          },
+          "lexical_and_fusion": {
+            "n": 192,
+            "p50": 28.1866035,
+            "p95": 35.85243114999999,
+            "p99": 49.67814578000003,
+            "min": 17.435267,
+            "max": 81.696606
+          },
+          "provider_prompt_assembly": {
+            "n": 192,
+            "p50": 0.163472,
+            "p95": 0.27153179999999993,
+            "p99": 0.6621206400000068,
+            "min": 0.099671,
+            "max": 2.497138
+          },
+          "qualification": {
+            "n": 192,
+            "p50": 0.2127815,
+            "p95": 0.3338043999999999,
+            "p99": 0.6080148500000009,
+            "min": 0.084808,
+            "max": 9.477377
+          },
+          "semantic_scores": {
+            "n": 192,
+            "p50": 0.1147185,
+            "p95": 0.28936429999999996,
+            "p99": 0.38684958,
+            "min": 0.055343,
+            "max": 1.175637
+          },
+          "total": {
+            "n": 192,
+            "p50": 92.74688499999999,
+            "p95": 121.28425809999992,
+            "p99": 154.63982318000006,
+            "min": 55.933195,
+            "max": 199.300299
+          }
+        },
+        "warm_total_ms": {
+          "n": 192,
+          "p50": 92.74688499999999,
+          "p95": 121.28425809999992,
+          "p99": 154.63982318000006,
+          "min": 55.933195,
+          "max": 199.300299
+        },
+        "cold_query_total_ms": {
+          "n": 0
+        },
+        "embedding_query_calls": 192,
+        "passage_encoded_entries": 0,
+        "rows_loaded": {
+          "n": 192,
+          "p50": 300.0,
+          "p95": 300.0,
+          "p99": 300.0,
+          "min": 298.0,
+          "max": 300.0
+        },
+        "context_chars": {
+          "n": 192,
+          "p50": 884.0,
+          "p95": 1663.45,
+          "p99": 1674.18,
+          "min": 250.0,
+          "max": 1676.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 192,
+          "p50": 3304.0,
+          "p95": 3890.0499999999997,
+          "p99": 3914.63,
+          "min": 2900.0,
+          "max": 3923.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "787352987f1c54ed3c96de4c08293fb277919a1493b2acdc38a6f73712eba0fc",
+      "staging_output": "/tmp/emoti-final-round2-quality/final-round2-regression-300/bge_rrf/bge_rrf-300.json",
+      "staging_console_log": "/tmp/emoti-final-round2-quality/final-round2-regression-300/bge_rrf/bge_rrf-300.log",
+      "evaluation_role": "post_existing_regression_fix_seen_replay",
+      "new_measurement": false,
+      "reused_from": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/bge_rrf-300.json",
+      "reuse_reason": "Frozen baseline299 production, evaluator53, model/budget/data inputs and method are unchanged by candidate-only router regression fix"
+    },
+    {
+      "method": "routed",
+      "size": 300,
+      "output": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/routed-300.json",
+      "command": [
+        "/tmp/emoti-retrieval-venv/bin/python",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py",
+        "--worker",
+        "routed",
+        "--size",
+        "300",
+        "--worker-output",
+        "/tmp/emoti-post-regression-quality/final-post-regression-regression-300/routed/routed-300.json",
+        "--source-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+        "--baseline-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-benchmark-baseline",
+        "--dataset-dir",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tests/fixtures",
+        "--splits",
+        "development",
+        "validation",
+        "holdout",
+        "--model-cache",
+        "/tmp/emoti-bge-model-cache",
+        "--local-files-only"
+      ],
+      "console_log": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/routed-300.log",
+      "returncode": 0,
+      "elapsed_ms": 105955.092269,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 192,
+        "stories": 32,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "macro_recall_at_4": 0.8076923076923077,
+        "delivered_recall": 0.8076923076923077,
+        "precision_returned": 0.8028846153846154,
+        "ndcg_at_4_binary": 0.8076923076923077,
+        "mrr": 0.8076923076923077,
+        "all_gold_delivered": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "supported_delivery": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 9,
+          "denominator": 10,
+          "rate": 0.9
+        },
+        "followup_complete_delivery": {
+          "numerator": 6,
+          "denominator": 6,
+          "rate": 1.0
+        },
+        "mixed_request_source_delivery": {
+          "numerator": 6,
+          "denominator": 7,
+          "rate": 0.8571428571428571
+        },
+        "unrecorded_episode_injection": {
+          "numerator": 0,
+          "denominator": 16,
+          "rate": 0.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "unnecessary_retrieval": {
+          "numerator": 2,
+          "denominator": 38,
+          "rate": 0.05263157894736842
+        },
+        "route_exact": {
+          "numerator": 189,
+          "denominator": 192,
+          "rate": 0.984375
+        },
+        "status_exact": {
+          "numerator": 166,
+          "denominator": 192,
+          "rate": 0.8645833333333334
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 48,
+          "denominator": 49,
+          "rate": 0.9795918367346939
+        },
+        "answerable_zero_evidence": {
+          "numerator": 20,
+          "denominator": 104,
+          "rate": 0.19230769230769232
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "structured_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "isolation_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "provider_context_lost_evidence": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_source_fingerprint": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "resolution_source_coverage": {
+          "numerator": 8,
+          "denominator": 8,
+          "rate": 1.0
+        },
+        "resolution_literal_binding": {
+          "numerator": 8,
+          "denominator": 8,
+          "rate": 1.0
+        },
+        "resolution_source_fingerprint": {
+          "numerator": 8,
+          "denominator": 8,
+          "rate": 1.0
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 192,
+            "p50": 0.284285,
+            "p95": 0.4900633999999999,
+            "p99": 0.5807602600000003,
+            "min": 0.166973,
+            "max": 0.921383
+          },
+          "index_and_query_prepare": {
+            "n": 192,
+            "p50": 0.2608095,
+            "p95": 5816.304705449998,
+            "p99": 6590.208205180001,
+            "min": 0.02653,
+            "max": 7113.667322
+          },
+          "provider_prompt_assembly": {
+            "n": 192,
+            "p50": 0.1446485,
+            "p95": 0.25947944999999994,
+            "p99": 0.46770876000000067,
+            "min": 0.085299,
+            "max": 2.253869
+          },
+          "retrieval_context_assembly": {
+            "n": 192,
+            "p50": 0.14353249571286142,
+            "p95": 0.3569919033907354,
+            "p99": 0.697728371960693,
+            "min": 0.06546900112880394,
+            "max": 5.50289199600229
+          },
+          "retrieval_database_read": {
+            "n": 192,
+            "p50": 3.01417899390799,
+            "p95": 16.91927444881002,
+            "p99": 51.42164509321448,
+            "min": 0.5243809937383048,
+            "max": 58.9277420003782
+          },
+          "retrieval_eligibility_and_evidence": {
+            "n": 155,
+            "p50": 0.116074996185489,
+            "p95": 1.4315117034129794,
+            "p99": 4.536316978628751,
+            "min": 0.0003799941623583436,
+            "max": 5.1915999938501045
+          },
+          "retrieval_entity_resolution": {
+            "n": 155,
+            "p50": 0.014641998859588057,
+            "p95": 0.9439993998967109,
+            "p99": 1.3457557995570837,
+            "min": 0.000981999619398266,
+            "max": 1.983890004339628
+          },
+          "retrieval_external_read": {
+            "n": 13,
+            "p50": 0.0004199973773211241,
+            "p95": 0.0005870024324394761,
+            "p99": 0.0006302041583694517,
+            "min": 0.0003399982233531773,
+            "max": 0.0006410045898519456
+          },
+          "retrieval_finalize": {
+            "n": 192,
+            "p50": 0.6250239966902882,
+            "p95": 7.642225100425996,
+            "p99": 27.286033711279757,
+            "min": 0.3175890014972538,
+            "max": 31.958416002453305
+          },
+          "retrieval_ranking": {
+            "n": 155,
+            "p50": 0.12338699889369309,
+            "p95": 1.178447502752532,
+            "p99": 2.3410751603660245,
+            "min": 0.008543000149074942,
+            "max": 4.730947999632917
+          },
+          "retrieval_routing": {
+            "n": 192,
+            "p50": 0.09558500096318312,
+            "p95": 0.2976878055051202,
+            "p99": 0.44426241613109607,
+            "min": 0.006028996722307056,
+            "max": 0.7634930007043295
+          },
+          "retrieval_total": {
+            "n": 192,
+            "p50": 7.526985500589944,
+            "p95": 29.9121756957902,
+            "p99": 57.637080579152105,
+            "min": 1.0046980023616925,
+            "max": 64.75761500041699
+          },
+          "retrieve": {
+            "n": 192,
+            "p50": 7.5771465,
+            "p95": 30.128075699999993,
+            "p99": 57.86197615000001,
+            "min": 1.021943,
+            "max": 64.802443
+          },
+          "total": {
+            "n": 192,
+            "p50": 9.733597,
+            "p95": 5837.017848949999,
+            "p99": 6605.258490610001,
+            "min": 1.465333,
+            "max": 7127.49138
+          }
+        },
+        "warm_total_ms": {
+          "n": 171,
+          "p50": 8.745886,
+          "p95": 36.058690999999996,
+          "p99": 63.594224200000035,
+          "min": 1.465333,
+          "max": 68.497892
+        },
+        "cold_query_total_ms": {
+          "n": 21,
+          "p50": 5799.896228,
+          "p95": 6768.401133,
+          "p99": 7055.673330600001,
+          "min": 61.775085,
+          "max": 7127.49138
+        },
+        "embedding_query_calls": 63,
+        "passage_encoded_entries": 4501,
+        "rows_loaded": {
+          "n": 192,
+          "p50": 2.0,
+          "p95": 35.44999999999999,
+          "p99": 103.16000000000008,
+          "min": 0.0,
+          "max": 186.0
+        },
+        "context_chars": {
+          "n": 192,
+          "p50": 590.0,
+          "p95": 1488.0,
+          "p99": 1771.09,
+          "min": 544.0,
+          "max": 1812.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 192,
+          "p50": 3278.5,
+          "p95": 3842.35,
+          "p99": 4019.09,
+          "min": 3245.0,
+          "max": 4020.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "e09daa8e1d65bc25daf20672c462501467fa406423bca5d3571c401cc5ebe845",
+      "evaluation_role": "post_existing_regression_fix_seen_replay",
+      "new_measurement": true,
+      "raw_measurement_sha256": "8d4c00b603f4ddf1c3f0d4c9eaf61a3d4fd52a53d4fe969e957accf7f1ff0e66",
+      "raw_measurement_artifact": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/raw-measurements/routed-300.json",
+      "annotation": "evaluation_role/provenance only; no row or score edits"
+    },
+    {
+      "method": "layered",
+      "size": 300,
+      "output": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/layered-300.json",
+      "command": [
+        "/tmp/emoti-retrieval-venv/bin/python",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py",
+        "--worker",
+        "layered",
+        "--size",
+        "300",
+        "--worker-output",
+        "/tmp/emoti-post-regression-quality/final-post-regression-regression-300/layered/layered-300.json",
+        "--source-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+        "--baseline-root",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-benchmark-baseline",
+        "--dataset-dir",
+        "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tests/fixtures",
+        "--splits",
+        "development",
+        "validation",
+        "holdout",
+        "--model-cache",
+        "/tmp/emoti-bge-model-cache",
+        "--local-files-only"
+      ],
+      "console_log": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/layered-300.log",
+      "returncode": 0,
+      "elapsed_ms": 103132.924828,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 192,
+        "stories": 32,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "macro_recall_at_4": 0.8076923076923077,
+        "delivered_recall": 0.8076923076923077,
+        "precision_returned": 0.8028846153846154,
+        "ndcg_at_4_binary": 0.8076923076923077,
+        "mrr": 0.8076923076923077,
+        "all_gold_delivered": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "supported_delivery": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 9,
+          "denominator": 10,
+          "rate": 0.9
+        },
+        "followup_complete_delivery": {
+          "numerator": 6,
+          "denominator": 6,
+          "rate": 1.0
+        },
+        "mixed_request_source_delivery": {
+          "numerator": 6,
+          "denominator": 7,
+          "rate": 0.8571428571428571
+        },
+        "unrecorded_episode_injection": {
+          "numerator": 0,
+          "denominator": 16,
+          "rate": 0.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "unnecessary_retrieval": {
+          "numerator": 2,
+          "denominator": 38,
+          "rate": 0.05263157894736842
+        },
+        "route_exact": {
+          "numerator": 189,
+          "denominator": 192,
+          "rate": 0.984375
+        },
+        "status_exact": {
+          "numerator": 166,
+          "denominator": 192,
+          "rate": 0.8645833333333334
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 48,
+          "denominator": 49,
+          "rate": 0.9795918367346939
+        },
+        "answerable_zero_evidence": {
+          "numerator": 20,
+          "denominator": 104,
+          "rate": 0.19230769230769232
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "structured_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "isolation_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "provider_context_lost_evidence": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "overview_extractive_entailment": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "overview_source_fingerprint": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "resolution_source_coverage": {
+          "numerator": 8,
+          "denominator": 8,
+          "rate": 1.0
+        },
+        "resolution_literal_binding": {
+          "numerator": 8,
+          "denominator": 8,
+          "rate": 1.0
+        },
+        "resolution_source_fingerprint": {
+          "numerator": 8,
+          "denominator": 8,
+          "rate": 1.0
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 192,
+            "p50": 0.293744,
+            "p95": 0.46774669999999996,
+            "p99": 0.5196003900000001,
+            "min": 0.178149,
+            "max": 0.560357
+          },
+          "index_and_query_prepare": {
+            "n": 192,
+            "p50": 0.296989,
+            "p95": 5565.450318199999,
+            "p99": 6564.53182652,
+            "min": 0.03283,
+            "max": 6752.296315
+          },
+          "provider_prompt_assembly": {
+            "n": 192,
+            "p50": 0.146331,
+            "p95": 0.22824959999999994,
+            "p99": 0.3651937500000003,
+            "min": 0.089045,
+            "max": 0.455809
+          },
+          "retrieval_context_assembly": {
+            "n": 192,
+            "p50": 0.1521004996902775,
+            "p95": 0.3493598003842635,
+            "p99": 0.43926676960836636,
+            "min": 0.06899399886606261,
+            "max": 0.540805995115079
+          },
+          "retrieval_database_read": {
+            "n": 192,
+            "p50": 3.251923499192344,
+            "p95": 17.42642300050646,
+            "p99": 40.02046862129646,
+            "min": 0.5151289951754734,
+            "max": 44.83511199941859
+          },
+          "retrieval_eligibility_and_evidence": {
+            "n": 155,
+            "p50": 0.12694199540419504,
+            "p95": 1.291582104749977,
+            "p99": 2.910792943876018,
+            "min": 0.0005710026016458869,
+            "max": 4.891787997621577
+          },
+          "retrieval_entity_resolution": {
+            "n": 155,
+            "p50": 0.017587000911589712,
+            "p95": 0.9452360012801361,
+            "p99": 1.2227261377847785,
+            "min": 0.0011210067896172404,
+            "max": 1.5032620067358948
+          },
+          "retrieval_external_read": {
+            "n": 13,
+            "p50": 0.0004699977580457926,
+            "p95": 0.01169179886346679,
+            "p99": 0.02503676310880107,
+            "min": 0.00031999661587178707,
+            "max": 0.028373004170134664
+          },
+          "retrieval_finalize": {
+            "n": 192,
+            "p50": 0.6102629959059414,
+            "p95": 8.569090651508297,
+            "p99": 13.21175927085282,
+            "min": 0.3188219998264685,
+            "max": 28.728765006235335
+          },
+          "retrieval_ranking": {
+            "n": 155,
+            "p50": 0.1287949999095872,
+            "p95": 0.9988521997001947,
+            "p99": 1.4680979559489087,
+            "min": 0.012488999345805496,
+            "max": 2.589063995401375
+          },
+          "retrieval_routing": {
+            "n": 192,
+            "p50": 0.10422750347061083,
+            "p95": 0.2859609481674851,
+            "p99": 0.5595268290198878,
+            "min": 0.007472001016139984,
+            "max": 0.687177998770494
+          },
+          "retrieval_total": {
+            "n": 192,
+            "p50": 8.363397500943393,
+            "p95": 26.170680449286007,
+            "p99": 46.99628118272814,
+            "min": 0.9983199997805059,
+            "max": 53.53427599766292
+          },
+          "retrieve": {
+            "n": 192,
+            "p50": 8.404704500000001,
+            "p95": 26.282267249999997,
+            "p99": 47.079218550000014,
+            "min": 1.015266,
+            "max": 53.5964
+          },
+          "total": {
+            "n": 192,
+            "p50": 10.160881,
+            "p95": 5592.700960099999,
+            "p99": 6589.01215733,
+            "min": 1.428901,
+            "max": 6771.034983
+          }
+        },
+        "warm_total_ms": {
+          "n": 171,
+          "p50": 9.564029,
+          "p95": 34.3216945,
+          "p99": 59.005736000000155,
+          "min": 1.428901,
+          "max": 83.89254
+        },
+        "cold_query_total_ms": {
+          "n": 21,
+          "p50": 5561.477855,
+          "p95": 6647.612915,
+          "p99": 6746.3505694,
+          "min": 50.708307,
+          "max": 6771.034983
+        },
+        "embedding_query_calls": 63,
+        "passage_encoded_entries": 4501,
+        "rows_loaded": {
+          "n": 192,
+          "p50": 2.0,
+          "p95": 35.44999999999999,
+          "p99": 103.16000000000008,
+          "min": 0.0,
+          "max": 186.0
+        },
+        "context_chars": {
+          "n": 192,
+          "p50": 590.0,
+          "p95": 1478.45,
+          "p99": 1771.09,
+          "min": 544.0,
+          "max": 1812.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 192,
+          "p50": 3278.5,
+          "p95": 3818.45,
+          "p99": 4019.09,
+          "min": 3245.0,
+          "max": 4020.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "9f49859fc7036a010068d10b7664f70b806658036ce5283bf1ca173d184b08f1",
+      "evaluation_role": "post_existing_regression_fix_seen_replay",
+      "new_measurement": true,
+      "raw_measurement_sha256": "e54a0180104c7a8a2b9aa3422623eaf92972ef18377df1779761ae634e7ffa7c",
+      "raw_measurement_artifact": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/raw-measurements/layered-300.json",
+      "annotation": "evaluation_role/provenance only; no row or score edits"
+    }
+  ],
+  "data_policy": "Independent story archives; synthetic stress tests, no population inference; fixed order; no generative LLM",
+  "paired_comparisons": {
+    "routed_vs_lexical_300": {
+      "delivered_recall_delta": {
+        "observed": 0.1201923076923077,
+        "cluster_count": 32,
+        "repetitions": 1000,
+        "descriptive_95_percentile_interval": [
+          -0.0048543689320388345,
+          0.25862068965517243
+        ]
+      },
+      "no_answer_injection_delta": {
+        "observed": -0.6530612244897959,
+        "cluster_count": 32,
+        "repetitions": 1000,
+        "descriptive_95_percentile_interval": [
+          -0.8085106382978723,
+          -0.47058823529411764
+        ]
+      },
+      "interpretation": "Paired synthetic-story cluster bootstrap; no sampling claim about real users"
+    },
+    "layered_vs_lexical_300": {
+      "delivered_recall_delta": {
+        "observed": 0.1201923076923077,
+        "cluster_count": 32,
+        "repetitions": 1000,
+        "descriptive_95_percentile_interval": [
+          -0.0048543689320388345,
+          0.25862068965517243
+        ]
+      },
+      "no_answer_injection_delta": {
+        "observed": -0.6530612244897959,
+        "cluster_count": 32,
+        "repetitions": 1000,
+        "descriptive_95_percentile_interval": [
+          -0.8085106382978723,
+          -0.47058823529411764
+        ]
+      },
+      "interpretation": "Paired synthetic-story cluster bootstrap; no sampling claim about real users"
+    },
+    "routed_vs_bge_rrf_300": {
+      "delivered_recall_delta": {
+        "observed": 0.1201923076923077,
+        "cluster_count": 32,
+        "repetitions": 1000,
+        "descriptive_95_percentile_interval": [
+          -0.0048543689320388345,
+          0.25862068965517243
+        ]
+      },
+      "no_answer_injection_delta": {
+        "observed": -0.7959183673469388,
+        "cluster_count": 32,
+        "repetitions": 1000,
+        "descriptive_95_percentile_interval": [
+          -0.9387755102040817,
+          -0.6382978723404256
+        ]
+      },
+      "interpretation": "Paired synthetic-story cluster bootstrap; no sampling claim about real users"
+    },
+    "layered_vs_bge_rrf_300": {
+      "delivered_recall_delta": {
+        "observed": 0.1201923076923077,
+        "cluster_count": 32,
+        "repetitions": 1000,
+        "descriptive_95_percentile_interval": [
+          -0.0048543689320388345,
+          0.25862068965517243
+        ]
+      },
+      "no_answer_injection_delta": {
+        "observed": -0.7959183673469388,
+        "cluster_count": 32,
+        "repetitions": 1000,
+        "descriptive_95_percentile_interval": [
+          -0.9387755102040817,
+          -0.6382978723404256
+        ]
+      },
+      "interpretation": "Paired synthetic-story cluster bootstrap; no sampling claim about real users"
+    }
+  },
+  "new_source_unchanged_during_campaign": true,
+  "finished_at_utc": "2026-11-01T19:54:40.805334+00:00",
+  "evaluation_role": "post_existing_regression_fix_seen_replay",
+  "frozen_dataset_creation_roles": {
+    "development": "development_seen_during_tuning",
+    "validation": "development-validation_seen_during_diagnostics_and_tuning",
+    "holdout": "seen_regression_after_f7_first_independent_scoring"
+  },
+  "new_measurement_rows": 384,
+  "reused_measurement_rows": 576,
+  "execution_policy": {
+    "measurement_class": "observed_concurrent_validation",
+    "evaluation_role": "post_existing_regression_fix_seen_replay",
+    "new_measurements": [
+      "routed",
+      "layered"
+    ],
+    "byte_reused_baselines": [
+      "none",
+      "lexical",
+      "bge_rrf"
+    ],
+    "maximum_heavy_workers": 3,
+    "other_load": "root pytest and Qt smoke may overlap; timings are not SLO evidence",
+    "production_commit": "b5b43e2a83a392b56d11cd2c24f01a89bdf22364",
+    "unchanged_tool_commit": "53cb836",
+    "first_independent_score_preserved_at": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300",
+    "generation_requests": 0
+  }
+}

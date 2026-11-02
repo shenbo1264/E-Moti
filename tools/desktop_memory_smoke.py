@@ -91,9 +91,18 @@ def prompt_preview(controller, query):
         context = controller.get_expression_context()
         request = ExpressionRequest.from_snapshot(controller.get_typed_snapshot(), context=context)
         prompt = controller.ai_expressor.build_prompt(request)
-        recalled = controller.story_runtime.memory.recall(query, now=int(controller.now))
+        memory = controller.story_runtime.memory
+        trace = memory.last_retrieval_trace
+        provider_line = next(line for line in prompt.splitlines() if line.startswith("emotional_memory: "))
+        provider_memory = json.loads(provider_line.removeprefix("emotional_memory: "))
+        # Keep the old lexical/semantic API only as a labeled diagnostic. The
+        # provider prompt and new route trace are the actual desktop contract.
+        recalled = memory.recall(query, now=int(controller.now))
         return {"query": query, "prompt": prompt, "prompt_status": "built_not_sent",
-                "persona": request.persona,
+                "persona": request.persona, "provider_memory": provider_memory,
+                "retrieval_trace": trace.to_dict() if trace is not None else None,
+                "semantic_status": memory.semantic_retriever.status,
+                "retrieved_kind": "legacy_recall_api_diagnostic",
                 "retrieved": [{"id": row.memory_id, "summary": row.summary,
                                 "source": row.source, "source_ids": row.source_ids,
                                 "version": row.version,
@@ -122,7 +131,7 @@ def run_extraction(app, root, live):
 
 def run(app, root, cache, live=None):
     controller, desktop = open_host(root, live)
-    report = {"scenario": "natural_chat_restart_semantic_correct_forget", "owner_thread": get_ident(),
+    report = {"scenario": "natural_chat_restart_routed_correct_forget", "owner_thread": get_ident(),
               "generation_model": "requested" if live else "not_run", "generation_blocker": None if live else "live mode not selected",
               "steps": [], "checks": {}}
     query = "下次见面给我捎点喝的，选哪一种比较合适？"
@@ -140,24 +149,49 @@ def run(app, root, cache, live=None):
         report["before_correction"] = prompt_preview(controller, query)
         report["checks"]["initial_prompt_has_preferences"] = (
             "乌龙茶" in report["before_correction"]["prompt"] and "不喜欢太甜" in report["before_correction"]["prompt"])
-        recalled = report["before_correction"]["retrieved"]
-        report["checks"]["real_semantic_recalls_below_lexical_threshold"] = (
-            len(recalled) == 2 and all(row["lexical_relevance"] < 0.12 for row in recalled)
-            and all(report["before_correction"]["semantic_cosines"].get(row["id"], 0) >= 0.45 for row in recalled))
+        preview = report["before_correction"]
+        evidence = preview["provider_memory"]
+        # Mixed requests preserve harmless chat intents. Verify that the only
+        # evidence-bearing route is fact and chat performs no retrieval, rather
+        # than requiring the router to erase a legitimate not_needed intent.
+        routes = evidence.get("retrieval", {}).get("routes", [])
+        chat_statuses = [item for item in evidence.get("retrieval", {}).get("intent_status", [])
+                         if item.get("route") == "chat"]
+        report["checks"]["fact_query_uses_sources_without_unnecessary_embedding"] = (
+            [route for route in routes if route != "chat"] == ["fact"]
+            and all(item.get("status") == "not_needed" and not item.get("source_ids")
+                    for item in chat_statuses)
+            and preview["retrieval_trace"]["retrieval_calls"] == 1
+            and evidence["retrieval"]["status"] == "sufficient"
+            and {row["memory_id"] for row in evidence.get("shared_memories", [])}
+                == {row.memory_id for row in before}
+            and preview["retrieval_trace"]["semantic_status"] == "not_needed"
+            and preview["semantic_status"]["encoded_entries_total"] == 0
+            and preview["semantic_status"]["query_embed_count"] == 0)
         report["steps"].append(send(app, controller, desktop, "我现在改喝红茶了。"))
         report["cache_after_correction"] = controller.story_runtime.memory.semantic_retriever.status
-        report["checks"]["correction_invalidated_cache"] = report["cache_after_correction"]["indexed_entries"] == 0
+        # Unchanged vectors may remain in RAM; they are invisible until a new
+        # source manifest authorizes scores. Test visibility, not allocation.
+        report["checks"]["correction_invalidated_cache"] = (
+            report["cache_after_correction"]["prepared_entries"] == 0
+            and not controller.story_runtime.memory.semantic_retriever.candidate_ids(query))
         report["steps"].append(send(app, controller, desktop, query, live=live is not None))
         report["after_correction"] = prompt_preview(controller, query)
         report["checks"]["corrected_prompt_has_red_tea_not_oolong"] = (
             "红茶" in report["after_correction"]["prompt"] and "乌龙茶" not in report["after_correction"]["prompt"])
         report["steps"].append(send(app, controller, desktop, "别再记我的饮料偏好了。"))
         report["cache_after_forget"] = controller.story_runtime.memory.semantic_retriever.status
-        report["checks"]["forget_invalidated_cache"] = report["cache_after_forget"]["indexed_entries"] == 0
+        report["checks"]["forget_invalidated_cache"] = (
+            report["cache_after_forget"]["prepared_entries"] == 0
+            and not controller.story_runtime.memory.semantic_retriever.candidate_ids(query))
         report["steps"].append(send(app, controller, desktop, query, live=live is not None))
         report["after_forget"] = prompt_preview(controller, query)
-        report["checks"]["forgotten_prompt_has_no_preferences"] = not any(
-            fragment in report["after_forget"]["prompt"] for fragment in ("乌龙茶", "红茶", "不喜欢太甜"))
+        forgotten_evidence = report["after_forget"]["provider_memory"]
+        report["checks"]["forgotten_prompt_has_no_preferences"] = (
+            forgotten_evidence.get("retrieval", {}).get("status") == "unknown"
+            and not forgotten_evidence.get("shared_memories")
+            and not any(fragment in report["after_forget"]["prompt"]
+                        for fragment in ("乌龙茶", "红茶", "不喜欢太甜")))
         report["checks"]["persona_configuration_stable"] = report["before_correction"]["persona"] == report["after_forget"]["persona"]
         report["checks"]["all_submissions_on_owner_thread"] = all(row["owner_thread"] == report["owner_thread"] for row in report["steps"])
         if live is not None:

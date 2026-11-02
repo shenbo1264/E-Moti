@@ -1,0 +1,1429 @@
+{
+  "schema_version": "1.0",
+  "status": "proposed",
+  "title": "E-Moti完整评测与验收规划",
+  "date": "2026-11-01",
+  "reviewed_baseline": "238f361c856584c7f93cc15dca5cbf5a387393e8",
+  "purpose": "未来实施规划；所有样本数、门槛、环境和运行次数均为建议，未在本文件所述计划下执行。",
+  "evidence_separation": {
+    "status": "proposed",
+    "levels": [
+      {
+        "id": "contract",
+        "meaning": "验证代码规则、协议、状态机；不证明模型质量。"
+      },
+      {
+        "id": "retrieval",
+        "meaning": "真实索引与数据的检索排名/预算交付；不等于生成答案正确。"
+      },
+      {
+        "id": "live_model",
+        "meaning": "实际provider请求、原始输出和真实存储链路；不能用回放文本代替。"
+      },
+      {
+        "id": "real_device",
+        "meaning": "真实设备安装与动作/采集/交互证据；模拟器或MockWebServer另列。"
+      },
+      {
+        "id": "longitudinal",
+        "meaning": "跨小时/天/周真实使用和故障；状态机单测不能替代。"
+      }
+    ],
+    "current_seven_cases_policy": "既有7例最终组合仅回归证据，不能作为全域准确率，不得改写为最终版整批独立盲测。"
+  },
+  "data_governance": {
+    "status": "proposed",
+    "split": {
+      "development": 0.6,
+      "validation": 0.2,
+      "sealed_test": 0.2
+    },
+    "split_unit": "story/persona/archive/template family；同一故事、同义改写及人名替换不得跨split",
+    "gold_fields": [
+      "source_text",
+      "speaker",
+      "subject_id",
+      "field",
+      "literal_value",
+      "source_span",
+      "event_time",
+      "recorded_time",
+      "valid_interval",
+      "scene",
+      "allowed_operations",
+      "forbidden_claims",
+      "control_facts",
+      "required_memory_ids"
+    ],
+    "test_set_policy": [
+      "独立评测者在读取候选实现前定义并冻结测试集hash",
+      "候选调参只用development/validation",
+      "看过错误并据此修复的sealed case迁入回归，补充新heldout",
+      "公开benchmark仅外部参照，中文桌宠/多端/遗忘另有专门测试",
+      "去标识真实反馈并经用户同意后进入回归；默认合成数据，不导入默认角色记忆"
+    ],
+    "benchmark_reuse": [
+      {
+        "status": "proposed",
+        "name": "PersonaGym",
+        "use": "人格维度和评分管线",
+        "url": "https://github.com/vsamuel2003/PersonaGym",
+        "license_note": "根代码MIT，保留来源；中文多轮与生命周期另补"
+      },
+      {
+        "status": "proposed",
+        "name": "PersonaMem-v2",
+        "use": "动态隐含偏好和无关个性化",
+        "url": "https://huggingface.co/datasets/bowen-upenn/PersonaMem-v2/raw/main/README.md",
+        "license_note": "官方数据卡CC BY 4.0；代码和数据分别核验"
+      },
+      {
+        "status": "proposed",
+        "name": "PersonaMem-v3",
+        "use": "跨平台、主动性、过度个性化与因果评测设计",
+        "url": "https://huggingface.co/datasets/bowen-upenn/PersonaMem-v3/raw/main/README.md",
+        "license_note": "官方数据卡CC BY-NC 4.0；不按MIT作为产品数据打包"
+      }
+    ]
+  },
+  "statistics": {
+    "status": "proposed",
+    "primary_cluster": "story_id；多端任务用task_id；长期体验用participant_id",
+    "zero_failure_upper_bound": "若n为独立同分布的合格抽样单位，0次失败的一侧95%二项上界=1-0.05^(1/n)，大n近似3/n。",
+    "caution": "同一story的多轮、改写、重复seed、不同泄漏通道彼此相关，不能用总探测轮数伪增独立n；按story聚类bootstrap或分层模型。人为构造压力集无总体抽样设计时只报告经验失败率与覆盖范围。",
+    "planned_reporting": [
+      "每测试族/角色/语言/模型/设备报告分子分母",
+      "比例提供适当置信区间；相关样本按聚类",
+      "人类双盲A/B顺序随机，至少2评审+冲突裁决",
+      "报告评审一致性及AI judge与人工校准误差",
+      "失败/超时/回退必须计入，不能只统计成功请求",
+      "性能p95/p99必须注明样本量；小样本不能可靠估计尾部"
+    ]
+  },
+  "metrics": [
+    {
+      "status": "proposed",
+      "id": "write_precision",
+      "name": "长期事实写入精确率",
+      "formula": "正确主体、字段、值、来源与有效期的持久写入数 / 所有持久写入数",
+      "denominator": "actual_committed_facts",
+      "unit": "fact",
+      "proposed_release_gate": ">= 0.98",
+      "notes": "只判模型抽取结果不够；以事务提交后的存储为准。"
+    },
+    {
+      "status": "proposed",
+      "id": "write_recall",
+      "name": "可记事实覆盖率",
+      "formula": "正确保存的标注可记事实数 / 按当前记忆模式应保存的全部标注事实数",
+      "denominator": "eligible_gold_facts",
+      "unit": "fact",
+      "proposed_release_gate": ">= 0.90",
+      "notes": "auto/review/off分别计分；review产生正确pending，不用强行自动保存。"
+    },
+    {
+      "status": "proposed",
+      "id": "subject_error",
+      "name": "主体或字段错绑率",
+      "formula": "错误主体或字段的写入数 / 所有持久写入数",
+      "denominator": "actual_committed_facts",
+      "unit": "fact",
+      "proposed_release_gate": "关键主体/跨角色错误=0；其他分层报告",
+      "notes": "例如亲人职业写成用户本人职业，即使回复正确也失败。"
+    },
+    {
+      "status": "proposed",
+      "id": "unwanted_write",
+      "name": "不应入库内容误写率",
+      "formula": "出现任何禁止持久事实写入的负例episode数 / 全部负例episode数",
+      "denominator": "negative_episodes",
+      "unit": "episode",
+      "proposed_release_gate": "确定性关键负例=0；真实模型端到端关键负例=0",
+      "notes": "转述、角色扮演、网页、屏幕第三人、模型草稿和未完成任务分别计分。"
+    },
+    {
+      "status": "proposed",
+      "id": "correction",
+      "name": "更正成功率",
+      "formula": "新事实正确持久且目标旧事实失效且控制事实保留的更正数 / 全部应执行更正数",
+      "denominator": "eligible_corrections",
+      "unit": "operation",
+      "proposed_release_gate": ">= 0.99；关键错误覆盖=0",
+      "notes": "存储、实际prompt、重启后回答三个层次均单独报。"
+    },
+    {
+      "status": "proposed",
+      "id": "forget",
+      "name": "遗忘泄漏率",
+      "formula": "任一禁止通道出现目标内容的遗忘story数 / 全部已成功遗忘并发起探测的story数",
+      "denominator": "forgotten_stories",
+      "unit": "story",
+      "proposed_release_gate": "0；任何确认泄漏阻断发布",
+      "notes": "通道含prompt、最终文本、音频、旧画像/章节/索引/缓存/手机重连；多个探测不能算独立story。"
+    },
+    {
+      "status": "proposed",
+      "id": "stale",
+      "name": "过时事实引用率",
+      "formula": "引用失效或被取代事实的回答轮数 / 有新旧冲突条件的被测回答轮数",
+      "denominator": "temporal_conflict_answer_turns",
+      "unit": "turn",
+      "proposed_release_gate": "<= 0.01；明确遗忘另按零泄漏门槛",
+      "notes": "区分历史事实提问与当前事实提问；合法历史查询不计过时。"
+    },
+    {
+      "status": "proposed",
+      "id": "isolation",
+      "name": "跨角色/跨作用域污染率",
+      "formula": "出现越界事实的story数 / 跨角色或场景隔离story数",
+      "denominator": "isolation_stories",
+      "unit": "story",
+      "proposed_release_gate": "0",
+      "notes": "desktop/mobile同角色同步属于许可共享；游戏世界转成真实用户资料属于污染。"
+    },
+    {
+      "status": "proposed",
+      "id": "retrieve_recall",
+      "name": "Recall@K",
+      "formula": "每query中检出的相关有效ID数 / 该query全部相关有效ID数，再按query平均",
+      "denominator": "gold_relevant_memory_ids_per_query",
+      "unit": "query",
+      "proposed_release_gate": "Recall@4 >= 0.90",
+      "notes": "当前top_k=4与未来可配置K均报；排除失效项后再算。"
+    },
+    {
+      "status": "proposed",
+      "id": "retrieve_ndcg",
+      "name": "nDCG@K",
+      "formula": "DCG@K / IDCG@K，gain使用人工标注0/1/2/3相关等级",
+      "denominator": "queries_with_relevant_candidates",
+      "unit": "query",
+      "proposed_release_gate": "nDCG@4 >= 0.85",
+      "notes": "按人物、时间、语义改写、多跳、无答案及记忆规模分层。"
+    },
+    {
+      "status": "proposed",
+      "id": "irrelevant",
+      "name": "无关记忆注入率",
+      "formula": "至少注入一条无关长期记忆的无答案query数 / 全部无答案query数",
+      "denominator": "no_answer_queries",
+      "unit": "query",
+      "proposed_release_gate": "<= 0.05",
+      "notes": "同时报所有检索结果中的无关item比例，防止一个指标掩盖另一种失败。"
+    },
+    {
+      "status": "proposed",
+      "id": "context_delivery",
+      "name": "正确证据实际交付率",
+      "formula": "实际模型请求包含必要有效证据且不含禁止证据的query数 / 需要证据的全部query数",
+      "denominator": "evidence_required_queries",
+      "unit": "query",
+      "proposed_release_gate": ">= 0.98；撤回证据进入prompt=0",
+      "notes": "必须检查真实请求正文，不能只看retrieve返回或最终答案。"
+    },
+    {
+      "status": "proposed",
+      "id": "answer",
+      "name": "有依据答案正确率",
+      "formula": "答案正确且可追溯至查询时有效来源的回答数 / 全部可回答query数",
+      "denominator": "answerable_queries",
+      "unit": "query",
+      "proposed_release_gate": ">= 0.95",
+      "notes": "精确值与语义答案分别计分；模型猜对但来源缺失不算完整成功。"
+    },
+    {
+      "status": "proposed",
+      "id": "abstention",
+      "name": "未知事实恰当不答率",
+      "formula": "无依据时适度表示未知且不编造/强迫重收集的回答数 / 全部无答案query数",
+      "denominator": "no_answer_queries",
+      "unit": "query",
+      "proposed_release_gate": ">= 0.95",
+      "notes": "同时控制有答案却拒答率<=0.05；显式规划澄清另分组。"
+    },
+    {
+      "status": "proposed",
+      "id": "unsupported",
+      "name": "虚构事实或共同经历率",
+      "formula": "包含至少一项无来源具体主张的回答数 / 需要依据的全部回答数",
+      "denominator": "evidence_sensitive_answer_turns",
+      "unit": "turn",
+      "proposed_release_gate": "<= 0.01；虚构任务已完成=0",
+      "notes": "评估感官亲历、时间原因、共同过去、情绪归因；明显比喻不误判。"
+    },
+    {
+      "status": "proposed",
+      "id": "persona_state",
+      "name": "未经授权人格变化率",
+      "formula": "出现有效人格配置或核心边界未授权变化的episode数 / 全部人格稳定性episode数",
+      "denominator": "persona_stability_episodes",
+      "unit": "episode",
+      "proposed_release_gate": "0",
+      "notes": "hash不变只证明配置稳定，不能替代行为一致性评分。"
+    },
+    {
+      "status": "proposed",
+      "id": "persona_behavior",
+      "name": "人格行为一致性",
+      "formula": "独立盲评者对身份、表达、观点、亲疏分寸的1–5分，按维度和角色分别汇总",
+      "denominator": "independently_rated_episodes",
+      "unit": "episode",
+      "proposed_release_gate": "各核心维度均值>=4/5；无角色分组低于3.5/5",
+      "notes": "建议门槛需在正式测试前冻结；报告评审一致性和story聚类置信区间。"
+    },
+    {
+      "status": "proposed",
+      "id": "style_errors",
+      "name": "表达分寸错误率",
+      "formula": "出现目标风格错误的episode数 / 对应对照族episode数",
+      "denominator": "eligible_style_episodes",
+      "unit": "episode",
+      "proposed_release_gate": "无依据自责/突兀呼名/无求助建议每类<=0.05",
+      "notes": "不得用删掉所有观点与幽默换低错误率；有用性与角色性同时评分。"
+    },
+    {
+      "status": "proposed",
+      "id": "proactive",
+      "name": "主动时机适当率",
+      "formula": "被用户或盲评判为时机/内容都适当的主动事件数 / 全部呈现的主动事件数",
+      "denominator": "delivered_proactive_events",
+      "unit": "event",
+      "proposed_release_gate": ">=0.80且相对基线不劣；静音/拒绝违规=0",
+      "notes": "接受率非唯一目标；被忽略、反感、重复、解决问题分开。"
+    },
+    {
+      "status": "proposed",
+      "id": "cancel",
+      "name": "取消后动作或输出违规率",
+      "formula": "取消已确认后产生越权新动作/过期输出的任务数 / 全部取消任务数",
+      "denominator": "cancelled_tasks",
+      "unit": "task",
+      "proposed_release_gate": "0；在途不可撤销动作需明确状态",
+      "notes": "HTTP物理中止与应用阻止提交分开，不虚报网络已取消。"
+    },
+    {
+      "status": "proposed",
+      "id": "task_success",
+      "name": "真实任务成功率",
+      "formula": "由权威外部状态或后置条件验证成功的任务数 / 全部已接受且可执行任务数",
+      "denominator": "accepted_executable_tasks",
+      "unit": "task",
+      "proposed_release_gate": "常用任务族>=0.90；每App/设备/任务族单报",
+      "notes": "助手自述done不算成功；阻塞、用户接管、取消、部分完成分别报告。"
+    },
+    {
+      "status": "proposed",
+      "id": "recovery",
+      "name": "恢复正确率",
+      "formula": "重启/断网后继续或正确接管且无重复副作用的任务数 / 全部可恢复故障任务数",
+      "denominator": "recoverable_fault_tasks",
+      "unit": "task",
+      "proposed_release_gate": ">=0.95；重复不可逆副作用=0",
+      "notes": "无法安全恢复时正确blocked/handoff可单列，不计自主成功。"
+    },
+    {
+      "status": "proposed",
+      "id": "observation",
+      "name": "观察来源与用户归属准确率",
+      "formula": "时间、来源App、说话者/对象与授权范围均正确的观察记录数 / 全部保留观察记录数",
+      "denominator": "retained_observations",
+      "unit": "event",
+      "proposed_release_gate": ">=0.99；已撤权限后继续采集=0",
+      "notes": "屏幕出现某文本不等于用户本人说过；隐含兴趣需保留推断状态。"
+    },
+    {
+      "status": "proposed",
+      "id": "sync",
+      "name": "同步收敛与撤回覆盖率",
+      "formula": "所有已联网设备收敛到合法版本且撤回旧事实的case数 / 全部同步case数",
+      "denominator": "sync_cases",
+      "unit": "case",
+      "proposed_release_gate": "=1.00的确定性关键合同；真机关键撤回=0泄漏",
+      "notes": "先应用tombstone/epoch，再允许旧缓存显示/提交；断网设备不伪称已擦除。"
+    },
+    {
+      "status": "proposed",
+      "id": "latency",
+      "name": "端到端与分阶段延迟",
+      "formula": "分别计算各阶段duration_ms的p50/p95/p99，失败请求另组不丢弃",
+      "denominator": "all_started_operations",
+      "unit": "operation",
+      "proposed_release_gate": "几千条本地记忆完整路径p95目标200ms量级；10k先测再定；UI主线程阻塞p95<50ms；网络/modelSLO按冻结环境基线",
+      "notes": "模型冷启动/热缓存、输入长度、模型、设备、网络状态分层。"
+    },
+    {
+      "status": "proposed",
+      "id": "cost",
+      "name": "成功轮/任务成本",
+      "formula": "实际provider输入输出tokens×当期有效价格+工具成本，再除成功轮/任务数",
+      "denominator": "successful_turns_or_verified_tasks",
+      "unit": "success",
+      "proposed_release_gate": "在预算B内；质量不劣时比较增量成本",
+      "notes": "保存价格日期币种折扣；未拿到账单只叫估计，不叫实际金额。"
+    },
+    {
+      "status": "proposed",
+      "id": "migration",
+      "name": "迁移语义保持率",
+      "formula": "迁移后保留有效事实及撤回标记/角色隔离的存档数 / 全部迁移样本存档数",
+      "denominator": "legacy_save_fixtures",
+      "unit": "save",
+      "proposed_release_gate": "=1.00；已忘内容复活=0；失败可回滚",
+      "notes": "同时记录校验和、备份、重复迁移幂等、崩溃重启、WAL/JSON混合旧格式。"
+    },
+    {
+      "status": "proposed",
+      "id": "control_preservation",
+      "name": "无关控制事实保持率",
+      "formula": "目标变更后所有无关控制事实保持正确的story数 / 含无关控制事实的全部story数",
+      "denominator": "stories_with_control_facts",
+      "unit": "story",
+      "proposed_release_gate": "确定性合同=1.00；真实端到端>=0.99，关键误删=0",
+      "notes": "比对控制ID、主体、字段、值、有效期和来源；仅剩相同条数不算保留。"
+    }
+  ],
+  "suites": [
+    {
+      "status": "proposed",
+      "id": "M01",
+      "title": "抽取、主体、字段与写入策略",
+      "evidence_kind": [
+        "deterministic_contract",
+        "live_model_end_to_end"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 1200,
+        "unit": "source_episodes",
+        "counts_are_targets_not_results": true,
+        "families": 20,
+        "episodes_per_family": 60
+      },
+      "subgroups": [
+        "本人/亲属/同事/多个同名对象",
+        "显式事实/偏好/多事实/否定/反话/转述/假设",
+        "auto/review/off与用户明确记住",
+        "网页/屏幕/模型输出来源负例",
+        "错误分类、歧义代词、来源被截断",
+        "中文口语/错别字/英文混合/语音ASR误字"
+      ],
+      "execution_steps": [
+        "先冻结原话和gold facts/source spans/subject/slot/mode预期",
+        "确定性解析与提议校验分别运行",
+        "真实模型路径从DesktopDialogueService开始，检查最终持久存储而非仅提取JSON",
+        "每个负例保留无关控制事实，检查错误写入与漏记",
+        "修复过的案例进入回归，新增未见过测试族"
+      ],
+      "metric_ids": [
+        "write_precision",
+        "write_recall",
+        "subject_error",
+        "unwanted_write",
+        "control_preservation"
+      ],
+      "required_environment": [
+        "Python/PySide6真实controller与临时存档",
+        "实际配置的模型API；记录模型精确版本和采样参数"
+      ],
+      "cadence": [
+        "PR:确定性关键族",
+        "nightly:60条轮转模型样本",
+        "release:全部1200条合同；冻结240条真实模型子集及各模式分层"
+      ],
+      "owner": "Codex后端；独立评测者定义gold",
+      "controls": [
+        "只用本地规则",
+        "当前规则+模型提取",
+        "增强实体/来源绑定方案"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "live_model_subset": {
+        "status": "proposed",
+        "count": 240,
+        "unit": "episodes",
+        "primary_model_repeats": 3,
+        "secondary_models": 2,
+        "secondary_subset_per_model": 40
+      },
+      "split_by": "story family + phrasing + entity/slot combination"
+    },
+    {
+      "status": "proposed",
+      "id": "M02",
+      "title": "完整记忆生命周期与派生失效",
+      "evidence_kind": [
+        "deterministic_integration"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 600,
+        "unit": "synthetic_stories",
+        "counts_are_targets_not_results": true,
+        "families": 12,
+        "stories_per_family": 50
+      },
+      "subgroups": [
+        "写入→召回→纠正→重启→遗忘→再次重启",
+        "版本链/合并/同值不同来源/歧义更正",
+        "画像/章节/向量缓存/近期对话/主动候选/TTS失效",
+        "到期/撤回/导入旧存档/备份恢复",
+        "切角色/切场景/删除部分字段保留控制事实"
+      ],
+      "execution_steps": [
+        "每story执行8–20个操作，存储和prompt分阶段断言",
+        "对遗忘前制作的所有派生内容再尝试读取",
+        "注入进程重启、事务中断、旧缓存/旧设备输入",
+        "检查原事实失效与控制事实保持",
+        "按story汇总泄漏，按表面通道另列明细"
+      ],
+      "metric_ids": [
+        "correction",
+        "forget",
+        "stale",
+        "isolation",
+        "persona_state",
+        "migration",
+        "control_preservation"
+      ],
+      "required_environment": [
+        "真实本地存储、临时目录、真实controller",
+        "可控Clock与实际进程重启；不联网模型"
+      ],
+      "cadence": [
+        "每PR关键子集",
+        "nightly全部600故事",
+        "release全部+旧存档"
+      ],
+      "owner": "Codex",
+      "controls": [
+        "当前实现",
+        "候选失效/版本方案"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "population_note": "合成故事并不自动等于随机总体；CI只在明确抽样假设下解释。",
+      "operations_per_story_range": [
+        8,
+        20
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "M07",
+      "title": "随机操作序列与状态不变量",
+      "evidence_kind": [
+        "property_based_contract",
+        "real_storage_integration"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 2000,
+        "unit": "seeded_operation_sequences",
+        "counts_are_targets_not_results": true,
+        "operation_range": [
+          20,
+          100
+        ]
+      },
+      "subgroups": [
+        "remember/correct/forget/expire/merge/restart组合",
+        "交错人物/字段/角色/场景",
+        "旧epoch与过期proposal重放",
+        "派生索引/画像/章节异步更新",
+        "随机崩溃后恢复与幂等重试"
+      ],
+      "execution_steps": [
+        "每序列使用固定seed生成20–100个合法或恶意操作，先定义reference model",
+        "每步检查当前有效事实唯一性、来源可达、角色隔离、被忘内容不进入prompt、无关事实保持",
+        "真实存储事务和进程恢复，不只测纯内存对象",
+        "失败自动缩减为最短可重现序列并保留seed/源码hash",
+        "同一seed重复与缩减序列属于相关样本，不人为增加总体N"
+      ],
+      "metric_ids": [
+        "correction",
+        "forget",
+        "isolation",
+        "persona_state",
+        "migration",
+        "control_preservation"
+      ],
+      "required_environment": [
+        "真实V2/SQLite存储与临时目录",
+        "property-based工具（可用Hypothesis；引入前固定版本/许可）",
+        "无需模型网络"
+      ],
+      "cadence": [
+        "每PR:200关键seed",
+        "nightly:全部2000序列",
+        "release:固定失败回归+新增随机seed"
+      ],
+      "owner": "Codex",
+      "controls": [
+        "reference model",
+        "当前实现",
+        "候选实现"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "operation-sequences.jsonl",
+        "minimized-failures.json",
+        "metrics.json",
+        "bad-cases.md"
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "M03",
+      "title": "语义检索、无答案与预算交付",
+      "evidence_kind": [
+        "retrieval_benchmark"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 1000,
+        "unit": "queries_across_100_story_archives",
+        "counts_are_targets_not_results": true
+      },
+      "subgroups": [
+        "词面一致/语义改写/长问题/多主体",
+        "新旧冲突/历史时点/期限/否定",
+        "多跳与需多条证据",
+        "无关问题与应保持安静",
+        "300/3000/30000条记忆规模与hard negatives"
+      ],
+      "execution_steps": [
+        "每档案按时间写入，query只读其发生前资料",
+        "人工标注0–3相关性与必要来源ID",
+        "固定embedding与缓存版本，对各route相同候选做评测",
+        "先算检索，再检查预算后实际prompt",
+        "复核无答案误注入和陈旧事实名次"
+      ],
+      "metric_ids": [
+        "retrieve_recall",
+        "retrieve_ndcg",
+        "irrelevant",
+        "context_delivery",
+        "stale",
+        "latency"
+      ],
+      "required_environment": [
+        "真实FastEmbed/ONNX模型与固定revision",
+        "基准CPU/GPU环境及冷/热缓存两组",
+        "不需要付费生成即可测retrieval"
+      ],
+      "cadence": [
+        "PR:200条回归",
+        "weekly:1000条所有路线",
+        "release:冻结holdout全部"
+      ],
+      "owner": "Codex；独立标注者",
+      "controls": [
+        "词法only",
+        "embedding only",
+        "当前RRF",
+        "RRF+阈值/时间/主体过滤",
+        "可选reranker"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "story_archives": 100,
+      "split_by": "entire archive/persona",
+      "query_cluster_unit": "archive_id",
+      "memory_sizes": [
+        300,
+        3000,
+        30000
+      ],
+      "reranker_is_optional_candidate_not_required_dependency": true
+    },
+    {
+      "status": "proposed",
+      "id": "M04",
+      "title": "章节、用户画像与共同经历",
+      "evidence_kind": [
+        "deterministic_integration",
+        "human_semantic_review"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 240,
+        "unit": "event_stories",
+        "counts_are_targets_not_results": true
+      },
+      "subgroups": [
+        "单事件多派生不重复计数",
+        "真实完成/仅计划/模拟游戏/模型虚构",
+        "主题演进与互相矛盾事件",
+        "source删除/更正/到期后的整章及字段失效",
+        "超长章节/预算压缩/证据链缺失"
+      ],
+      "execution_steps": [
+        "每故事写入10–30真实类型合成域事件",
+        "标注可用事件、可归纳主题、禁止共同经历",
+        "触发consolidation并检查每个主张来源",
+        "撤回一部分来源验证最小必要失效",
+        "人工评可读性与不编故事，不能仅检查source id存在"
+      ],
+      "metric_ids": [
+        "unsupported",
+        "context_delivery",
+        "forget",
+        "persona_state",
+        "control_preservation"
+      ],
+      "required_environment": [
+        "真实V2与事件桥接",
+        "人工或双人标注；若候选LLM摘要另开真实模型组"
+      ],
+      "cadence": [
+        "PR:来源合约",
+        "weekly:80条语义审阅轮转",
+        "release:240条源链检查+抽样人工"
+      ],
+      "owner": "Codex核心；Claude回忆册展示",
+      "controls": [
+        "当前确定性章节",
+        "带claim-source绑定的语义整理候选"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "M05",
+      "title": "真实模型端到端记忆闭环",
+      "evidence_kind": [
+        "live_model_end_to_end"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 120,
+        "unit": "longitudinal_stories",
+        "counts_are_targets_not_results": true
+      },
+      "subgroups": [
+        "普通聊天/显式记住两种入口",
+        "纠正后空历史重启召回",
+        "忘后即时/重启/改写/间接询问",
+        "跨角色与工作/游戏干扰",
+        "无答案/拒答/部分信息",
+        "存储对但模型答错、模型答对但存储没写"
+      ],
+      "execution_steps": [
+        "使用实际桌面service或宿主HTTP入口与隔离存档",
+        "每story约8–16轮，完成两次空历史重启",
+        "记录每次实际模型请求和实际存储结果",
+        "以来源、存储、prompt、答案四层分别打分",
+        "关键忘后探测包括改写、线索诱导、关联实体和旧摘要"
+      ],
+      "metric_ids": [
+        "correction",
+        "forget",
+        "context_delivery",
+        "answer",
+        "abstention",
+        "unsupported",
+        "cost",
+        "latency",
+        "control_preservation"
+      ],
+      "required_environment": [
+        "实际provider账号配置与额度",
+        "真实embedding缓存",
+        "桌面service/headless Qt；另有设备验收"
+      ],
+      "cadence": [
+        "nightly:20条轮转",
+        "release:全部120story，主模型3次采样",
+        "跨模型:2个其他family各40story一次"
+      ],
+      "owner": "Codex运行；独立评测者评判",
+      "controls": [
+        "当前主分支",
+        "候选实现；相同模型和输入"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "primary_repeats": 3,
+      "secondary_models": 2,
+      "secondary_story_count_per_model": 40,
+      "planned_turns_per_story": [
+        8,
+        16
+      ],
+      "split_by": "entire multi-session story",
+      "observed_existing_seven_cases": "仅作为回归；不得据此报告全域记忆准确率"
+    },
+    {
+      "status": "proposed",
+      "id": "P01",
+      "title": "人格、分寸与审阅策略",
+      "evidence_kind": [
+        "live_model_behavior",
+        "human_blind_review"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 500,
+        "unit": "dialogue_episodes",
+        "counts_are_targets_not_results": true,
+        "range": [
+          400,
+          600
+        ]
+      },
+      "subgroups": [
+        "身份/作者偏好/风格，多个角色",
+        "mood/trust反事实成对",
+        "有依据的亲密与无共同经历",
+        "独立意见/诱导迎合/幽默分寸",
+        "分享vs求助/呼名vs无需呼名",
+        "未知回忆vs明确重新登记/共同规划",
+        "草稿修订改变事实或误删有效内容",
+        "长历史、跨模型、工作插件关闭"
+      ],
+      "execution_steps": [
+        "计划340条短对话+160段多轮；可调整为总400–600场景、其中120–200段多轮，每个角色有正例反例与等价改写",
+        "角色契约、评审rubric和版本映射由独立维护者冻结",
+        "原版/候选随机匿名；至少2名评审，冲突第三人裁决",
+        "主模型3–5次采样；另外2家模型在80episode代表子集采样",
+        "保留事实正确与自然度/有用性各自指标及原句引用"
+      ],
+      "metric_ids": [
+        "persona_state",
+        "persona_behavior",
+        "style_errors",
+        "unsupported",
+        "abstention",
+        "cost",
+        "latency"
+      ],
+      "required_environment": [
+        "真实模型",
+        "不同风格作者角色配置",
+        "人工中文评审；AI judge用于预筛与扩大覆盖"
+      ],
+      "cadence": [
+        "PR:配置/预算/协议合约",
+        "weekly:80条轮转",
+        "release:500episode完整主模型对照（正式前可冻结为400–600）"
+      ],
+      "owner": "Claude产品与角色契约；Codex表达/运行；独立盲评",
+      "controls": [
+        "当前双调用审阅",
+        "单次生成",
+        "风险触发审阅",
+        "小模型独立审阅",
+        "结构化事实计划后一次生成",
+        "固定16字未知限制vs角色化简短未知"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "primary_repeats": 3,
+      "short_episodes": 340,
+      "multi_turn_episodes": 160,
+      "multi_turn_range": [
+        6,
+        12
+      ],
+      "secondary_models": 2,
+      "secondary_episodes_per_model": 80,
+      "factorial_policy": "先在开发集筛路线，正式holdout仅基线+预先锁定候选；不跑全部参数笛卡尔积",
+      "multi_turn_episode_range": [
+        120,
+        200
+      ],
+      "primary_repeat_range": [
+        3,
+        5
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "P02",
+      "title": "主动性、安静与真实时间",
+      "evidence_kind": [
+        "deterministic_clock_integration",
+        "live_model_behavior",
+        "longitudinal_user_study"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 2000,
+        "unit": "clock_and_activity_traces",
+        "counts_are_targets_not_results": true
+      },
+      "subgroups": [
+        "自然日/DST/旅行时区/时钟回拨",
+        "休眠/进程重启/断网",
+        "拒绝/安静时长/忙碌/取消",
+        "inactive→active真实返回",
+        "同一源24h去重/新旧来源撤回",
+        "兴趣闲聊/工作汇报/休息，不以工作为唯一话题"
+      ],
+      "execution_steps": [
+        "注入分离的wall/monotonic/logical clock，验证不可跨时钟混算",
+        "真实active transition触发，不把空闲时长当返回",
+        "生成120条候选表达由模型与人工评内容和时机",
+        "真实使用12名体验者14–28天，分层交叉对照主动频率",
+        "每个事件记录原因、抑制原因、反馈；不以接受率单独优化"
+      ],
+      "metric_ids": [
+        "proactive",
+        "style_errors",
+        "forget",
+        "cancel",
+        "persona_behavior"
+      ],
+      "required_environment": [
+        "可控Clock合同",
+        "桌面/手机真实通知与取消",
+        "自愿体验者，数据最小化，工作插件开/关各组"
+      ],
+      "cadence": [
+        "每PR时间合同",
+        "weekly候选内容",
+        "阶段发布前14–28天使用研究"
+      ],
+      "owner": "Claude体验；Codex调度/证据",
+      "controls": [
+        "当前规则节流",
+        "修正真实时间与候选排序",
+        "不同频率预设"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "live_candidate_count": 120,
+      "longitudinal_participants": 12,
+      "duration_days": [
+        14,
+        28
+      ],
+      "study_is_proposed_not_recruited": true
+    },
+    {
+      "status": "proposed",
+      "id": "X01",
+      "title": "多端并发、断网同步与撤回",
+      "evidence_kind": [
+        "real_local_service_integration",
+        "real_device"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 600,
+        "unit": "multi_device_fault_traces",
+        "counts_are_targets_not_results": true
+      },
+      "subgroups": [
+        "手机/桌面同时更正同事实",
+        "断网旧缓存→更正/忘后重连",
+        "乱序/重复事件与丢包",
+        "切角色/设备撤销/会话过期",
+        "旧语音/主动候选/任务摘要重新进入",
+        "PC核心离线时手机候选outbox"
+      ],
+      "execution_steps": [
+        "实际启动宿主与多个客户端，使用真实存储和网络层",
+        "故障代理注入延迟/掉线/乱序，重启真实进程",
+        "先投递撤回epoch/tombstone再恢复候选与显示",
+        "检查权威版本、冲突处理、幂等和控制事实",
+        "真机重复关键40条，不将模拟客户端合约算手机验收"
+      ],
+      "metric_ids": [
+        "sync",
+        "forget",
+        "isolation",
+        "correction",
+        "cancel",
+        "recovery",
+        "control_preservation"
+      ],
+      "required_environment": [
+        "桌面宿主真实TLS/认证",
+        "至少2客户端与Android真机",
+        "故障注入代理，测试账号与临时存档"
+      ],
+      "cadence": [
+        "PR:60关键合同",
+        "nightly:600trace",
+        "release:40真机关键trace"
+      ],
+      "owner": "Codex同步/宿主；Claude设备状态UI",
+      "controls": [
+        "在线顺序基线",
+        "离线/并发/乱序故障"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "physical_device_subset": 40,
+      "single_authoritative_store_required": true
+    },
+    {
+      "status": "proposed",
+      "id": "T01",
+      "title": "长程任务与可靠执行",
+      "evidence_kind": [
+        "executor_contract",
+        "real_executor_end_to_end",
+        "long_running_soak"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 120,
+        "unit": "task_and_fault_scenarios",
+        "counts_are_targets_not_results": true
+      },
+      "subgroups": [
+        "接受建议→授权任务→执行→检查→汇报",
+        "阻塞/部分完成/失败/用户接管",
+        "幂等command_id/取消/预算/期限",
+        "Relay执行器/Android本地执行器",
+        "PC睡眠/网络切换/进程重启",
+        "源系统状态与E-Moti记忆隔离"
+      ],
+      "execution_steps": [
+        "先校验executor接口和状态迁移，但不把mock结果计真实任务成功",
+        "用授权测试工作区执行真实可验证任务并检查权威状态/产物",
+        "120场景中至少24条真实执行，包含跨App或PC任务",
+        "进行6条持续任务：1h、8h、24h各2条，覆盖重启/断网/电脑睡眠和阶段报告",
+        "每次完成声明附后置条件证据；断网时准确报告未知"
+      ],
+      "metric_ids": [
+        "task_success",
+        "recovery",
+        "cancel",
+        "unsupported",
+        "sync",
+        "cost",
+        "latency"
+      ],
+      "required_environment": [
+        "独立Relay或其他真实执行器提供接口",
+        "Android本地执行通道",
+        "可用全天设备与网络，授权测试账号/工作区"
+      ],
+      "cadence": [
+        "PR:状态/幂等合同",
+        "weekly:24真实任务轮转",
+        "release:持续运行与故障回归"
+      ],
+      "owner": "Codex E-Moti任务监督与适配；外部项目保持独立",
+      "controls": [
+        "顺序成功路径",
+        "各类故障/取消/恢复路径"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "real_task_subset": 24,
+      "soak_campaigns": [
+        {
+          "status": "proposed",
+          "hours": 1,
+          "count": 2
+        },
+        {
+          "status": "proposed",
+          "hours": 8,
+          "count": 2
+        },
+        {
+          "status": "proposed",
+          "hours": 24,
+          "count": 2
+        }
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "D01",
+      "title": "Android/HyperOS实机与Phone Agent",
+      "evidence_kind": [
+        "real_android_device"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 120,
+        "unit": "independent_task_specs",
+        "counts_are_targets_not_results": true,
+        "families": 6,
+        "tasks_per_family": 20
+      },
+      "subgroups": [
+        "120个独立任务规格：6类任务×20；与设备重复次数分开",
+        "3款实机含用户HyperOS设备，记录真实系统/API/build",
+        "聊天/浏览器/分享当前屏/记忆管理",
+        "不同App虚拟屏后台任务与前台输入",
+        "同App冲突/输入法/剪贴板/权限撤销",
+        "锁屏/重启/省电/OEM杀进程/断网",
+        "受保护屏幕/接管/停止/进度证据",
+        "观察轨迹的来源/说话者/授权与保留期限"
+      ],
+      "execution_steps": [
+        "建设备矩阵，不把Android能力等同每个OEM实际可用",
+        "正常安装和官方授权路径；无root为目标，不借隐藏权限验收普通模式",
+        "在测试账号运行有明确后置条件的任务，保留实际视频/截图与状态证据",
+        "观察用户前台输入是否受后台任务打断",
+        "撤销系统权限必须停止；重连不能偷偷重开观察",
+        "发布矩阵按App/版本/设备列支持、部分支持、不可用及接管"
+      ],
+      "metric_ids": [
+        "task_success",
+        "recovery",
+        "cancel",
+        "observation",
+        "sync",
+        "latency",
+        "cost"
+      ],
+      "required_environment": [
+        "用户HyperOS真机+另2款Android实机",
+        "实际模型/VLM，Android SDK/JDK，测试账号",
+        "API13/14等兼容性额外模拟器，结果分开"
+      ],
+      "cadence": [
+        "每功能迭代关键流",
+        "weekly:代表组合",
+        "release:冻结120任务规格与支持矩阵；预计600次设备执行（不等于600独立任务）"
+      ],
+      "owner": "Claude手机UI；CodexAndroid执行/同步/采集",
+      "controls": [
+        "前台直接执行",
+        "后台不同App执行",
+        "无观察权限/撤权模式"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "physical_device_count": 3,
+      "apps": 8,
+      "os_names_are_targets_not_verified_devices": true,
+      "no_claim_any_app_works": true,
+      "task_families": [
+        "检索与阅读总结",
+        "消息与内容操作（测试账号）",
+        "日程/闹钟/系统设置",
+        "文件处理与浏览器多步操作",
+        "远程电脑/Relay任务",
+        "观察分享/记忆管理与取消接管"
+      ],
+      "repetition_matrix": {
+        "status": "proposed",
+        "physical_devices": 3,
+        "all_tasks_repeats_per_device": 1,
+        "critical_tasks": 40,
+        "critical_total_repeats_per_device": 3,
+        "planned_execution_count": 600,
+        "formula": "120*3 + 40*3*(3-1)",
+        "note": "只有支持的合法能力组合执行；不支持组合单列，不冒充已跑；设备/seed重复不能增加独立任务样本N。"
+      }
+    },
+    {
+      "status": "proposed",
+      "id": "D02",
+      "title": "iOS与华为原生鸿蒙客户端",
+      "evidence_kind": [
+        "real_ios_device",
+        "real_harmonyos_device"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 360,
+        "unit": "native_mobile_flow_repetitions",
+        "counts_are_targets_not_results": true
+      },
+      "subgroups": [
+        "每平台60个原生能力流程×3次重复",
+        "聊天/语音/分享入口/通知/记忆管理",
+        "后台恢复/网络切换/核心离线",
+        "权限撤销/跨设备更正与忘记",
+        "OS授权允许的观察与任务调用",
+        "访问控制、装包、升级与设备迁移"
+      ],
+      "execution_steps": [
+        "按官方能力矩阵定义支持范围，不复制Android隐藏API假设",
+        "构建原生客户端并在真机完成每条流程",
+        "远程任务发到电脑/Android执行器，本机仅承诺已实现原生能力",
+        "检查通知点击到任务与聊天上下文一致",
+        "配对、撤销、离线缓存和删除传播同样验收"
+      ],
+      "metric_ids": [
+        "sync",
+        "forget",
+        "cancel",
+        "recovery",
+        "latency"
+      ],
+      "required_environment": [
+        "iPhone/iOS真机与构建环境",
+        "华为原生HarmonyOS真机与官方SDK",
+        "各平台至少当前支持版与上一支持版；仿真另列"
+      ],
+      "cadence": [
+        "平台功能增量",
+        "release:各180条流程重复"
+      ],
+      "owner": "Claude多端体验；Codex原生适配/协议",
+      "controls": [
+        "同账号在线",
+        "离线/后台/撤权/重启"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "platforms": 2,
+      "flows_per_platform": 60,
+      "repeats": 3,
+      "capability_scope": "只测试该平台正式提供并已实现的能力；任意跨App后台控制不作为默认承诺"
+    },
+    {
+      "status": "proposed",
+      "id": "S01",
+      "title": "性能、迁移与存储恢复",
+      "evidence_kind": [
+        "performance_benchmark",
+        "crash_recovery",
+        "migration_integration"
+      ],
+      "sample_plan": {
+        "status": "proposed",
+        "count": 180,
+        "unit": "legacy_and_fault_save_fixtures",
+        "counts_are_targets_not_results": true
+      },
+      "subgroups": [
+        "旧JSON/V2/当前SQLite、不同角色与缺失可选文件",
+        "纠正/遗忘标记/旧摘要/旧向量缓存",
+        "迁移中断/磁盘满/损坏/锁竞争/重复迁移",
+        "1000/10000/100000条事实与长对话档案",
+        "并发1/2/5客户端、模型冷/热",
+        "秘密配置与日志脱敏，导入导出可追踪"
+      ],
+      "execution_steps": [
+        "创建脱敏或合成旧格式fixtures并冻结校验和",
+        "真实迁移/重启/重复运行，比较语义与撤回标记",
+        "各数据规模测冷20次/热1000次，保留全部失败",
+        "并发写/读/删除测主线程阻塞、锁时间、峰值内存和索引重建",
+        "明确应用层遗忘与物理文件/备份清理两种承诺",
+        "按目标机器和真实网络公布性能，不能只报算法微基准"
+      ],
+      "metric_ids": [
+        "migration",
+        "forget",
+        "isolation",
+        "latency",
+        "recovery",
+        "control_preservation"
+      ],
+      "required_environment": [
+        "Windows参考PC及Linux CI",
+        "临时磁盘故障环境、实际存储与embedding",
+        "Android设备资源采样工具"
+      ],
+      "cadence": [
+        "每存储改动PR",
+        "weekly性能曲线",
+        "release全迁移/崩溃矩阵"
+      ],
+      "owner": "Codex存储/性能；Claude异常恢复体验",
+      "controls": [
+        "现版本",
+        "候选迁移/索引/预算方案"
+      ],
+      "artifacts": [
+        "run-manifest.json",
+        "stage-trace.jsonl",
+        "raw-requests-and-responses-redacted.jsonl",
+        "metrics.json",
+        "bad-cases.md"
+      ],
+      "memory_sizes": [
+        1000,
+        10000,
+        100000
+      ],
+      "concurrent_clients": [
+        1,
+        2,
+        5
+      ],
+      "cold_repetitions_per_configuration": 20,
+      "warm_repetitions_per_configuration": 1000
+    }
+  ],
+  "release_gates": [
+    {
+      "status": "proposed",
+      "id": "G0",
+      "gate": "版本与证据可复现",
+      "requirements": [
+        "冻结commit/source-tree hash、依赖lock、prompt hash、model/provider、embedding revision、dataset hash、参数与时钟",
+        "dirty工作树必须包含patch/hash，不能只记文件名",
+        "保留所有失败、取消、超时与重试，报告当前未验证部分"
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "G1",
+      "gate": "核心正确性",
+      "requirements": [
+        "支持范围内确定性合同通过；遗忘/跨角色/未经授权人格变更/重复不可逆动作零失败",
+        "180旧存档语义保持与撤回不复活",
+        "F1人格预算、F2真实时钟、F3返回事件都有回归覆盖"
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "G2",
+      "gate": "真实模型",
+      "requirements": [
+        "冻结主模型的真实端到端与人格测试完成",
+        "存储/prompt/答案分别达各指标门槛",
+        "0/N泄漏只按独立story解释，不宣称绝对无泄漏",
+        "副模型退化单列并可标不支持；不平均掩盖主模型失败"
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "G3",
+      "gate": "真实设备",
+      "requirements": [
+        "每宣称支持的OS/设备/App组合均有实际证据",
+        "系统撤权与停止有效，无前台输入干扰或有明确接管状态",
+        "测试账号下真实后置条件验证；mock、模拟器不冒充真机"
+      ]
+    },
+    {
+      "status": "proposed",
+      "id": "G4",
+      "gate": "长期与成本",
+      "requirements": [
+        "跨小时任务/重启/断网/休眠与周期性报告通过",
+        "纵向陪伴无关键打扰或关系施压回归",
+        "tokens/延迟/资源消耗分阶段披露，并在预先约定预算内"
+      ]
+    }
+  ],
+  "execution_cadence": {
+    "status": "proposed",
+    "pull_request": "无网络合同+对应修改的回归；不为每个文案小改全量付费",
+    "nightly": "轮转真实模型集与全量可运行本地合同，任务消费预算有上限",
+    "weekly": "完整检索/人格代表矩阵、真实任务和性能曲线",
+    "release": "固定候选与密封测试，不临时改门槛；真机/迁移/持续任务分项签收",
+    "post_release": "仅经同意的最小化反馈进入bad-case库，按类型和版本跟踪，旧测试保留"
+  },
+  "budget_method": {
+    "status": "proposed",
+    "currency_estimate": null,
+    "formula": "总成本估计=sum(各模型输入tokens/1e6*输入单价 + 输出tokens/1e6*输出单价)+embedding/工具/设备基础设施成本；单价必须记录来源日期/币种/折扣。",
+    "call_formula": "每suite调用数≈sum(被测turns)*(候选arm数)*(重复次数)*(抽取概率*抽取调用数 + 草稿调用数 + 审阅概率*审阅调用数)，按实际路由分别计算；本地处理/忘记不假装消耗模型。",
+    "calibration": "首个预定开发批次实际计量每阶段usage/时延，再给全量上/下界。校准批次仍进入开发证据，不改成性能结论；金额没有账单时明确估计。",
+    "scheduling": [
+      "不做所有模型×所有消融×所有设备的全笛卡尔积",
+      "开发集比较多路线，正式集只保留预先锁定基线+候选",
+      "首要模型全量；其他family采用冻结代表子集并单独报告",
+      "预算B先分配核心事实/遗忘、人格、设备、长程任务；耗尽则停止新增调用并保留未运行状态",
+      "本地性能、合同、许可允许的公开数据评测优先复用现有工具，不新建重复存储"
+    ],
+    "staff_time": "人工评审工时=样本数*每样本平均分钟*评审人数/60，加冲突裁决与设备执行；先用真实开发批次标定平均分钟。"
+  },
+  "coding_agent_work_packages": [
+    {
+      "status": "proposed",
+      "id": "EVAL-01",
+      "owner": "Codex",
+      "deliverable": "统一run manifest/stage trace、实际请求与source-id记录；不记录密钥",
+      "done": "同一turn可关联解析、存储、检索、prompt、草稿、修订、最终提交/音频"
+    },
+    {
+      "status": "proposed",
+      "id": "EVAL-02",
+      "owner": "独立评测者",
+      "deliverable": "按上述gold schema生成并人工核验场景族、切分与hash",
+      "done": "开发者不能提前看到密封case；每字段有来源或明确unknown"
+    },
+    {
+      "status": "proposed",
+      "id": "EVAL-03",
+      "owner": "Codex",
+      "deliverable": "扩展现benchmark，支持逐阶段metrics、真实service入口、复跑与故障注入",
+      "done": "不把mock响应记成live_model；失败永远保留"
+    },
+    {
+      "status": "proposed",
+      "id": "EVAL-04",
+      "owner": "Claude",
+      "deliverable": "盲评packet与产品评分rubric，记忆管理/静音/失败体验验收流",
+      "done": "A/B去版本随机、可看证据、原句引用、分歧处理"
+    },
+    {
+      "status": "proposed",
+      "id": "EVAL-05",
+      "owner": "Codex+Claude",
+      "deliverable": "Android/iOS/HarmonyOS设备矩阵与真实任务复现步骤",
+      "done": "OS/App版本与可用权限明确，每次任务有后置条件与取消记录"
+    },
+    {
+      "status": "proposed",
+      "id": "EVAL-06",
+      "owner": "Codex",
+      "deliverable": "持续任务/迁移/性能运行报告与发布回归",
+      "done": "故障恢复无重复副作用，所有未执行项显式not_run而非pass"
+    }
+  ],
+  "implementation_note_20261101": "Full planned suite remains proposed. See delivery.md for measured regression and 50-query development diagnostics; these do not satisfy the full planned suite."
+}

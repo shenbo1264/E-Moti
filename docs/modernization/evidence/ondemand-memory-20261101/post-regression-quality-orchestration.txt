@@ -1,0 +1,100 @@
+from __future__ import annotations
+import concurrent.futures, hashlib, importlib.util, json, shutil, subprocess, threading, time
+from datetime import datetime, timezone
+from pathlib import Path
+ROOT=Path('/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory')
+BASELINE=ROOT.parent/'E-Moti-benchmark-baseline'; PYTHON=Path('/tmp/emoti-retrieval-venv/bin/python');CACHE=Path('/tmp/emoti-bge-model-cache')
+STAGE=Path('/tmp/emoti-post-regression-quality'); EVIDENCE=ROOT/'docs/modernization/evidence/ondemand-memory-20261101'
+METHODS=('none','lexical','bge_rrf','routed','layered'); FRESH=('routed','layered');ROLE='post_existing_regression_fix_seen_replay'
+GROUPS=(
+ {'name':'final-post-regression-sealed-300','original':'final-round2-sealed-300','dataset':ROOT/'tests/fixtures/ondemand_memory_sealed_v2','splits':['holdout'],'sizes':[300],'rows':48},
+ {'name':'final-post-regression-regression-300','original':'final-round2-regression-300','dataset':ROOT/'tests/fixtures','splits':['development','validation','holdout'],'sizes':[300],'rows':192},
+ {'name':'final-post-regression-scale','original':'final-round2-scale','dataset':ROOT/'tests/fixtures','splits':['development'],'sizes':[3000,10000],'rows':18,'stories':['d02','d06','d08']},
+)
+lock=threading.Lock(); completed={}
+def emit(**item):
+ with lock: print(json.dumps({'utc':datetime.now(timezone.utc).isoformat(),**item},ensure_ascii=False),flush=True)
+def sha(path):return hashlib.sha256(path.read_bytes()).hexdigest()
+def source_hashes(root):return {str(p.relative_to(root)):sha(p) for p in sorted((root/'src/guanghe_companion').glob('*.py'))}
+BASELINE_HASHES=source_hashes(BASELINE);NEW_HASHES=source_hashes(ROOT)
+TOOL_SHA=sha(ROOT/'tools/eval_ondemand_memory.py')
+def run(group,method):
+ out=STAGE/group['name']/method;out.mkdir(parents=True,exist_ok=False)
+ command=[str(PYTHON),str(ROOT/'tools/eval_ondemand_memory.py'),'--source-root',str(ROOT),'--baseline-root',str(BASELINE),'--dataset-dir',str(group['dataset']),'--splits',*group['splits'],'--sizes',*[str(s) for s in group['sizes']],'--methods',method,'--model-cache',str(CACHE),'--local-files-only','--output-dir',str(out)]
+ if group.get('stories'):command+=['--story-ids',*group['stories']]
+ emit(event='start_new_measurement',campaign=group['name'],method=method,role=ROLE)
+ started=time.perf_counter()
+ with (out/'orchestrator-console.log').open('w') as log:r=subprocess.run(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
+ if r.returncode:raise RuntimeError(f'{out}: process {r.returncode}')
+ manifest=json.loads((out/'run-manifest.json').read_text())
+ if manifest['status']!='completed' or not manifest['new_source_unchanged_during_campaign']:raise RuntimeError(f'{out}: nonfrozen campaign')
+ for size in group['sizes']:
+  p=out/f'{method}-{size}.json';a=json.loads(p.read_text());record=next(x for x in manifest['runs'] if x['size']==size)
+  if len(a['rows'])!=group['rows'] or a['status']!='measured_synthetic_retrieval' or not a['source_unchanged_during_run'] or a['source_sha256']!=NEW_HASHES or sha(p)!=record['sha256']:raise RuntimeError(f'{p}: incomplete/provenance mismatch')
+ with lock:completed[(group['name'],method)]=out
+ emit(event='complete_new_measurement',campaign=group['name'],method=method,rows=group['rows']*len(group['sizes']),elapsed_seconds=round(time.perf_counter()-started,3))
+ return group,method
+
+def archive(group):
+ dst=EVIDENCE/group['name']; original=EVIDENCE/group['original']
+ if dst.exists():raise RuntimeError(f'Will not overwrite {dst}')
+ dst.mkdir();(dst/'worker-manifests').mkdir();(dst/'raw-measurements').mkdir()
+ fresh_manifests={m:json.loads((completed[(group['name'],m)]/'run-manifest.json').read_text()) for m in FRESH}
+ combined=dict(fresh_manifests['routed']);combined.update(methods=list(METHODS),runs=[],paired_comparisons={},evaluation_role=ROLE,split_roles={s:ROLE for s in group['splits']},status='completed',new_source_unchanged_during_campaign=True)
+ combined['frozen_dataset_creation_roles']=fresh_manifests['routed']['split_roles']
+ combined['new_measurement_rows']=group['rows']*len(group['sizes'])*2;combined['reused_measurement_rows']=group['rows']*len(group['sizes'])*3
+ old_manifest=json.loads((original/'run-manifest.json').read_text())
+ reuse=[]
+ for method in METHODS:
+  fresh=method in FRESH
+  src=completed[(group['name'],method)] if fresh else original
+  manifest=fresh_manifests[method] if fresh else old_manifest
+  for key in ('script_sha256','dataset_sha256','baseline_actual_commit'):
+   if manifest[key]!=combined[key]:raise RuntimeError(f'{group["name"]}: {method} mismatched {key}')
+  if manifest['split_roles']!=combined['frozen_dataset_creation_roles']:raise RuntimeError('Immutable dataset role differs; do not rewrite measurement history')
+  if fresh and manifest['new_source_start_sha256']!=NEW_HASHES:raise RuntimeError('New source changed')
+  (dst/'worker-manifests'/f'{method}.json').write_text(json.dumps(manifest,ensure_ascii=False,indent=2)+'\n')
+  for size in group['sizes']:
+   source=src/f'{method}-{size}.json';raw=source.read_bytes();a=json.loads(raw);digest=hashlib.sha256(raw).hexdigest()
+   if a['script_sha256']!=TOOL_SHA or len(a['rows'])!=group['rows']:raise RuntimeError('Script or denominator changed')
+   expected=NEW_HASHES if fresh else BASELINE_HASHES
+   if a['source_sha256']!=expected or not a['source_unchanged_during_run']:raise RuntimeError('Relevant production source differs')
+   recorded=next(x for x in manifest['runs'] if x['method']==method and x['size']==size)
+   if digest!=recorded['sha256']:raise RuntimeError('Original artifact hash mismatch')
+   target=dst/source.name
+   record=dict(recorded);record.update(output=str(target),console_log=str(dst/f'{method}-{size}.log'),evaluation_role=ROLE,new_measurement=fresh)
+   if fresh:
+    raw_path=dst/'raw-measurements'/source.name;raw_path.write_bytes(raw)
+    # This is a provenance annotation only. Preserve the exact worker output
+    # and its digest, all scores, prompts, rows and original dataset labels.
+    a['evaluation_role']=ROLE;a['raw_measurement_sha256']=digest;a['raw_measurement_artifact']=str(raw_path)
+    target.write_text(json.dumps(a,ensure_ascii=False,indent=2)+'\n')
+    record.update(raw_measurement_sha256=digest,raw_measurement_artifact=str(raw_path),annotation='evaluation_role/provenance only; no row or score edits',sha256=sha(target))
+   else:
+    target.write_bytes(raw)
+    record.update(reused_from=str(source),reuse_reason='Frozen baseline299 production, evaluator53, model/budget/data inputs and method are unchanged by candidate-only router regression fix',sha256=digest)
+    reuse.append({'method':method,'size':size,'queries':len(a['rows']),'source':str(source),'copy':str(target),'sha256':digest,'baseline_source_sha256':BASELINE_HASHES})
+   shutil.copyfile(src/f'{method}-{size}.log',dst/f'{method}-{size}.log')
+   combined['runs'].append(record)
+ spec=importlib.util.spec_from_file_location('eval_post',ROOT/'tools/eval_ondemand_memory.py');ev=importlib.util.module_from_spec(spec);spec.loader.exec_module(ev)
+ for size in group['sizes']:
+  data={m:json.loads((dst/f'{m}-{size}.json').read_text()) for m in METHODS}
+  for base in ('lexical','bge_rrf'):
+   for candidate in FRESH:combined['paired_comparisons'][f'{candidate}_vs_{base}_{size}']=ev.paired_story_bootstrap(data[base]['rows'],data[candidate]['rows'])
+ policy={'measurement_class':'observed_concurrent_validation','evaluation_role':ROLE,'new_measurements':list(FRESH),'byte_reused_baselines':['none','lexical','bge_rrf'],'maximum_heavy_workers':3,'other_load':'root pytest and Qt smoke may overlap; timings are not SLO evidence','production_commit':'b5b43e2a83a392b56d11cd2c24f01a89bdf22364','unchanged_tool_commit':'53cb836','first_independent_score_preserved_at':str(original),'generation_requests':0}
+ combined['execution_policy']=policy
+ (dst/'run-manifest.json').write_text(json.dumps(combined,ensure_ascii=False,indent=2)+'\n')
+ (dst/'execution-context.json').write_text(json.dumps(policy,ensure_ascii=False,indent=2)+'\n')
+ (dst/'baseline-byte-reuse.json').write_text(json.dumps({'reason':policy,'artifacts':reuse},ensure_ascii=False,indent=2)+'\n')
+ emit(event='archived_seen_replay',campaign=group['name'],new_rows=combined['new_measurement_rows'],reused_rows=combined['reused_measurement_rows'])
+
+if STAGE.exists():raise SystemExit('Staging already exists; preserve rather than overwrite')
+STAGE.mkdir();(EVIDENCE/'post-regression-quality-orchestration.txt').write_bytes(Path(__file__).read_bytes())
+with concurrent.futures.ThreadPoolExecutor(max_workers=3) as pool:
+ futures=[pool.submit(run,g,m) for g in GROUPS for m in FRESH];done=set()
+ for future in concurrent.futures.as_completed(futures):
+  g,m=future.result()
+  if g['name'] not in done and all((g['name'],k) in completed for k in FRESH):archive(g);done.add(g['name'])
+if NEW_HASHES!=source_hashes(ROOT):raise RuntimeError('Source changed after final replay')
+subprocess.run([str(PYTHON),str(ROOT/'tools/summarize_ondemand_memory.py'),'--input-dir',*[str(EVIDENCE/g['name']) for g in GROUPS],'--output',str(EVIDENCE/'post-regression-final-summary.json')],cwd=ROOT,check=True)
+emit(event='all_complete_seen_replay',new_rows=552,reused_rows=828,compared_rows=1380,method_files=20)

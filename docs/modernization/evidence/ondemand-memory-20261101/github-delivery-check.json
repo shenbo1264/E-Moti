@@ -1,0 +1,81 @@
+{
+  "checked_at_utc": "2026-11-01T19:33:22Z",
+  "branches": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Action completed."
+        }
+      ],
+      "structuredContent": {
+        "branches": [
+          {
+            "branch": "claude/product-ui"
+          },
+          {
+            "branch": "codex/demo-worktree-cleanup"
+          },
+          {
+            "branch": "codex/demo-worktree-cleanup-pr"
+          },
+          {
+            "branch": "codex/desktop-acceptance"
+          },
+          {
+            "branch": "main"
+          }
+        ],
+        "cursor": "NQ"
+      },
+      "isError": false
+    }
+  },
+  "open_pull_requests": {
+    "status": "fulfilled",
+    "value": {
+      "content": [
+        {
+          "type": "text",
+          "text": "Action completed."
+        }
+      ],
+      "structuredContent": {
+        "issues": []
+      },
+      "isError": false
+    }
+  },
+  "main_compare": {
+    "content": [
+      {
+        "type": "text",
+        "text": "Action completed."
+      }
+    ],
+    "structuredContent": {
+      "repository_full_name": "shenbo1264/E-Moti",
+      "base": "238f361c856584c7f93cc15dca5cbf5a387393e8",
+      "head": "main",
+      "status": "identical",
+      "ahead_by": 0,
+      "behind_by": 0,
+      "total_commits": 0,
+      "too_large": null,
+      "base_commit": {
+        "sha": "238f361c856584c7f93cc15dca5cbf5a387393e8",
+        "url": "https://api.github.com/repos/shenbo1264/E-Moti/commits/238f361c856584c7f93cc15dca5cbf5a387393e8",
+        "html_url": "https://github.com/shenbo1264/E-Moti/commit/238f361c856584c7f93cc15dca5cbf5a387393e8"
+      },
+      "merge_base_commit": {
+        "sha": "238f361c856584c7f93cc15dca5cbf5a387393e8",
+        "url": "https://api.github.com/repos/shenbo1264/E-Moti/commits/238f361c856584c7f93cc15dca5cbf5a387393e8",
+        "html_url": "https://github.com/shenbo1264/E-Moti/commit/238f361c856584c7f93cc15dca5cbf5a387393e8"
+      },
+      "files": []
+    },
+    "isError": false
+  },
+  "remote_mutations": false
+}

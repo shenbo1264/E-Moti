@@ -1,0 +1,292 @@
+{
+  "size": 300,
+  "source_sha256": {
+    "semantic_memory.py": "aff43a3ef22e785cf972ffcb0853a164d9cfc06e87267379a73cfb93b4b09eb6",
+    "memory_index.py": "e8e745e1c80ef98e56e9fec049d0f46c76b79e3a3511184d85f650bc45b38a57",
+    "memory_index_schema.py": "5d35159ff858f154a11297747d11589f431fb664751f57b73f54e4129d4a3b50",
+    "memory_document.py": "be2f49c803f3d016a6cf3416bc02090b1cab9777f86aec88daef75b06b6e0802",
+    "emotional_memory.py": "75a95ca6485d97577bd2fd77eeeffc362ae8d2caef84dcfb8cc2387a9f21f862"
+  },
+  "created_at_utc": "2026-11-01T18:13:55.548993+00:00",
+  "script_sha256": "de6dfe8d980af788ae5f25462b7e6dc1e27bd5e120ba740132763fec9398990e",
+  "source_unchanged_during_run": true,
+  "model": {
+    "name": "BAAI/bge-small-zh-v1.5",
+    "revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+    "provider": "CPUExecutionProvider",
+    "threads": 2,
+    "passage_batch_size": 64,
+    "embedding_dimensions": 512
+  },
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+    "logical_cpus": 9,
+    "openblas_threads": "1",
+    "packages": {
+      "fastembed": "0.9.1",
+      "numpy": "2.5.4",
+      "onnxruntime": "1.31.1",
+      "huggingface-hub": "1.33.0"
+    }
+  },
+  "corpus": {
+    "source": "synthetic six-template Chinese text, not private data",
+    "min_chars": 6,
+    "median_chars": 62.0,
+    "max_chars": 65,
+    "normalization": "exact float32 cosine; normalized cached passage matrix",
+    "all_current_companion": true
+  },
+  "seed_sqlite_ms": 173.7076400022488,
+  "model_load_ms": 389.0334140014602,
+  "cold": {
+    "wall_ms": 4274.121702997945,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 300,
+      "prepared_entries": 300,
+      "error": null,
+      "encoded_entries_total": 300,
+      "query_embed_count": 1,
+      "manifest_revision": 1,
+      "index_generation": "939ca0d19518493fa4b2b758400eb164",
+      "generation": 0,
+      "watched_scopes": [
+        "companion"
+      ],
+      "passage_batch_size": 64,
+      "last_encoded_entries": 300,
+      "manifest_ms": 2.7256449975539,
+      "payload_read_ms": 37.82562000560574,
+      "passage_encoding_ms": 4223.233251999773,
+      "query_embedding_ms": 6.506715995783452,
+      "search_ms": 0.7822420011507347,
+      "index_prepare_ms": 4263.784517002932,
+      "prepare_ms": 4273.488685001212,
+      "manifest_pages": 1,
+      "payload_rows_loaded": 300,
+      "prepare_retries": 0,
+      "barrier_reads": 1
+    },
+    "top_ids": [
+      "synthetic-000233",
+      "synthetic-000161",
+      "synthetic-000215",
+      "synthetic-000005"
+    ]
+  },
+  "warm": [
+    {
+      "wall_ms": 6.449151995184366,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 2,
+        "manifest_revision": 1,
+        "index_generation": "939ca0d19518493fa4b2b758400eb164",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "passage_batch_size": 64,
+        "last_encoded_entries": 0,
+        "manifest_ms": 1.0539629947743379,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 4.260706999048125,
+        "search_ms": 0.1504320025560446,
+        "index_prepare_ms": 1.0539629947743379,
+        "prepare_ms": 6.019898995873518,
+        "manifest_pages": 1,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0,
+        "barrier_reads": 1
+      },
+      "top_ids": [
+        "synthetic-000246",
+        "synthetic-000276",
+        "synthetic-000006",
+        "synthetic-000042"
+      ]
+    },
+    {
+      "wall_ms": 8.15405300090788,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 3,
+        "manifest_revision": 1,
+        "index_generation": "939ca0d19518493fa4b2b758400eb164",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "passage_batch_size": 64,
+        "last_encoded_entries": 0,
+        "manifest_ms": 0.9611760033294559,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 6.146555999293923,
+        "search_ms": 0.20623399905161932,
+        "index_prepare_ms": 0.9611760033294559,
+        "prepare_ms": 7.8117989978636615,
+        "manifest_pages": 1,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0,
+        "barrier_reads": 1
+      },
+      "top_ids": [
+        "synthetic-000015",
+        "synthetic-000009",
+        "synthetic-000003",
+        "synthetic-000243"
+      ]
+    },
+    {
+      "wall_ms": 6.103761996200774,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 4,
+        "manifest_revision": 1,
+        "index_generation": "939ca0d19518493fa4b2b758400eb164",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "passage_batch_size": 64,
+        "last_encoded_entries": 0,
+        "manifest_ms": 0.9764790011104196,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 4.222511000989471,
+        "search_ms": 0.17752200074028224,
+        "index_prepare_ms": 0.9764790011104196,
+        "prepare_ms": 5.788829002995044,
+        "manifest_pages": 1,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0,
+        "barrier_reads": 1
+      },
+      "top_ids": [
+        "synthetic-000014",
+        "synthetic-000026",
+        "synthetic-000020",
+        "synthetic-000080"
+      ]
+    }
+  ],
+  "warm_wall_p50_ms": 6.449151995184366,
+  "correction_write_ms": 117.87385800562333,
+  "correction": {
+    "wall_ms": 15.509359000134282,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 300,
+      "prepared_entries": 300,
+      "error": null,
+      "encoded_entries_total": 301,
+      "query_embed_count": 5,
+      "manifest_revision": 2,
+      "index_generation": "939ca0d19518493fa4b2b758400eb164",
+      "generation": 1,
+      "watched_scopes": [
+        "companion"
+      ],
+      "passage_batch_size": 64,
+      "last_encoded_entries": 1,
+      "manifest_ms": 2.063469997665379,
+      "payload_read_ms": 0.9484269976383075,
+      "passage_encoding_ms": 6.612131001020316,
+      "query_embedding_ms": 4.012290999526158,
+      "search_ms": 0.7666289966437034,
+      "index_prepare_ms": 9.624027996324003,
+      "prepare_ms": 15.046346998133231,
+      "manifest_pages": 1,
+      "payload_rows_loaded": 1,
+      "prepare_retries": 0,
+      "barrier_reads": 1
+    },
+    "top_ids": [
+      "7b8d8b07d50ab4b34247",
+      "synthetic-000284",
+      "synthetic-000290",
+      "synthetic-000020"
+    ]
+  },
+  "forget_write_ms": 80.70769299956737,
+  "forget": {
+    "wall_ms": 7.765260001178831,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 299,
+      "prepared_entries": 299,
+      "error": null,
+      "encoded_entries_total": 301,
+      "query_embed_count": 6,
+      "manifest_revision": 3,
+      "index_generation": "939ca0d19518493fa4b2b758400eb164",
+      "generation": 2,
+      "watched_scopes": [
+        "companion"
+      ],
+      "passage_batch_size": 64,
+      "last_encoded_entries": 0,
+      "manifest_ms": 1.8984769922099076,
+      "payload_read_ms": 0.0,
+      "passage_encoding_ms": 0.0,
+      "query_embedding_ms": 4.177294002147391,
+      "search_ms": 0.6706279964419082,
+      "index_prepare_ms": 1.8984769922099076,
+      "prepare_ms": 7.284583000000566,
+      "manifest_pages": 1,
+      "payload_rows_loaded": 0,
+      "prepare_retries": 0,
+      "barrier_reads": 1
+    },
+    "top_ids": [
+      "synthetic-000284",
+      "synthetic-000290",
+      "synthetic-000020",
+      "synthetic-000278"
+    ]
+  },
+  "peak_rss_mib": 392.75390625,
+  "final_vector_bytes": 612352,
+  "final_matrix_cache_bytes": 612352,
+  "assertions": "cold N, warm 0, corrected 1, forgotten 0 passage encodes; revoked IDs absent"
+}

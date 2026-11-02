@@ -21,11 +21,15 @@ def test_settled_experiences_automatically_consolidate_with_sources(tmp_path):
     runtime = story(tmp_path)
     for index in range(3):
         runtime.record_settled_events([gift(index)], now=100 + index)
+    # Consolidation is now a bounded worker job, not a GUI-thread write.
+    assert runtime.memory.wait_for_maintenance()
     chapters = runtime.memory.valid_chapters(now=200)
     assert len(chapters) == 1
     assert len(chapters[0].source_fingerprints) == 3
     runtime.record_settled_events([gift(2)], now=102)
+    assert runtime.memory.wait_for_maintenance()
     assert len(runtime.memory.valid_chapters(now=200)) == 1
+    runtime.memory.close()
 
 
 def test_chapter_keeps_chronological_event_bodies_and_evidence(tmp_path):
@@ -182,7 +186,9 @@ def test_three_completed_user_confirmed_breaks_form_shared_chapter(tmp_path):
         runtime.focus.confirm_break(now=now + 1, duration_seconds_override=1)
         completed = runtime.focus.tick(now=now + 3)[0]
         runtime.record_focus_completion(completed, now=now + 3, event_id=f"completed:{index}")
+    assert runtime.memory.wait_for_maintenance()
     assert len(runtime.memory.valid_chapters(now=20000)) == 1
+    runtime.memory.close()
 
 
 def test_approved_chat_interest_can_start_a_grounded_topic_without_shared_history(tmp_path):

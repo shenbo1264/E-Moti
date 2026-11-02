@@ -168,11 +168,13 @@ class ChatMemory:
 
     def process(self, text: str, *, now: int) -> ChatMemoryResult:
         text = text.strip()
-        active = [_fact_view(m) for m in self.memory.store.load_memories()
-                  if m.is_active(now=now) and (m.metadata.get("speaker") == "user"
-                    or (m.user_confirmed and m.source in {"explicit_user_request", "user_correction"}))]
+        def active_facts():
+            return [_fact_view(m) for m in self.memory.store.load_memories()
+                    if m.is_active(now=now) and (m.metadata.get("speaker") == "user"
+                        or (m.user_confirmed and m.source in {"explicit_user_request", "user_correction"}))]
+        active = None
         if forget_target(text) is not None:
-            return self._forget(text, active, now=now)
+            return self._forget(text, active_facts(), now=now)
         from .chat_memory_plans import prepare_plan, record_plan
         plan = prepare_plan(text)
         if plan is not None:
@@ -209,6 +211,10 @@ class ChatMemory:
                 continue
             # 只有同句内已解析的第一人称自述允许省略主语；重复事实仍能引出后句。
             inherited_subject = clause.startswith("我")
+            if active is None:
+                # Conflict checking remains complete for real writes. Casual
+                # chat and questions no longer decode the entire archive first.
+                active = active_facts()
             related = [m for m in active if m.metadata.get("fact_slot") == slot]
             reversal = [m for m in active if preference and m.metadata.get("fact_value") == value
                         and str(m.metadata.get("fact_slot", "")).startswith(f"preference:{domain}:")
@@ -276,10 +282,12 @@ class ChatMemory:
                     requested]
         pending_ids = [key for key, candidate in candidates.items()
                        if candidate.metadata.get("fact_domain") in requested
-                       or (candidate.metadata.get("fact_value") and candidate.metadata["fact_value"] in text
+                       or (isinstance(candidate.metadata.get("fact_value"), str)
+                           and candidate.metadata["fact_value"] and candidate.metadata["fact_value"] in text
                            and (not scoped or target.startswith(candidate.metadata["fact_value"])))]
         if not selected:
-            selected = [m for m in active if m.metadata.get("fact_value")
+            selected = [m for m in active if isinstance(m.metadata.get("fact_value"), str)
+                        and m.metadata["fact_value"]
                         and m.metadata["fact_value"] in text
                         and (not scoped or target.startswith(m.metadata["fact_value"]))]
         selected = list({m.memory_id: m for m in [*selected, *(m for m in active

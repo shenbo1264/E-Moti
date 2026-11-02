@@ -1,0 +1,960 @@
+{
+  "schema_version": 1,
+  "name": "emoti-ondemand-memory-v1-validation",
+  "split": "validation",
+  "status": "authored_synthetic_validation",
+  "character_id": "eval_companion",
+  "owner_id": "eval_user",
+  "now": 1792000000,
+  "stories": [
+    {
+      "id": "v01",
+      "template_family": "pet_attributes",
+      "description": "宠物种类、名字与不存在的年龄。"
+    },
+    {
+      "id": "v02",
+      "template_family": "library_relationship",
+      "description": "志愿活动关系中的职位与未知姓名。"
+    },
+    {
+      "id": "v03",
+      "template_family": "shared_observation",
+      "description": "真实共同观测与未知感官经历。"
+    },
+    {
+      "id": "v04",
+      "template_family": "task_audio_environment",
+      "description": "环境依赖的任务经验与版本未知。"
+    },
+    {
+      "id": "v05",
+      "template_family": "temporal_history_control",
+      "description": "合法历史字段与已遗忘字段分离。"
+    },
+    {
+      "id": "v06",
+      "template_family": "legacy_and_mixed_work",
+      "description": "旧文本偏好与外部状态同问。"
+    }
+  ],
+  "memories": [
+    {
+      "id": "v_pet",
+      "story_id": "v01",
+      "kind": "用户事实",
+      "title": "我养了一只叫桃桃的兔子。",
+      "summary": "我养了一只叫桃桃的兔子。",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fixture:v_pet"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "pet",
+        "fact_value": "叫桃桃的兔子",
+        "fact_domain": "宠物",
+        "fact_slot": "user:self:pet",
+        "speaker": "user"
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_library",
+      "story_id": "v02",
+      "kind": "用户事实",
+      "title": "我的图书馆搭档从事文物修复。",
+      "summary": "我的图书馆搭档从事文物修复。",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fixture:v_library"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "fact_subject": "relation:图书馆搭档",
+        "fact_predicate": "occupation",
+        "fact_value": "文物修复",
+        "fact_domain": "人物职业",
+        "fact_slot": "relation:图书馆搭档:occupation",
+        "speaker": "user"
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_library_city",
+      "story_id": "v02",
+      "kind": "用户事实",
+      "title": "我的图书馆搭档住在苏州。",
+      "summary": "我的图书馆搭档住在苏州。",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fixture:v_library_city"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "fact_subject": "relation:图书馆搭档",
+        "fact_predicate": "residence",
+        "fact_value": "苏州",
+        "fact_domain": "人物居住地",
+        "fact_slot": "relation:图书馆搭档:residence",
+        "speaker": "user"
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_moon",
+      "story_id": "v03",
+      "kind": "共同经历",
+      "title": "我们第一次一起看月球时辨认出了第谷环形山。",
+      "summary": "我们第一次一起看月球时辨认出了第谷环形山。",
+      "source": "synthetic_verified_event",
+      "source_ids": [
+        "fixture:v_moon"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "event_status": "completed",
+        "participants": [
+          "user:self",
+          "character:self"
+        ]
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_scope",
+      "story_id": "v03",
+      "kind": "共同经历",
+      "title": "我们第二次观测时把望远镜换成了低倍率目镜。",
+      "summary": "我们第二次观测时把望远镜换成了低倍率目镜。",
+      "source": "synthetic_verified_event",
+      "source_ids": [
+        "fixture:v_scope"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "event_status": "completed",
+        "participants": [
+          "user:self",
+          "character:self"
+        ]
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_audio_fail",
+      "story_id": "v04",
+      "kind": "任务经验",
+      "title": "音频工作台 5.2 在 44.1kHz 项目中导出失败，实际日志指出采样率冲突。",
+      "summary": "音频工作台 5.2 在 44.1kHz 项目中导出失败，实际日志指出采样率冲突。",
+      "source": "synthetic_verified_event",
+      "source_ids": [
+        "fixture:v_audio_fail"
+      ],
+      "scope": "task_experience",
+      "metadata": {
+        "app": "音频工作台",
+        "version": "5.2",
+        "preconditions": [
+          "44.1kHz"
+        ],
+        "outcome": "failed"
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_audio_fix",
+      "story_id": "v04",
+      "kind": "任务经验",
+      "title": "音频工作台 5.2 把项目与设备统一为 48kHz 后导出成功。",
+      "summary": "音频工作台 5.2 把项目与设备统一为 48kHz 后导出成功。",
+      "source": "synthetic_verified_event",
+      "source_ids": [
+        "fixture:v_audio_fix"
+      ],
+      "scope": "task_experience",
+      "metadata": {
+        "app": "音频工作台",
+        "version": "5.2",
+        "preconditions": [
+          "48kHz"
+        ],
+        "outcome": "completed"
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_job_old",
+      "story_id": "v05",
+      "kind": "用户事实",
+      "title": "我以前从事编辑工作。",
+      "summary": "我以前从事编辑工作。",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fixture:v_job_old"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "occupation",
+        "fact_value": "编辑",
+        "fact_domain": "职业",
+        "fact_slot": "user:self:occupation",
+        "speaker": "user"
+      },
+      "state": "historical",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 1791990000,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_job_current",
+      "story_id": "v05",
+      "kind": "用户事实",
+      "title": "我现在是交互设计师。",
+      "summary": "我现在是交互设计师。",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fixture:v_job_current"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "occupation",
+        "fact_value": "交互设计师",
+        "fact_domain": "职业",
+        "fact_slot": "user:self:occupation",
+        "speaker": "user"
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791990000,
+      "valid_until": 0,
+      "confidence": 1.0
+    },
+    {
+      "id": "v_salary",
+      "story_id": "v05",
+      "kind": "用户事实",
+      "title": "我上份工作的月薪是九千。",
+      "summary": "我上份工作的月薪是九千。",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fixture:v_salary"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "salary",
+        "fact_value": "九千",
+        "fact_domain": "薪资",
+        "fact_slot": "user:self:salary",
+        "speaker": "user"
+      },
+      "state": "forgotten",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0,
+      "deleted": true
+    },
+    {
+      "id": "v_legacy_plant",
+      "story_id": "v06",
+      "kind": "用户事实",
+      "title": "用户喜欢种薄荷，阳台上养了两盆。",
+      "summary": "用户喜欢种薄荷，阳台上养了两盆。",
+      "source": "explicit_user_request",
+      "source_ids": [
+        "fixture:v_legacy_plant"
+      ],
+      "scope": "companion",
+      "metadata": {},
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0,
+      "user_confirmed": true
+    },
+    {
+      "id": "v_plant_event",
+      "story_id": "v06",
+      "kind": "共同经历",
+      "title": "我们一起给阳台薄荷做了标签，用蓝色笔写上浇水日期。",
+      "summary": "我们一起给阳台薄荷做了标签，用蓝色笔写上浇水日期。",
+      "source": "synthetic_verified_event",
+      "source_ids": [
+        "fixture:v_plant_event"
+      ],
+      "scope": "companion",
+      "metadata": {
+        "event_status": "completed",
+        "participants": [
+          "user:self",
+          "character:self"
+        ]
+      },
+      "state": "active",
+      "occurred_at": 1791950000,
+      "created_at": 1791950000,
+      "updated_at": 1791950000,
+      "valid_from": 1791950000,
+      "valid_until": 0,
+      "confidence": 1.0
+    }
+  ],
+  "queries": [
+    {
+      "id": "v01_kind",
+      "story_id": "v01",
+      "family": "pet_attributes",
+      "text": "我养的宠物是什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_pet"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v01_name",
+      "story_id": "v01",
+      "family": "pet_attributes",
+      "text": "我家兔子叫什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_pet"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v01_age",
+      "story_id": "v01",
+      "family": "pet_attributes",
+      "text": "我家兔子今年几岁？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v01_breed",
+      "story_id": "v01",
+      "family": "pet_attributes",
+      "text": "我家兔子是什么品种？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v01_chat",
+      "story_id": "v01",
+      "family": "pet_attributes",
+      "text": "给我讲一个兔子的笑话。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "v01_unhappened",
+      "story_id": "v01",
+      "family": "pet_attributes",
+      "text": "我们第一次带桃桃去海边是什么时候？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v02_job",
+      "story_id": "v02",
+      "family": "library_relationship",
+      "text": "我的图书馆搭档做哪一行？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_library"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v02_city",
+      "story_id": "v02",
+      "family": "library_relationship",
+      "text": "我的图书馆搭档住在哪个城市？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_library_city"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v02_name",
+      "story_id": "v02",
+      "family": "library_relationship",
+      "text": "我的图书馆搭档叫什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v02_follow",
+      "story_id": "v02",
+      "family": "library_relationship",
+      "text": "那她住在哪？",
+      "history": [
+        {
+          "role": "user",
+          "content": "我想问问我的图书馆搭档。"
+        }
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_library_city"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v02_friend",
+      "story_id": "v02",
+      "family": "library_relationship",
+      "text": "我的摄影搭档从事什么工作？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v02_mixed",
+      "story_id": "v02",
+      "family": "library_relationship",
+      "text": "我的图书馆搭档住哪、叫什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_library_city"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "insufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v03_first",
+      "story_id": "v03",
+      "family": "shared_observation",
+      "text": "我们第一次看月球辨认出了什么？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "v_moon"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v03_second",
+      "story_id": "v03",
+      "family": "shared_observation",
+      "text": "第二次观测我们怎么调整了望远镜？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "v_scope"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v03_overview",
+      "story_id": "v03",
+      "family": "shared_observation",
+      "text": "聊聊我们一起观测月球的两次经历。",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "v_moon",
+        "v_scope"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v03_person",
+      "story_id": "v03",
+      "family": "shared_observation",
+      "text": "和我们一起观测月球的人叫什么？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v03_unknown",
+      "story_id": "v03",
+      "family": "shared_observation",
+      "text": "我们一起登月时穿的衣服是什么颜色？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v03_generic",
+      "story_id": "v03",
+      "family": "shared_observation",
+      "text": "月球上的环形山怎么形成？",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "v04_why",
+      "story_id": "v04",
+      "family": "task_audio_environment",
+      "text": "音频工作台 5.2 上次导出失败的原因是什么？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "v_audio_fail"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v04_fix",
+      "story_id": "v04",
+      "family": "task_audio_environment",
+      "text": "音频工作台上次导出故障是怎么修好的？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "v_audio_fix"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v04_version",
+      "story_id": "v04",
+      "family": "task_audio_environment",
+      "text": "音频工作台 6.0 上次出了什么导出问题？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v04_chain",
+      "story_id": "v04",
+      "family": "task_audio_environment",
+      "text": "音频工作台 5.2 为什么失败、后来怎么成功的？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "v_audio_fail",
+        "v_audio_fix"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v04_live",
+      "story_id": "v04",
+      "family": "task_audio_environment",
+      "text": "现在音频导出任务结束了吗？",
+      "history": [],
+      "expected_routes": [
+        "live"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "external_unavailable",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "v04_generic",
+      "story_id": "v04",
+      "family": "task_audio_environment",
+      "text": "采样率是什么意思？",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "v05_now",
+      "story_id": "v05",
+      "family": "temporal_history_control",
+      "text": "我现在做什么工作？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_job_current"
+      ],
+      "forbidden_ids": [
+        "v_job_old"
+      ],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v05_before",
+      "story_id": "v05",
+      "family": "temporal_history_control",
+      "text": "我以前从事什么工作？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_job_old"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v05_salary",
+      "story_id": "v05",
+      "family": "temporal_history_control",
+      "text": "我上份工作的月薪是多少？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "v_salary"
+      ],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v05_employer",
+      "story_id": "v05",
+      "family": "temporal_history_control",
+      "text": "我现在工作的公司叫什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v05_both",
+      "story_id": "v05",
+      "family": "temporal_history_control",
+      "text": "我的职业以前和现在有什么变化？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_job_old",
+        "v_job_current"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v05_quiet",
+      "story_id": "v05",
+      "family": "temporal_history_control",
+      "text": "下班啦，今天不想聊工作。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "v06_plant",
+      "story_id": "v06",
+      "family": "legacy_and_mixed_work",
+      "text": "我阳台上喜欢种什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_legacy_plant"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v06_count",
+      "story_id": "v06",
+      "family": "legacy_and_mixed_work",
+      "text": "我阳台上有几盆薄荷？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "v_legacy_plant"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v06_event",
+      "story_id": "v06",
+      "family": "legacy_and_mixed_work",
+      "text": "我们一起给薄荷做的标签是什么样？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "v_plant_event"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v06_mixed",
+      "story_id": "v06",
+      "family": "legacy_and_mixed_work",
+      "text": "我喜欢养什么植物，Relay 现在任务完成了吗？",
+      "history": [],
+      "expected_routes": [
+        "fact",
+        "live"
+      ],
+      "gold_ids": [
+        "v_legacy_plant"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "insufficient",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v06_missing",
+      "story_id": "v06",
+      "family": "legacy_and_mixed_work",
+      "text": "我去年买薄荷花了多少钱？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "unknown",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "v06_chat",
+      "story_id": "v06",
+      "family": "legacy_and_mixed_work",
+      "text": "植物为什么需要阳光？",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    }
+  ],
+  "not_claimed": [
+    "representative real-user distribution",
+    "real model answers",
+    "sealed external benchmark"
+  ],
+  "schema_adaptation_note": "Shared-event metadata uses canonical participants user:self/character:self and annotated completed/planned state; question wording and gold evidence unchanged; performed before candidate evaluation.",
+  "fixture_revision": 2,
+  "revision_note": "Legacy fixture source corrected to the existing authorized explicit_user_request contract; questions and gold unchanged; version 1 retained with first diagnostic."
+}

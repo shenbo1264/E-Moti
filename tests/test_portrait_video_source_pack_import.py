@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import shlex
 import subprocess
 import sys
 from pathlib import Path
@@ -141,6 +142,13 @@ def test_import_portrait_video_to_source_pack_cli_runs_from_repo_root(tmp_path: 
         f'@echo off\r\n"{sys.executable}" "{fake_py}" %*\r\n',
         encoding="utf-8",
     )
+    if os.name != "nt":
+        fake_executable = fake_bin / "ffmpeg"
+        fake_executable.write_text(
+            f'#!/bin/sh\nexec {shlex.quote(sys.executable)} {shlex.quote(str(fake_py))} "$@"\n',
+            encoding="utf-8",
+        )
+        fake_executable.chmod(0o755)
     env = os.environ.copy()
     env["PATH"] = str(fake_bin) + os.pathsep + env.get("PATH", "")
 

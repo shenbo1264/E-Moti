@@ -1,0 +1,14 @@
+{
+  "status": "v2_promoted_after_final_scale_completed",
+  "development_validation_sha256_unchanged": {
+    "development": "c1f9358406a399ec24e863b48d3027c66348db8f9b53abba587f9b125ad40a01",
+    "validation": "408625996eeb69ff22e81c0ece92e3dcc1479853034d54d4a1e2eae61294bd97"
+  },
+  "holdout_sha256": "c9c5c37f5c839f3c259f9a038563d24f1ee1ffbc01b54584ae3575cd3265695e",
+  "scale_consumed_splits": [
+    "development"
+  ],
+  "old_original_directory": "final-holdout-300/dataset-v1",
+  "scoring_script_changed": false,
+  "production_changed": false
+}

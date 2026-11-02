@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="6" time="0.127" timestamp="2026-11-02T04:49:56.423003+09:00" hostname="a7863bbaa94f"><testcase classname="tests.test_router_generalization" name="test_specific_relationship_survives_coarse_possessive_hint[\u6211\u5b66\u9676\u827a\u7684\u6559\u7ec3\u53eb\u4ec0\u4e48\uff1f-relation:\u9676\u827a\u6559\u7ec3]" time="0.005"><failure message="AssertionError: assert ('relation:学陶艺',) == ('relation:陶艺教练',)&#10;  &#10;  At index 0 diff: 'relation:学陶艺' != 'relation:陶艺教练'&#10;  Use -v to get more diff">query = '我学陶艺的教练叫什么？', subject = 'relation:陶艺教练'
+
+    @pytest.mark.parametrize("query,subject", [
+        ("我学陶艺的教练叫什么？", "relation:陶艺教练"),
+        ("我学书法的老师住在哪里？", "relation:书法老师"),
+        ("我的同事的助理叫什么？", "relation:同事的助理"),
+        ("我的朋友的室友叫什么？", "relation:朋友的室友"),
+        ("我同学租的仓库叫什么名字？", "relation:同学"),
+        ("我的朋友买的设备叫什么名字？", "relation:朋友"),
+    ])
+    def test_specific_relationship_survives_coarse_possessive_hint(query, subject):
+        # An existing correction/restart contract exposed the precedence defect.
+        # Preserve full person relations without turning an owned object into a
+        # person; none of these labels are added to the production rule vocabulary.
+        intent = MemoryRetrievalRouter().plan(query).intents[0]
+        assert intent.route == "fact"
+&gt;       assert intent.subjects == (subject,)
+E       AssertionError: assert ('relation:学陶艺',) == ('relation:陶艺教练',)
+E         
+E         At index 0 diff: 'relation:学陶艺' != 'relation:陶艺教练'
+E         Use -v to get more diff
+
+tests/test_router_generalization.py:38: AssertionError</failure></testcase><testcase classname="tests.test_router_generalization" name="test_specific_relationship_survives_coarse_possessive_hint[\u6211\u5b66\u4e66\u6cd5\u7684\u8001\u5e08\u4f4f\u5728\u54ea\u91cc\uff1f-relation:\u4e66\u6cd5\u8001\u5e08]" time="0.002"><failure message="AssertionError: assert ('relation:学书法',) == ('relation:书法老师',)&#10;  &#10;  At index 0 diff: 'relation:学书法' != 'relation:书法老师'&#10;  Use -v to get more diff">query = '我学书法的老师住在哪里？', subject = 'relation:书法老师'
+
+    @pytest.mark.parametrize("query,subject", [
+        ("我学陶艺的教练叫什么？", "relation:陶艺教练"),
+        ("我学书法的老师住在哪里？", "relation:书法老师"),
+        ("我的同事的助理叫什么？", "relation:同事的助理"),
+        ("我的朋友的室友叫什么？", "relation:朋友的室友"),
+        ("我同学租的仓库叫什么名字？", "relation:同学"),
+        ("我的朋友买的设备叫什么名字？", "relation:朋友"),
+    ])
+    def test_specific_relationship_survives_coarse_possessive_hint(query, subject):
+        # An existing correction/restart contract exposed the precedence defect.
+        # Preserve full person relations without turning an owned object into a
+        # person; none of these labels are added to the production rule vocabulary.
+        intent = MemoryRetrievalRouter().plan(query).intents[0]
+        assert intent.route == "fact"
+&gt;       assert intent.subjects == (subject,)
+E       AssertionError: assert ('relation:学书法',) == ('relation:书法老师',)
+E         
+E         At index 0 diff: 'relation:学书法' != 'relation:书法老师'
+E         Use -v to get more diff
+
+tests/test_router_generalization.py:38: AssertionError</failure></testcase><testcase classname="tests.test_router_generalization" name="test_specific_relationship_survives_coarse_possessive_hint[\u6211\u7684\u540c\u4e8b\u7684\u52a9\u7406\u53eb\u4ec0\u4e48\uff1f-relation:\u540c\u4e8b\u7684\u52a9\u7406]" time="0.006"><failure message="AssertionError: assert ('relation:同事',) == ('relation:同事的助理',)&#10;  &#10;  At index 0 diff: 'relation:同事' != 'relation:同事的助理'&#10;  Use -v to get more diff">query = '我的同事的助理叫什么？', subject = 'relation:同事的助理'
+
+    @pytest.mark.parametrize("query,subject", [
+        ("我学陶艺的教练叫什么？", "relation:陶艺教练"),
+        ("我学书法的老师住在哪里？", "relation:书法老师"),
+        ("我的同事的助理叫什么？", "relation:同事的助理"),
+        ("我的朋友的室友叫什么？", "relation:朋友的室友"),
+        ("我同学租的仓库叫什么名字？", "relation:同学"),
+        ("我的朋友买的设备叫什么名字？", "relation:朋友"),
+    ])
+    def test_specific_relationship_survives_coarse_possessive_hint(query, subject):
+        # An existing correction/restart contract exposed the precedence defect.
+        # Preserve full person relations without turning an owned object into a
+        # person; none of these labels are added to the production rule vocabulary.
+        intent = MemoryRetrievalRouter().plan(query).intents[0]
+        assert intent.route == "fact"
+&gt;       assert intent.subjects == (subject,)
+E       AssertionError: assert ('relation:同事',) == ('relation:同事的助理',)
+E         
+E         At index 0 diff: 'relation:同事' != 'relation:同事的助理'
+E         Use -v to get more diff
+
+tests/test_router_generalization.py:38: AssertionError</failure></testcase><testcase classname="tests.test_router_generalization" name="test_specific_relationship_survives_coarse_possessive_hint[\u6211\u7684\u670b\u53cb\u7684\u5ba4\u53cb\u53eb\u4ec0\u4e48\uff1f-relation:\u670b\u53cb\u7684\u5ba4\u53cb]" time="0.001"><failure message="AssertionError: assert ('relation:朋友',) == ('relation:朋友的室友',)&#10;  &#10;  At index 0 diff: 'relation:朋友' != 'relation:朋友的室友'&#10;  Use -v to get more diff">query = '我的朋友的室友叫什么？', subject = 'relation:朋友的室友'
+
+    @pytest.mark.parametrize("query,subject", [
+        ("我学陶艺的教练叫什么？", "relation:陶艺教练"),
+        ("我学书法的老师住在哪里？", "relation:书法老师"),
+        ("我的同事的助理叫什么？", "relation:同事的助理"),
+        ("我的朋友的室友叫什么？", "relation:朋友的室友"),
+        ("我同学租的仓库叫什么名字？", "relation:同学"),
+        ("我的朋友买的设备叫什么名字？", "relation:朋友"),
+    ])
+    def test_specific_relationship_survives_coarse_possessive_hint(query, subject):
+        # An existing correction/restart contract exposed the precedence defect.
+        # Preserve full person relations without turning an owned object into a
+        # person; none of these labels are added to the production rule vocabulary.
+        intent = MemoryRetrievalRouter().plan(query).intents[0]
+        assert intent.route == "fact"
+&gt;       assert intent.subjects == (subject,)
+E       AssertionError: assert ('relation:朋友',) == ('relation:朋友的室友',)
+E         
+E         At index 0 diff: 'relation:朋友' != 'relation:朋友的室友'
+E         Use -v to get more diff
+
+tests/test_router_generalization.py:38: AssertionError</failure></testcase><testcase classname="tests.test_router_generalization" name="test_specific_relationship_survives_coarse_possessive_hint[\u6211\u540c\u5b66\u79df\u7684\u4ed3\u5e93\u53eb\u4ec0\u4e48\u540d\u5b57\uff1f-relation:\u540c\u5b66]" time="0.001" /><testcase classname="tests.test_router_generalization" name="test_specific_relationship_survives_coarse_possessive_hint[\u6211\u7684\u670b\u53cb\u4e70\u7684\u8bbe\u5907\u53eb\u4ec0\u4e48\u540d\u5b57\uff1f-relation:\u670b\u53cb]" time="0.001" /></testsuite></testsuites>

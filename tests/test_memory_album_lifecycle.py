@@ -34,7 +34,7 @@ def _cards(snapshot):
     return [card for section in snapshot["sections"] for card in section["cards"]]
 
 
-def test_album_correction_preserves_event_time_sources_and_increments_version(tmp_path):
+def test_album_correction_preserves_event_time_source_lineage_and_increments_version(tmp_path):
     service, album = _album(tmp_path)
     old = _remember(service, source_ids=("message-user-1",), confidence=0.7, valid_until=100)
 
@@ -43,7 +43,10 @@ def test_album_correction_preserves_event_time_sources_and_increments_version(tm
     active = [row for row in service.store.load_memories() if not row.deleted]
     assert len(active) == 1
     assert active[0].occurred_at == 10
-    assert active[0].source_ids == ("message-user-1",)
+    assert len(active[0].source_ids) == 1
+    assert active[0].source_ids[0].startswith("user-correction:")
+    predecessor = next(row for row in service.store.load_memories() if row.memory_id == active[0].supersedes)
+    assert predecessor.source_ids == ("message-user-1",) and predecessor.deleted
     assert active[0].version == old.version + 1
     assert active[0].supersedes == old.memory_id
     assert active[0].valid_until == 100

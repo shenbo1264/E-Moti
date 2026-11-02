@@ -1,0 +1,60 @@
+from __future__ import annotations
+import hashlib,json,subprocess
+from datetime import datetime,timezone
+from pathlib import Path
+ROOT=Path('/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory')
+E=ROOT/'docs/modernization/evidence/ondemand-memory-20261101'
+ROLE='post_existing_regression_fix_seen_replay'
+def sha(p):return hashlib.sha256(p.read_bytes()).hexdigest()
+summary=E/'post-regression-final-summary.json'
+s=json.loads(summary.read_text());assert s['status']=='frozen_artifacts_audited'
+records=[];new_rows=0;reused_rows=0;changes=[];new_method_comparisons=[]
+fields=('retrieved_ids','delivered_ids','verified_delivered_ids','supported_gold_delivered','route_exact','status_exact','no_answer_injection','forbidden_delivered')
+for g in s['groups']:
+    directory=Path(g['directory']);manifest=json.loads((directory/'run-manifest.json').read_text())
+    assert manifest['evaluation_role']==ROLE
+    assert g['audit']['input_corpora_identical'] and g['audit']['source_text_corpora_identical']
+    assert g['audit']['budget_identical'] and g['audit']['source_unchanged']
+    for method,info in g['methods'].items():
+        p=Path(info['artifact']);d=json.loads(p.read_text());digest=sha(p)
+        assert digest==info['sha256']
+        run=next(x for x in manifest['runs'] if x['method']==method and x['size']==g['size'])
+        assert digest==run['sha256'] and len(d['rows'])==g['audit']['query_count_per_method']
+        assert d['source_unchanged_during_run'] and all(x['error'] is None for x in d['rows'])
+        entry={'file':str(p.relative_to(ROOT)),'sha256':digest,'method':method,'size':g['size'],'rows':len(d['rows']),'evaluation_role':ROLE,'new_measurement':run['new_measurement'],'source_commit':d['source_commit'],'source_unchanged':True}
+        if run['new_measurement']:
+            raw=Path(run['raw_measurement_artifact']);original=json.loads(raw.read_text())
+            assert sha(raw)==run['raw_measurement_sha256'] and original['rows']==d['rows'] and original['summary']==d['summary']
+            assert {k:v for k,v in d.items() if k not in ('evaluation_role','raw_measurement_sha256','raw_measurement_artifact')}==original
+            new_rows+=len(d['rows']);entry['raw_measurement_sha256']=sha(raw)
+            previous=E/directory.name.replace('final-post-regression-','final-round2-')/p.name
+            prior=json.loads(previous.read_text());assert prior['dataset_sha256']==d['dataset_sha256'] and prior['budget']==d['budget']
+            assert [(x['query_id'],x['gold_ids'],x['forbidden_ids'],x['query'],x['history']) for x in prior['rows']]==[(x['query_id'],x['gold_ids'],x['forbidden_ids'],x['query'],x['history']) for x in d['rows']]
+            changed=[]
+            for before,after in zip(prior['rows'],d['rows']):
+                delta={k:{'before':before[k],'after':after[k]} for k in fields if before[k]!=after[k]}
+                if delta:
+                    row={'method':method,'size':g['size'],'group':directory.name,'query_id':after['query_id'],'query':after['query'],'gold_ids':after['gold_ids'],'changes':delta,'before_artifact':str(previous.relative_to(ROOT)),'after_artifact':str(p.relative_to(ROOT)),'gold_decisions_before':[x for x in before['trace'].get('decisions',[]) if x['memory_id'] in before['gold_ids']],'gold_decisions_after':[x for x in after['trace'].get('decisions',[]) if x['memory_id'] in after['gold_ids']]}
+                    changed.append(row);changes.append(row)
+            new_method_comparisons.append({'group':directory.name,'method':method,'size':g['size'],'queries_compared':len(d['rows']),'changed_query_count':len(changed),'summary_before':{k:prior['summary'][k] for k in ('supported_delivery','no_answer_injection','route_exact','forbidden_injection','errors')},'summary_after':{k:d['summary'][k] for k in ('supported_delivery','no_answer_injection','route_exact','forbidden_injection','errors')}})
+        else:
+            old=Path(run['reused_from']);assert old.read_bytes()==p.read_bytes()
+            reused_rows+=len(d['rows']);entry['reused_from']=str(old.relative_to(ROOT));entry['reuse_reason']=run['reuse_reason']
+        records.append(entry)
+assert len(records)==20 and new_rows==552 and reused_rows==828
+# Verify both independent first scores remain byte-identical to their original provenance.
+first=[]
+for label,fn in (('f7_first_independent','f7-first-holdout-provenance.json'),('1eef_second_independent','round2-final-provenance.json')):
+    original=json.loads((E/fn).read_text());checked=0
+    for a in original['artifacts']:
+        filename=a.get('path') or a.get('artifact') or a.get('file')
+        q=Path(filename)
+        if not q.is_absolute():q=ROOT/q
+        assert sha(q)==a['sha256'],q
+        checked+=1
+    first.append({'name':label,'provenance':str((E/fn).relative_to(ROOT)),'provenance_sha256':sha(E/fn),'original_artifacts_verified':checked})
+result={'schema_version':1,'status':'audited_complete_seen_replay','audit_utc':datetime.now(timezone.utc).isoformat(),'production_commit':'b5b43e2a83a392b56d11cd2c24f01a89bdf22364','tools_commit':'53cb836dc8558fc1498db4c673207db4e7868f14','baseline_commit':'299a0aa568c90525e6a6a90ce01dbbf80bfaefcb','evaluation_role':ROLE,'new_measurement_rows':new_rows,'byte_reused_baseline_rows':reused_rows,'compared_provider_prompt_rows':new_rows+reused_rows,'comparison_groups':len(s['groups']),'artifact_count':len(records),'summary':str(summary.relative_to(ROOT)),'summary_sha256':sha(summary),'quality_timing_policy':'observed_concurrent_validation; root pytest/Qt and up to three heavy methods may overlap; no SLO claim','generative_requests':0,'independent_first_scores_preserved':first,'artifacts':records}
+(E/'post-regression-final-provenance.json').write_text(json.dumps(result,ensure_ascii=False,indent=2)+'\n')
+(E/'post-regression-score-delta.json').write_text(json.dumps({'schema_version':1,'status':'seen_replay_delta_not_new_blind_test','prior_production_commit':'1eef5cb','new_production_commit':result['production_commit'],'query_and_gold_unchanged':True,'methods_compared':['routed','layered'],'compared_new_rows':new_rows,'changed_rows':len(changes),'unique_changed_queries':len({x['query_id'] for x in changes}),'groups':new_method_comparisons,'changes':changes},ensure_ascii=False,indent=2)+'\n')
+print(json.dumps({k:result[k] for k in ('status','new_measurement_rows','byte_reused_baseline_rows','compared_provider_prompt_rows','comparison_groups','artifact_count')},ensure_ascii=False))
+print(json.dumps({'changed_rows':len(changes),'unique_changed_queries':len({x['query_id'] for x in changes}),'independent_first_scores_preserved':first},ensure_ascii=False))

@@ -1,0 +1,9 @@
+{"size": 300, "phase": "cold", "first_ms": 4540.114108000125, "passage_encodes": 300, "cache_hits": 0, "rss_mib": 393.8984375}
+{"size": 300, "phase": "reopen_mutate", "first_ms": 18.7386269972194, "passage_encodes": 0, "cache_hits": 300, "rss_mib": 222.44140625}
+{"size": 300, "phase": "reopen_verify", "first_ms": 19.283859997813124, "passage_encodes": 0, "cache_hits": 299, "rss_mib": 221.6484375}
+{"size": 3000, "phase": "cold", "first_ms": 42971.00042900274, "passage_encodes": 3000, "cache_hits": 0, "rss_mib": 438.64453125}
+{"size": 3000, "phase": "reopen_mutate", "first_ms": 110.6095209979685, "passage_encodes": 0, "cache_hits": 3000, "rss_mib": 257.703125}
+{"size": 3000, "phase": "reopen_verify", "first_ms": 122.89839900040533, "passage_encodes": 0, "cache_hits": 2999, "rss_mib": 220.97265625}
+{"size": 10000, "phase": "cold", "first_ms": 135701.7039820057, "passage_encodes": 10000, "cache_hits": 0, "rss_mib": 458.5625}
+{"size": 10000, "phase": "reopen_mutate", "first_ms": 379.41320599929895, "passage_encodes": 0, "cache_hits": 10000, "rss_mib": 356.38671875}
+{"size": 10000, "phase": "reopen_verify", "first_ms": 384.2131959972903, "passage_encodes": 0, "cache_hits": 9999, "rss_mib": 247.88671875}

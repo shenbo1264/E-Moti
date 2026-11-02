@@ -1,0 +1,10 @@
+{
+  "measurement_class": "observed_concurrent_validation",
+  "maximum_heavy_embedding_workers": 3,
+  "maximum_light_workers": 2,
+  "embedding_threads_per_worker": 2,
+  "other_load": "root full pytest may overlap; no exclusive CPU claim",
+  "performance_evidence": "Use separately measured storage and persistent embedding reports for performance claims",
+  "source_freeze": "production 1eef5cb; evaluator/summary 53cb836",
+  "no_generation": true
+}

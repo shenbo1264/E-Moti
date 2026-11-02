@@ -1,0 +1,2 @@
+{"size": 300, "phase": "reopen_mutate", "first_ms": 18.7386269972194, "passage_encodes": 0, "cache_hits": 300, "rss_mib": 222.44140625}
+[0;93m2026-11-02 03:38:33.990192186 [W:onnxruntime:Default, telemetry_1ds.cc:600 operator()] Failed to persist telemetry device ID; using an in-memory identifier[m

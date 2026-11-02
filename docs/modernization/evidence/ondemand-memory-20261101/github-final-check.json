@@ -1,0 +1,41 @@
+{
+  "checked_at_utc": "2026-11-01T19:58:22.429176+00:00",
+  "repository": "https://github.com/shenbo1264/E-Moti",
+  "mode": "public_read_only_no_auth_no_mutations",
+  "responses": {
+    "main": {
+      "name": "main",
+      "sha": "238f361c856584c7f93cc15dca5cbf5a387393e8",
+      "protected": false
+    },
+    "open_prs": [],
+    "branches": [
+      {
+        "name": "claude/product-ui",
+        "sha": "71c23fa8639ab5ec64ab416c0e30d4c282cb0f6b"
+      },
+      {
+        "name": "codex/demo-worktree-cleanup",
+        "sha": "0861ac4e9f83769bf7def0d21964e16a5f089aea"
+      },
+      {
+        "name": "codex/demo-worktree-cleanup-pr",
+        "sha": "3dff2403482d6b68b375e831c3c5f76884055af7"
+      },
+      {
+        "name": "codex/desktop-acceptance",
+        "sha": "e5fa0b8027c45db64e8ab876c92a47d386a1e095"
+      },
+      {
+        "name": "main",
+        "sha": "238f361c856584c7f93cc15dca5cbf5a387393e8"
+      }
+    ],
+    "base_compare": {
+      "status": "identical",
+      "ahead_by": 0,
+      "behind_by": 0,
+      "total_commits": 0
+    }
+  }
+}

@@ -49,6 +49,37 @@ def test_cancelled_queued_desktop_input_is_not_written(tmp_path):
         controller.close()
 
 
+def test_cancel_during_embedding_releases_slot_and_ignores_old_callback(tmp_path, monkeypatch):
+    app = QCoreApplication.instance() or QCoreApplication([])
+    controller = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+    service = DesktopDialogueService(controller)
+    old_prepare, new_prepare = Future(), Future()
+    old_prepare.set_running_or_notify_cancel()
+    preparations = iter((old_prepare, new_prepare))
+    monkeypatch.setattr(controller, "prepare_semantic_recall", lambda request: next(preparations))
+    try:
+        old_result = service.submit(DialogueRequest("我喜欢红茶"), include_ai_expression=False)
+        service.cancel()
+        assert old_result.cancelled()
+        assert service._active is None
+        assert not controller._desktop_dialogue_pending
+        new_result = service.submit(DialogueRequest("我喜欢绿茶"), include_ai_expression=False)
+        # A running ONNX batch can finish after cancellation. Its delivery
+        # must not start the new request before the new preparation is ready.
+        old_prepare.set_result(None)
+        app.processEvents()
+        assert not new_result.done()
+        assert not controller.story_runtime.memory.store.load_memories()
+        new_prepare.set_result(None)
+        pump(app, new_result)
+        summaries = [m.summary for m in controller.story_runtime.memory.store.load_memories() if not m.deleted]
+        assert any("绿茶" in text for text in summaries)
+        assert not any("红茶" in text for text in summaries)
+    finally:
+        service.close()
+        controller.close()
+
+
 def test_pending_preparation_blocks_other_dialogue_entry_and_revocation_fences_result(tmp_path):
     app = QCoreApplication.instance() or QCoreApplication([])
     controller = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
@@ -128,4 +159,23 @@ def test_expiry_during_extraction_cannot_resume_with_stale_context(tmp_path):
         assert service._active is None
     finally:
         service.close()
+        controller.close()
+
+
+def test_live_evidence_expiry_invalidates_inflight_expression(tmp_path):
+    from guanghe_companion.retrieval_contract import ExternalStateEvidence
+    controller = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+    try:
+        controller.now = 10
+        memory = controller.story_runtime.memory
+        memory.external_state_readers["relay"] = lambda intent, now: ExternalStateEvidence(
+            "relay", "构建已完成", 10, 11, "relay:job:7:v4", controller.state.character_id)
+        ticket = controller.prepare_host_dialogue(DialogueRequest("Relay 的任务完成了吗？"))
+        assert ticket.expression_request.emotional_memory["external_state"]
+        assert controller._expression_context_is_current(ticket.expression_request)
+        epoch = memory.store.current_context_epoch(now=10)
+        controller.now = 11
+        assert memory.store.current_context_epoch(now=11) == epoch  # no local fact changed
+        assert not controller._expression_context_is_current(ticket.expression_request)
+    finally:
         controller.close()

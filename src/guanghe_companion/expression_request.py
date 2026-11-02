@@ -29,6 +29,7 @@ MAX_DIALOGUE_TEXT_LENGTH = 240
 MAX_LONG_TERM_MEMORY_CATEGORY_LENGTH = 40
 MAX_LONG_TERM_MEMORY_SOURCE_LENGTH = 40
 MAX_TOOL_TIMESTAMP_LENGTH = 40
+MAX_PERSONA_CONTEXT_LENGTH = 5000
 ALLOWED_RECENT_DIALOGUE_ROLES = frozenset({"user", "assistant", "system"})
 
 
@@ -105,7 +106,7 @@ class ExpressionRequest:
             perception_summary=_short_string(source.get("perception_summary", ""), MAX_PERCEPTION_SUMMARY_LENGTH),
             tool_results=_sanitize_tool_results(source.get("tool_results", [])),
             emotional_memory=emotional_memory,
-            persona=_bounded_context(source.get("persona"), budget=5000),
+            persona=_bounded_persona(source.get("persona")),
             plugin_context=_bounded_context(source.get("plugin_context"), budget=2400),
         )
 
@@ -212,41 +213,86 @@ def _sanitize_relationship_development(value: object, *, context_epoch: object) 
     }
 
 
+def _clean_context_value(item: object, depth: int = 0) -> object:
+    if depth > 6:
+        return None
+    if isinstance(item, str):
+        return _short_string(item, 500)
+    if isinstance(item, bool) or item is None or isinstance(item, int):
+        return item
+    if isinstance(item, float):
+        return _finite_float(item)
+    if isinstance(item, Mapping):
+        # Profile evidence keys include the literal bounded field value.
+        # Truncating those keys would sever their source bindings.
+        return {_short_string(str(key), 256): _clean_context_value(val, depth + 1)
+                for key, val in list(item.items())[:24]}
+    if isinstance(item, (list, tuple)):
+        return [_clean_context_value(val, depth + 1) for val in item[:12]]
+    return None
+
+
+def _bounded_persona(value: object) -> dict[str, object]:
+    """Reserve authored identity and boundaries before optional style examples.
+
+    ``config_hash`` still identifies the full authored configuration; trimming
+    an optional list does not create a new identity or recompute that hash.
+    A required identity that cannot fit fails explicitly, including valid text
+    whose JSON escaping alone exceeds the budget.
+    """
+    result = _clean_context_value(value)
+    if not isinstance(result, dict):
+        return {}
+    required = frozenset({"schema_version", "character_id", "character_name", "title",
+                          "description", "speech_style", "boundaries", "identity_version", "config_hash"})
+    # Ties use this declared order, not the incoming dictionary's insertion
+    # order. Each list keeps its authored prefix; individual claims stay whole.
+    soft_lists = ("interaction_habits", "preferences", "traits")
+
+    def oversized() -> bool:
+        return len(json.dumps(result, ensure_ascii=False, separators=(",", ":"))) > MAX_PERSONA_CONTEXT_LENGTH
+
+    for key in sorted(set(result) - required - set(soft_lists)):
+        if not oversized():
+            break
+        result.pop(key)
+    while oversized():
+        candidates = [key for key in soft_lists if isinstance(result.get(key), list) and result[key]]
+        if not candidates:
+            raise ValueError("required persona identity exceeds context budget")
+        key = max(candidates, key=lambda name: len(json.dumps(result[name], ensure_ascii=False)))
+        result[key].pop()
+    return result
+
+
 def _bounded_context(value: object, *, budget: int) -> dict[str, object]:
     """Bound structured, read-only evidence without cutting JSON mid-string.
 
     The host supplies already scoped/revoked views. This is a size/type boundary,
     not a model-based fact validator or a prompt-injection detector.
     """
-    def clean(item: object, depth: int = 0) -> object:
-        if depth > 6:
-            return None
-        if isinstance(item, str):
-            return _short_string(item, 500)
-        if isinstance(item, bool) or item is None or isinstance(item, int):
-            return item
-        if isinstance(item, float):
-            return _finite_float(item)
-        if isinstance(item, Mapping):
-            return {_short_string(str(key), 80): clean(val, depth + 1)
-                    for key, val in list(item.items())[:24]}
-        if isinstance(item, (list, tuple)):
-            return [clean(val, depth + 1) for val in item[:12]]
-        return None
-    result = clean(value)
+    from .memory_prompt_budget import trim_memory_evidence, trim_memory_metadata, trim_profile
+    result = _clean_context_value(value)
     if not isinstance(result, dict):
         return {}
     # Prefer dropping a low-ranked memory/optional chapter to malformed JSON.
     while len(json.dumps(result, ensure_ascii=False, separators=(",", ":"))) > budget:
-        memories = result.get("shared_memories")
         if "relationship_development" in result:
             result.pop("relationship_development")
-        elif isinstance(memories, list) and memories:
-            memories.pop()
         elif "relationship_chapter" in result:
             result.pop("relationship_chapter")
+        elif trim_memory_evidence(result):
+            pass
+        elif trim_profile(result, include_boundaries=True):
+            pass
         else:
-            result.pop(next(reversed(result)))
+            optional = [key for key in result if key not in {"context_epoch", "retrieval"}]
+            if optional:
+                result.pop(optional[-1])
+            elif trim_memory_metadata(result):
+                pass
+            else:
+                raise ValueError("required memory status exceeds context budget")
     return result
 
 

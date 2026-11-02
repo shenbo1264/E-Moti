@@ -42,17 +42,21 @@ class DesktopDialogueService(QObject):
         except Exception as exc:
             self._finish_error(exc)
             return result
+        state = self._active
+        state["prepared"] = prepared
         if prepared is None:
-            self._dispatch.emit(("start", None))
+            self._dispatch.emit(("start", None, state))
         else:
-            prepared.add_done_callback(lambda done: self._dispatch.emit(("start", done)))
+            prepared.add_done_callback(lambda done: self._dispatch.emit(("start", done, state)))
         return result
 
     @Slot(object)
     def _deliver(self, payload):
         if self._active is None:
             return
-        operation, future = payload
+        operation, future = payload[:2]
+        if len(payload) > 2 and payload[2] is not self._active:
+            return
         try:
             if operation == "start":
                 self._start(future)
@@ -89,7 +93,7 @@ class DesktopDialogueService(QObject):
                 now=int(c.now), mode=c.chat_memory.mode, generation=c.host_context_generation)
             state["extractor"] = c.chat_memory_extraction
             work = self._worker.submit(extract_memory, state["extraction"], c.ai_expressor.llm_client)
-            work.add_done_callback(lambda done: self._dispatch.emit(("extracted", done)))
+            work.add_done_callback(lambda done: self._dispatch.emit(("extracted", done, state)))
             return
         self._prepare_expression(handled)
 
@@ -129,7 +133,7 @@ class DesktopDialogueService(QObject):
             self._complete(None)
         else:
             work = self._worker.submit(self._express, ticket)
-            work.add_done_callback(lambda done: self._dispatch.emit(("complete", done)))
+            work.add_done_callback(lambda done: self._dispatch.emit(("complete", done, state)))
 
     @staticmethod
     def _express(ticket):
@@ -171,9 +175,21 @@ class DesktopDialogueService(QObject):
     def cancel(self):
         self.controller._require_host_thread()
         if self._active is not None:
-            self._active["result"].cancel()
-            if self._active["ticket"] is not None:
+            state = self._active
+            state["result"].cancel()
+            if state["ticket"] is not None:
                 self.controller.cancel_host_dialogue()
+            elif "extraction" not in state:
+                # Large local indexes can take minutes to prepare. Release
+                # the GUI slot now; callbacks carry their original identity.
+                prepared = state.get("prepared")
+                if prepared is not None:
+                    prepared.cancel()
+                    retriever = self.controller.story_runtime.memory.semantic_retriever
+                    if hasattr(retriever, "invalidate"):
+                        retriever.invalidate()
+                self.controller._desktop_dialogue_pending = False
+                self._active = None
 
     def close(self):
         self.cancel()

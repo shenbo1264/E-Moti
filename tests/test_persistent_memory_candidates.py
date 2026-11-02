@@ -127,13 +127,15 @@ def test_explicit_new_statement_can_be_confirmed_after_same_text_was_forgotten(t
     assert new.user_confirmed and not new.deleted
 
 
-def test_correction_appends_new_provenance_and_preserves_old_event_time(tmp_path):
+def test_correction_separates_direct_provenance_and_preserves_old_event_time(tmp_path):
     first = service(tmp_path)
     old = first.remember(kind="玩家希望被记住", title="饮品", summary="我喜欢咖啡",
         source="user_statement", now=10, source_ids=("old-turn",), metadata={"fact_key": "drink"})
     new = first.correct(old.memory_id, title="饮品", summary="我喜欢桂花茶", now=20,
         source_ids=("new-turn",), metadata={"source_text": "刚才说错了，我喜欢桂花茶"})
-    assert new.source_ids == ("old-turn", "new-turn")
+    assert new.source_ids == ("new-turn",)
+    predecessor = next(row for row in first.store.load_memories() if row.memory_id == new.supersedes)
+    assert predecessor.source_ids == ("old-turn",) and predecessor.deleted
     assert new.metadata["fact_key"] == "drink"
     assert new.metadata["source_text"] == "刚才说错了，我喜欢桂花茶"
     assert new.occurred_at == 10 and new.created_at == 20
@@ -204,15 +206,17 @@ def test_proposal_record_time_is_separate_from_event_time(tmp_path):
     assert stored.occurred_at == 1 and stored.created_at == 20
 
 
-def test_correction_rejects_source_overflow_without_retiring_original(tmp_path):
+def test_correction_does_not_count_predecessor_sources_toward_new_source_limit(tmp_path):
     from guanghe_companion.emotional_memory import MAX_SOURCE_IDS
     first = service(tmp_path)
     original = first.remember(kind="玩家希望被记住", title="饮品", summary="我喜欢茶",
         source="user_statement", now=1, source_ids=tuple(f"source-{n}" for n in range(MAX_SOURCE_IDS)))
-    with pytest.raises(ValueError, match="source"):
-        first.correct(original.memory_id, title="饮品", summary="我喜欢白水", now=2, source_ids=("new-turn",))
-    assert first.store.load_memories()[0].summary == "我喜欢茶"
-    assert first.store.context_epoch == 0
+    corrected = first.correct(original.memory_id, title="饮品", summary="我喜欢白水", now=2,
+                              source_ids=("new-turn",))
+    assert corrected.source_ids == ("new-turn",) and corrected.supersedes == original.memory_id
+    predecessor = next(row for row in first.store.load_memories() if row.memory_id == original.memory_id)
+    assert predecessor.source_ids == original.source_ids and predecessor.deleted
+    assert first.store.context_epoch == 1
 
 
 def test_confirmed_conflict_atomically_replaces_bound_original(tmp_path):
@@ -226,7 +230,9 @@ def test_confirmed_conflict_atomically_replaces_bound_original(tmp_path):
     active = [row for row in first.store.load_memories() if not row.deleted]
     assert [row.memory_id for row in active] == [result.memory_id]
     assert result.supersedes == original.memory_id and result.version == 2
-    assert result.source_ids == ("old-turn", "turn-001:fact-0")
+    assert result.source_ids == ("turn-001:fact-0",)
+    predecessor = next(row for row in first.store.load_memories() if row.memory_id == result.supersedes)
+    assert predecessor.source_ids == ("old-turn",) and predecessor.deleted
     assert result.occurred_at == 1 and result.created_at == 20
     assert result.metadata["corrected_by_user"] is True
     assert first.store.context_epoch == 1

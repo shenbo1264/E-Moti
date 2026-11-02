@@ -1,0 +1,8 @@
+{
+  "source_root": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+  "corpus_sha256": "bb285b64e48f08ed368bc4ad90000593674753c051836b873732b3a1172193c4",
+  "input_corpus_sha256": "634e96ec51f62d9127ac01e94ffaec8c481ea790d71e0681206d5b8bf4d43f2c",
+  "source_text_corpus_sha256": "675a68630b9a98eeb4ce8c27d3ae32a5160e58b326c27bc0325a89eba4a14b6f",
+  "canonical_without_fact_value_sha256": "2b5c7b93373a7e5e52e54e946fd3f377153ef66a626733dd17e22261bb9e12bc",
+  "normalization_changes": []
+}

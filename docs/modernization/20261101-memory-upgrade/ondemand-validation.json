@@ -1,0 +1,1419 @@
+{
+  "schema_version": 1,
+  "recorded_at_utc": "2026-11-01T20:03:09.674384+00:00",
+  "status": "engineering_candidate_complete_quality_acceptance_failed",
+  "release_readiness": {
+    "passed": false,
+    "blockers": [
+      "independent_support_delivery_7_of_33",
+      "independent_route_exact_14_of_48",
+      "answerable_zero_evidence_26_of_33",
+      "new_policy_replaces_default_without_experimental_mode",
+      "real_generation_and_native_user_acceptance_not_run"
+    ]
+  },
+  "versions": {
+    "github_main": "238f361c856584c7f93cc15dca5cbf5a387393e8",
+    "prerequisite": "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb",
+    "first_candidate": "f7a4e23a0f7b207fc68c1719c2217ac740416344",
+    "second_independent_candidate": "1eef5cbb6f85703f0350f8708cc86bf84a7e071f",
+    "evaluation_tools": "53cb836dc8558fc1498db4c673207db4e7868f14",
+    "final_production": "b5b43e2a83a392b56d11cd2c24f01a89bdf22364",
+    "smoke_contract_commit": "976fb0579dd5106b788338ac519b00606116e11d",
+    "github_final_check": "../evidence/ondemand-memory-20261101/github-final-check.json"
+  },
+  "full_test_suite": {
+    "production_commit": "b5b43e2a83a392b56d11cd2c24f01a89bdf22364",
+    "passed": 2150,
+    "skipped": 4,
+    "failures": 0,
+    "errors": 0,
+    "warnings": 1,
+    "pytest_elapsed_seconds": 602.68,
+    "wrapper_elapsed_seconds": 604.7330827279948,
+    "source_tests_tools_unchanged_during_run": true,
+    "skipped_tests": [
+      {
+        "class": "tests.test_chat_memory_extraction_provider",
+        "name": "test_real_provider_extraction[nickname]",
+        "kind": "skipped",
+        "message": "explicit real provider test"
+      },
+      {
+        "class": "tests.test_chat_memory_extraction_provider",
+        "name": "test_real_provider_extraction[pet]",
+        "kind": "skipped",
+        "message": "explicit real provider test"
+      },
+      {
+        "class": "tests.test_chat_memory_extraction_provider",
+        "name": "test_real_provider_extraction[hypothetical]",
+        "kind": "skipped",
+        "message": "explicit real provider test"
+      },
+      {
+        "class": "tests.test_chat_memory_extraction_provider",
+        "name": "test_real_provider_extraction[reported]",
+        "kind": "skipped",
+        "message": "explicit real provider test"
+      }
+    ],
+    "warning": "Existing occupied-port Qt host test raises uvicorn SystemExit in companion-http thread; retained in full raw log.",
+    "evidence": "../evidence/ondemand-memory-20261101/final-tests/run.json",
+    "log": "../evidence/ondemand-memory-20261101/final-tests/pytest.log",
+    "junit": "../evidence/ondemand-memory-20261101/final-tests/pytest.xml",
+    "artifact_custody": "../evidence/ondemand-memory-20261101/test-artifact-custody.json"
+  },
+  "focused_tests": {
+    "passed": 135,
+    "elapsed_seconds": 2.38,
+    "overlaps_full_suite": true,
+    "evidence": "../evidence/ondemand-memory-20261101/round2-tests/subject-precedence-focused-green.xml"
+  },
+  "desktop_smoke": {
+    "passed": 10,
+    "checks": 10,
+    "source_unchanged": true,
+    "scope": "real Linux offscreen Qt and real SQLite; BGE model initialized; explicit fact path deliberately skips passage/query embedding; no human/Windows/audio/device validation",
+    "smoke_tool_sha256": "62c3fd3436bae21fd46a3c412f2a8ddfccc981502b5ffb167db4ca76577c2de3",
+    "elapsed_seconds": 1.2197654070041608,
+    "model_generation": "not_run",
+    "evidence": "../evidence/ondemand-memory-20261101/final-desktop-smoke-aligned/run.json",
+    "initial_tool_check_result": "9/10; obsolete assertion disallowed a valid non-retrieving chat intent; raw result preserved",
+    "initial_evidence": "../evidence/ondemand-memory-20261101/final-desktop-smoke/run.json"
+  },
+  "quality": {
+    "corpus_type": "independently authored synthetic stories, actual SQLite and fixed real BGE, actual final provider prompt, no generation",
+    "unique_queries": 240,
+    "final_comparison_rows": 1380,
+    "new_rows_after_subject_fix": 552,
+    "byte_reused_baseline_rows": 828,
+    "first_second_holdout": {
+      "none": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.0,
+        "all_gold_delivered": {
+          "numerator": 0,
+          "denominator": 33,
+          "rate": 0.0
+        },
+        "supported_delivery": {
+          "numerator": 0,
+          "denominator": 33,
+          "rate": 0.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 0,
+          "denominator": 5,
+          "rate": 0.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 33,
+          "denominator": 33,
+          "rate": 1.0
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 0,
+          "denominator": 6,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "lexical": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.6212121212121212,
+        "all_gold_delivered": {
+          "numerator": 20,
+          "denominator": 33,
+          "rate": 0.6060606060606061
+        },
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 9,
+          "denominator": 10,
+          "rate": 0.9
+        },
+        "forbidden_injection": {
+          "numerator": 25,
+          "denominator": 48,
+          "rate": 0.5208333333333334
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 5,
+          "denominator": 5,
+          "rate": 1.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 9,
+          "denominator": 33,
+          "rate": 0.2727272727272727
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 0,
+          "denominator": 6,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "bge_rrf": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.696969696969697,
+        "all_gold_delivered": {
+          "numerator": 23,
+          "denominator": 33,
+          "rate": 0.696969696969697
+        },
+        "supported_delivery": {
+          "numerator": 6,
+          "denominator": 33,
+          "rate": 0.18181818181818182
+        },
+        "no_answer_injection": {
+          "numerator": 10,
+          "denominator": 10,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 28,
+          "denominator": 48,
+          "rate": 0.5833333333333334
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 5,
+          "denominator": 5,
+          "rate": 1.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 2,
+          "denominator": 33,
+          "rate": 0.06060606060606061
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 2,
+          "denominator": 6,
+          "rate": 0.3333333333333333
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "routed": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.21212121212121213,
+        "all_gold_delivered": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 14,
+          "denominator": 48,
+          "rate": 0.2916666666666667
+        },
+        "unnecessary_retrieval": {
+          "numerator": 4,
+          "denominator": 5,
+          "rate": 0.8
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 6,
+          "denominator": 10,
+          "rate": 0.6
+        },
+        "answerable_zero_evidence": {
+          "numerator": 26,
+          "denominator": 33,
+          "rate": 0.7878787878787878
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 1,
+          "denominator": 6,
+          "rate": 0.16666666666666666
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "layered": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.21212121212121213,
+        "all_gold_delivered": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 14,
+          "denominator": 48,
+          "rate": 0.2916666666666667
+        },
+        "unnecessary_retrieval": {
+          "numerator": 4,
+          "denominator": 5,
+          "rate": 0.8
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 6,
+          "denominator": 10,
+          "rate": 0.6
+        },
+        "answerable_zero_evidence": {
+          "numerator": 26,
+          "denominator": 33,
+          "rate": 0.7878787878787878
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 1,
+          "denominator": 6,
+          "rate": 0.16666666666666666
+        },
+        "overview_source_coverage": {
+          "numerator": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "overview_extractive_entailment": {
+          "numerator": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      }
+    },
+    "post_subject_fix_seen_replay": {
+      "none": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.0,
+        "all_gold_delivered": {
+          "numerator": 0,
+          "denominator": 33,
+          "rate": 0.0
+        },
+        "supported_delivery": {
+          "numerator": 0,
+          "denominator": 33,
+          "rate": 0.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 0,
+          "denominator": 5,
+          "rate": 0.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 33,
+          "denominator": 33,
+          "rate": 1.0
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 0,
+          "denominator": 6,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "lexical": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.6212121212121212,
+        "all_gold_delivered": {
+          "numerator": 20,
+          "denominator": 33,
+          "rate": 0.6060606060606061
+        },
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 9,
+          "denominator": 10,
+          "rate": 0.9
+        },
+        "forbidden_injection": {
+          "numerator": 25,
+          "denominator": 48,
+          "rate": 0.5208333333333334
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 5,
+          "denominator": 5,
+          "rate": 1.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 9,
+          "denominator": 33,
+          "rate": 0.2727272727272727
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 0,
+          "denominator": 6,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "bge_rrf": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.696969696969697,
+        "all_gold_delivered": {
+          "numerator": 23,
+          "denominator": 33,
+          "rate": 0.696969696969697
+        },
+        "supported_delivery": {
+          "numerator": 6,
+          "denominator": 33,
+          "rate": 0.18181818181818182
+        },
+        "no_answer_injection": {
+          "numerator": 10,
+          "denominator": 10,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 28,
+          "denominator": 48,
+          "rate": 0.5833333333333334
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 5,
+          "denominator": 5,
+          "rate": 1.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 2,
+          "denominator": 33,
+          "rate": 0.06060606060606061
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 2,
+          "denominator": 6,
+          "rate": 0.3333333333333333
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "routed": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.21212121212121213,
+        "all_gold_delivered": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 14,
+          "denominator": 48,
+          "rate": 0.2916666666666667
+        },
+        "unnecessary_retrieval": {
+          "numerator": 4,
+          "denominator": 5,
+          "rate": 0.8
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 6,
+          "denominator": 10,
+          "rate": 0.6
+        },
+        "answerable_zero_evidence": {
+          "numerator": 26,
+          "denominator": 33,
+          "rate": 0.7878787878787878
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 1,
+          "denominator": 6,
+          "rate": 0.16666666666666666
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "layered": {
+        "queries": 48,
+        "answerable_queries": 33,
+        "no_answer_queries": 10,
+        "delivered_recall": 0.21212121212121213,
+        "all_gold_delivered": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 14,
+          "denominator": 48,
+          "rate": 0.2916666666666667
+        },
+        "unnecessary_retrieval": {
+          "numerator": 4,
+          "denominator": 5,
+          "rate": 0.8
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 6,
+          "denominator": 10,
+          "rate": 0.6
+        },
+        "answerable_zero_evidence": {
+          "numerator": 26,
+          "denominator": 33,
+          "rate": 0.7878787878787878
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 4,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 1,
+          "denominator": 6,
+          "rate": 0.16666666666666666
+        },
+        "overview_source_coverage": {
+          "numerator": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "overview_extractive_entailment": {
+          "numerator": 4,
+          "denominator": 4,
+          "rate": 1.0
+        },
+        "persona_config_unchanged": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 48,
+          "denominator": 48,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      }
+    },
+    "seen_192_regression": {
+      "none": {
+        "queries": 192,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "delivered_recall": 0.0,
+        "all_gold_delivered": {
+          "numerator": 0,
+          "denominator": 104,
+          "rate": 0.0
+        },
+        "supported_delivery": {
+          "numerator": 0,
+          "denominator": 104,
+          "rate": 0.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 0,
+          "denominator": 38,
+          "rate": 0.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 104,
+          "denominator": 104,
+          "rate": 1.0
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "followup_complete_delivery": {
+          "numerator": 0,
+          "denominator": 6,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      },
+      "lexical": {
+        "queries": 192,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "delivered_recall": 0.6875,
+        "all_gold_delivered": {
+          "numerator": 70,
+          "denominator": 104,
+          "rate": 0.6730769230769231
+        },
+        "supported_delivery": {
+          "numerator": 54,
+          "denominator": 104,
+          "rate": 0.5192307692307693
+        },
+        "no_answer_injection": {
+          "numerator": 32,
+          "denominator": 49,
+          "rate": 0.6530612244897959
+        },
+        "forbidden_injection": {
+          "numerator": 22,
+          "denominator": 192,
+          "rate": 0.11458333333333333
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 38,
+          "denominator": 38,
+          "rate": 1.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 25,
+          "denominator": 104,
+          "rate": 0.2403846153846154
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 5,
+          "denominator": 10,
+          "rate": 0.5
+        },
+        "followup_complete_delivery": {
+          "numerator": 2,
+          "denominator": 6,
+          "rate": 0.3333333333333333
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      },
+      "bge_rrf": {
+        "queries": 192,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "delivered_recall": 0.6875,
+        "all_gold_delivered": {
+          "numerator": 70,
+          "denominator": 104,
+          "rate": 0.6730769230769231
+        },
+        "supported_delivery": {
+          "numerator": 53,
+          "denominator": 104,
+          "rate": 0.5096153846153846
+        },
+        "no_answer_injection": {
+          "numerator": 39,
+          "denominator": 49,
+          "rate": 0.7959183673469388
+        },
+        "forbidden_injection": {
+          "numerator": 27,
+          "denominator": 192,
+          "rate": 0.140625
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "unnecessary_retrieval": {
+          "numerator": 38,
+          "denominator": 38,
+          "rate": 1.0
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "answerable_zero_evidence": {
+          "numerator": 16,
+          "denominator": 104,
+          "rate": 0.15384615384615385
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 5,
+          "denominator": 10,
+          "rate": 0.5
+        },
+        "followup_complete_delivery": {
+          "numerator": 2,
+          "denominator": 6,
+          "rate": 0.3333333333333333
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      },
+      "routed": {
+        "queries": 192,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "delivered_recall": 0.8076923076923077,
+        "all_gold_delivered": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "supported_delivery": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 189,
+          "denominator": 192,
+          "rate": 0.984375
+        },
+        "unnecessary_retrieval": {
+          "numerator": 2,
+          "denominator": 38,
+          "rate": 0.05263157894736842
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 48,
+          "denominator": 49,
+          "rate": 0.9795918367346939
+        },
+        "answerable_zero_evidence": {
+          "numerator": 20,
+          "denominator": 104,
+          "rate": 0.19230769230769232
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 9,
+          "denominator": 10,
+          "rate": 0.9
+        },
+        "followup_complete_delivery": {
+          "numerator": 6,
+          "denominator": 6,
+          "rate": 1.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      },
+      "layered": {
+        "queries": 192,
+        "answerable_queries": 104,
+        "no_answer_queries": 49,
+        "delivered_recall": 0.8076923076923077,
+        "all_gold_delivered": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "supported_delivery": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 189,
+          "denominator": 192,
+          "rate": 0.984375
+        },
+        "unnecessary_retrieval": {
+          "numerator": 2,
+          "denominator": 38,
+          "rate": 0.05263157894736842
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 48,
+          "denominator": 49,
+          "rate": 0.9795918367346939
+        },
+        "answerable_zero_evidence": {
+          "numerator": 20,
+          "denominator": 104,
+          "rate": 0.19230769230769232
+        },
+        "multi_evidence_complete_delivery": {
+          "numerator": 9,
+          "denominator": 10,
+          "rate": 0.9
+        },
+        "followup_complete_delivery": {
+          "numerator": 6,
+          "denominator": 6,
+          "rate": 1.0
+        },
+        "overview_source_coverage": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "overview_extractive_entailment": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "persona_config_unchanged": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "persona_config_delivered": {
+          "numerator": 192,
+          "denominator": 192,
+          "rate": 1.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      }
+    },
+    "new_lost_case": "fireflies_q5, repeated in routed/layered; seen strict 85/104 to 84/104; preserved not tuned",
+    "provenance": "../evidence/ondemand-memory-20261101/post-regression-final-provenance.json",
+    "per_query_delta": "../evidence/ondemand-memory-20261101/post-regression-score-delta.json",
+    "first_scores_preserved": [
+      {
+        "name": "f7_first_independent",
+        "provenance": "docs/modernization/evidence/ondemand-memory-20261101/f7-first-holdout-provenance.json",
+        "provenance_sha256": "d3185789aead5fb521cdb48737345c48e4e88f9a6f89793d15ce0ea00eec8a25",
+        "original_artifacts_verified": 20
+      },
+      {
+        "name": "1eef_second_independent",
+        "provenance": "docs/modernization/evidence/ondemand-memory-20261101/round2-final-provenance.json",
+        "provenance_sha256": "f2ed8143d33abadf04ea5b05eb349a2e6ef0e1d33a15a3ff73059521048d17da",
+        "original_artifacts_verified": 20
+      }
+    ],
+    "timing_scope": "observed_concurrent_validation, not SLO"
+  },
+  "performance": {
+    "measured_production": "1eef5cbb6f85703f0350f8708cc86bf84a7e071f",
+    "source_delta_to_final": [
+      "src/guanghe_companion/retrieval_router.py"
+    ],
+    "relevant_storage_and_vector_modules_unchanged": true,
+    "storage_scales": [
+      300,
+      3000,
+      10000
+    ],
+    "storage_read_samples_per_scale": 9,
+    "storage_mutation_samples_per_operation_per_scale": 3,
+    "snapshot_and_finalize_p50_ms_old": [
+      55.868,
+      482.493,
+      1812.808
+    ],
+    "snapshot_and_finalize_p50_ms_new": [
+      6.023,
+      17.631,
+      31.55
+    ],
+    "correction_p50_ms_old": [
+      105.95,
+      997.329,
+      3916.777
+    ],
+    "correction_p50_ms_new": [
+      121.674,
+      1092.484,
+      4311.92
+    ],
+    "storage_evidence": "../evidence/ondemand-memory-20261101/storage/storage-round2-comparison.json",
+    "embedding_current_retested_scale": 10000,
+    "embedding_current_cold_seconds_excluding_model_load": 145.897,
+    "embedding_current_reopen_first_query_ms_excluding_model_load": 385.531,
+    "embedding_current_reopen_with_model_load_ms": 776.065,
+    "passage_encode_counts": {
+      "cold": 10000,
+      "reopen": 0,
+      "correct": 1,
+      "forget": 0,
+      "second_reopen": 0
+    },
+    "embedding_evidence": "../evidence/ondemand-memory-20261101/incremental-embedding/round2-10000/persistent-embedding-performance.json",
+    "smaller_embedding_scales": "300/3000 first-freeze historical measurements retained, not repeated at 1eef/b5",
+    "limits": [
+      "synthetic short texts",
+      "no model download time",
+      "shared Linux host, no Windows SLO",
+      "authority writes remain O(N)",
+      "quality-run timing not used for performance claims"
+    ]
+  },
+  "generation": {
+    "status": "not_run",
+    "prepared_rows": 240,
+    "actual_network_requests": 0,
+    "answer_accuracy": "not_run",
+    "natural_unknown": "not_run",
+    "persona_behavior": "not_run",
+    "provider_tokens": "not_run",
+    "evidence": "../evidence/ondemand-memory-20261101/generation-delivery-not-run.json",
+    "scope": "Dedicated credential environment variable explicitly unset; no conclusion about the user application credential configuration."
+  },
+  "not_run": [
+    "real generative-model answers and persona behavior",
+    "native Windows and human desktop acceptance",
+    "longitudinal companionship study",
+    "real phone/Relay/game/hardware interoperability",
+    "full desktop Unix/IANA/DST time migration",
+    "full original-source claim/span resolver",
+    "default 4000-character budget quality matrix and long-text field corpus",
+    "ANN alternatives and row-authority migration performance"
+  ],
+  "preserved_scope": {
+    "no_remote_mutations": true,
+    "no_real_user_save_access_or_deletion": true,
+    "unchanged_assets_clients_plugins": true,
+    "independent_projects_not_modified": true
+  },
+  "artifact_integrity": {
+    "full_test_log_sha256": "6c365066cb97d7dd307e303db32734c1a61e87695c0ce6fc0afc2d8d2349b99d",
+    "full_test_xml_sha256": "c2fa785747111fc8c15a1e6025008bf8240dec01e9f3d4ca719628c8853af945",
+    "quality_summary_sha256": "685aeac5f45a01a25daf3ccd0c90ff4c7f9b46aa29b6664418f360ab8ca4e2f8",
+    "generation_manifest_sha256": "2a346cd75b329b1f90e6b384205127fecb355f191011c29340b2e6bb13349314"
+  }
+}

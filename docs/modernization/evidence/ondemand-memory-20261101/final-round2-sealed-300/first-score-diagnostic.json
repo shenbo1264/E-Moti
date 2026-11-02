@@ -1,0 +1,1999 @@
+{
+  "classification": "first independent frozen second-candidate score; diagnosis read-only; no subsequent source or gold edits",
+  "candidate_production": "1eef5cb",
+  "queries": 48,
+  "answerable_queries": 33,
+  "failed_answerable_queries": 26,
+  "no_gold_decision": 10,
+  "gold_rejection_query_counts": {
+    "bounded_literal_attribute_verification": 8,
+    "field_mismatch_or_unproved": 7,
+    "subject_mismatch_or_unproved": 3,
+    "topic_not_supported": 3,
+    "missing_completed_shared_event_evidence": 1
+  },
+  "note": "Reason counts overlap across multiple intents; absence from decisions may mean route skip, eligibility, or candidate omission, not proof of bad ranking",
+  "route_confusion": [
+    {
+      "expected": "fact",
+      "actual": "bounded,fact",
+      "count": 6
+    },
+    {
+      "expected": "fact",
+      "actual": "bounded",
+      "count": 4
+    },
+    {
+      "expected": "fact",
+      "actual": "chat,fact",
+      "count": 4
+    },
+    {
+      "expected": "chat,episode",
+      "actual": "bounded,chat",
+      "count": 1
+    },
+    {
+      "expected": "episode",
+      "actual": "chat,episode",
+      "count": 1
+    },
+    {
+      "expected": "chat",
+      "actual": "bounded,chat",
+      "count": 2
+    },
+    {
+      "expected": "fact",
+      "actual": "fact",
+      "count": 8
+    },
+    {
+      "expected": "task",
+      "actual": "task",
+      "count": 2
+    },
+    {
+      "expected": "task",
+      "actual": "fact",
+      "count": 1
+    },
+    {
+      "expected": "chat",
+      "actual": "bounded",
+      "count": 1
+    },
+    {
+      "expected": "episode",
+      "actual": "episode",
+      "count": 3
+    },
+    {
+      "expected": "episode,fact",
+      "actual": "episode",
+      "count": 1
+    },
+    {
+      "expected": "fact",
+      "actual": "bounded,chat,fact",
+      "count": 1
+    },
+    {
+      "expected": "fact",
+      "actual": "chat",
+      "count": 1
+    },
+    {
+      "expected": "task",
+      "actual": "episode,fact",
+      "count": 1
+    },
+    {
+      "expected": "fact",
+      "actual": "bounded,chat",
+      "count": 3
+    },
+    {
+      "expected": "chat,fact",
+      "actual": "bounded,chat",
+      "count": 1
+    },
+    {
+      "expected": "episode",
+      "actual": "bounded",
+      "count": 2
+    },
+    {
+      "expected": "chat",
+      "actual": "chat,fact",
+      "count": 1
+    },
+    {
+      "expected": "task",
+      "actual": "bounded",
+      "count": 1
+    },
+    {
+      "expected": "task",
+      "actual": "chat",
+      "count": 2
+    },
+    {
+      "expected": "chat",
+      "actual": "chat",
+      "count": 1
+    }
+  ],
+  "bge_paired_supported_delivery": {
+    "holdout": {
+      "answerable_denominator": 33,
+      "gained_ids": [
+        "sgv2_s01_q04",
+        "sgv2_s02_q01",
+        "sgv2_s03_q03",
+        "sgv2_s05_q01",
+        "sgv2_s06_q03"
+      ],
+      "lost_ids": [
+        "sgv2_s01_q03",
+        "sgv2_s05_q02",
+        "sgv2_s05_q06",
+        "sgv2_s06_q02"
+      ],
+      "both_supported": 2,
+      "neither_supported": 22
+    }
+  },
+  "bad_cases": [
+    {
+      "query_id": "sgv2_s01_q01",
+      "story_id": "sgv2_s01",
+      "split": "holdout",
+      "query": "我缝那个帆布午餐袋时，针距通常调到几毫米？别把小姨的那套记到我这里。",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s01_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s01_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "ef0af30c344b153fd988d68e0e4bdf88ed0147cf781802d3910fe68d08cf716f",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "fact",
+        "bounded"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s01_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m04",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m05",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s01_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s01_q02",
+      "story_id": "sgv2_s01",
+      "split": "holdout",
+      "query": "如果按五月四号那会儿的做法，我给午餐袋留的是多宽的缝份？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s01_m03"
+      ],
+      "forbidden_ids": [
+        "sgv2_s01_m04"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "4982bfd73c3906fadbcaf60d257210f041a12a6258dad76d5ee26d9f4e429fb5",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "bounded"
+      ],
+      "actual_status": "insufficient",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s01_m04",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m01",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s01_q03",
+      "story_id": "sgv2_s01",
+      "split": "holdout",
+      "query": "那现在做这个袋子，我该留多宽来着？",
+      "history": [
+        {
+          "role": "user",
+          "content": "五月初做午餐袋时，我留的缝份是多少？"
+        },
+        {
+          "role": "assistant",
+          "content": "五月初那一版留的是10毫米。"
+        }
+      ],
+      "gold_ids": [
+        "sgv2_s01_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s01_m03"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "39dfdfbbc4d1e89de80853598026c838cdfcf2546efd0396c36200509f02835a",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "chat",
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s01_m04",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m01",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s01_m05",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s01_m04",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s02_q02",
+      "story_id": "sgv2_s02",
+      "split": "holdout",
+      "query": "我这套早班手冲最后想接出多少克咖啡液？问的是杯里的成品。",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s02_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s02_m01",
+        "sgv2_s02_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "0d17a238c531bccbf59a3879d45da13e61d3153814da80229a526a163d6f894c",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "fact",
+        "chat"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s02_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s02_m04",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s02_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s02_m03",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s02_m04",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s02_q03",
+      "story_id": "sgv2_s02",
+      "split": "holdout",
+      "query": "萃记上回第一次导配方，按了导出却没拿到文件，卡住的具体原因是什么？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s02_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s02_m06"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "738a26774d4f28694d8286c9e033f19763e267242ed4c5ffce042b355c609320",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "task"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s02_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "task",
+          "supported_details": [
+            "cause"
+          ],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s02_m06",
+          "accepted": false,
+          "reason": "requested_detail_not_supported",
+          "route": "task",
+          "supported_details": [],
+          "missing_details": [
+            "cause"
+          ]
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s02_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "task",
+          "supported_details": [
+            "cause"
+          ],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s02_q04",
+      "story_id": "sgv2_s02",
+      "split": "holdout",
+      "query": "后来我在萃记里是按什么顺序把那份配方导成JSON文件的？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s02_m06"
+      ],
+      "forbidden_ids": [
+        "sgv2_s02_m05"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "a9ba9ef7642f80d3330ea79298e19855acf4f8cb21be3296725a7fb71d10bdcc",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s02_m03",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s03_q01",
+      "story_id": "sgv2_s03",
+      "split": "holdout",
+      "query": "我常用的那只目镜是多长焦距？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s03_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s03_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "27f4e0c644fd88de8354872d1bb129e525b737b1c70ad0c879244e4c5932d5bf",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "bounded"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s03_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s03_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s03_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s03_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s03_q02",
+      "story_id": "sgv2_s03",
+      "split": "holdout",
+      "query": "那我自己的那只平时放哪个盒子来着？",
+      "history": [
+        {
+          "role": "user",
+          "content": "我爸常用那只目镜的焦距是多少？"
+        },
+        {
+          "role": "assistant",
+          "content": "你爸常用那只目镜是15毫米。"
+        }
+      ],
+      "gold_ids": [
+        "sgv2_s03_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s03_m02",
+        "sgv2_s03_m03"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "981c8847082b6e4fa15331292cd48cb4c9dc57ebcd55514eb396cb4f956dbea1",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s03_m04",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s03_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s03_m03",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s03_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s03_m06",
+          "accepted": false,
+          "reason": "plan_is_not_completed_event_or_current_fact",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s03_m04",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s03_q04",
+      "story_id": "sgv2_s03",
+      "split": "holdout",
+      "query": "帮我一次核对两件事：我常用目镜的焦距，还有我们已经定稿的月面素描封面是第几张。",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s03_m01",
+        "sgv2_s03_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s03_m02",
+        "sgv2_s03_m06"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact",
+        "episode"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "10cae02a674d03c6eaf86e3402ae6897f0e1ef94d6ca6ccdd9ad5e0bc7e9e37a",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "episode"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s03_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "episode",
+          "supported_details": [
+            "quantity"
+          ],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s03_m01",
+          "accepted": false,
+          "reason": "missing_completed_shared_event_evidence",
+          "route": "episode",
+          "supported_details": [],
+          "missing_details": [
+            "quantity"
+          ]
+        },
+        {
+          "memory_id": "sgv2_s03_m02",
+          "accepted": false,
+          "reason": "missing_completed_shared_event_evidence",
+          "route": "episode",
+          "supported_details": [],
+          "missing_details": [
+            "quantity"
+          ]
+        },
+        {
+          "memory_id": "sgv2_s03_m06",
+          "accepted": false,
+          "reason": "plan_is_not_completed_event_or_current_fact",
+          "route": "episode",
+          "supported_details": [],
+          "missing_details": [
+            "quantity"
+          ]
+        },
+        {
+          "memory_id": "sgv2_s03_m04",
+          "accepted": false,
+          "reason": "missing_completed_shared_event_evidence",
+          "route": "episode",
+          "supported_details": [],
+          "missing_details": [
+            "quantity"
+          ]
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s03_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "episode",
+          "supported_details": [
+            "quantity"
+          ],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s03_m01",
+          "accepted": false,
+          "reason": "missing_completed_shared_event_evidence",
+          "route": "episode",
+          "supported_details": [],
+          "missing_details": [
+            "quantity"
+          ]
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s04_q01",
+      "story_id": "sgv2_s04",
+      "split": "holdout",
+      "query": "装豆包的外出笼，按标签我应该先扣哪边的哪个扣？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s04_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s04_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "09c8a82fd06221b83630f83aeb9cbf72ac274ee7db0e5d84ecd7a3dd63ef9a3c",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "bounded",
+        "fact"
+      ],
+      "actual_status": "insufficient",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s04_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m01",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s04_m01",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s04_q02",
+      "story_id": "sgv2_s04",
+      "split": "holdout",
+      "query": "那现在我该到哪儿拿？",
+      "history": [
+        {
+          "role": "user",
+          "content": "豆包的零食是不是已经换过地方？"
+        },
+        {
+          "role": "assistant",
+          "content": "换过，5月20日调整过存放位置。"
+        }
+      ],
+      "gold_ids": [
+        "sgv2_s04_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s04_m03"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "7d9ccfb6d77f664d90af64912e82881842186d68fcd79cb05ec14a91e713bf32",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s04_q03",
+      "story_id": "sgv2_s04",
+      "split": "holdout",
+      "query": "五月十号那会儿，豆包的零食还是放在哪里？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s04_m03"
+      ],
+      "forbidden_ids": [
+        "sgv2_s04_m04"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "f2d9e775a468151d2b88d451a889333a645c7db4f7217e9b70610167444422d2",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "chat",
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s04_m04",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s04_q04",
+      "story_id": "sgv2_s04",
+      "split": "holdout",
+      "query": "出门前帮我对一下：豆包笼门先扣哪边？还有，给寄养阿姨发消息，她希望我什么时候、用什么方式联系？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s04_m01",
+        "sgv2_s04_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s04_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "a7c01f70148cc6ec3791439e30c7d05cf02027cb46a525ae4186a79122396d0e",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "bounded",
+        "chat",
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s04_m01",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m04",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m05",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m02",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m05",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s04_m01",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m05",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s04_m05",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s05_q02",
+      "story_id": "sgv2_s05",
+      "split": "holdout",
+      "query": "那如今这一版留多长来着？",
+      "history": [
+        {
+          "role": "user",
+          "content": "我四月那版访谈节目的片头有多长？"
+        },
+        {
+          "role": "assistant",
+          "content": "四月那版的片头保留8秒。"
+        }
+      ],
+      "gold_ids": [
+        "sgv2_s05_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m03"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "596b67f9a0a537d15db334225575ea0383d32532531f9433e10a013d67e7d4b5",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "chat"
+      ],
+      "actual_status": "not_needed",
+      "source_decisions": [],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s05_q03",
+      "story_id": "sgv2_s05",
+      "split": "holdout",
+      "query": "声笺那次导WAV为什么会报目标目录不可写？当时到底是哪儿出的问题？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s05_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m06"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "fc23953e9aaab8a656ed75b181ca8e0f94fb5f5770c45f461d1357574e9321e7",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "episode",
+        "fact"
+      ],
+      "actual_status": "insufficient",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s05_m01",
+          "accepted": false,
+          "reason": "requested_detail_not_supported",
+          "route": "episode",
+          "supported_details": [],
+          "missing_details": [
+            "cause"
+          ]
+        }
+      ],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s05_q04",
+      "story_id": "sgv2_s05",
+      "split": "holdout",
+      "query": "后来在声笺里成功导出可播放的WAV，我改了保存位置之后又怎么设格式和编码？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s05_m06"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m05"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "a190d25d7cdcadea31d76c9702dfd9013607304f6e3de81b447ee5b817960e65",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "task"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s05_m06",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "task",
+          "supported_details": [
+            "procedure"
+          ],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s05_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "task",
+          "supported_details": [
+            "procedure"
+          ],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s05_m06",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "task",
+          "supported_details": [
+            "procedure"
+          ],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s05_q06",
+      "story_id": "sgv2_s05",
+      "split": "holdout",
+      "query": "我这版片头现在有几秒？顺便提醒我，这一期结尾最后用了哪段音乐。",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s05_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m03"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "partial",
+      "provider_prompt_sha256": "7611a2f74607a2c5b59627b760162c5067f5adf49abea50c29e26decd086ec63",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "bounded",
+        "chat"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s05_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s05_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s05_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s05_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s06_q01",
+      "story_id": "sgv2_s06",
+      "split": "holdout",
+      "query": "我给新人讲这款桌游，一般先讲哪一块、后讲哪一块？按我自己的顺序说。",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s06_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s06_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "0e2eb8e7ac6612c250249626e8e6c82466ee6e2b5589e4d51d806eca5ad3f8af",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "bounded",
+        "chat"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s06_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m06",
+          "accepted": false,
+          "reason": "plan_is_not_completed_event_or_current_fact",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s06_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s06_q02",
+      "story_id": "sgv2_s06",
+      "split": "holdout",
+      "query": "现在要拿那款桌游盒，我该去家里哪个柜子的哪一层？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s06_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s06_m03"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "b751369da35ed3203289b47b245735015fd7b91612cde9127b3435ed7622c5d8",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "chat",
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s06_q04",
+      "story_id": "sgv2_s06",
+      "split": "holdout",
+      "query": "今晚想开一局，先给我提提兴致，再提醒一下盒子现在放哪儿，以及我惯用的新人讲解顺序。",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s06_m01",
+        "sgv2_s06_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s06_m02",
+        "sgv2_s06_m03"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "chat",
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "cdf3c4612c655f3f57086c905fa9c8545c9105f9e44289714fe0b675cdde8ae7",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "chat",
+        "bounded"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s06_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s06_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s06_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s07_q01",
+      "story_id": "sgv2_s07",
+      "split": "holdout",
+      "query": "出门时我自己的充电线收在哪种袋子里？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s07_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s07_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "8b6401afeafa3b662f65862aa023d26d627ccbd794525934f9dd1b509dcebe59",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s07_q04",
+      "story_id": "sgv2_s07",
+      "split": "holdout",
+      "query": "我在行囊签里把整份行李清单存成一张图，上次成功时是怎么点的？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s07_m06"
+      ],
+      "forbidden_ids": [],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "062eb53b35cd29e5f099b306f5ddd3872102799cdd99fd7f501e322465871e12",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "bounded"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s07_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s07_q06",
+      "story_id": "sgv2_s07",
+      "split": "holdout",
+      "query": "我自己的充电线放哪个袋子？还有，这趟住的酒店把我们安排在几层？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s07_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s07_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "partial",
+      "provider_prompt_sha256": "5365b2d4f2d5b0e16be8c5fffeee6456b6cdf15716b3c18c7809594455c68727",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "fact",
+        "bounded"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m02",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m05",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m04",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m02",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s07_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s08_q01",
+      "story_id": "sgv2_s08",
+      "split": "holdout",
+      "query": "动手前替我核对两样：我家那把起泡器拆卸钥匙开口几毫米，备用垫圈又被我收在哪儿？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s08_m01",
+        "sgv2_s08_m03"
+      ],
+      "forbidden_ids": [
+        "sgv2_s08_m02"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "deefb550edce0931dca2326ef4c8be4b656cc937ac73a3b368652e8205a1bbda",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "bounded",
+        "fact"
+      ],
+      "actual_status": "unknown",
+      "source_decisions": [
+        {
+          "memory_id": "sgv2_s08_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s08_m03",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s08_m02",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s08_m03",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "sgv2_s08_m01",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s08_m03",
+          "accepted": false,
+          "reason": "bounded_literal_attribute_verification",
+          "route": "bounded",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "sgv2_s08_m03",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "query_id": "sgv2_s08_q03",
+      "story_id": "sgv2_s08",
+      "split": "holdout",
+      "query": "修屋笔记里那张尺寸图第一次印出来为什么会小一圈？",
+      "history": [],
+      "gold_ids": [
+        "sgv2_s08_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s08_m06"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "428af80e68d9650858ac5cff03f465f1df1207ad5d56263c10c042dd85c4ace6",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "chat"
+      ],
+      "actual_status": "not_needed",
+      "source_decisions": [],
+      "gold_decisions": []
+    },
+    {
+      "query_id": "sgv2_s08_q04",
+      "story_id": "sgv2_s08",
+      "split": "holdout",
+      "query": "那后来具体改哪几个选项，才恢复成一比一打印的？",
+      "history": [
+        {
+          "role": "user",
+          "content": "修屋笔记那张图第一次打印，尺寸不对是怎么回事？"
+        },
+        {
+          "role": "assistant",
+          "content": "第一次开启了“适应纸张”，图被缩小了。"
+        }
+      ],
+      "gold_ids": [
+        "sgv2_s08_m06"
+      ],
+      "forbidden_ids": [
+        "sgv2_s08_m05"
+      ],
+      "delivered_ids": [],
+      "verified_delivered_ids": [],
+      "forbidden_delivered": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "provider_prompt_sha256": "2048bb3edd16e82b920a1071096d59feb65a1cd2edbfa4b273974bc81c7dbfb9",
+      "error": null,
+      "reasons": [
+        "required_evidence_not_fully_supported",
+        "route_mismatch",
+        "status_mismatch"
+      ],
+      "actual_routes": [
+        "chat"
+      ],
+      "actual_status": "not_needed",
+      "source_decisions": [],
+      "gold_decisions": []
+    }
+  ]
+}

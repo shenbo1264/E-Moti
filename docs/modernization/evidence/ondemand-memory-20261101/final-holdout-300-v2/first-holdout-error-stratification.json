@@ -1,0 +1,116 @@
+{
+  "source": "final-holdout-300-v2",
+  "note": "Do not alter gold; scope adapter mismatch is separated from production errors",
+  "gold_evidence_instances_by_failure": {
+    "field_mismatch_or_unproved": 11,
+    "subject_mismatch_or_unproved": 4,
+    "delivered_with_forbidden": 2,
+    "gold_absent_from_candidate_decisions": 16
+  },
+  "groups": {
+    "current_companion_fact": {
+      "lexical": {
+        "queries": 19,
+        "gold_delivered": 19,
+        "supported_delivery": 3,
+        "forbidden": 16
+      },
+      "bge_rrf": {
+        "queries": 19,
+        "gold_delivered": 19,
+        "supported_delivery": 2,
+        "forbidden": 17
+      },
+      "routed": {
+        "queries": 19,
+        "gold_delivered": 2,
+        "supported_delivery": 0,
+        "forbidden": 2
+      },
+      "layered": {
+        "queries": 19,
+        "gold_delivered": 2,
+        "supported_delivery": 0,
+        "forbidden": 2
+      }
+    },
+    "shared_scope_adapter": {
+      "lexical": {
+        "queries": 6,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      },
+      "bge_rrf": {
+        "queries": 6,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 1
+      },
+      "routed": {
+        "queries": 6,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      },
+      "layered": {
+        "queries": 6,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      }
+    },
+    "task_scope": {
+      "lexical": {
+        "queries": 6,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      },
+      "bge_rrf": {
+        "queries": 6,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      },
+      "routed": {
+        "queries": 6,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      },
+      "layered": {
+        "queries": 6,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      }
+    },
+    "historical": {
+      "lexical": {
+        "queries": 2,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 1
+      },
+      "bge_rrf": {
+        "queries": 2,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 1
+      },
+      "routed": {
+        "queries": 2,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      },
+      "layered": {
+        "queries": 2,
+        "gold_delivered": 0,
+        "supported_delivery": 0,
+        "forbidden": 0
+      }
+    }
+  }
+}

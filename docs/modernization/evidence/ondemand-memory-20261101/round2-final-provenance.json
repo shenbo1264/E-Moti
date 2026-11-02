@@ -1,0 +1,153 @@
+{
+  "status": "second_candidate_frozen_first_sealed_score_preserved",
+  "production_commit": "1eef5cb",
+  "tools_commit": "53cb836",
+  "artifact_count": 20,
+  "provider_prompt_rows": 1380,
+  "summary": "docs/modernization/evidence/ondemand-memory-20261101/round2-final-summary.json",
+  "summary_sha256": "36af662b8ab5bec9c5ae3fb78c966e3c0f286b9d9b9f437d3cada8b2a5a80d91",
+  "quality_timing_policy": "observed_concurrent_validation; not isolated performance evidence",
+  "generative_requests": 0,
+  "artifacts": [
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-sealed-300/none-300.json",
+      "sha256": "4555f2e57ce0bf0715935e30141189b5ab9c2a54edbb61f9573f28f3b0daf9a4",
+      "method": "none",
+      "size": 300,
+      "queries": 48
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-sealed-300/lexical-300.json",
+      "sha256": "02466d051f4e3e6e4b114e1b3f7e7a087cf73f7816fa94303727d3bcb1dc75a0",
+      "method": "lexical",
+      "size": 300,
+      "queries": 48
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-sealed-300/bge_rrf-300.json",
+      "sha256": "d5461ba658ad54c17805d3ffbfcd21c30fb1d112ab04b2278224490c26902fa3",
+      "method": "bge_rrf",
+      "size": 300,
+      "queries": 48
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-sealed-300/routed-300.json",
+      "sha256": "dd310ec68e75cef16a39e84ddb46f4d2b0c2e36b4cc5116780790fce6bf65bec",
+      "method": "routed",
+      "size": 300,
+      "queries": 48
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-sealed-300/layered-300.json",
+      "sha256": "d0fb35563922354bfe320f0df4cca06a12e26d83589cbb6c273689d663767bbd",
+      "method": "layered",
+      "size": 300,
+      "queries": 48
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/none-300.json",
+      "sha256": "51f354f2e49e1d48c584a943e774a55b04ff89bf24819aea7312992239d73446",
+      "method": "none",
+      "size": 300,
+      "queries": 192
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/lexical-300.json",
+      "sha256": "f3a45f58868c2e788f3c8c92fc0875ab23cea9b39b0d0d500d90f34c0737d0ee",
+      "method": "lexical",
+      "size": 300,
+      "queries": 192
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/bge_rrf-300.json",
+      "sha256": "787352987f1c54ed3c96de4c08293fb277919a1493b2acdc38a6f73712eba0fc",
+      "method": "bge_rrf",
+      "size": 300,
+      "queries": 192
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/routed-300.json",
+      "sha256": "7252419daa0cd437d268e8bfeeb0a845b97ca475f7251cd6cb50b12ac9057558",
+      "method": "routed",
+      "size": 300,
+      "queries": 192
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/layered-300.json",
+      "sha256": "d99ac13f15c9cae60b9f9cb4dcc5184f63e3a0fe42ee40743766b4cd3a62241d",
+      "method": "layered",
+      "size": 300,
+      "queries": 192
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/none-3000.json",
+      "sha256": "0c0981cfe72f0e60a25416ec35701a891c4197367a8fb2ad54757feaeca2fe12",
+      "method": "none",
+      "size": 3000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/lexical-3000.json",
+      "sha256": "269fd9307d463d2a6416c19bd1edbf291d840962f2697b146d05db3f3f5d94ee",
+      "method": "lexical",
+      "size": 3000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/bge_rrf-3000.json",
+      "sha256": "f300eb15c227265a4d54f881e80a486852e9a3e3dbb2b659a96447997aee2373",
+      "method": "bge_rrf",
+      "size": 3000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/routed-3000.json",
+      "sha256": "5fd5acf82e9addab38b2ee70dc3c3b32c1bd562122276ab61e6e001cbeeb9214",
+      "method": "routed",
+      "size": 3000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/layered-3000.json",
+      "sha256": "f138b2225467f4b7a0e33f1b89af0655b584280e0d819962fda466d2ecff6d94",
+      "method": "layered",
+      "size": 3000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/none-10000.json",
+      "sha256": "962031669a10af165c9cda76ce18b02478406dd2c54d7668e0fbb6e5f5e5d26c",
+      "method": "none",
+      "size": 10000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/lexical-10000.json",
+      "sha256": "c50407b9d6f39f831a90b576e084de6a1b20ec7fe969305dd5e7a152888c7614",
+      "method": "lexical",
+      "size": 10000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/bge_rrf-10000.json",
+      "sha256": "6a31c688defaa626285918dba76f2da15801b56bda5c3b2cf63d4fdd45517bd8",
+      "method": "bge_rrf",
+      "size": 10000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/routed-10000.json",
+      "sha256": "88fefa8a19dfb82337fc44cebe9334d3537d1a5d473a7bf02c201dfbfefea27b",
+      "method": "routed",
+      "size": 10000,
+      "queries": 18
+    },
+    {
+      "path": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-scale/layered-10000.json",
+      "sha256": "a9c340e25b522c295ad56e6c3438181cc9b3463229dc235cc2949eaa0455bc28",
+      "method": "layered",
+      "size": 10000,
+      "queries": 18
+    }
+  ]
+}

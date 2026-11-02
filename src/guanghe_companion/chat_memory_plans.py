@@ -5,7 +5,6 @@ from datetime import datetime, timezone
 import re
 from uuid import uuid4
 
-from .emotional_memory import MAX_SOURCE_IDS
 from .emotional_memory_policy import MemoryCandidate
 
 
@@ -79,9 +78,8 @@ def correct_plan(memory, entry, *, summary: str, value: str, text: str, now: int
     if deadline <= now:
         return ChatMemoryResult("clarify", "这项计划已超过记忆有效期，请重新说明当前计划。")
     reference = f"chat-plan-correction:{uuid4().hex}"
-    sources = tuple(dict.fromkeys((*old.source_ids, reference)))
-    if len(sources) > MAX_SOURCE_IDS:
-        raise ValueError("plan correction source references exceed the supported limit")
+    # A revision cites its own statement; the supersedes chain retains history.
+    sources = (reference,)
     # 只把新的字面目标与原时间交给 prompt，旧目标留在已退役事实和来源审计中。
     topic = "迁居地点" if "搬" in plan.quote or "迁居" in plan.quote else "计划内容"
     revised_summary = f"用户计划（未确认完成）：{topic}改为{value}"
@@ -93,6 +91,8 @@ def correct_plan(memory, entry, *, summary: str, value: str, text: str, now: int
                 "fact_domain": "计划", "fact_slot": "plan", "fact_value": value, "corrected_by_user": True,
                 "confidence_reason": "明确纠正计划目标；保留原时间表述，尚未确认完成",
                 "expiry_basis": "logical_memory_freshness", "expiry_note": "有效期仅用于记忆新鲜度，不代表计划日期"}
+    metadata.pop("source_memory_ids", None)
+    metadata.pop("supersedes_memory_id", None)
     epoch = memory.store.context_epoch
     valid_from = old.valid_from or old.occurred_at
     if mode == "review":

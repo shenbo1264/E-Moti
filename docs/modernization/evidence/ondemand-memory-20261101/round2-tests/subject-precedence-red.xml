@@ -1,0 +1,282 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="12" time="0.736" timestamp="2026-11-02T04:48:46.827318+09:00" hostname="a7863bbaa94f"><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_correction_preserves_relation_after_restart[name-\u79f0\u547c-personal-auto]" time="0.091"><failure message="assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{&quot;type&quot;:&quot;speech&quot;,&quot;speech&quot;:&quot;[joy] 短句&quot;,&quot;effect&quot;:&quot;ATTENTION&quot;,&quot;motion_hint&quot;:&quot;Raised&quot;,&quot;intent_hint&quot;:&quot;ask_preference&quot;}')&#10;[+1 more line; full report in element text]">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-173/test_teacher_correction_preser0')
+mode = 'auto', scene = 'personal', predicate = 'name', domain = '称呼'
+
+    @pytest.mark.parametrize("mode", ["auto", "review"])
+    @pytest.mark.parametrize("scene", ["personal", "other"])
+    @pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
+    def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
+        c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+        memory = c.story_runtime.memory
+        key = memory.propose_explicit_user_memory("请记住：我的吉他老师叫林澈。", now=0)
+        old = memory.confirm_candidate(key, now=0)
+        extractor = ChatMemoryExtraction(memory)
+        text = "刚才我写错老师的名字了，我的吉他老师叫江屿。"
+        envelope = extractor.prepare(text, now=0, mode=mode, generation=c.host_context_generation)
+        proposal = MemoryProposal("correct", "我的吉他老师叫江屿", "江屿", predicate, domain,
+                                  (old.memory_id,), "explicit", scene)
+        result = extractor.apply(envelope, (proposal,), now=0, mode=mode, generation=c.host_context_generation)
+        assert result.status == ("pending" if mode == "review" else "saved")
+        if mode == "review":
+            memory.confirm_candidate(next(iter(memory.pending_candidates)), now=0)
+        c.close()
+        restarted = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=True)
+        try:
+            current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
+            assert len(current) == 1
+            assert current[0].summary == "用户的吉他老师叫江屿"
+            assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
+            restarted._current_player_message = "我学吉他的老师叫什么？"
+            def prompt():
+                return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
+                    restarted.get_typed_snapshot(), context=restarted.get_expression_context()))
+&gt;           assert "江屿" in prompt() and "林澈" not in prompt()
+E           assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}')
+E            +  where '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}' = &lt;function test_teacher_correction_preserves_relation_after_restart.&lt;locals&gt;.prompt at 0x7f9f793ac860&gt;()
+
+tests/test_teacher_correction_recall.py:36: AssertionError</failure></testcase><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_correction_preserves_relation_after_restart[name-\u79f0\u547c-personal-review]" time="0.048"><failure message="assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{&quot;type&quot;:&quot;speech&quot;,&quot;speech&quot;:&quot;[joy] 短句&quot;,&quot;effect&quot;:&quot;ATTENTION&quot;,&quot;motion_hint&quot;:&quot;Raised&quot;,&quot;intent_hint&quot;:&quot;ask_preference&quot;}')&#10;[+1 more line; full report in element text]">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-173/test_teacher_correction_preser1')
+mode = 'review', scene = 'personal', predicate = 'name', domain = '称呼'
+
+    @pytest.mark.parametrize("mode", ["auto", "review"])
+    @pytest.mark.parametrize("scene", ["personal", "other"])
+    @pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
+    def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
+        c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+        memory = c.story_runtime.memory
+        key = memory.propose_explicit_user_memory("请记住：我的吉他老师叫林澈。", now=0)
+        old = memory.confirm_candidate(key, now=0)
+        extractor = ChatMemoryExtraction(memory)
+        text = "刚才我写错老师的名字了，我的吉他老师叫江屿。"
+        envelope = extractor.prepare(text, now=0, mode=mode, generation=c.host_context_generation)
+        proposal = MemoryProposal("correct", "我的吉他老师叫江屿", "江屿", predicate, domain,
+                                  (old.memory_id,), "explicit", scene)
+        result = extractor.apply(envelope, (proposal,), now=0, mode=mode, generation=c.host_context_generation)
+        assert result.status == ("pending" if mode == "review" else "saved")
+        if mode == "review":
+            memory.confirm_candidate(next(iter(memory.pending_candidates)), now=0)
+        c.close()
+        restarted = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=True)
+        try:
+            current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
+            assert len(current) == 1
+            assert current[0].summary == "用户的吉他老师叫江屿"
+            assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
+            restarted._current_player_message = "我学吉他的老师叫什么？"
+            def prompt():
+                return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
+                    restarted.get_typed_snapshot(), context=restarted.get_expression_context()))
+&gt;           assert "江屿" in prompt() and "林澈" not in prompt()
+E           assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}')
+E            +  where '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}' = &lt;function test_teacher_correction_preserves_relation_after_restart.&lt;locals&gt;.prompt at 0x7f9f793ce840&gt;()
+
+tests/test_teacher_correction_recall.py:36: AssertionError</failure></testcase><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_correction_preserves_relation_after_restart[name-\u79f0\u547c-other-auto]" time="0.045"><failure message="assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{&quot;type&quot;:&quot;speech&quot;,&quot;speech&quot;:&quot;[joy] 短句&quot;,&quot;effect&quot;:&quot;ATTENTION&quot;,&quot;motion_hint&quot;:&quot;Raised&quot;,&quot;intent_hint&quot;:&quot;ask_preference&quot;}')&#10;[+1 more line; full report in element text]">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-173/test_teacher_correction_preser2')
+mode = 'auto', scene = 'other', predicate = 'name', domain = '称呼'
+
+    @pytest.mark.parametrize("mode", ["auto", "review"])
+    @pytest.mark.parametrize("scene", ["personal", "other"])
+    @pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
+    def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
+        c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+        memory = c.story_runtime.memory
+        key = memory.propose_explicit_user_memory("请记住：我的吉他老师叫林澈。", now=0)
+        old = memory.confirm_candidate(key, now=0)
+        extractor = ChatMemoryExtraction(memory)
+        text = "刚才我写错老师的名字了，我的吉他老师叫江屿。"
+        envelope = extractor.prepare(text, now=0, mode=mode, generation=c.host_context_generation)
+        proposal = MemoryProposal("correct", "我的吉他老师叫江屿", "江屿", predicate, domain,
+                                  (old.memory_id,), "explicit", scene)
+        result = extractor.apply(envelope, (proposal,), now=0, mode=mode, generation=c.host_context_generation)
+        assert result.status == ("pending" if mode == "review" else "saved")
+        if mode == "review":
+            memory.confirm_candidate(next(iter(memory.pending_candidates)), now=0)
+        c.close()
+        restarted = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=True)
+        try:
+            current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
+            assert len(current) == 1
+            assert current[0].summary == "用户的吉他老师叫江屿"
+            assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
+            restarted._current_player_message = "我学吉他的老师叫什么？"
+            def prompt():
+                return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
+                    restarted.get_typed_snapshot(), context=restarted.get_expression_context()))
+&gt;           assert "江屿" in prompt() and "林澈" not in prompt()
+E           assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}')
+E            +  where '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}' = &lt;function test_teacher_correction_preserves_relation_after_restart.&lt;locals&gt;.prompt at 0x7f9f791fc0e0&gt;()
+
+tests/test_teacher_correction_recall.py:36: AssertionError</failure></testcase><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_correction_preserves_relation_after_restart[name-\u79f0\u547c-other-review]" time="0.043"><failure message="assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{&quot;type&quot;:&quot;speech&quot;,&quot;speech&quot;:&quot;[joy] 短句&quot;,&quot;effect&quot;:&quot;ATTENTION&quot;,&quot;motion_hint&quot;:&quot;Raised&quot;,&quot;intent_hint&quot;:&quot;ask_preference&quot;}')&#10;[+1 more line; full report in element text]">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-173/test_teacher_correction_preser3')
+mode = 'review', scene = 'other', predicate = 'name', domain = '称呼'
+
+    @pytest.mark.parametrize("mode", ["auto", "review"])
+    @pytest.mark.parametrize("scene", ["personal", "other"])
+    @pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
+    def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
+        c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+        memory = c.story_runtime.memory
+        key = memory.propose_explicit_user_memory("请记住：我的吉他老师叫林澈。", now=0)
+        old = memory.confirm_candidate(key, now=0)
+        extractor = ChatMemoryExtraction(memory)
+        text = "刚才我写错老师的名字了，我的吉他老师叫江屿。"
+        envelope = extractor.prepare(text, now=0, mode=mode, generation=c.host_context_generation)
+        proposal = MemoryProposal("correct", "我的吉他老师叫江屿", "江屿", predicate, domain,
+                                  (old.memory_id,), "explicit", scene)
+        result = extractor.apply(envelope, (proposal,), now=0, mode=mode, generation=c.host_context_generation)
+        assert result.status == ("pending" if mode == "review" else "saved")
+        if mode == "review":
+            memory.confirm_candidate(next(iter(memory.pending_candidates)), now=0)
+        c.close()
+        restarted = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=True)
+        try:
+            current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
+            assert len(current) == 1
+            assert current[0].summary == "用户的吉他老师叫江屿"
+            assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
+            restarted._current_player_message = "我学吉他的老师叫什么？"
+            def prompt():
+                return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
+                    restarted.get_typed_snapshot(), context=restarted.get_expression_context()))
+&gt;           assert "江屿" in prompt() and "林澈" not in prompt()
+E           assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}')
+E            +  where '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}' = &lt;function test_teacher_correction_preserves_relation_after_restart.&lt;locals&gt;.prompt at 0x7f9f791fd620&gt;()
+
+tests/test_teacher_correction_recall.py:36: AssertionError</failure></testcase><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_correction_preserves_relation_after_restart[relation_name-\u4eba\u7269\u59d3\u540d-personal-auto]" time="0.054"><failure message="assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{&quot;type&quot;:&quot;speech&quot;,&quot;speech&quot;:&quot;[joy] 短句&quot;,&quot;effect&quot;:&quot;ATTENTION&quot;,&quot;motion_hint&quot;:&quot;Raised&quot;,&quot;intent_hint&quot;:&quot;ask_preference&quot;}')&#10;[+1 more line; full report in element text]">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-173/test_teacher_correction_preser4')
+mode = 'auto', scene = 'personal', predicate = 'relation_name', domain = '人物姓名'
+
+    @pytest.mark.parametrize("mode", ["auto", "review"])
+    @pytest.mark.parametrize("scene", ["personal", "other"])
+    @pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
+    def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
+        c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+        memory = c.story_runtime.memory
+        key = memory.propose_explicit_user_memory("请记住：我的吉他老师叫林澈。", now=0)
+        old = memory.confirm_candidate(key, now=0)
+        extractor = ChatMemoryExtraction(memory)
+        text = "刚才我写错老师的名字了，我的吉他老师叫江屿。"
+        envelope = extractor.prepare(text, now=0, mode=mode, generation=c.host_context_generation)
+        proposal = MemoryProposal("correct", "我的吉他老师叫江屿", "江屿", predicate, domain,
+                                  (old.memory_id,), "explicit", scene)
+        result = extractor.apply(envelope, (proposal,), now=0, mode=mode, generation=c.host_context_generation)
+        assert result.status == ("pending" if mode == "review" else "saved")
+        if mode == "review":
+            memory.confirm_candidate(next(iter(memory.pending_candidates)), now=0)
+        c.close()
+        restarted = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=True)
+        try:
+            current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
+            assert len(current) == 1
+            assert current[0].summary == "用户的吉他老师叫江屿"
+            assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
+            restarted._current_player_message = "我学吉他的老师叫什么？"
+            def prompt():
+                return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
+                    restarted.get_typed_snapshot(), context=restarted.get_expression_context()))
+&gt;           assert "江屿" in prompt() and "林澈" not in prompt()
+E           assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}')
+E            +  where '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}' = &lt;function test_teacher_correction_preserves_relation_after_restart.&lt;locals&gt;.prompt at 0x7f9f791ff420&gt;()
+
+tests/test_teacher_correction_recall.py:36: AssertionError</failure></testcase><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_correction_preserves_relation_after_restart[relation_name-\u4eba\u7269\u59d3\u540d-personal-review]" time="0.056"><failure message="assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{&quot;type&quot;:&quot;speech&quot;,&quot;speech&quot;:&quot;[joy] 短句&quot;,&quot;effect&quot;:&quot;ATTENTION&quot;,&quot;motion_hint&quot;:&quot;Raised&quot;,&quot;intent_hint&quot;:&quot;ask_preference&quot;}')&#10;[+1 more line; full report in element text]">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-173/test_teacher_correction_preser5')
+mode = 'review', scene = 'personal', predicate = 'relation_name'
+domain = '人物姓名'
+
+    @pytest.mark.parametrize("mode", ["auto", "review"])
+    @pytest.mark.parametrize("scene", ["personal", "other"])
+    @pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
+    def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
+        c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+        memory = c.story_runtime.memory
+        key = memory.propose_explicit_user_memory("请记住：我的吉他老师叫林澈。", now=0)
+        old = memory.confirm_candidate(key, now=0)
+        extractor = ChatMemoryExtraction(memory)
+        text = "刚才我写错老师的名字了，我的吉他老师叫江屿。"
+        envelope = extractor.prepare(text, now=0, mode=mode, generation=c.host_context_generation)
+        proposal = MemoryProposal("correct", "我的吉他老师叫江屿", "江屿", predicate, domain,
+                                  (old.memory_id,), "explicit", scene)
+        result = extractor.apply(envelope, (proposal,), now=0, mode=mode, generation=c.host_context_generation)
+        assert result.status == ("pending" if mode == "review" else "saved")
+        if mode == "review":
+            memory.confirm_candidate(next(iter(memory.pending_candidates)), now=0)
+        c.close()
+        restarted = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=True)
+        try:
+            current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
+            assert len(current) == 1
+            assert current[0].summary == "用户的吉他老师叫江屿"
+            assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
+            restarted._current_player_message = "我学吉他的老师叫什么？"
+            def prompt():
+                return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
+                    restarted.get_typed_snapshot(), context=restarted.get_expression_context()))
+&gt;           assert "江屿" in prompt() and "林澈" not in prompt()
+E           assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}')
+E            +  where '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}' = &lt;function test_teacher_correction_preserves_relation_after_restart.&lt;locals&gt;.prompt at 0x7f9f792547c0&gt;()
+
+tests/test_teacher_correction_recall.py:36: AssertionError</failure></testcase><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_correction_preserves_relation_after_restart[relation_name-\u4eba\u7269\u59d3\u540d-other-auto]" time="0.058"><failure message="assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{&quot;type&quot;:&quot;speech&quot;,&quot;speech&quot;:&quot;[joy] 短句&quot;,&quot;effect&quot;:&quot;ATTENTION&quot;,&quot;motion_hint&quot;:&quot;Raised&quot;,&quot;intent_hint&quot;:&quot;ask_preference&quot;}')&#10;[+1 more line; full report in element text]">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-173/test_teacher_correction_preser6')
+mode = 'auto', scene = 'other', predicate = 'relation_name', domain = '人物姓名'
+
+    @pytest.mark.parametrize("mode", ["auto", "review"])
+    @pytest.mark.parametrize("scene", ["personal", "other"])
+    @pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
+    def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
+        c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+        memory = c.story_runtime.memory
+        key = memory.propose_explicit_user_memory("请记住：我的吉他老师叫林澈。", now=0)
+        old = memory.confirm_candidate(key, now=0)
+        extractor = ChatMemoryExtraction(memory)
+        text = "刚才我写错老师的名字了，我的吉他老师叫江屿。"
+        envelope = extractor.prepare(text, now=0, mode=mode, generation=c.host_context_generation)
+        proposal = MemoryProposal("correct", "我的吉他老师叫江屿", "江屿", predicate, domain,
+                                  (old.memory_id,), "explicit", scene)
+        result = extractor.apply(envelope, (proposal,), now=0, mode=mode, generation=c.host_context_generation)
+        assert result.status == ("pending" if mode == "review" else "saved")
+        if mode == "review":
+            memory.confirm_candidate(next(iter(memory.pending_candidates)), now=0)
+        c.close()
+        restarted = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=True)
+        try:
+            current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
+            assert len(current) == 1
+            assert current[0].summary == "用户的吉他老师叫江屿"
+            assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
+            restarted._current_player_message = "我学吉他的老师叫什么？"
+            def prompt():
+                return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
+                    restarted.get_typed_snapshot(), context=restarted.get_expression_context()))
+&gt;           assert "江屿" in prompt() and "林澈" not in prompt()
+E           assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}')
+E            +  where '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}' = &lt;function test_teacher_correction_preserves_relation_after_restart.&lt;locals&gt;.prompt at 0x7f9f791fc5e0&gt;()
+
+tests/test_teacher_correction_recall.py:36: AssertionError</failure></testcase><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_correction_preserves_relation_after_restart[relation_name-\u4eba\u7269\u59d3\u540d-other-review]" time="0.057"><failure message="assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{&quot;type&quot;:&quot;speech&quot;,&quot;speech&quot;:&quot;[joy] 短句&quot;,&quot;effect&quot;:&quot;ATTENTION&quot;,&quot;motion_hint&quot;:&quot;Raised&quot;,&quot;intent_hint&quot;:&quot;ask_preference&quot;}')&#10;[+1 more line; full report in element text]">tmp_path = PosixPath('/tmp/pytest-of-root/pytest-173/test_teacher_correction_preser7')
+mode = 'review', scene = 'other', predicate = 'relation_name', domain = '人物姓名'
+
+    @pytest.mark.parametrize("mode", ["auto", "review"])
+    @pytest.mark.parametrize("scene", ["personal", "other"])
+    @pytest.mark.parametrize("predicate,domain", [("name", "称呼"), ("relation_name", "人物姓名")])
+    def test_teacher_correction_preserves_relation_after_restart(tmp_path, mode, scene, predicate, domain):
+        c = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=False)
+        memory = c.story_runtime.memory
+        key = memory.propose_explicit_user_memory("请记住：我的吉他老师叫林澈。", now=0)
+        old = memory.confirm_candidate(key, now=0)
+        extractor = ChatMemoryExtraction(memory)
+        text = "刚才我写错老师的名字了，我的吉他老师叫江屿。"
+        envelope = extractor.prepare(text, now=0, mode=mode, generation=c.host_context_generation)
+        proposal = MemoryProposal("correct", "我的吉他老师叫江屿", "江屿", predicate, domain,
+                                  (old.memory_id,), "explicit", scene)
+        result = extractor.apply(envelope, (proposal,), now=0, mode=mode, generation=c.host_context_generation)
+        assert result.status == ("pending" if mode == "review" else "saved")
+        if mode == "review":
+            memory.confirm_candidate(next(iter(memory.pending_candidates)), now=0)
+        c.close()
+        restarted = PluginEnabledCompanionController(user_data_root=tmp_path, auto_load=True)
+        try:
+            current = [m for m in restarted.story_runtime.memory.store.load_memories() if not m.deleted]
+            assert len(current) == 1
+            assert current[0].summary == "用户的吉他老师叫江屿"
+            assert current[0].metadata["fact_slot"] == "relation:吉他老师:name"
+            restarted._current_player_message = "我学吉他的老师叫什么？"
+            def prompt():
+                return restarted.ai_expressor.build_prompt(ExpressionRequest.from_snapshot(
+                    restarted.get_typed_snapshot(), context=restarted.get_expression_context()))
+&gt;           assert "江屿" in prompt() and "林澈" not in prompt()
+E           assert ('江屿' in '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}')
+E            +  where '你是 AI 桌面伴侣电子宠物 demo 的 ShinsekaiAIExpressor。\nAI 只能生成表达事件，不能修改状态数值、动作结果、目标、解锁、背包或存档。\n只输出一个 JSON 对象，只包含 type, speech, ...n示例字段：{"type":"speech","speech":"[joy] 短句","effect":"ATTENTION","motion_hint":"Raised","intent_hint":"ask_preference"}' = &lt;function test_teacher_correction_preserves_relation_after_restart.&lt;locals&gt;.prompt at 0x7f9f793cc2c0&gt;()
+
+tests/test_teacher_correction_recall.py:36: AssertionError</failure></testcase><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_name_cannot_replace_another_person[\u6211\u7684\u94a2\u7434\u8001\u5e08\u53eb\u6797\u6f88\u3002-\u6211\u7684\u5409\u4ed6\u8001\u5e08\u53eb\u6c5f\u5c7f]" time="0.030" /><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_name_cannot_replace_another_person[\u6211\u7684\u59d3\u540d\u662f\u6797\u6f88\u3002-\u6211\u7684\u5409\u4ed6\u8001\u5e08\u53eb\u6c5f\u5c7f]" time="0.035" /><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_name_cannot_replace_another_person[\u6211\u7684\u5409\u4ed6\u8001\u5e08\u53eb\u6797\u6f88\u3002-\u6211\u53eb\u6c5f\u5c7f]" time="0.022" /><testcase classname="tests.test_teacher_correction_recall" name="test_teacher_forget_works_with_memory_off_and_keeps_user_identity" time="0.034" /></testsuite></testsuites>

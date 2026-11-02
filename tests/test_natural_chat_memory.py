@@ -116,6 +116,10 @@ def test_album_forget_rebuilds_chapter_from_remaining_real_sources(tmp_path):
         c.now = 10
         removed = next(m for m in active(c) if "纪念礼物0" in m.summary)
         c.memory_album_controller.forget(removed.memory_id, now=10)
+        # Revocation is synchronous even though rebuilding a chapter is not.
+        assert all("纪念礼物0" not in chapter.summary
+                   for chapter in c.story_runtime.memory.valid_chapters(now=10))
+        assert c.story_runtime.memory.wait_for_maintenance(timeout=5)
         chapters = c.story_runtime.memory.valid_chapters(now=10)
         assert chapters
         assert set(chapters[-1].source_memory_ids) == {m.memory_id for m in active(c)}

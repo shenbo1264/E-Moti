@@ -1,0 +1,2452 @@
+{
+  "schema_version": 1,
+  "name": "E-Moti independently authored sealed generalization v2",
+  "split": "holdout",
+  "status": "independently_authored_frozen",
+  "character_id": "eval_companion",
+  "owner_id": "eval_user",
+  "now": 1781496000,
+  "stories": [
+    {
+      "id": "sgv2_s01",
+      "template_family": "garment_repair_temporal_subject",
+      "description": "合成的家用缝纫设定与对话记录；涉及个人设置、亲属设置及共同制作的完成状态。"
+    },
+    {
+      "id": "sgv2_s02",
+      "template_family": "coffee_recipe_task_outcomes",
+      "description": "合成的手冲配方记录；个人与室友参数分开，另有虚构配方软件的执行日志。"
+    },
+    {
+      "id": "sgv2_s03",
+      "template_family": "astronomy_equipment_completed_event",
+      "description": "合成的业余观测器材与图片整理对话；父亲的器材参数不代表个人参数。"
+    },
+    {
+      "id": "sgv2_s04",
+      "template_family": "pet_boarding_entity_and_forgetting",
+      "description": "合成的宠物寄养准备；两只宠物的笼门标签不同，包含一条应被忘记的来源。"
+    },
+    {
+      "id": "sgv2_s05",
+      "template_family": "audio_editing_fields_and_recovery",
+      "description": "合成的个人音频制作设置及虚构软件日志；个人节目和搭档片花采用不同参数。"
+    },
+    {
+      "id": "sgv2_s06",
+      "template_family": "tabletop_routine_and_shared_design",
+      "description": "合成的桌游讲解习惯、收纳位置及共同设计棋盘的对话；计划复盘没有完成记录。"
+    },
+    {
+      "id": "sgv2_s07",
+      "template_family": "travel_packing_multi_intent",
+      "description": "合成的出行收纳信息与清单制作；包含替换后的行李箱资料和虚构清单软件日志。"
+    },
+    {
+      "id": "sgv2_s08",
+      "template_family": "home_repair_adjacent_fields",
+      "description": "合成的家庭小修记录；拆卸工具尺寸不能直接充当零件螺纹尺寸，亲属配件也不能套用。"
+    }
+  ],
+  "memories": [
+    {
+      "id": "sgv2_s01_m01",
+      "story_id": "sgv2_s01",
+      "title": "我的帆布针距",
+      "summary": "我缝帆布午餐袋时把针距设为2.8毫米，这就是我自己这台机器的常用设置。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s01_m01"
+      ],
+      "valid_from": 1772452800,
+      "valid_until": 0,
+      "occurred_at": 1772452800,
+      "created_at": 1772452800,
+      "updated_at": 1772452800,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "canvas_stitch_length_mm",
+        "fact_slot": "user:self:canvas_stitch_length_mm",
+        "fact_domain": "canvas_stitch_length_mm",
+        "fact_value": 2.8,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s01_m02",
+      "story_id": "sgv2_s01",
+      "title": "小姨的帆布针距",
+      "summary": "小姨周岚说，她缝帆布时习惯把针距设为3.2毫米；这是小姨的设置。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s01_m02"
+      ],
+      "valid_from": 1772539200,
+      "valid_until": 0,
+      "occurred_at": 1772539200,
+      "created_at": 1772539200,
+      "updated_at": 1772539200,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:小姨",
+        "fact_predicate": "canvas_stitch_length_mm",
+        "fact_slot": "relation:小姨:canvas_stitch_length_mm",
+        "fact_domain": "canvas_stitch_length_mm",
+        "fact_value": 3.2,
+        "subject_aliases": [
+          "小姨",
+          "周岚"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s01_m03",
+      "story_id": "sgv2_s01",
+      "title": "我此前给午餐袋留的缝份",
+      "summary": "我做帆布午餐袋，边缘缝份留10毫米。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s01_m03"
+      ],
+      "valid_from": 1773144000,
+      "valid_until": 1778328000,
+      "occurred_at": 1773144000,
+      "created_at": 1773144000,
+      "updated_at": 1773144000,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "lunch_bag_seam_allowance_mm",
+        "fact_slot": "user:self:lunch_bag_seam_allowance_mm",
+        "fact_domain": "lunch_bag_seam_allowance_mm",
+        "fact_value": 10,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s01_m04",
+      "story_id": "sgv2_s01",
+      "title": "我调整后的午餐袋缝份",
+      "summary": "我已经改了帆布午餐袋的做法：从5月9日起，边缘缝份改留12毫米。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s01_m04"
+      ],
+      "valid_from": 1778328000,
+      "valid_until": 0,
+      "occurred_at": 1778328000,
+      "created_at": 1778328000,
+      "updated_at": 1778328000,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "lunch_bag_seam_allowance_mm",
+        "fact_slot": "user:self:lunch_bag_seam_allowance_mm",
+        "fact_domain": "lunch_bag_seam_allowance_mm",
+        "fact_value": 12,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s01_m05",
+      "story_id": "sgv2_s01",
+      "title": "已完成午餐袋提手加固核对",
+      "summary": "5月18日，我和你在对话里一起核对了帆布午餐袋的提手加固；最后采用方框加斜叉的线迹。我随后试拉并确认线没有开，这次核对已经完成。",
+      "kind": "共同经历",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s01_m05"
+      ],
+      "valid_from": 1779105600,
+      "valid_until": 0,
+      "occurred_at": 1779105600,
+      "created_at": 1779105600,
+      "updated_at": 1779105600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "event_status": "completed",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "source_id": "synthetic_dialogue_sgv2_s01_m05",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s01_m06",
+      "story_id": "sgv2_s01",
+      "title": "隔热垫制作尚在计划中",
+      "summary": "6月10日，我和你只是约定月底一起做隔热垫，制作还没开始，也没有选定填芯。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s01_m06"
+      ],
+      "valid_from": 1781092800,
+      "valid_until": 0,
+      "occurred_at": 1781092800,
+      "created_at": 1781092800,
+      "updated_at": 1781092800,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "event_status": "planned",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "source_id": "synthetic_dialogue_sgv2_s01_m06",
+        "plan_status": "planned",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s02_m01",
+      "story_id": "sgv2_s02",
+      "title": "我每杯手冲的用豆量",
+      "summary": "我给自己做这套早班手冲，每杯称18克咖啡豆。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s02_m01"
+      ],
+      "valid_from": 1775131200,
+      "valid_until": 0,
+      "occurred_at": 1775131200,
+      "created_at": 1775131200,
+      "updated_at": 1775131200,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "pour_over_bean_dose_g",
+        "fact_slot": "user:self:pour_over_bean_dose_g",
+        "fact_domain": "pour_over_bean_dose_g",
+        "fact_value": 18,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s02_m02",
+      "story_id": "sgv2_s02",
+      "title": "室友每杯手冲的用豆量",
+      "summary": "室友陈晓做她自己的手冲，每杯称15克咖啡豆。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s02_m02"
+      ],
+      "valid_from": 1775217600,
+      "valid_until": 0,
+      "occurred_at": 1775217600,
+      "created_at": 1775217600,
+      "updated_at": 1775217600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:室友",
+        "fact_predicate": "pour_over_bean_dose_g",
+        "fact_slot": "relation:室友:pour_over_bean_dose_g",
+        "fact_domain": "pour_over_bean_dose_g",
+        "fact_value": 15,
+        "subject_aliases": [
+          "室友",
+          "陈晓"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s02_m03",
+      "story_id": "sgv2_s02",
+      "title": "室友的冲煮水温",
+      "summary": "室友陈晓给她那套手冲配方定的水温是94摄氏度。她说这是她自己的参数。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s02_m03"
+      ],
+      "valid_from": 1775217600,
+      "valid_until": 0,
+      "occurred_at": 1775217600,
+      "created_at": 1775217600,
+      "updated_at": 1775217600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:室友",
+        "fact_predicate": "pour_over_water_temperature_c",
+        "fact_slot": "relation:室友:pour_over_water_temperature_c",
+        "fact_domain": "pour_over_water_temperature_c",
+        "fact_value": 94,
+        "subject_aliases": [
+          "室友",
+          "陈晓"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s02_m04",
+      "story_id": "sgv2_s02",
+      "title": "我的手冲成品目标",
+      "summary": "我这套早班手冲的目标是最后接到260克咖啡液，指的是成品重量。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s02_m04"
+      ],
+      "valid_from": 1775304000,
+      "valid_until": 0,
+      "occurred_at": 1775304000,
+      "created_at": 1775304000,
+      "updated_at": 1775304000,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "pour_over_beverage_mass_g",
+        "fact_slot": "user:self:pour_over_beverage_mass_g",
+        "fact_domain": "pour_over_beverage_mass_g",
+        "fact_value": 260,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s02_m05",
+      "story_id": "sgv2_s02",
+      "title": "配方首次导出失败",
+      "summary": "合成执行日志：在虚构软件萃记1.2里，配方内容已经填好，但配方名称为空。点击导出后出现“请先填写配方名称”，没有生成文件；这次导出失败的原因是名称未填写。",
+      "kind": "任务经验",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s02_m05"
+      ],
+      "valid_from": 1778068800,
+      "valid_until": 0,
+      "occurred_at": 1778068800,
+      "created_at": 1778068800,
+      "updated_at": 1778068800,
+      "scope": "task_experience",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "app": "萃记",
+        "app_is_fictional": true,
+        "version": "1.2",
+        "outcome": "failed",
+        "preconditions": "配方编辑页已打开，内容已填，配方名称为空。",
+        "procedure": "在配方编辑页直接点击导出。",
+        "cause": "配方名称未填写。",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s02_m06",
+      "story_id": "sgv2_s02",
+      "title": "配方文件已成功导出",
+      "summary": "合成执行日志：在虚构软件萃记1.2里，我先把配方名称填成“早班手冲”，保存配方，再打开右上角菜单选择“导出JSON”，最后保存到本机文件夹。文件已经生成，导出成功。",
+      "kind": "任务经验",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s02_m06"
+      ],
+      "valid_from": 1778155200,
+      "valid_until": 0,
+      "occurred_at": 1778155200,
+      "created_at": 1778155200,
+      "updated_at": 1778155200,
+      "scope": "task_experience",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "app": "萃记",
+        "app_is_fictional": true,
+        "version": "1.2",
+        "outcome": "succeeded",
+        "preconditions": "配方编辑页已打开，配方内容已填。",
+        "procedure": "填写名称“早班手冲”并保存；打开右上角菜单；选择“导出JSON”；保存到本机文件夹。",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s03_m01",
+      "story_id": "sgv2_s03",
+      "title": "我常用目镜的焦距",
+      "summary": "我现在常用的那只目镜，焦距是9毫米。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s03_m01"
+      ],
+      "valid_from": 1773835200,
+      "valid_until": 0,
+      "occurred_at": 1773835200,
+      "created_at": 1773835200,
+      "updated_at": 1773835200,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "usual_eyepiece_focal_length_mm",
+        "fact_slot": "user:self:usual_eyepiece_focal_length_mm",
+        "fact_domain": "usual_eyepiece_focal_length_mm",
+        "fact_value": 9,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s03_m02",
+      "story_id": "sgv2_s03",
+      "title": "爸爸常用目镜的焦距",
+      "summary": "爸爸常用的目镜焦距是15毫米，这是爸爸那套器材上的。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s03_m02"
+      ],
+      "valid_from": 1773921600,
+      "valid_until": 0,
+      "occurred_at": 1773921600,
+      "created_at": 1773921600,
+      "updated_at": 1773921600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:爸爸",
+        "fact_predicate": "usual_eyepiece_focal_length_mm",
+        "fact_slot": "relation:爸爸:usual_eyepiece_focal_length_mm",
+        "fact_domain": "usual_eyepiece_focal_length_mm",
+        "fact_value": 15,
+        "subject_aliases": [
+          "爸爸"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s03_m03",
+      "story_id": "sgv2_s03",
+      "title": "爸爸除露带的功率",
+      "summary": "爸爸说，他自己的除露带额定功率是6瓦。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s03_m03"
+      ],
+      "valid_from": 1773921600,
+      "valid_until": 0,
+      "occurred_at": 1773921600,
+      "created_at": 1773921600,
+      "updated_at": 1773921600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:爸爸",
+        "fact_predicate": "dew_heater_rated_power_w",
+        "fact_slot": "relation:爸爸:dew_heater_rated_power_w",
+        "fact_domain": "dew_heater_rated_power_w",
+        "fact_value": 6,
+        "subject_aliases": [
+          "爸爸"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s03_m04",
+      "story_id": "sgv2_s03",
+      "title": "我的目镜收纳盒",
+      "summary": "我把自己常用的那只9毫米目镜放在标着B的蓝色盒里；盒上的完整标签是“蓝色B盒”。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s03_m04"
+      ],
+      "valid_from": 1775044800,
+      "valid_until": 0,
+      "occurred_at": 1775044800,
+      "created_at": 1775044800,
+      "updated_at": 1775044800,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "usual_eyepiece_storage_label",
+        "fact_slot": "user:self:usual_eyepiece_storage_label",
+        "fact_domain": "usual_eyepiece_storage_label",
+        "fact_value": "蓝色B盒",
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s03_m05",
+      "story_id": "sgv2_s03",
+      "title": "月面素描排序和封面已经定稿",
+      "summary": "6月2日，我和你在对话里一起把三张月面素描按拍摄顺序编完号，最后选第二张做封面。我确认已经保存定稿，这次整理已完成。",
+      "kind": "共同经历",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s03_m05"
+      ],
+      "valid_from": 1780401600,
+      "valid_until": 0,
+      "occurred_at": 1780401600,
+      "created_at": 1780401600,
+      "updated_at": 1780401600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "event_status": "completed",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "source_id": "synthetic_dialogue_sgv2_s03_m05",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s03_m06",
+      "story_id": "sgv2_s03",
+      "title": "土星照片封面还没有挑选",
+      "summary": "6月11日，我和你约定月底一起从那批土星照片中挑封面。现在只是计划，还没有开始挑，也没有定稿。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s03_m06"
+      ],
+      "valid_from": 1781179200,
+      "valid_until": 0,
+      "occurred_at": 1781179200,
+      "created_at": 1781179200,
+      "updated_at": 1781179200,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "event_status": "planned",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "source_id": "synthetic_dialogue_sgv2_s03_m06",
+        "plan_status": "planned",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s04_m01",
+      "story_id": "sgv2_s04",
+      "title": "豆包外出笼的扣锁标签",
+      "summary": "豆包的外出笼上贴着“豆包—先扣左侧蓝扣”。我装好豆包后，要按这张标签扣门。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s04_m01"
+      ],
+      "valid_from": 1775736000,
+      "valid_until": 0,
+      "occurred_at": 1775736000,
+      "created_at": 1775736000,
+      "updated_at": 1775736000,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "entity:豆包",
+        "fact_predicate": "travel_crate_latch_label",
+        "fact_slot": "entity:豆包:travel_crate_latch_label",
+        "fact_domain": "travel_crate_latch_label",
+        "fact_value": "豆包—先扣左侧蓝扣",
+        "subject_aliases": [
+          "豆包"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s04_m02",
+      "story_id": "sgv2_s04",
+      "title": "奶盖外出笼的扣锁标签",
+      "summary": "朋友家的奶盖用另一只外出笼，标签写的是“奶盖—先扣右侧灰扣”。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s04_m02"
+      ],
+      "valid_from": 1775736000,
+      "valid_until": 0,
+      "occurred_at": 1775736000,
+      "created_at": 1775736000,
+      "updated_at": 1775736000,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "entity:奶盖",
+        "fact_predicate": "travel_crate_latch_label",
+        "fact_slot": "entity:奶盖:travel_crate_latch_label",
+        "fact_domain": "travel_crate_latch_label",
+        "fact_value": "奶盖—先扣右侧灰扣",
+        "subject_aliases": [
+          "奶盖"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s04_m03",
+      "story_id": "sgv2_s04",
+      "title": "豆包零食原先的存放位置",
+      "summary": "豆包的零食放在门边白色抽屉。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s04_m03"
+      ],
+      "valid_from": 1775995200,
+      "valid_until": 1779278400,
+      "occurred_at": 1775995200,
+      "created_at": 1775995200,
+      "updated_at": 1775995200,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "entity:豆包",
+        "fact_predicate": "treat_storage_location",
+        "fact_slot": "entity:豆包:treat_storage_location",
+        "fact_domain": "treat_storage_location",
+        "fact_value": "门边白色抽屉",
+        "subject_aliases": [
+          "豆包"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s04_m04",
+      "story_id": "sgv2_s04",
+      "title": "豆包零食调整后的存放位置",
+      "summary": "从5月20日起，豆包的零食改放厨房上柜第二层。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s04_m04"
+      ],
+      "valid_from": 1779278400,
+      "valid_until": 0,
+      "occurred_at": 1779278400,
+      "created_at": 1779278400,
+      "updated_at": 1779278400,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "entity:豆包",
+        "fact_predicate": "treat_storage_location",
+        "fact_slot": "entity:豆包:treat_storage_location",
+        "fact_domain": "treat_storage_location",
+        "fact_value": "厨房上柜第二层",
+        "subject_aliases": [
+          "豆包"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s04_m05",
+      "story_id": "sgv2_s04",
+      "title": "寄养阿姨方便接收消息的方式",
+      "summary": "寄养阿姨丁姨希望我联系她时，晚上八点后发文字。她说这样最方便她集中看消息。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s04_m05"
+      ],
+      "valid_from": 1779710400,
+      "valid_until": 0,
+      "occurred_at": 1779710400,
+      "created_at": 1779710400,
+      "updated_at": 1779710400,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:寄养阿姨",
+        "fact_predicate": "preferred_contact_window_and_mode",
+        "fact_slot": "relation:寄养阿姨:preferred_contact_window_and_mode",
+        "fact_domain": "preferred_contact_window_and_mode",
+        "fact_value": "晚上八点后发文字",
+        "subject_aliases": [
+          "寄养阿姨",
+          "丁姨"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s04_m06",
+      "story_id": "sgv2_s04",
+      "title": "豆包的猫砂牌子（已要求忘记）",
+      "summary": "豆包用的猫砂牌子是棉云无香豆腐砂。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s04_m06"
+      ],
+      "valid_from": 1776427200,
+      "valid_until": 0,
+      "occurred_at": 1776427200,
+      "created_at": 1776427200,
+      "updated_at": 1780660800,
+      "scope": "companion",
+      "deleted": true,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "entity:豆包",
+        "fact_predicate": "litter_brand",
+        "fact_slot": "entity:豆包:litter_brand",
+        "fact_domain": "litter_brand",
+        "fact_value": "棉云无香豆腐砂",
+        "subject_aliases": [
+          "豆包"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s05_m01",
+      "story_id": "sgv2_s05",
+      "title": "我的节目输出响度目标",
+      "summary": "我自己的访谈节目，输出响度目标是-16 LUFS。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s05_m01"
+      ],
+      "valid_from": 1773230400,
+      "valid_until": 0,
+      "occurred_at": 1773230400,
+      "created_at": 1773230400,
+      "updated_at": 1773230400,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "podcast_output_loudness_lufs",
+        "fact_slot": "user:self:podcast_output_loudness_lufs",
+        "fact_domain": "podcast_output_loudness_lufs",
+        "fact_value": -16,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s05_m02",
+      "story_id": "sgv2_s05",
+      "title": "搭档片花的响度和降噪设置",
+      "summary": "搭档林澄给他自己的宣传片花定的参数是：输出响度-14 LUFS，降噪衰减6分贝。这两个数都属于林澄的片花设置。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s05_m02"
+      ],
+      "valid_from": 1773316800,
+      "valid_until": 0,
+      "occurred_at": 1773316800,
+      "created_at": 1773316800,
+      "updated_at": 1773316800,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:搭档",
+        "fact_predicate": "promo_audio_processing_profile",
+        "fact_slot": "relation:搭档:promo_audio_processing_profile",
+        "fact_domain": "promo_audio_processing_profile",
+        "fact_value": {
+          "output_loudness_lufs": -14,
+          "noise_reduction_db": 6
+        },
+        "subject_aliases": [
+          "搭档",
+          "林澄"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s05_m03",
+      "story_id": "sgv2_s05",
+      "title": "我的访谈节目此前的片头时长",
+      "summary": "我自己的访谈节目，片头保留8秒。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s05_m03"
+      ],
+      "valid_from": 1773489600,
+      "valid_until": 1778587200,
+      "occurred_at": 1773489600,
+      "created_at": 1773489600,
+      "updated_at": 1773489600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "interview_intro_duration_seconds",
+        "fact_slot": "user:self:interview_intro_duration_seconds",
+        "fact_domain": "interview_intro_duration_seconds",
+        "fact_value": 8,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s05_m04",
+      "story_id": "sgv2_s05",
+      "title": "我的访谈节目调整后的片头时长",
+      "summary": "从5月12日起，我自己的访谈节目片头改为5秒。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s05_m04"
+      ],
+      "valid_from": 1778587200,
+      "valid_until": 0,
+      "occurred_at": 1778587200,
+      "created_at": 1778587200,
+      "updated_at": 1778587200,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "interview_intro_duration_seconds",
+        "fact_slot": "user:self:interview_intro_duration_seconds",
+        "fact_domain": "interview_intro_duration_seconds",
+        "fact_value": 5,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s05_m05",
+      "story_id": "sgv2_s05",
+      "title": "WAV首次导出遇到只读目录",
+      "summary": "合成执行日志：虚构软件声笺1.2已打开访谈工程，导出位置选在只读的共享目录。按导出WAV后提示“目标目录不可写”，文件没有生成；失败原因是目标文件夹只读。",
+      "kind": "任务经验",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s05_m05"
+      ],
+      "valid_from": 1779537600,
+      "valid_until": 0,
+      "occurred_at": 1779537600,
+      "created_at": 1779537600,
+      "updated_at": 1779537600,
+      "scope": "task_experience",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "app": "声笺",
+        "app_is_fictional": true,
+        "version": "1.2",
+        "outcome": "failed",
+        "preconditions": "访谈工程已打开，导出位置为只读共享目录。",
+        "procedure": "在导出面板选择共享目录后点击导出WAV。",
+        "cause": "目标文件夹只读，软件无法写入。",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s05_m06",
+      "story_id": "sgv2_s05",
+      "title": "WAV已导出到可写位置",
+      "summary": "合成执行日志：在虚构软件声笺1.2中，我先把导出位置换成本机可写文件夹，再选WAV格式，编码设为24位PCM、采样率48 kHz，然后点击导出。文件生成且能播放，这次导出完成。",
+      "kind": "任务经验",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s05_m06"
+      ],
+      "valid_from": 1779624000,
+      "valid_until": 0,
+      "occurred_at": 1779624000,
+      "created_at": 1779624000,
+      "updated_at": 1779624000,
+      "scope": "task_experience",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "app": "声笺",
+        "app_is_fictional": true,
+        "version": "1.2",
+        "outcome": "completed",
+        "preconditions": "访谈工程已打开，本机存在可写文件夹。",
+        "procedure": "选择本机可写文件夹；格式选WAV；编码选24位PCM，采样率设48 kHz；点击导出并检查播放。",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s06_m01",
+      "story_id": "sgv2_s06",
+      "title": "我的桌游讲解顺序",
+      "summary": "我带新人玩这款桌游，自己的讲解顺序是“先走子，再结算，再目标卡”。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s06_m01"
+      ],
+      "valid_from": 1772971200,
+      "valid_until": 0,
+      "occurred_at": 1772971200,
+      "created_at": 1772971200,
+      "updated_at": 1772971200,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "boardgame_teaching_order",
+        "fact_slot": "user:self:boardgame_teaching_order",
+        "fact_domain": "boardgame_teaching_order",
+        "fact_value": "先走子，再结算，再目标卡",
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s06_m02",
+      "story_id": "sgv2_s06",
+      "title": "表弟的桌游讲解顺序",
+      "summary": "表弟孟恺带新人时，他的讲解顺序是“先目标卡，再走子，再结算”。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s06_m02"
+      ],
+      "valid_from": 1773057600,
+      "valid_until": 0,
+      "occurred_at": 1773057600,
+      "created_at": 1773057600,
+      "updated_at": 1773057600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:表弟",
+        "fact_predicate": "boardgame_teaching_order",
+        "fact_slot": "relation:表弟:boardgame_teaching_order",
+        "fact_domain": "boardgame_teaching_order",
+        "fact_value": "先目标卡，再走子，再结算",
+        "subject_aliases": [
+          "表弟",
+          "孟恺"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s06_m03",
+      "story_id": "sgv2_s06",
+      "title": "我原先收纳桌游盒的位置",
+      "summary": "我把这款桌游盒放在书房矮柜下层。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s06_m03"
+      ],
+      "valid_from": 1773144000,
+      "valid_until": 1777636800,
+      "occurred_at": 1773144000,
+      "created_at": 1773144000,
+      "updated_at": 1773144000,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "boardgame_box_storage_location",
+        "fact_slot": "user:self:boardgame_box_storage_location",
+        "fact_domain": "boardgame_box_storage_location",
+        "fact_value": "书房矮柜下层",
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s06_m04",
+      "story_id": "sgv2_s06",
+      "title": "我调整后收纳桌游盒的位置",
+      "summary": "从5月1日起，我把这款桌游盒挪到了客厅右侧高柜中层。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s06_m04"
+      ],
+      "valid_from": 1777636800,
+      "valid_until": 0,
+      "occurred_at": 1777636800,
+      "created_at": 1777636800,
+      "updated_at": 1777636800,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "boardgame_box_storage_location",
+        "fact_slot": "user:self:boardgame_box_storage_location",
+        "fact_domain": "boardgame_box_storage_location",
+        "fact_value": "客厅右侧高柜中层",
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s06_m05",
+      "story_id": "sgv2_s06",
+      "title": "自制棋盘分区名称已确认",
+      "summary": "5月8日，我和你在聊天里一起给自制棋盘的分区取名，最后北区确定叫风塔，南区确定叫沙港。我已把这两个名称写进定稿，命名已经完成。",
+      "kind": "共同经历",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s06_m05"
+      ],
+      "valid_from": 1778241600,
+      "valid_until": 0,
+      "occurred_at": 1778241600,
+      "created_at": 1778241600,
+      "updated_at": 1778241600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "event_status": "completed",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "source_id": "synthetic_dialogue_sgv2_s06_m05",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s06_m06",
+      "story_id": "sgv2_s06",
+      "title": "桌游计分复盘尚未开始",
+      "summary": "6月12日，我和你约好下周复盘桌游计分规则。现在尚未开始复盘，也没有决定修改任何计分规则。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s06_m06"
+      ],
+      "valid_from": 1781265600,
+      "valid_until": 0,
+      "occurred_at": 1781265600,
+      "created_at": 1781265600,
+      "updated_at": 1781265600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "event_status": "planned",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "source_id": "synthetic_dialogue_sgv2_s06_m06",
+        "plan_status": "planned",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s07_m01",
+      "story_id": "sgv2_s07",
+      "title": "我的充电线收纳袋",
+      "summary": "我自己的旅行充电线统一放进橙色拉链包。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s07_m01"
+      ],
+      "valid_from": 1772625600,
+      "valid_until": 0,
+      "occurred_at": 1772625600,
+      "created_at": 1772625600,
+      "updated_at": 1772625600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "travel_cable_pouch_description",
+        "fact_slot": "user:self:travel_cable_pouch_description",
+        "fact_domain": "travel_cable_pouch_description",
+        "fact_value": "橙色拉链包",
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s07_m02",
+      "story_id": "sgv2_s07",
+      "title": "伴侣的充电线收纳袋",
+      "summary": "伴侣许安把他自己的旅行充电线放在灰色网格袋。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s07_m02"
+      ],
+      "valid_from": 1772625600,
+      "valid_until": 0,
+      "occurred_at": 1772625600,
+      "created_at": 1772625600,
+      "updated_at": 1772625600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:伴侣",
+        "fact_predicate": "travel_cable_pouch_description",
+        "fact_slot": "relation:伴侣:travel_cable_pouch_description",
+        "fact_domain": "travel_cable_pouch_description",
+        "fact_value": "灰色网格袋",
+        "subject_aliases": [
+          "伴侣",
+          "许安"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s07_m03",
+      "story_id": "sgv2_s07",
+      "title": "我此前登机箱的空箱重量",
+      "summary": "我当时用的那只登机箱，空箱重量是2.8公斤。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s07_m03"
+      ],
+      "valid_from": 1772884800,
+      "valid_until": 1778932800,
+      "occurred_at": 1772884800,
+      "created_at": 1772884800,
+      "updated_at": 1772884800,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "carry_on_empty_mass_kg",
+        "fact_slot": "user:self:carry_on_empty_mass_kg",
+        "fact_domain": "carry_on_empty_mass_kg",
+        "fact_value": 2.8,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s07_m04",
+      "story_id": "sgv2_s07",
+      "title": "我更换后登机箱的空箱重量",
+      "summary": "5月16日我换了登机箱，现在这只空箱重量是2.3公斤。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s07_m04"
+      ],
+      "valid_from": 1778932800,
+      "valid_until": 0,
+      "occurred_at": 1778932800,
+      "created_at": 1778932800,
+      "updated_at": 1778932800,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "carry_on_empty_mass_kg",
+        "fact_slot": "user:self:carry_on_empty_mass_kg",
+        "fact_domain": "carry_on_empty_mass_kg",
+        "fact_value": 2.3,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s07_m05",
+      "story_id": "sgv2_s07",
+      "title": "杭州三天行李清单已收尾",
+      "summary": "5月28日，我和你在对话里一起把杭州三天行李清单整理完了。最后我确认删掉备用吹风机，新增折叠衣架，并确认这版清单已经定稿。",
+      "kind": "共同经历",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s07_m05"
+      ],
+      "valid_from": 1779969600,
+      "valid_until": 0,
+      "occurred_at": 1779969600,
+      "created_at": 1779969600,
+      "updated_at": 1779969600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "event_status": "completed",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "source_id": "synthetic_dialogue_sgv2_s07_m05",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s07_m06",
+      "story_id": "sgv2_s07",
+      "title": "行李清单已导出为单张图片",
+      "summary": "合成执行日志：虚构软件行囊签1.2中，杭州三天清单已经保存。我打开清单右上角的分享菜单，选择“导出图片”，把分页方式切成“单张长图”，再保存到相册；相册里生成了一张完整清单图片，操作成功。",
+      "kind": "任务经验",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s07_m06"
+      ],
+      "valid_from": 1780056000,
+      "valid_until": 0,
+      "occurred_at": 1780056000,
+      "created_at": 1780056000,
+      "updated_at": 1780056000,
+      "scope": "task_experience",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "app": "行囊签",
+        "app_is_fictional": true,
+        "version": "1.2",
+        "outcome": "succeeded",
+        "preconditions": "杭州三天清单已保存，相册写入权限已开启。",
+        "procedure": "打开清单右上角分享菜单；选择“导出图片”；分页方式切成“单张长图”；保存到相册。",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s08_m01",
+      "story_id": "sgv2_s08",
+      "title": "我家起泡器拆卸钥匙的尺寸",
+      "summary": "我家水龙头起泡器用的拆卸钥匙，开口宽度是22毫米。这里记的是钥匙尺寸。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s08_m01"
+      ],
+      "valid_from": 1775390400,
+      "valid_until": 0,
+      "occurred_at": 1775390400,
+      "created_at": 1775390400,
+      "updated_at": 1775390400,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "aerator_key_opening_width_mm",
+        "fact_slot": "user:self:aerator_key_opening_width_mm",
+        "fact_domain": "aerator_key_opening_width_mm",
+        "fact_value": 22,
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s08_m02",
+      "story_id": "sgv2_s08",
+      "title": "哥哥家起泡器拆卸钥匙的尺寸",
+      "summary": "哥哥家水龙头起泡器的拆卸钥匙，开口宽度是24毫米。这是哥哥那把钥匙的尺寸。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s08_m02"
+      ],
+      "valid_from": 1775476800,
+      "valid_until": 0,
+      "occurred_at": 1775476800,
+      "created_at": 1775476800,
+      "updated_at": 1775476800,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:哥哥",
+        "fact_predicate": "aerator_key_opening_width_mm",
+        "fact_slot": "relation:哥哥:aerator_key_opening_width_mm",
+        "fact_domain": "aerator_key_opening_width_mm",
+        "fact_value": 24,
+        "subject_aliases": [
+          "哥哥"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s08_m03",
+      "story_id": "sgv2_s08",
+      "title": "我的备用垫圈收纳位置",
+      "summary": "我把备用垫圈放在工具箱侧袋里标着水件的小盒。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s08_m03"
+      ],
+      "valid_from": 1775563200,
+      "valid_until": 0,
+      "occurred_at": 1775563200,
+      "created_at": 1775563200,
+      "updated_at": 1775563200,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "spare_gasket_storage_location",
+        "fact_slot": "user:self:spare_gasket_storage_location",
+        "fact_domain": "spare_gasket_storage_location",
+        "fact_value": "工具箱侧袋里标着水件的小盒",
+        "subject_aliases": [
+          "我"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s08_m04",
+      "story_id": "sgv2_s08",
+      "title": "哥哥换的进水软管长度",
+      "summary": "哥哥给他家水龙头换的进水软管长度是60厘米。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "synthetic_source_sgv2_s08_m04"
+      ],
+      "valid_from": 1775649600,
+      "valid_until": 0,
+      "occurred_at": 1775649600,
+      "created_at": 1775649600,
+      "updated_at": 1775649600,
+      "scope": "companion",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "fact_subject": "relation:哥哥",
+        "fact_predicate": "tap_inlet_hose_length_cm",
+        "fact_slot": "relation:哥哥:tap_inlet_hose_length_cm",
+        "fact_domain": "tap_inlet_hose_length_cm",
+        "fact_value": 60,
+        "subject_aliases": [
+          "哥哥"
+        ],
+        "speaker": "user",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s08_m05",
+      "story_id": "sgv2_s08",
+      "title": "小修尺寸图第一次打印比例不对",
+      "summary": "合成执行日志：在虚构软件修屋笔记1.2里，尺寸图已经保存。打印时勾选了“适应纸张”，导致图中的50毫米参考线打印后只有46毫米；这次按原尺寸打印失败，原因是页面缩放把图缩小了。",
+      "kind": "任务经验",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s08_m05"
+      ],
+      "valid_from": 1780142400,
+      "valid_until": 0,
+      "occurred_at": 1780142400,
+      "created_at": 1780142400,
+      "updated_at": 1780142400,
+      "scope": "task_experience",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "app": "修屋笔记",
+        "app_is_fictional": true,
+        "version": "1.2",
+        "outcome": "failed",
+        "preconditions": "尺寸图已保存，打印面板已打开，参考线应为50毫米。",
+        "procedure": "保留“适应纸张”选项后直接打印。",
+        "cause": "开启了“适应纸张”，页面缩放把尺寸图缩小。",
+        "synthetic": true
+      }
+    },
+    {
+      "id": "sgv2_s08_m06",
+      "story_id": "sgv2_s08",
+      "title": "小修尺寸图已按实际大小打印",
+      "summary": "合成执行日志：虚构软件修屋笔记1.2中，我重新打开打印面板，取消“适应纸张”，选择“实际大小”，把缩放设为100%，然后打印。用户量过纸上的参考线，正好50毫米，确认这次一比一打印成功。",
+      "kind": "任务经验",
+      "source": "synthetic_execution_log",
+      "source_ids": [
+        "synthetic_source_sgv2_s08_m06"
+      ],
+      "valid_from": 1780228800,
+      "valid_until": 0,
+      "occurred_at": 1780228800,
+      "created_at": 1780228800,
+      "updated_at": 1780228800,
+      "scope": "task_experience",
+      "deleted": false,
+      "confidence": 1.0,
+      "metadata": {
+        "app": "修屋笔记",
+        "app_is_fictional": true,
+        "version": "1.2",
+        "outcome": "succeeded",
+        "preconditions": "同一份尺寸图已保存，打印面板可用。",
+        "procedure": "取消“适应纸张”；选择“实际大小”；缩放设100%；打印并量参考线。",
+        "synthetic": true
+      }
+    }
+  ],
+  "queries": [
+    {
+      "id": "sgv2_s01_q01",
+      "story_id": "sgv2_s01",
+      "text": "我缝那个帆布午餐袋时，针距通常调到几毫米？别把小姨的那套记到我这里。",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s01_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s01_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "garment_repair_temporal_subject",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s01_q02",
+      "story_id": "sgv2_s01",
+      "text": "如果按五月四号那会儿的做法，我给午餐袋留的是多宽的缝份？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s01_m03"
+      ],
+      "forbidden_ids": [
+        "sgv2_s01_m04"
+      ],
+      "expected_status": "sufficient",
+      "family": "garment_repair_temporal_subject",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s01_q03",
+      "story_id": "sgv2_s01",
+      "text": "那现在做这个袋子，我该留多宽来着？",
+      "history": [
+        {
+          "role": "user",
+          "content": "五月初做午餐袋时，我留的缝份是多少？"
+        },
+        {
+          "role": "assistant",
+          "content": "五月初那一版留的是10毫米。"
+        }
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s01_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s01_m03"
+      ],
+      "expected_status": "sufficient",
+      "family": "garment_repair_temporal_subject",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s01_q04",
+      "story_id": "sgv2_s01",
+      "text": "今天缝得有点泄气，先给我打打气。还有，我们上次核对完午餐袋提手时，最后用了什么加固线迹？",
+      "history": [],
+      "expected_routes": [
+        "chat",
+        "episode"
+      ],
+      "gold_ids": [
+        "sgv2_s01_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s01_m06"
+      ],
+      "expected_status": "sufficient",
+      "family": "garment_repair_temporal_subject",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s01_q05",
+      "story_id": "sgv2_s01",
+      "text": "你还记得我们一起做完的隔热垫里，最后放了哪种填芯吗？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s01_m06"
+      ],
+      "expected_status": "unknown",
+      "family": "garment_repair_temporal_subject",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s01_q06",
+      "story_id": "sgv2_s01",
+      "text": "刚缝出一条歪歪扭扭的线，给今天这个手笨但没放弃的我一句鼓励吧。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "family": "garment_repair_temporal_subject",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "sgv2_s02_q01",
+      "story_id": "sgv2_s02",
+      "text": "那我自己那杯应该称多少豆？",
+      "history": [
+        {
+          "role": "user",
+          "content": "陈晓给她自己做手冲时，每杯用多少豆？"
+        },
+        {
+          "role": "assistant",
+          "content": "她每杯称15克咖啡豆。"
+        }
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s02_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s02_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "coffee_recipe_task_outcomes",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s02_q02",
+      "story_id": "sgv2_s02",
+      "text": "我这套早班手冲最后想接出多少克咖啡液？问的是杯里的成品。",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s02_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s02_m01",
+        "sgv2_s02_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "coffee_recipe_task_outcomes",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s02_q03",
+      "story_id": "sgv2_s02",
+      "text": "萃记上回第一次导配方，按了导出却没拿到文件，卡住的具体原因是什么？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "sgv2_s02_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s02_m06"
+      ],
+      "expected_status": "sufficient",
+      "family": "coffee_recipe_task_outcomes",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s02_q04",
+      "story_id": "sgv2_s02",
+      "text": "后来我在萃记里是按什么顺序把那份配方导成JSON文件的？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "sgv2_s02_m06"
+      ],
+      "forbidden_ids": [
+        "sgv2_s02_m05"
+      ],
+      "expected_status": "sufficient",
+      "family": "coffee_recipe_task_outcomes",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s02_q05",
+      "story_id": "sgv2_s02",
+      "text": "我自己这套早班配方用的水温是多少？我不想拿室友的温度代替。",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s02_m03"
+      ],
+      "expected_status": "unknown",
+      "family": "coffee_recipe_task_outcomes",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s02_q06",
+      "story_id": "sgv2_s02",
+      "text": "给刚开工的我一句带点咖啡香气的早安吧。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "family": "coffee_recipe_task_outcomes",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "sgv2_s03_q01",
+      "story_id": "sgv2_s03",
+      "text": "我常用的那只目镜是多长焦距？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s03_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s03_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "astronomy_equipment_completed_event",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s03_q02",
+      "story_id": "sgv2_s03",
+      "text": "那我自己的那只平时放哪个盒子来着？",
+      "history": [
+        {
+          "role": "user",
+          "content": "我爸常用那只目镜的焦距是多少？"
+        },
+        {
+          "role": "assistant",
+          "content": "你爸常用那只目镜是15毫米。"
+        }
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s03_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s03_m02",
+        "sgv2_s03_m03"
+      ],
+      "expected_status": "sufficient",
+      "family": "astronomy_equipment_completed_event",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s03_q03",
+      "story_id": "sgv2_s03",
+      "text": "上次我们把三张月面素描排完时，最终拿第几张做了封面？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "sgv2_s03_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s03_m06"
+      ],
+      "expected_status": "sufficient",
+      "family": "astronomy_equipment_completed_event",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s03_q04",
+      "story_id": "sgv2_s03",
+      "text": "帮我一次核对两件事：我常用目镜的焦距，还有我们已经定稿的月面素描封面是第几张。",
+      "history": [],
+      "expected_routes": [
+        "fact",
+        "episode"
+      ],
+      "gold_ids": [
+        "sgv2_s03_m01",
+        "sgv2_s03_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s03_m02",
+        "sgv2_s03_m06"
+      ],
+      "expected_status": "sufficient",
+      "family": "astronomy_equipment_completed_event",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s03_q05",
+      "story_id": "sgv2_s03",
+      "text": "我自己那条除露带的额定功率是多少瓦？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s03_m03"
+      ],
+      "expected_status": "unknown",
+      "family": "astronomy_equipment_completed_event",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s03_q06",
+      "story_id": "sgv2_s03",
+      "text": "我们已经挑好的那批土星照片，最后是哪一张当封面？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s03_m06"
+      ],
+      "expected_status": "unknown",
+      "family": "astronomy_equipment_completed_event",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s04_q01",
+      "story_id": "sgv2_s04",
+      "text": "装豆包的外出笼，按标签我应该先扣哪边的哪个扣？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s04_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s04_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "pet_boarding_entity_and_forgetting",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s04_q02",
+      "story_id": "sgv2_s04",
+      "text": "那现在我该到哪儿拿？",
+      "history": [
+        {
+          "role": "user",
+          "content": "豆包的零食是不是已经换过地方？"
+        },
+        {
+          "role": "assistant",
+          "content": "换过，5月20日调整过存放位置。"
+        }
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s04_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s04_m03"
+      ],
+      "expected_status": "sufficient",
+      "family": "pet_boarding_entity_and_forgetting",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s04_q03",
+      "story_id": "sgv2_s04",
+      "text": "五月十号那会儿，豆包的零食还是放在哪里？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s04_m03"
+      ],
+      "forbidden_ids": [
+        "sgv2_s04_m04"
+      ],
+      "expected_status": "sufficient",
+      "family": "pet_boarding_entity_and_forgetting",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s04_q04",
+      "story_id": "sgv2_s04",
+      "text": "出门前帮我对一下：豆包笼门先扣哪边？还有，给寄养阿姨发消息，她希望我什么时候、用什么方式联系？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s04_m01",
+        "sgv2_s04_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s04_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "pet_boarding_entity_and_forgetting",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s04_q05",
+      "story_id": "sgv2_s04",
+      "text": "豆包用的猫砂牌子叫什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s04_m06"
+      ],
+      "expected_status": "unknown",
+      "family": "pet_boarding_entity_and_forgetting",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s04_q06",
+      "story_id": "sgv2_s04",
+      "text": "明天要送豆包去寄养，我有点舍不得，陪我聊两句。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "family": "pet_boarding_entity_and_forgetting",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "sgv2_s05_q01",
+      "story_id": "sgv2_s05",
+      "text": "我自己的访谈节目输出响度目标是多少？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s05_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "audio_editing_fields_and_recovery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s05_q02",
+      "story_id": "sgv2_s05",
+      "text": "那如今这一版留多长来着？",
+      "history": [
+        {
+          "role": "user",
+          "content": "我四月那版访谈节目的片头有多长？"
+        },
+        {
+          "role": "assistant",
+          "content": "四月那版的片头保留8秒。"
+        }
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s05_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m03"
+      ],
+      "expected_status": "sufficient",
+      "family": "audio_editing_fields_and_recovery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s05_q03",
+      "story_id": "sgv2_s05",
+      "text": "声笺那次导WAV为什么会报目标目录不可写？当时到底是哪儿出的问题？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "sgv2_s05_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m06"
+      ],
+      "expected_status": "sufficient",
+      "family": "audio_editing_fields_and_recovery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s05_q04",
+      "story_id": "sgv2_s05",
+      "text": "后来在声笺里成功导出可播放的WAV，我改了保存位置之后又怎么设格式和编码？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "sgv2_s05_m06"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m05"
+      ],
+      "expected_status": "sufficient",
+      "family": "audio_editing_fields_and_recovery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s05_q05",
+      "story_id": "sgv2_s05",
+      "text": "我自己的访谈节目降噪衰减到底设成几分贝？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s05_m02"
+      ],
+      "expected_status": "unknown",
+      "family": "audio_editing_fields_and_recovery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s05_q06",
+      "story_id": "sgv2_s05",
+      "text": "我这版片头现在有几秒？顺便提醒我，这一期结尾最后用了哪段音乐。",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s05_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s05_m03"
+      ],
+      "expected_status": "partial",
+      "family": "audio_editing_fields_and_recovery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s06_q01",
+      "story_id": "sgv2_s06",
+      "text": "我给新人讲这款桌游，一般先讲哪一块、后讲哪一块？按我自己的顺序说。",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s06_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s06_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "tabletop_routine_and_shared_design",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s06_q02",
+      "story_id": "sgv2_s06",
+      "text": "现在要拿那款桌游盒，我该去家里哪个柜子的哪一层？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s06_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s06_m03"
+      ],
+      "expected_status": "sufficient",
+      "family": "tabletop_routine_and_shared_design",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s06_q03",
+      "story_id": "sgv2_s06",
+      "text": "我们已经给自制棋盘定下的南区名字是什么？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "sgv2_s06_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s06_m06"
+      ],
+      "expected_status": "sufficient",
+      "family": "tabletop_routine_and_shared_design",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s06_q04",
+      "story_id": "sgv2_s06",
+      "text": "今晚想开一局，先给我提提兴致，再提醒一下盒子现在放哪儿，以及我惯用的新人讲解顺序。",
+      "history": [],
+      "expected_routes": [
+        "chat",
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s06_m01",
+        "sgv2_s06_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s06_m02",
+        "sgv2_s06_m03"
+      ],
+      "expected_status": "sufficient",
+      "family": "tabletop_routine_and_shared_design",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s06_q05",
+      "story_id": "sgv2_s06",
+      "text": "上回我们一起复盘完之后，最后决定改哪条计分规则？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s06_m06"
+      ],
+      "expected_status": "unknown",
+      "family": "tabletop_routine_and_shared_design",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s06_q06",
+      "story_id": "sgv2_s06",
+      "text": "连输两局有点郁闷，陪我吐槽一下运气吧。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "family": "tabletop_routine_and_shared_design",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "sgv2_s07_q01",
+      "story_id": "sgv2_s07",
+      "text": "出门时我自己的充电线收在哪种袋子里？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s07_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s07_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "travel_packing_multi_intent",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s07_q02",
+      "story_id": "sgv2_s07",
+      "text": "我现在用的这只登机箱，不装东西时有多重？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s07_m04"
+      ],
+      "forbidden_ids": [
+        "sgv2_s07_m03"
+      ],
+      "expected_status": "sufficient",
+      "family": "travel_packing_multi_intent",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s07_q03",
+      "story_id": "sgv2_s07",
+      "text": "我们上次一起给杭州三天行李清单收尾时，最后拿掉了哪样、又加上了哪样？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "sgv2_s07_m05"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "family": "travel_packing_multi_intent",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s07_q04",
+      "story_id": "sgv2_s07",
+      "text": "我在行囊签里把整份行李清单存成一张图，上次成功时是怎么点的？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "sgv2_s07_m06"
+      ],
+      "forbidden_ids": [],
+      "expected_status": "sufficient",
+      "family": "travel_packing_multi_intent",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s07_q05",
+      "story_id": "sgv2_s07",
+      "text": "许安他自己的登机箱空箱是多少公斤？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s07_m03",
+        "sgv2_s07_m04"
+      ],
+      "expected_status": "unknown",
+      "family": "travel_packing_multi_intent",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s07_q06",
+      "story_id": "sgv2_s07",
+      "text": "我自己的充电线放哪个袋子？还有，这趟住的酒店把我们安排在几层？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s07_m01"
+      ],
+      "forbidden_ids": [
+        "sgv2_s07_m02"
+      ],
+      "expected_status": "partial",
+      "family": "travel_packing_multi_intent",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s08_q01",
+      "story_id": "sgv2_s08",
+      "text": "动手前替我核对两样：我家那把起泡器拆卸钥匙开口几毫米，备用垫圈又被我收在哪儿？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "sgv2_s08_m01",
+        "sgv2_s08_m03"
+      ],
+      "forbidden_ids": [
+        "sgv2_s08_m02"
+      ],
+      "expected_status": "sufficient",
+      "family": "home_repair_adjacent_fields",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s08_q02",
+      "story_id": "sgv2_s08",
+      "text": "我家这个起泡器的螺纹外径究竟是多少毫米？我问的是螺纹，不是拆卸钥匙的开口。",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s08_m01",
+        "sgv2_s08_m02"
+      ],
+      "expected_status": "unknown",
+      "family": "home_repair_adjacent_fields",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s08_q03",
+      "story_id": "sgv2_s08",
+      "text": "修屋笔记里那张尺寸图第一次印出来为什么会小一圈？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "sgv2_s08_m05"
+      ],
+      "forbidden_ids": [
+        "sgv2_s08_m06"
+      ],
+      "expected_status": "sufficient",
+      "family": "home_repair_adjacent_fields",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s08_q04",
+      "story_id": "sgv2_s08",
+      "text": "那后来具体改哪几个选项，才恢复成一比一打印的？",
+      "history": [
+        {
+          "role": "user",
+          "content": "修屋笔记那张图第一次打印，尺寸不对是怎么回事？"
+        },
+        {
+          "role": "assistant",
+          "content": "第一次开启了“适应纸张”，图被缩小了。"
+        }
+      ],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "sgv2_s08_m06"
+      ],
+      "forbidden_ids": [
+        "sgv2_s08_m05"
+      ],
+      "expected_status": "sufficient",
+      "family": "home_repair_adjacent_fields",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s08_q05",
+      "story_id": "sgv2_s08",
+      "text": "我家这次要换的进水软管，应该拿多长的那根？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "sgv2_s08_m04"
+      ],
+      "expected_status": "unknown",
+      "family": "home_repair_adjacent_fields",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "sgv2_s08_q06",
+      "story_id": "sgv2_s08",
+      "text": "总算有勇气开始做点小修了，给我一句开工前的打气话。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [],
+      "expected_status": "not_needed",
+      "family": "home_repair_adjacent_fields",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    }
+  ]
+}

@@ -1,0 +1,1678 @@
+{
+  "source_sha256": {
+    "src/guanghe_companion/__init__.py": "05d083ba16c64028a324d6651c762c9f2a026a761ced00b1934006de8b0a3147",
+    "src/guanghe_companion/actions.py": "c88a4b75700a598960b415d67fcb0ccad07da44b344f1a226f549eb5c7c1467d",
+    "src/guanghe_companion/ai_context_builder.py": "b4f5eea89e2f87638e28dc2e87482819bea161e75d7f21fb312a1eb9f3989fff",
+    "src/guanghe_companion/ai_expressor.py": "9df5a429804bcfd4e92a7c6c68615547bbc7c015daafa5130fd983fbc72768c3",
+    "src/guanghe_companion/app.py": "30d6f5253bb9a358f0f020091b4564444a3133b9615134134f78475de2d12ff4",
+    "src/guanghe_companion/capability_panels.py": "5f2a7102d13be4d88484650eef28237c81d8b71f32630a066ece260992be26cc",
+    "src/guanghe_companion/capability_runtime.py": "df94a4a2677743d069ce9e205e7a4df1535ca54a492d55dbc3c8d07977b56a9d",
+    "src/guanghe_companion/capability_settings.py": "78876e9e566cf8b655cdd95d288b27c1fae37e63c268380872c5cc3fa5701a2f",
+    "src/guanghe_companion/character_generation_workflow.py": "fbd56a9a3acd00ae91800150fe1f93a306c66f3921619df33296942a1ba1bf97",
+    "src/guanghe_companion/character_inspiration.py": "e6a8e5b946c3ee4645b0dadfc6bfe022538c54f5b2f562ad3504c44adff463d6",
+    "src/guanghe_companion/character_library_view_model.py": "58fb7a018ad657a6693755f7b6df6c9b87575cc11f90c385a6e574add9cba8b3",
+    "src/guanghe_companion/character_local_copy.py": "a81b3feb64ec0c5762b2e27948abdcbfabdaef56c7196e12fea172edc8092ed8",
+    "src/guanghe_companion/character_pack.py": "bb83b729d5852baa5f4a5e656b65fb51819e029dfe836ad7085b9104eab6682e",
+    "src/guanghe_companion/character_pack_import.py": "2faaef1182a4a7a605e373067c825ab68426daafe3cdc6e21821f6a2dc5119ea",
+    "src/guanghe_companion/character_performance_profile.py": "6c46a148fc87e0f08f0d43f5d30b3105ee26c9b33aff26634e5dbaae4b674cd8",
+    "src/guanghe_companion/character_registry.py": "2c03fc9b99c0b130406d94fe108d6b570fba3dbfe41eafb4804c317c4a421c9b",
+    "src/guanghe_companion/character_resources.py": "7af6b04a8c6e0460a6e09861a8414f10a52d910b97afcd8a698e46fcb617093f",
+    "src/guanghe_companion/character_session.py": "da5868ddfb59bcd4a14a095edde01369f00cca61dc7580a49b592c36c5e195c3",
+    "src/guanghe_companion/character_voice_profile.py": "9b05f20ee4b92bc843d4279080fa078db21cbd7924b18b8924bdebca3e53a3f2",
+    "src/guanghe_companion/chat_memory.py": "29a1d18bb30266190f5e12e3d4571affab6361c2c38458343ad2a51c64f4b108",
+    "src/guanghe_companion/chat_memory_extraction.py": "36aff4a30c2c609bdb6d186be44b272db354426ab3ab12f845aed2643bc51e55",
+    "src/guanghe_companion/chat_memory_plans.py": "ddc28a5a2bb93a556e9d0dd6ef39d042ff3a8222afc33d8bbbf40205d9d5ed58",
+    "src/guanghe_companion/companion_dialogue_policy.py": "843efd1fcb8f14429282032e0a7f63be26532b6fb8803ee9d184985440f05784",
+    "src/guanghe_companion/companion_moments.py": "f4fc274a88c873b14e9ccc3a78d07fb445782cf13181b3e0b52796cfa74dcded",
+    "src/guanghe_companion/companion_story_runtime.py": "f27d7a3b8dd29b8d017008e3029033817f2cbe3ef334657f1f3f2f2950d17a22",
+    "src/guanghe_companion/controller.py": "b3bce33efc560ba94de3fa1a04153c4c9da6b788836053d25fc7d72bcf815272",
+    "src/guanghe_companion/demo.py": "47b2abf2c72c80e08e4663e589f532a173c12c5215759080f5a793c896d9aa86",
+    "src/guanghe_companion/desktop_dialogue_service.py": "526dfe7ab0a7a75d5a104f154baeb447de1ff26455d0d8e4d0927815e15204df",
+    "src/guanghe_companion/desktop_shell.py": "de35fb5e98f140cec8f843794061d6a7a7847437944b51ba6f269b7506dcb9fb",
+    "src/guanghe_companion/device_context.py": "edf75c73b976339ed65be7d1d7008476e5489e8f7bbe98b334ac4a1564265336",
+    "src/guanghe_companion/dialogue.py": "fa3c3965d12ed9b8c91c14ecf8246e71bbd7282788a89c61fcdf266183b4024b",
+    "src/guanghe_companion/dialogue_history.py": "80877f89e62bcc99104327eeb3251e7e0785cb3dcdcf25215458214773671a68",
+    "src/guanghe_companion/dialogue_parser.py": "eae12a37b3cd83ec98c877a0ddbbc1ff866afc3568ce2ac8667c4b7930406644",
+    "src/guanghe_companion/distribution_boundaries.py": "29cb735a34e0d51d8537cc4a2a2e005525768a985990213f0e319e18388f7cc5",
+    "src/guanghe_companion/emotional_memory.py": "75a95ca6485d97577bd2fd77eeeffc362ae8d2caef84dcfb8cc2387a9f21f862",
+    "src/guanghe_companion/emotional_memory_policy.py": "32ab7dd27582c31c74ac8f367727562a2eaa1b8124bcf6d94076b5e4e4e46290",
+    "src/guanghe_companion/emotional_memory_reflection.py": "4b7f9471eb56eb879b6d1594405e03ed1a455a784fca066aced6f999bc157b73",
+    "src/guanghe_companion/emotional_memory_retrieval.py": "f5b6481c44e32409fefbe8fcafc305f1d34750ddf598ee4d4849042828509849",
+    "src/guanghe_companion/emotional_memory_service.py": "a1b0ffb13e2a3839f742d23ac07f99a154f8eeca166128a365bd8bb8061b8455",
+    "src/guanghe_companion/engine.py": "4f60bd606cc8303f387e9f9e64d25a109d42c4f820b5cd9c1d502e87b728d455",
+    "src/guanghe_companion/events.py": "66b3e663f047b8b841573233adc1ce21c282fb7fdbd9a4f4c9ea8b06bcdf9c5d",
+    "src/guanghe_companion/expression_clients.py": "346c5fe87c536cd00a88d7835991ceee00a4c8245cdd2147c4b18e3e5e9c5403",
+    "src/guanghe_companion/expression_context.py": "d36e13724cdf8fca60468bc71a9cd739a66d424591b56699c424588c1fda54af",
+    "src/guanghe_companion/expression_diagnostic_view.py": "d021a2921a9d3303197c39d93f39603e5c22a217bb07ccab458adc13b1f2f778",
+    "src/guanghe_companion/expression_diagnostics.py": "c1d4f46ff3a50aa47356f502f5211436453b0519320cd00789ce82dba026f031",
+    "src/guanghe_companion/expression_event_pipeline.py": "5aecfbf055635c7f743b59787937b506f4a4954364224b0a73843207b3ddf7fe",
+    "src/guanghe_companion/expression_expressor.py": "7c069440d3344d2903e370f042972b56082899dfc8f426db6c45ebdb0c218788",
+    "src/guanghe_companion/expression_parser.py": "dbd28eaaa14613624dd2674ddb812b5ea47c737ff1e6ddb41a1d7ee228e02e4e",
+    "src/guanghe_companion/expression_prompt_budget.py": "40ddd61a73a6566c122bad8180c0fd9f0feb6d3ebb8b7366043bbd7b263b0a18",
+    "src/guanghe_companion/expression_provider_diagnostics.py": "cb3463ea2f0912b8bcf4627cafb93322529e296100065016221c46d735c0e6a9",
+    "src/guanghe_companion/expression_refinement.py": "0f88b279ab946269fd2ff4e0f838097868c992f00e19fe636df13a2164119d6f",
+    "src/guanghe_companion/expression_request.py": "0871bfbf230b9c2e4c3da5cb9118b7921f2fe22ce9808a3adffb307c00f66d44",
+    "src/guanghe_companion/expression_settings.py": "534a2204684a1c33ba445b2369f6dd5593477826dcdb3792a88dc909dbcc3c9d",
+    "src/guanghe_companion/focus_companion.py": "40d695af9927ab9f47e574d11fd2a8cce978f00788930629988bb8da69263fb9",
+    "src/guanghe_companion/focus_companion_qt.py": "ace9300b2ff4b51016b57414cc345d12e9cb7accb58ea6a8a31e789c9e4be66d",
+    "src/guanghe_companion/focus_companion_runtime.py": "82435a1a4f8389198ff95b24e4e2577b6345b43d8dc557d1047f74511f4bcd89",
+    "src/guanghe_companion/grounded_facts.py": "3084835d82df8c23eadbe27feca6ddd5a402cc58a68e722d54ba6e4f0fcd0b77",
+    "src/guanghe_companion/host_auth.py": "6c4f0f3cac336a82b29469571e8df7cc90f94c0e2ff8b695df54837a427bd301",
+    "src/guanghe_companion/host_runtime.py": "e03b2990e07ba5d8601daba0c86ad0a515a52949a44de760325621a54033f935",
+    "src/guanghe_companion/host_service.py": "3bbed8db26a9fb9422be7d3227a3ddaa8ef7b52778c3b311ea38de84b45d9f13",
+    "src/guanghe_companion/host_transport.py": "54cb67fcdfa4408976cb172583293d3ee008bfd3248e179851fb44fa631b6f1f",
+    "src/guanghe_companion/interaction_intents.py": "fa1747388abaeae02dfcc55da7bce50c08ba2bb7dfa62253671752ad0703a678",
+    "src/guanghe_companion/inventory.py": "9fa14648d2512ece2d7e7ae766f9db51fd6681ee242bf2615dd1c3fd8bff73ad",
+    "src/guanghe_companion/legacy_memory_migration.py": "f31a505654eac09cbba1b5ee6cf39e9c16cf68d24c38185034479512cf143a78",
+    "src/guanghe_companion/live2d_web.py": "1b0beb2bd935567258161740907a604da1a78f06dd0e042073603c6a6af12541",
+    "src/guanghe_companion/llm_smoke.py": "48b673d1df66c4c31da090ba487bb5fbeeae5b34c664e1d1597fd13044b18798",
+    "src/guanghe_companion/memory.py": "00f6db899c8ac3c965533a625b88cebc38f0b25e69ea50b6efddd9a37a87097b",
+    "src/guanghe_companion/memory_album_controller.py": "a6538f823f5b478bb1a742dbe39f9c46c0d36d6bf75904ba54854cfde7b9a7f5",
+    "src/guanghe_companion/memory_album_qt.py": "4521dbc464317d4c869f248b81f50ba55746d5cb60e51b2ddb15e2825c47dc79",
+    "src/guanghe_companion/memory_album_view_model.py": "9353322d280b7715ddce0a45397a2e85fa139a5871c47d8f15836b6224d1c7d5",
+    "src/guanghe_companion/memory_correction.py": "d017e4ee2d11a3e03222d1f4ee9c3d0a1b3b98a6e8afae2424b9aeffd785f619",
+    "src/guanghe_companion/memory_document.py": "be2f49c803f3d016a6cf3416bc02090b1cab9777f86aec88daef75b06b6e0802",
+    "src/guanghe_companion/memory_fusion.py": "391c2583ec70aee49fa1e4436bda34e385563c2b50ae4629198e7d85fc1eb0c2",
+    "src/guanghe_companion/memory_hierarchy.py": "dff13f4698e3c323c0fd257135f884595111d18206b7326c5accb6f7b6e821d4",
+    "src/guanghe_companion/memory_index.py": "905e17fc2814adf72a46f576bece460bcd959a7ee7df88f09c67d334fab69916",
+    "src/guanghe_companion/memory_index_schema.py": "ace424c268b2550e38f29eff4fe54db94b7f9404d8fdd82eb9ed67cabdc1f290",
+    "src/guanghe_companion/memory_integration_bridge.py": "6356fc2a0acf0147b1f6e749c87d6bc0d7bcaedad8a927e05fbc3db186aab1d4",
+    "src/guanghe_companion/memory_settings_qt.py": "9268a8ab8ce3d4e401c34aa45b597cac11cb9a3b805b4197b82af2e7531b3f82",
+    "src/guanghe_companion/memory_settings_view_model.py": "31ffb5fed4de84b727062aa12119d06023073f7355a78dedc36100c4acfedd4b",
+    "src/guanghe_companion/mobile_link_qt.py": "c626d837766a9848d63a54d4b5d04a3c0b3e1226677bb4d5fc8c514e8e552ff5",
+    "src/guanghe_companion/mobile_link_view_model.py": "d8cf9ce76a7678c9fabc80ac4d3de3da7a887c26c8f882b2483bab83d9b0f5b9",
+    "src/guanghe_companion/models.py": "d508b9506097ba9f4589546e81a9b473e9ee8574a84edfc24d901c368eb6861c",
+    "src/guanghe_companion/motion.py": "eb9240350b50d1653fab7f4f32e57c3def43955f6d4474a351bf92688ce679b6",
+    "src/guanghe_companion/ondemand_memory.py": "c314d09058e421a1e5a1fdb963cbcf4021d27dac0fe877ed0d3f7544be256b26",
+    "src/guanghe_companion/persona.py": "9e8ee73bd7add19011ae0163db5d0064c70131870a7e318917254b74c5550878",
+    "src/guanghe_companion/personal_task_runner.py": "e7820edda92b9de7ea58f617ff85d517335a048a6e86dbe60efe10f7fedefb8a",
+    "src/guanghe_companion/personal_tasks.py": "87e1657ad9e811d7d87ec5d1c3c56c7e9de460072a691cbd3c1a2ce72763572f",
+    "src/guanghe_companion/plugin_api.py": "97fcce67b2d7227ccd4df8e4836c4aa0b8e5be440de6dfbf888515518f42df33",
+    "src/guanghe_companion/plugin_audit.py": "2c4c7abfe9beefee7016eaf34b259440014137863c3fe8c9ab60889820d01b12",
+    "src/guanghe_companion/plugin_catalog_view_model.py": "84bef6f56dc1aa4d43a7edb2c4093f1e45b48eda8a9ea61092de2d06729d601c",
+    "src/guanghe_companion/plugin_center_app.py": "31adf09d32592eda73cc88f00f44693c4e63ea9bc5f7264aac2b2a6fc3676106",
+    "src/guanghe_companion/plugin_center_controller.py": "b9330fdf805ff41ba0c8d421f6f4ddb2f0805a2057f67306f20b109b4beb9237",
+    "src/guanghe_companion/plugin_center_qt.py": "83d24a99aeb4d4eec534f7055dd55aa48becf67e90ed936fa48ebd0a625912ec",
+    "src/guanghe_companion/plugin_configuration.py": "a57cf090236e6005cfe9b7f17b9d7b9879f17b360e2083f17d59ad8d34de5233",
+    "src/guanghe_companion/plugin_enabled_controller.py": "c43bfa3097d58edf74b4c754a7b3af0a33c249cfbc2a0b287048a4c44ffc4324",
+    "src/guanghe_companion/plugin_health.py": "fe12f15c8dd0165baf383668017f3c4e407de14f24d9c446579accc62d4cf970",
+    "src/guanghe_companion/plugin_host.py": "a68b9fd72afdd386f1f1b02443898979eea7aafeac862bd0a0570ef90c6932b4",
+    "src/guanghe_companion/plugin_journal.py": "63981a7176009fe74f61ce096073761c25036e0ed577e07761609206204a7324",
+    "src/guanghe_companion/plugin_manifest.py": "db749b4eed5bd7bfa6084c204fb38d5d6d56c2590669c7b87673273c5c418e52",
+    "src/guanghe_companion/plugin_package.py": "86f9740819c1c94ee1d9c30deb264b33f51cf9a260ce97f981ed69d3014c5cb6",
+    "src/guanghe_companion/plugin_provider_adapters.py": "522d28bdc1dbcf907dce3865f764d2208fe08278470d672bf2963c9a5d0a6bba",
+    "src/guanghe_companion/plugin_runtime.py": "2e9e1aa3ff135391558cc50477932ab65a08eb9b65397139d309733a09b8af1e",
+    "src/guanghe_companion/plugin_story_bridge.py": "0ae638faf86f3ee0355f099e071e9a786c2d5f2b9b63ec24aeb305a76cd15da5",
+    "src/guanghe_companion/plugin_subsystem.py": "37afce07bc0803906004fe7089955da4a0c03ad412c6137b6cf7ab9212e61100",
+    "src/guanghe_companion/presentation_renderer.py": "a82ee711e83c4fdc81d9a7f05c20c31cc460a7dd74762bb58584c720cc3537b9",
+    "src/guanghe_companion/proactive_companion.py": "e00ef472fdccba181f45ab8c2378ae6cabfb38ed8d41a414f0865e0a74b0b8dc",
+    "src/guanghe_companion/relationship.py": "82f7327ce25fd2f3a6c181f4f095c97dec8adfc9382f21660584174deebda22a",
+    "src/guanghe_companion/release_security.py": "67f8f29478a5fbc23213e8841cab037fc7585945343dceabf65565715247626e",
+    "src/guanghe_companion/retrieval_contract.py": "14ab0482234b2510fca61113ab1f62280a1e5c4c448fffd252ebe572e209039c",
+    "src/guanghe_companion/retrieval_evidence.py": "fa5dab27f5540809741e348596422b6c3d840dd8df158e1fc6dc8f6eafc846bc",
+    "src/guanghe_companion/retrieval_fact_schema.py": "952635d6f4787189c018b0583ededc49c1888077673a1bd57082421444d1436b",
+    "src/guanghe_companion/retrieval_router.py": "28d204c09e65652389a89d8893b18ffa9886bdff65b4ac106c43ed58acaf4ab5",
+    "src/guanghe_companion/runtime_paths.py": "a17994a0abec95e3c971417a5ad7a089e3c5a2dc7cb0084ea6458eab00e83db0",
+    "src/guanghe_companion/screen_observation.py": "b3ab107d67e346a22097fbf70bbb74bdab9ea5c16b336de80e40b29f316bd2a3",
+    "src/guanghe_companion/semantic_memory.py": "aff43a3ef22e785cf972ffcb0853a164d9cfc06e87267379a73cfb93b4b09eb6",
+    "src/guanghe_companion/session_goals.py": "4cbe930a04b1353ea8b0df5c7d75a6d290650390b16df65b01df82c4ee3ed8f2",
+    "src/guanghe_companion/shop_items.py": "b280112754ec75ccf0bccad497616d1a180167627ebd67f6ef4b8ed9c875939b",
+    "src/guanghe_companion/snapshot.py": "7f8440b891ef2fe58deb56d9f2349fe5a850f1c082865f994ff1e0239a07a2e2",
+    "src/guanghe_companion/snapshot_renderer.py": "c6e4cbf5b71dacd8c34cd979af77760ea7800ca6e8df15d416a03a773a41e0c9",
+    "src/guanghe_companion/spirit_stage.py": "6f53c03d4c43a102b517dc10c15d0d28b1d1d28780a776285811a31a471e3bf2",
+    "src/guanghe_companion/storage.py": "21f0a470014e26317917e9a50d4f71a0c3bbf54496b9a3290bf1ee3ef7a4e723",
+    "src/guanghe_companion/topic_scout.py": "bad5cf48350b2cdaba4aac1072f6dfc3ae876440855833bd67108d50f81ac2e5",
+    "src/guanghe_companion/tray_controller.py": "3f0b758afa99dc32a8d7b56a63a25ca0113b3302db090f83fce6bd1530dc70f1",
+    "src/guanghe_companion/ui_controls.py": "fa1882ff81794b0872b38d817f914166b090abf37887f9e72f8fcc7a1a7004d6",
+    "src/guanghe_companion/visual_actions.py": "ab661a746e8d46e0a5865146af6eeaa7c4e1d85ad7b324bfa11ead04798a4a4d",
+    "src/guanghe_companion/voice_asr.py": "d1efc7b36c24e91dc5ab815338ba9087f22c0d7976726e72062b7d90b2eda3ca",
+    "src/guanghe_companion/voice_async.py": "31f6438859e8acfb0f68b4a8cb275ea477d2aa88d9e6d86b5d5ce4f0e033ba45",
+    "src/guanghe_companion/voice_provider_catalog.py": "e9113941cb32da07f98eb8a0803fba786e2a6a1ed0e390233531a5fb1523a0f8",
+    "src/guanghe_companion/voice_service_control.py": "f359b03c14bcd1e995fc78b78c89c5f87233a553e50ad4fbf0220acb1787aa7e",
+    "src/guanghe_companion/voice_tts.py": "98435c2c2d4798a3491f554928144b92ac07f07e52ee676ef545606e6a60d8ff",
+    "src/guanghe_companion/web_search.py": "9166301ec4b3300591648bcdf93699b893144fc266e9053f3a3b69e13de26daa"
+  },
+  "status": "measured_synthetic_retrieval",
+  "by_split": {
+    "development": {
+      "queries": 108,
+      "stories": 18,
+      "answerable_queries": 52,
+      "no_answer_queries": 29,
+      "macro_recall_at_4": 0.9711538461538461,
+      "delivered_recall": 0.9711538461538461,
+      "precision_returned": 0.9711538461538461,
+      "ndcg_at_4_binary": 0.973329753707028,
+      "mrr": 0.9807692307692307,
+      "all_gold_delivered": {
+        "numerator": 50,
+        "denominator": 52,
+        "rate": 0.9615384615384616
+      },
+      "no_answer_injection": {
+        "numerator": 0,
+        "denominator": 29,
+        "rate": 0.0
+      },
+      "unnecessary_retrieval": {
+        "numerator": 0,
+        "denominator": 27,
+        "rate": 0.0
+      },
+      "route_exact": {
+        "numerator": 108,
+        "denominator": 108,
+        "rate": 1.0
+      },
+      "status_exact": {
+        "numerator": 105,
+        "denominator": 108,
+        "rate": 0.9722222222222222
+      },
+      "correct_unknown_with_no_injection": {
+        "numerator": 28,
+        "denominator": 29,
+        "rate": 0.9655172413793104
+      },
+      "answerable_zero_evidence": {
+        "numerator": 1,
+        "denominator": 52,
+        "rate": 0.019230769230769232
+      },
+      "forbidden_injection": {
+        "numerator": 0,
+        "denominator": 108,
+        "rate": 0.0
+      },
+      "structured_wrong_injection": {
+        "numerator": 0,
+        "denominator": 108,
+        "rate": 0.0
+      },
+      "historical_wrong_injection": {
+        "numerator": 0,
+        "denominator": 108,
+        "rate": 0.0
+      },
+      "planned_wrong_injection": {
+        "numerator": 0,
+        "denominator": 108,
+        "rate": 0.0
+      },
+      "forgotten_injection": {
+        "numerator": 0,
+        "denominator": 108,
+        "rate": 0.0
+      },
+      "isolation_injection": {
+        "numerator": 0,
+        "denominator": 108,
+        "rate": 0.0
+      },
+      "persona_config_unchanged": {
+        "numerator": 108,
+        "denominator": 108,
+        "rate": 1.0
+      },
+      "persona_config_delivered": {
+        "numerator": 108,
+        "denominator": 108,
+        "rate": 1.0
+      },
+      "overview_source_coverage": {
+        "numerator": 10,
+        "denominator": 10,
+        "rate": 1.0
+      },
+      "overview_extractive_entailment": {
+        "numerator": 10,
+        "denominator": 10,
+        "rate": 1.0
+      },
+      "overview_source_fingerprint": {
+        "numerator": 10,
+        "denominator": 10,
+        "rate": 1.0
+      },
+      "resolution_source_coverage": {
+        "numerator": 5,
+        "denominator": 5,
+        "rate": 1.0
+      },
+      "resolution_source_fingerprint": {
+        "numerator": 5,
+        "denominator": 5,
+        "rate": 1.0
+      },
+      "duplicate_evidence_queries": {
+        "numerator": 0,
+        "denominator": 108,
+        "rate": 0.0
+      },
+      "errors": {
+        "numerator": 0,
+        "denominator": 108,
+        "rate": 0.0
+      },
+      "stages_ms": {
+        "context_assembly": {
+          "n": 108,
+          "p50": 0.2523015,
+          "p95": 0.4891530499999999,
+          "p99": 0.6640660199999995,
+          "min": 0.162906,
+          "max": 3.385558
+        },
+        "index_and_query_prepare": {
+          "n": 108,
+          "p50": 0.133627,
+          "p95": 0.5765297499999997,
+          "p99": 5.207848639999991,
+          "min": 0.024196,
+          "max": 6.454747
+        },
+        "retrieval_context_assembly": {
+          "n": 108,
+          "p50": 0.13662099445355125,
+          "p95": 0.34072050329996256,
+          "p99": 0.8059837976179525,
+          "min": 0.05720600165659562,
+          "max": 14.620873000239953
+        },
+        "retrieval_database_read": {
+          "n": 108,
+          "p50": 2.2392829960153904,
+          "p95": 9.062835049553511,
+          "p99": 19.907880128012007,
+          "min": 0.46689599548699334,
+          "max": 95.93579799548024
+        },
+        "retrieval_eligibility_and_evidence": {
+          "n": 80,
+          "p50": 0.06918450526427478,
+          "p95": 0.5135771956702224,
+          "p99": 1.0750329915754213,
+          "min": 0.0003899986040778458,
+          "max": 1.7272719996981323
+        },
+        "retrieval_external_read": {
+          "n": 7,
+          "p50": 0.0003109962563030422,
+          "p95": 0.0005769987183157352,
+          "p99": 0.0006441988807637242,
+          "min": 0.0002500019036233425,
+          "max": 0.0006609989213757217
+        },
+        "retrieval_finalize": {
+          "n": 108,
+          "p50": 0.7569489971501753,
+          "p95": 6.373589597569662,
+          "p99": 8.772682304406771,
+          "min": 0.29802000062773004,
+          "max": 8.94526800402673
+        },
+        "retrieval_ranking": {
+          "n": 80,
+          "p50": 0.08313500075018965,
+          "p95": 0.18215055133623537,
+          "p99": 0.3683054266730283,
+          "min": 0.009805000445339829,
+          "max": 0.881713000126183
+        },
+        "retrieval_routing": {
+          "n": 108,
+          "p50": 0.04429199907463044,
+          "p95": 0.14066400181036415,
+          "p99": 0.23920884312246904,
+          "min": 0.0056390053941868246,
+          "max": 0.37403600435936823
+        },
+        "retrieval_total": {
+          "n": 108,
+          "p50": 5.5798854991735425,
+          "p95": 15.63002865004818,
+          "p99": 25.564219475418163,
+          "min": 0.8667910005897284,
+          "max": 100.48424499836983
+        },
+        "retrieve": {
+          "n": 108,
+          "p50": 5.6083985,
+          "p95": 15.67607214999999,
+          "p99": 25.63466999999995,
+          "min": 0.881312,
+          "max": 100.521931
+        },
+        "total": {
+          "n": 108,
+          "p50": 6.151584,
+          "p95": 16.41734024999999,
+          "p99": 26.50740568999995,
+          "min": 1.155866,
+          "max": 101.107737
+        }
+      },
+      "warm_total_ms": {
+        "n": 108,
+        "p50": 6.151584,
+        "p95": 16.41734024999999,
+        "p99": 26.50740568999995,
+        "min": 1.155866,
+        "max": 101.107737
+      },
+      "cold_query_total_ms": {
+        "n": 0
+      },
+      "embedding_query_calls": 0,
+      "passage_encoded_entries": 0,
+      "rows_loaded": {
+        "n": 108,
+        "p50": 1.0,
+        "p95": 27.149999999999906,
+        "p99": 65.85999999999999,
+        "min": 0.0,
+        "max": 128.0
+      },
+      "context_chars": {
+        "n": 108,
+        "p50": 522.0,
+        "p95": 1485.2499999999993,
+        "p99": 1632.81,
+        "min": 498.0,
+        "max": 1719.0
+      },
+      "bge_tokenizer_prompt_tokens": {
+        "n": 108,
+        "p50": 851.5,
+        "p95": 1459.1,
+        "p99": 1565.6199999999997,
+        "min": 834.0,
+        "max": 1583.0
+      },
+      "provider_tokens": "not_run",
+      "actual_answer_accuracy": "not_run",
+      "persona_behavior": "not_run"
+    },
+    "validation": {
+      "queries": 36,
+      "stories": 6,
+      "answerable_queries": 19,
+      "no_answer_queries": 11,
+      "macro_recall_at_4": 0.6842105263157895,
+      "delivered_recall": 0.6842105263157895,
+      "precision_returned": 0.6578947368421053,
+      "ndcg_at_4_binary": 0.6647857765037609,
+      "mrr": 0.6578947368421053,
+      "all_gold_delivered": {
+        "numerator": 13,
+        "denominator": 19,
+        "rate": 0.6842105263157895
+      },
+      "no_answer_injection": {
+        "numerator": 0,
+        "denominator": 11,
+        "rate": 0.0
+      },
+      "unnecessary_retrieval": {
+        "numerator": 0,
+        "denominator": 6,
+        "rate": 0.0
+      },
+      "route_exact": {
+        "numerator": 31,
+        "denominator": 36,
+        "rate": 0.8611111111111112
+      },
+      "status_exact": {
+        "numerator": 30,
+        "denominator": 36,
+        "rate": 0.8333333333333334
+      },
+      "correct_unknown_with_no_injection": {
+        "numerator": 11,
+        "denominator": 11,
+        "rate": 1.0
+      },
+      "answerable_zero_evidence": {
+        "numerator": 6,
+        "denominator": 19,
+        "rate": 0.3157894736842105
+      },
+      "forbidden_injection": {
+        "numerator": 0,
+        "denominator": 36,
+        "rate": 0.0
+      },
+      "structured_wrong_injection": {
+        "numerator": 1,
+        "denominator": 36,
+        "rate": 0.027777777777777776
+      },
+      "historical_wrong_injection": {
+        "numerator": 0,
+        "denominator": 36,
+        "rate": 0.0
+      },
+      "planned_wrong_injection": {
+        "numerator": 0,
+        "denominator": 36,
+        "rate": 0.0
+      },
+      "forgotten_injection": {
+        "numerator": 0,
+        "denominator": 36,
+        "rate": 0.0
+      },
+      "isolation_injection": {
+        "numerator": 0,
+        "denominator": 36,
+        "rate": 0.0
+      },
+      "persona_config_unchanged": {
+        "numerator": 36,
+        "denominator": 36,
+        "rate": 1.0
+      },
+      "persona_config_delivered": {
+        "numerator": 36,
+        "denominator": 36,
+        "rate": 1.0
+      },
+      "overview_source_coverage": {
+        "numerator": 2,
+        "denominator": 2,
+        "rate": 1.0
+      },
+      "overview_extractive_entailment": {
+        "numerator": 2,
+        "denominator": 2,
+        "rate": 1.0
+      },
+      "overview_source_fingerprint": {
+        "numerator": 2,
+        "denominator": 2,
+        "rate": 1.0
+      },
+      "resolution_source_coverage": {
+        "numerator": 0,
+        "denominator": 0,
+        "rate": null
+      },
+      "resolution_source_fingerprint": {
+        "numerator": 0,
+        "denominator": 0,
+        "rate": null
+      },
+      "duplicate_evidence_queries": {
+        "numerator": 0,
+        "denominator": 36,
+        "rate": 0.0
+      },
+      "errors": {
+        "numerator": 0,
+        "denominator": 36,
+        "rate": 0.0
+      },
+      "stages_ms": {
+        "context_assembly": {
+          "n": 36,
+          "p50": 0.243758,
+          "p95": 0.5167415,
+          "p99": 0.6318629499999999,
+          "min": 0.160031,
+          "max": 0.655881
+        },
+        "index_and_query_prepare": {
+          "n": 36,
+          "p50": 0.1185795,
+          "p95": 0.367615,
+          "p99": 0.43896119999999994,
+          "min": 0.045038,
+          "max": 0.459194
+        },
+        "retrieval_context_assembly": {
+          "n": 36,
+          "p50": 0.08639500083518215,
+          "p95": 0.24195624973799568,
+          "p99": 0.28313524890108965,
+          "min": 0.0580080013605766,
+          "max": 0.2868329975171946
+        },
+        "retrieval_database_read": {
+          "n": 36,
+          "p50": 2.2269395012699533,
+          "p95": 7.9106587490969105,
+          "p99": 66.91641594879898,
+          "min": 0.4499299975577742,
+          "max": 97.85328799625859
+        },
+        "retrieval_eligibility_and_evidence": {
+          "n": 29,
+          "p50": 0.05896900256630033,
+          "p95": 0.37895020068390217,
+          "p99": 0.6441495622857472,
+          "min": 0.0003800014383159578,
+          "max": 0.6908740033395588
+        },
+        "retrieval_external_read": {
+          "n": 2,
+          "p50": 0.0003210006980225444,
+          "p95": 0.00046499917516484857,
+          "p99": 0.00047779903979972005,
+          "min": 0.00016100239008665085,
+          "max": 0.0004809990059584379
+        },
+        "retrieval_finalize": {
+          "n": 36,
+          "p50": 0.43640900184982456,
+          "p95": 4.135751252761111,
+          "p99": 4.545152594801038,
+          "min": 0.29566600278485566,
+          "max": 4.759059993375558
+        },
+        "retrieval_ranking": {
+          "n": 29,
+          "p50": 0.04633999924408272,
+          "p95": 0.17086400330299506,
+          "p99": 0.18941263930173588,
+          "min": 0.00824299786472693,
+          "max": 0.19360199803486466
+        },
+        "retrieval_routing": {
+          "n": 36,
+          "p50": 0.04679599805967882,
+          "p95": 0.12480099394451827,
+          "p99": 0.14867694699205453,
+          "min": 0.006018999556545168,
+          "max": 0.16096299805212766
+        },
+        "retrieval_total": {
+          "n": 36,
+          "p50": 4.137345495109912,
+          "p95": 10.925193750153994,
+          "p99": 70.6127676505274,
+          "min": 0.824675997137092,
+          "max": 102.47029300080612
+        },
+        "retrieve": {
+          "n": 36,
+          "p50": 4.1674109999999995,
+          "p95": 10.9777055,
+          "p99": 70.65226054999988,
+          "min": 0.837916,
+          "max": 102.506477
+        },
+        "total": {
+          "n": 36,
+          "p50": 4.660135500000001,
+          "p95": 11.5834305,
+          "p99": 71.34527224999987,
+          "min": 1.178641,
+          "max": 103.041316
+        }
+      },
+      "warm_total_ms": {
+        "n": 36,
+        "p50": 4.660135500000001,
+        "p95": 11.5834305,
+        "p99": 71.34527224999987,
+        "min": 1.178641,
+        "max": 103.041316
+      },
+      "cold_query_total_ms": {
+        "n": 0
+      },
+      "embedding_query_calls": 0,
+      "passage_encoded_entries": 0,
+      "rows_loaded": {
+        "n": 36,
+        "p50": 2.0,
+        "p95": 24.5,
+        "p99": 52.799999999999955,
+        "min": 0.0,
+        "max": 64.0
+      },
+      "context_chars": {
+        "n": 36,
+        "p50": 504.0,
+        "p95": 1239.25,
+        "p99": 1671.8,
+        "min": 498.0,
+        "max": 1683.0
+      },
+      "bge_tokenizer_prompt_tokens": {
+        "n": 36,
+        "p50": 848.5,
+        "p95": 1301.0,
+        "p99": 1569.8999999999999,
+        "min": 836.0,
+        "max": 1579.0
+      },
+      "provider_tokens": "not_run",
+      "actual_answer_accuracy": "not_run",
+      "persona_behavior": "not_run"
+    }
+  },
+  "cases": [
+    {
+      "query_id": "d04_mixed",
+      "split": "development",
+      "query": "我早餐习惯吃什么，又有什么东西不能当成过敏？",
+      "gold_ids": [
+        "d_breakfast",
+        "d_food_avoid"
+      ],
+      "delivered_ids": [
+        "d_breakfast"
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "insufficient",
+        "retrieval_calls": 3,
+        "rows_loaded": 3,
+        "candidate_count": 3,
+        "expansion_count": 1,
+        "selected_memory_ids": [
+          "d_breakfast"
+        ],
+        "stage_ms": {
+          "routing": 0.37403600435936823,
+          "database_read": 6.123455998022109,
+          "eligibility_and_evidence": 0.26783500652527437,
+          "ranking": 0.09218999912263826,
+          "finalize": 8.781034004641697,
+          "context_assembly": 0.2259620014228858,
+          "total": 15.990382002200931
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "sufficient",
+            "source_ids": [
+              "d_breakfast"
+            ],
+            "missing_details": []
+          },
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_breakfast",
+            "accepted": true,
+            "reason": "structured_subject_field_time_match",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "d_food_avoid",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "d_food_avoid",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 1225,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d13_ambiguous",
+      "split": "development",
+      "query": "她叫什么名字？",
+      "gold_ids": [],
+      "delivered_ids": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "unknown",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "insufficient",
+        "retrieval_calls": 0,
+        "rows_loaded": 0,
+        "candidate_count": 0,
+        "expansion_count": 0,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.15220000204863027,
+          "database_read": 0.942414000746794,
+          "finalize": 0.48700500337872654,
+          "context_assembly": 0.14625099720433354,
+          "total": 1.775782999175135
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "insufficient",
+            "reason": "unresolved_reference",
+            "source_ids": []
+          }
+        ],
+        "decisions": [],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 548,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d14_event",
+      "split": "development",
+      "query": "我们一起读过哪本书？",
+      "gold_ids": [
+        "d_read_together"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "episode"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 0,
+        "candidate_count": 0,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.039459999243263155,
+          "database_read": 1.9269209878984839,
+          "eligibility_and_evidence": 0.0005210022209212184,
+          "ranking": 0.011566997272893786,
+          "finalize": 0.3162380016874522,
+          "context_assembly": 0.06781300180591643,
+          "total": 2.389130000665318
+        },
+        "intent_status": [
+          {
+            "route": "episode",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": [
+              "title"
+            ]
+          }
+        ],
+        "decisions": [],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 551,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v01_name",
+      "split": "validation",
+      "query": "我家兔子叫什么？",
+      "gold_ids": [
+        "v_pet"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 1,
+        "candidate_count": 1,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.030096001864876598,
+          "database_read": 2.1855020022485405,
+          "eligibility_and_evidence": 0.0004800021997652948,
+          "ranking": 0.011607000487856567,
+          "finalize": 0.31532700086245313,
+          "context_assembly": 0.06658100028289482,
+          "total": 2.697345997148659
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_pet",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 538,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v01_age",
+      "split": "validation",
+      "query": "我家兔子今年几岁？",
+      "gold_ids": [],
+      "delivered_ids": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "unknown",
+      "trace": {
+        "route": [
+          "bounded"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 2,
+        "candidate_count": 2,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.05748699913965538,
+          "database_read": 2.2452129996963777,
+          "eligibility_and_evidence": 0.03552399721229449,
+          "ranking": 0.009474002581555396,
+          "finalize": 0.34841599699575454,
+          "context_assembly": 0.06562899943673983,
+          "total": 2.78789200092433
+        },
+        "intent_status": [
+          {
+            "route": "bounded",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_pet",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 544,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v02_job",
+      "split": "validation",
+      "query": "我的图书馆搭档做哪一行？",
+      "gold_ids": [
+        "v_library"
+      ],
+      "delivered_ids": [
+        "v_library_city",
+        "v_library"
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "bounded"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "sufficient",
+        "retrieval_calls": 1,
+        "rows_loaded": 2,
+        "candidate_count": 2,
+        "expansion_count": 0,
+        "selected_memory_ids": [
+          "v_library_city",
+          "v_library"
+        ],
+        "stage_ms": {
+          "routing": 0.06904499605298042,
+          "database_read": 5.994762002956122,
+          "eligibility_and_evidence": 0.09480299922870472,
+          "ranking": 0.17864000255940482,
+          "finalize": 4.759059993375558,
+          "context_assembly": 0.27626800147118047,
+          "total": 11.448792000010144
+        },
+        "intent_status": [
+          {
+            "route": "bounded",
+            "status": "sufficient",
+            "source_ids": [
+              "v_library_city",
+              "v_library"
+            ],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_library_city",
+            "accepted": true,
+            "reason": "category_and_topic_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "v_library",
+            "accepted": true,
+            "reason": "category_and_topic_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 1812,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v02_mixed",
+      "split": "validation",
+      "query": "我的图书馆搭档住哪、叫什么？",
+      "gold_ids": [
+        "v_library_city"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "insufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 2,
+        "candidate_count": 2,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.038968995795585215,
+          "database_read": 2.8724999938276596,
+          "eligibility_and_evidence": 0.0007309936336241663,
+          "ranking": 0.01146699651144445,
+          "finalize": 0.409018000937067,
+          "context_assembly": 0.11246999929426238,
+          "total": 3.607660997658968
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_library_city",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "v_library",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 538,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v03_overview",
+      "split": "validation",
+      "query": "聊聊我们一起观测月球的两次经历。",
+      "gold_ids": [
+        "v_moon",
+        "v_scope"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "bounded"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 4,
+        "candidate_count": 4,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.042774998291861266,
+          "database_read": 2.916484998422675,
+          "eligibility_and_evidence": 0.16137400234583765,
+          "ranking": 0.012308002624195069,
+          "finalize": 0.41107199649559334,
+          "context_assembly": 0.07035700400592759,
+          "total": 3.6459879993344657
+        },
+        "intent_status": [
+          {
+            "route": "bounded",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_moon",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "v_scope",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 544,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v04_why",
+      "split": "validation",
+      "query": "音频工作台 5.2 上次导出失败的原因是什么？",
+      "gold_ids": [
+        "v_audio_fail"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "task"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 4,
+        "candidate_count": 4,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.052718998631462455,
+          "database_read": 3.291651992185507,
+          "eligibility_and_evidence": 0.05896900256630033,
+          "ranking": 0.015343000995926559,
+          "finalize": 0.3799440019065514,
+          "context_assembly": 0.07943999662529677,
+          "total": 3.9149950025603175
+        },
+        "intent_status": [
+          {
+            "route": "task",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": [
+              "cause"
+            ]
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_audio_fail",
+            "accepted": false,
+            "reason": "requested_detail_not_supported",
+            "route": "task",
+            "supported_details": [],
+            "missing_details": [
+              "cause"
+            ]
+          },
+          {
+            "memory_id": "v_audio_fix",
+            "accepted": false,
+            "reason": "requested_detail_not_supported",
+            "route": "task",
+            "supported_details": [],
+            "missing_details": [
+              "cause"
+            ]
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 545,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v04_fix",
+      "split": "validation",
+      "query": "音频工作台上次导出故障是怎么修好的？",
+      "gold_ids": [
+        "v_audio_fix"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "task"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 4,
+        "candidate_count": 4,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.04813299892703071,
+          "database_read": 3.5008990016649477,
+          "eligibility_and_evidence": 0.05132700607646257,
+          "ranking": 0.013329998182598501,
+          "finalize": 0.4696200048783794,
+          "context_assembly": 0.07875900337239727,
+          "total": 4.196099995169789
+        },
+        "intent_status": [
+          {
+            "route": "task",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": [
+              "procedure"
+            ]
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_audio_fix",
+            "accepted": false,
+            "reason": "requested_detail_not_supported",
+            "route": "task",
+            "supported_details": [],
+            "missing_details": [
+              "procedure"
+            ]
+          },
+          {
+            "memory_id": "v_audio_fail",
+            "accepted": false,
+            "reason": "requested_detail_not_supported",
+            "route": "task",
+            "supported_details": [],
+            "missing_details": [
+              "procedure"
+            ]
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 549,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v04_chain",
+      "split": "validation",
+      "query": "音频工作台 5.2 为什么失败、后来怎么成功的？",
+      "gold_ids": [
+        "v_audio_fail",
+        "v_audio_fix"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "task"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "chat"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "not_needed",
+        "retrieval_calls": 0,
+        "rows_loaded": 0,
+        "candidate_count": 0,
+        "expansion_count": 0,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.02670999674592167,
+          "database_read": 0.5528849942493252,
+          "finalize": 0.3373489962541498,
+          "context_assembly": 0.06917499558767304,
+          "total": 1.041792995238211
+        },
+        "intent_status": [
+          {
+            "route": "chat",
+            "status": "not_needed",
+            "source_ids": []
+          }
+        ],
+        "decisions": [],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 542,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "v06_count",
+      "split": "validation",
+      "query": "我阳台上有几盆薄荷？",
+      "gold_ids": [
+        "v_legacy_plant"
+      ],
+      "delivered_ids": [
+        "v_legacy_plant"
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "bounded"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "sufficient",
+        "retrieval_calls": 1,
+        "rows_loaded": 32,
+        "candidate_count": 32,
+        "expansion_count": 0,
+        "selected_memory_ids": [
+          "v_legacy_plant"
+        ],
+        "stage_ms": {
+          "routing": 0.057777004258241504,
+          "database_read": 4.618728002242278,
+          "eligibility_and_evidence": 0.5240009995759465,
+          "ranking": 0.06380700506269932,
+          "finalize": 2.9754700008197688,
+          "context_assembly": 0.14622100570704788,
+          "total": 8.42525400366867
+        },
+        "intent_status": [
+          {
+            "route": "bounded",
+            "status": "sufficient",
+            "source_ids": [
+              "v_legacy_plant"
+            ],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_legacy_plant",
+            "accepted": true,
+            "reason": "category_and_lexical_support",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "v_plant_event",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00147",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00146",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00140",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00027",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00026",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00020",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00267",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00266",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00260",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00149",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00148",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00145",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00143",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00142",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00029",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00028",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00025",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00023",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00022",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00269",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00268",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00265",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00263",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00262",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00144",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00141",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00024",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00021",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00264",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00261",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 1050,
+        "router_evaluated": true
+      }
+    }
+  ]
+}
