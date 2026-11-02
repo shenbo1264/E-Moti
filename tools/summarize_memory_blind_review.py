@@ -66,7 +66,15 @@ def provider_measurements(rows):
             "client_latency_ms": distribution([row["client_latency_ms"] for row in rows if isinstance(row.get("client_latency_ms"), (float, int))])}
 
 
-def summarize(generation, mapping, reviews):
+def summarize(generation, mapping, reviews, dataset, methods=METHODS):
+    if not methods or len(set(methods)) != len(methods) or set(methods) - set(METHODS):
+        raise ValueError("invalid or duplicate requested methods")
+    questions = {row["id"]: row for row in dataset["queries"]}
+    if not questions or len(questions) != len(dataset["queries"]):
+        raise ValueError("dataset has no questions or duplicate question IDs")
+    question_count = len(questions)
+    answerable_count = sum(bool(row["gold_ids"]) for row in questions.values())
+    unknown_count = sum(not row["gold_ids"] and row["expected_status"] == "unknown" for row in questions.values())
     generated = generation["rows"]
     by_id = {}
     pairs = set()
@@ -75,14 +83,17 @@ def summarize(generation, mapping, reviews):
         pair = (row["method"], row["query_id"])
         if review_id in by_id or pair in pairs:
             raise ValueError("duplicate generation review_id or method/query")
-        if row["method"] not in METHODS:
+        if row["method"] not in methods:
             raise ValueError("unknown generation method")
+        query = questions.get(row["query_id"])
+        if query is None or set(row["gold_ids"]) != set(query["gold_ids"]) or row["expected_status"] != query["expected_status"]:
+            raise ValueError("generation question or gold differs from dataset")
         by_id[review_id] = row
         pairs.add(pair)
-    if len(generated) != 320 or any(sum(row["method"] == method for row in generated) != 64 for method in METHODS):
-        raise ValueError("expected 320 generation rows and 64 per method")
-    query_sets = [{row["query_id"] for row in generated if row["method"] == method} for method in METHODS]
-    if any(group != query_sets[0] for group in query_sets[1:]):
+    if len(generated) != question_count * len(methods) or any(sum(row["method"] == method for row in generated) != question_count for method in methods):
+        raise ValueError("generation counts differ from dataset size times requested methods")
+    query_sets = [{row["query_id"] for row in generated if row["method"] == method} for method in methods]
+    if any(group != set(questions) for group in query_sets):
         raise ValueError("methods do not contain identical question sets")
     mapped_ids = set()
     for blind_id, target in mapping.items():
@@ -123,6 +134,7 @@ def summarize(generation, mapping, reviews):
     if seen != set(mapping):
         raise ValueError(f"missing reviews: {len(set(mapping) - seen)}")
     result = {"schema_version": 1, "status": "ai_review_aggregated", "reviewed_outputs": len(joined),
+        "requested_methods": list(methods),
         "independent_questions": len(query_sets[0]), "review_assignments": dict(assignments),
         "review_design": "Each output received one independent AI review with method labels hidden. Reviewers cover different rows, not duplicate ratings.",
         "human_persona_acceptance": "not_run", "inter_rater_agreement": "not_run",
@@ -130,20 +142,20 @@ def summarize(generation, mapping, reviews):
                         "Method repetitions and story turns are not independent population samples.",
                         "Provider costs and latency are measurements separate from answer quality; quality grades do not change recorded usage."],
         "methods": {}, "provider_measurements": provider_measurements(generated), "rows": joined}
-    for method in METHODS:
+    for method in methods:
         rows = [row for row in joined if row["method"] == method]
         answerable = [row for row in rows if row["answerable"]]
         unknown = [row for row in rows if row["unknown"]]
-        if len(answerable) != 38 or len(unknown) != 14:
-            raise ValueError("expected 38 answerable and 14 unknown queries per method")
-        result["methods"][method] = {"denominator": 64,
+        if len(answerable) != answerable_count or len(unknown) != unknown_count:
+            raise ValueError("answerable or unknown counts differ from dataset")
+        result["methods"][method] = {"denominator": question_count,
             **{dimension: grades(rows, dimension) for dimension in DIMENSIONS},
             "unsupported_claims": unsupported(rows),
             "answerable_accuracy": grades(answerable, "accuracy"),
             "unknown_accuracy": grades(unknown, "accuracy"),
             "unknown_natural_unknown": grades(unknown, "natural_unknown"),
-            "deliverable_accuracy_pass": {"numerator": sum(row["accuracy"] == "pass" and row["schema_status"] == "valid" and row["generation_status"] == "completed" for row in rows), "denominator": 64},
-            "answerable_deliverable_accuracy_pass": {"numerator": sum(row["accuracy"] == "pass" and row["schema_status"] == "valid" and row["generation_status"] == "completed" for row in answerable), "denominator": 38},
+            "deliverable_accuracy_pass": {"numerator": sum(row["accuracy"] == "pass" and row["schema_status"] == "valid" and row["generation_status"] == "completed" for row in rows), "denominator": question_count},
+            "answerable_deliverable_accuracy_pass": {"numerator": sum(row["accuracy"] == "pass" and row["schema_status"] == "valid" and row["generation_status"] == "completed" for row in answerable), "denominator": answerable_count},
             "provider_measurements": provider_measurements([row for row in generated if row["method"] == method])}
     return result
 
@@ -151,15 +163,17 @@ def summarize(generation, mapping, reviews):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--generation", type=Path, required=True)
+    parser.add_argument("--dataset", type=Path, required=True)
+    parser.add_argument("--methods", nargs="+", choices=METHODS, default=list(METHODS))
     parser.add_argument("--mapping", type=Path, required=True)
     parser.add_argument("--reviews", type=Path, nargs="+", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.output.exists():
         parser.error("output already exists; preserve the earlier review summary")
-    result = summarize(load(args.generation), load(args.mapping), [(str(path), load(path)) for path in args.reviews])
+    result = summarize(load(args.generation), load(args.mapping), [(str(path), load(path)) for path in args.reviews], load(args.dataset), args.methods)
     result["sources"] = {"generation": source(args.generation), "mapping": source(args.mapping),
-                         "reviews": [source(path) for path in args.reviews]}
+                         "reviews": [source(path) for path in args.reviews], "dataset": source(args.dataset)}
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, ensure_ascii=False, indent=2), encoding="utf-8")
     print(json.dumps({"status": result["status"], "reviewed_outputs": result["reviewed_outputs"], "output": str(args.output)}))

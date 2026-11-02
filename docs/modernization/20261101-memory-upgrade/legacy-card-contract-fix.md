@@ -17,3 +17,11 @@
 证据位于本机 `artifacts/codex_handoff/memory-upgrade/`：`development-38-package-baseline.json`、`development-38-after-cleanup.json`、`development-38-legacy-card-final.json`、`legacy-card-delivery-red.log`、`legacy-field-definition-red.log`、`legacy-card-focused-r2.log`、`legacy-card-focused-final.log`。
 
 这些是确定性开发合同及工程回归，不是新的密封集泛化结论。此前真实模型报告仍对应报告内记录的代码版本；不能将本次修复未经复测的模型效果计为已验收。
+
+## 已建索引的升级
+
+补充使用 `2f3978f` 的独立 Python 进程建立四份合成旧 SQLite 档案，再由当前进程重开。最初完整检索虽可借助词法扩展交付 4/4，已有投影的 predicate/value 仍为空，直接结构化查询为 0/4；相同 raw_digest 不会自动更新推导字段。
+
+因此将已有派生 `ALGORITHM_VERSION` 的 `typed-literal-v2` 提升为 `typed-literal-v3`，复用现成索引重建机制。四项升级测试先失败后通过，关联 55 项测试通过。同四份真实旧进程档案再次重开，直接精确查询 4/4；权威 JSON 逐字节相同，来源指纹和 context_epoch 均保持不变，仅派生索引 generation 更新。无需迁移或重写长期事实。
+
+原始升级证据：`artifacts/codex_handoff/memory-upgrade/legacy-index-restart/` 下的 `baseline.json`、`current.json`、`after-algorithm-upgrade.json`，以及 `legacy-index-version-red.log`、`legacy-index-version-focused.log`、`legacy-index-rebuild.log`。档案均为独立合成存档，没有访问真实用户数据。

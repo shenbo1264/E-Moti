@@ -42,6 +42,8 @@ def _prepare_semantic(service, query: str, *, now: int, history: Sequence[object
     if retriever is None or not semantic_intents or plan.unresolved_reference:
         return None
     scopes = tuple(dict.fromkeys(s for i in semantic_intents for s in i.scopes))
+    if service.evidence_judge is not None:
+        scopes = tuple(dict.fromkeys((scope, *scopes)))
     if hasattr(retriever, "prepare_indexed"):
         return retriever.prepare_indexed(query, service.store, now=now, scopes=scopes)
     # Legacy optional adapters still receive a bounded eligible view. They do
@@ -298,7 +300,8 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                     semantic_status = "unavailable"
             request = IndexedMemoryQuery(scopes=intent.scopes, subjects=intent.subjects,
                 predicates=() if open_field else intent.predicates, query="" if structured else search_text,
-                history=intent.temporal_mode in {"history", "as_of", "timeline"},
+                history=intent.temporal_mode in {"history", "as_of", "timeline"}
+                    or (intent.temporal_mode == "planned" and intent.as_of is not None),
                 occurred_after=(intent.as_of or 0) if intent.route in {"episode", "task"} and intent.temporal_mode == "as_of" else 0,
                 occurred_before=(intent.as_of_end or 0) if intent.route in {"episode", "task"} and intent.temporal_mode == "as_of" else 0,
                 limit=budget.max_candidates - len(semantic_ids))
@@ -467,7 +470,8 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                         break
         phase = perf_counter()
         memories = service.store.finalize_indexed_recall(tuple(chosen), expected_epoch=epoch, now=now,
-            scopes=tuple(scope_set | {scope}), allow_history=any(i.temporal_mode in {"history", "as_of", "timeline"} for i in plan.intents),
+            scopes=tuple(scope_set | {scope}), allow_history=any(i.temporal_mode in {"history", "as_of", "timeline"}
+                or (i.temporal_mode == "planned" and i.as_of is not None) for i in plan.intents),
             dependency_entries=tuple(dependencies.values()))
         timings["finalize"] = (perf_counter() - phase) * 1000
         if memories is None:

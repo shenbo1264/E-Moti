@@ -447,6 +447,11 @@ class MemoryRetrievalRouter:
             # Desktop saves historically use an accumulated logical clock.
             # A calendar date cannot be compared to it or silently migrated.
             temporal, as_of, as_of_end = "unresolved", None, None
+        # 询问预约内容与询问实际参加结果使用不同证据，日历合法性仍先检查。
+        if (temporal not in {"unresolved", "history", "timeline"} and re.search(r"预约|计划|安排", query)
+                and re.search(r"是什么|哪|时间|日期|内容|项目|状态", query)
+                and not re.search(r"已经|后来|实际|最终|曾经|参加过|完成", query)):
+            temporal = "planned"
         detail = bool(_DETAIL.search(query))
         base = {"query": query, "scopes": (scope,), "temporal_mode": temporal,
                 "as_of": as_of, "as_of_end": as_of_end, "detail": detail}

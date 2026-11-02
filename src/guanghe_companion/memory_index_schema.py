@@ -12,7 +12,7 @@ import uuid
 INDEX_VERSION = 1
 # Changes to conservative typed-read rules, lexical terms or FTS row mapping
 # require a rebuild even when the SQL table layout is unchanged.
-ALGORITHM_VERSION = "typed-literal-v2:structured-value-v1:cn-grams-v1:fts-rowid-v1:structured-pk-v1:raw-diff-v1"
+ALGORITHM_VERSION = "typed-literal-v3:structured-value-v1:cn-grams-v1:fts-rowid-v1:structured-pk-v1:raw-diff-v1"
 TABLES = (
     "memory_index_meta", "memory_index_entries", "memory_index_aliases",
     "memory_index_sources", "memory_index_chapters", "memory_index_chapter_sources",

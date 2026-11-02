@@ -192,10 +192,30 @@ def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, n
     if intent.temporal_mode == "history":
         if not expired and entry.metadata.get("fact_status") != "historical":
             return result(False, "current_fact_not_historical")
-    elif intent.temporal_mode == "as_of":
+    elif intent.temporal_mode == "as_of" or (intent.temporal_mode == "planned" and intent.as_of is not None):
         as_of = intent.as_of
         end = intent.as_of_end
-        if intent.route in {"episode", "task"}:
+        if intent.temporal_mode == "planned":
+            from zoneinfo import ZoneInfo
+            from .retrieval_router import _temporal
+            # 计划发生日来自原文，不拿记录时间代替；档案时区与日历查询一致。
+            basis = entry.metadata.get("time_basis")
+            mode, target, target_end = _temporal(entry.summary, now=entry.created_at,
+                calendar_zone=ZoneInfo(entry.metadata.get("timezone") or "UTC"))
+            date_parts = re.findall(
+                r"(?:\d{4}[-/年])?[0-9零〇一二三四五六七八九十两]{1,3}(?:月|[-/])[0-9零〇一二三四五六七八九十两]{1,3}(?:日|号)?",
+                entry.summary)
+            dates = {_temporal(part, now=entry.created_at,
+                calendar_zone=ZoneInfo(entry.metadata.get("timezone") or "UTC")) for part in date_parts}
+            # 一段原文同时有登记日、改期日等时，不把第一个日期猜成计划发生日。
+            if len(dates) > 1:
+                return result(False, "ambiguous_plan_dates")
+            if (basis == "logical" or mode != "as_of" or target is None or target_end is None
+                    or target < as_of or (end is not None and target_end > end)):
+                return result(False, "outside_requested_plan_date_or_unproved")
+            if (entry.valid_from and entry.valid_from >= (end or as_of + 1)) or (entry.valid_until and as_of >= entry.valid_until):
+                return result(False, "outside_requested_valid_time")
+        elif intent.route in {"episode", "task"}:
             if as_of is None or entry.occurred_at < as_of or (end is not None and entry.occurred_at >= end):
                 return result(False, "outside_requested_event_time")
         else:
