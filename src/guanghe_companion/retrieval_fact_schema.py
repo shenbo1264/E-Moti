@@ -30,6 +30,30 @@ def read_fact_view(entry):
     # A separate non-factual trailing clause such as “觉得很放松” does not
     # invalidate the preceding explicit preference. We expose that clause only.
     first = re.split(r"[，,。；;]", text, maxsplit=1)[0]
+    # 已确认更正可以沿用原卡片的明确偏好领域，值仍只取当前更正文。
+    if entry.supersedes and entry.user_confirmed and entry.title in {"饮品偏好", "饮料偏好", "个人偏好"}:
+        changed = re.fullmatch(r"(?:现在|最近|目前)?(?:只)?(?:喜欢|偏爱|喝|吃|用)([^，。；;]{1,40})", first)
+        if changed:
+            domain = "饮料偏好" if entry.title in {"饮品偏好", "饮料偏好"} else entry.title
+            return replace(entry, metadata={**entry.metadata, "fact_subject": "user:self",
+                "fact_domain": domain, "fact_slot": f"preference:{domain}:like", "fact_value": changed[1]})
+    english = re.fullmatch(r"My ([A-Za-z][A-Za-z -]{1,40}?) is ([^.;]{1,60})[.]?", first, re.I)
+    if english and english[1].casefold() == entry.title.casefold():
+        return replace(entry, metadata={**entry.metadata, "fact_subject": "user:self",
+            "fact_predicate": entry.title, "fact_value": english[2]})
+    labelled = re.fullmatch(r"(.{2,30}?)(?:已经改成|已经改为|已改成|已改为|改成|改为|是|为)([^，。；;]{1,60})", first)
+    if labelled and labelled[1] == entry.title:
+        # 标题与原文直接绑定字段和值，但没有主语时不推断属于用户本人。
+        return replace(entry, metadata={**entry.metadata, "fact_predicate": entry.title,
+                                        "fact_value": labelled[2]})
+    activity = re.match(r"^(?:我|用户)(?:正在|最近|现在)(.+)$", first)
+    if activity and entry.title.endswith("目标"):
+        verbs = [activity[1][:length] for length in range(2, min(8, len(activity[1])))
+                 if entry.title.endswith(activity[1][:length] + "目标")]
+        if verbs:
+            verb = max(verbs, key=len)
+            return replace(entry, metadata={**entry.metadata, "fact_subject": "user:self",
+                "fact_predicate": entry.title, "fact_value": activity[1][len(verb):]})
     drink = re.fullmatch(r"(?:用户|我)(?:的|喜欢的|偏好的|常喝的)(?:饮品|饮料)(?:是|为)([^，,。；;]{1,60})", first)
     if drink:
         return replace(entry, metadata={**entry.metadata, "fact_subject": "user:self",

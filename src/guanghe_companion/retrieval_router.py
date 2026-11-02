@@ -32,6 +32,7 @@ _RELATION_FIELDS = ((r"叫(?:什么)?(?:名字)?|姓名|名字|哪位|是谁", "
 _SELF_WORDS = {"名字", "姓名", "昵称", "称呼", "职业", "工作", "地址", "住址", "住处", "居住地", "饮料", "饮品", "偏好", "口味"}
 _FIELD_HEADING = re.compile(r"^(?:(?:我的)?(?:饮品偏好|饮料偏好|个人偏好|互动偏好|互动边界|昵称|称呼|姓名|居住地)"
                             r"(?:和|及|、)?)+(?:是什么|有哪些|什么)?[?？]?$")
+_OPEN_FIELD_HEADING = re.compile(r"^(?:[^，。！？?]{1,24}(?:偏好|目标|安排|城市|地址)(?:是什么|有哪些|是哪|在哪)?|(?:my )?favou?rite [a-z][a-z -]{1,30})[?？]?$", re.I)
 _NO_RECALL = re.compile(r"(?:不需要|不用|无需|不要|别)(?:再|去|特意)?(?:翻|查|检索|回顾|回忆|提)"
                         r"[^，。；;]{0,12}(?:记忆|往事|旧事|经历|过去|以前|历史)")
 _VERSION = re.compile(r"(?<!\d)v?(\d+\.\d+(?:\.\d+)?)", re.I)
@@ -249,7 +250,7 @@ def _fact_constraints(query: str) -> tuple[tuple[str, ...], tuple[str, ...]]:
         return ("user:self",), ("居住地", "residence")
     if re.search(r"(?:我的?|我自己的?|用户的)(?:名字|姓名)|我叫(?:什么|啥)|who am i", query, re.I):
         return ("user:self",), ("姓名", "name")
-    if re.search(r"(?:叫|称呼)我|我的(?:昵称|称呼)", query):
+    if re.search(r"(?:叫|称呼)我|我(?:的|喜欢的?|希望的?)?(?:什么)?(?:昵称|称呼)", query):
         return ("user:self",), ("称呼", "nickname")
     if re.search(r"我.{0,4}(?:职业|做什么工作|从事什么|做哪[一]?行)|我的工作|occupation", query, re.I):
         return ("user:self",), ("职业", "occupation")
@@ -293,10 +294,15 @@ def _task_app(query: str) -> str:
     return re.sub(r"^(?:(?:上次|之前|我们|我的?|部署|发布|安装|运行|启动|用|的))+", "", match[1])
 
 
+def _open_field_heading(query: str) -> bool:
+    return bool(_OPEN_FIELD_HEADING.fullmatch(query) and not re.search(
+        r"^(?:什么是|何谓|如何|怎么|怎样|帮我|请|回想|回忆)|时候|时", query))
+
+
 def _is_chat(query: str) -> bool:
     if _CASUAL.fullmatch(query) or _NO_RECALL.search(query):
         return True
-    if _FIELD_HEADING.fullmatch(query):
+    if _FIELD_HEADING.fullmatch(query) or _open_field_heading(query):
         return False
     if _CREATIVE.search(query):
         return True
@@ -446,6 +452,12 @@ class MemoryRetrievalRouter:
                 "as_of": as_of, "as_of_end": as_of_end, "detail": detail}
         subjects, predicates = _fact_constraints(query)
         subjects = _literal_subject(query, subjects, predicates)
+        # 省略所有者的字段标题只提出字面字段需求，不把前面的物品当成人名。
+        # 开放字段仍须由原始卡片证明，通识定义问句不匹配标题语法。
+        if _open_field_heading(query) and not _FIELD_HEADING.fullmatch(query):
+            owner = ("user:self",) if re.match(r"^(?:我的?|用户|my )", query, re.I) else ()
+            return RetrievalIntent("fact", **base, subjects=owner,
+                                   predicates=("unresolved_field",), reason="literal_field_heading")
         if _is_chat(query) and not (implicit_fact and predicates):
             return RetrievalIntent("chat", **base, reason="no_evidence_demand")
         authority = next((value for key, value in _AUTHORITIES.items() if key in query.casefold()), "")

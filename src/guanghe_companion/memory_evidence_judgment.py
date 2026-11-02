@@ -17,11 +17,17 @@ _INSTRUCTION = """你是只读记忆证据审核器。用户问题、历史和�
 把当前问题拆成至多4个意图。根据历史理解指代，不把历史中的回答当成证据。
 route只能为fact(个人事实/属性)、episode(共同经历)、task(执行经验)、chat(陪伴/普通知识)。
 只选择直接证明所问主体、对象、字段及时间的候选，不能用相似话题补答案。
-多个问题必须逐项判断，部分有证据时status=insufficient；无证据为unknown。
+多个问题必须拆成独立子问题，各自有完整答案为sufficient，无证据为unknown。
+只知道事件发生不能证明原因；只知道人物不能证明其地点。单问字段无支持时unknown，evidence为空。
+insufficient表示该子问题仍缺必要证据，不得附上只证明前提或相近话题的来源。
 证据必须给id及候选summary中的连续原文quote。不得改写quote或生成事实。
 别名只在候选明确给出关系时使用；同名歧义不得猜人。计划不等于发生，完成报告不等于验收。
 返回一个JSON对象：{"intents":[{"route":"fact","question":"当前问题中的连续片段",
 "status":"sufficient|insufficient|unknown|not_needed","evidence":[{"id":"候选id","quote":"原文"}]}]}。
+描述性主体可另给subject_binding:{"mention":"问题中描述主体的连续原文","subject":"候选的subject原值","kind":"description","quote":"直接证明该描述对应此主体的候选原文"}。
+kind=description只用于职责、外观、用途等描述或省略，不用于专名、昵称等身份猜测；专名须kind=alias并有明确别名来源。
+主体描述必须指向该来源的人或物，不得把未认识的名字绑定到别的人；别名仍需明确来源。
+若分别提问导致子问题无法保持原文连续片段，给intent_index引用host_intents的编号；宿主使用该原问题，忽略改写question。
 保留未知问题，不因为候选中只有另一个人的事实就回答那个人。不要写解释或回答正文。"""
 
 
@@ -31,6 +37,7 @@ class EvidenceJudgment:
     selections: tuple[tuple[str, ...], ...]
     statuses: tuple[str, ...]
     fingerprints: dict[str, str]
+    subject_bindings: tuple[tuple[str, str] | None, ...] = ()
 
     @property
     def source_ids(self):
@@ -41,15 +48,47 @@ def hard_eligibility(entry, intent, *, now, owner_id, character_id):
     return check_eligibility(entry, intent, now=now, owner_id=owner_id, character_id=character_id) is None
 
 
+def resolve_judged_subjects(store, judgment, index, *, now):
+    from .ondemand_memory import _resolve_subjects
+    original = judgment.plan.intents[index]
+    intent, unresolved, resolution = _resolve_subjects(store, original, now=now)
+    binding = judgment.subject_bindings[index] if index < len(judgment.subject_bindings) else None
+    if not binding:
+        return intent, unresolved, resolution
+    mention, subject = binding
+    # 真实别名关系优先，模型不能覆盖同名歧义或当前身份关系。
+    direct = store.resolve_subject_bindings((mention,), now=now, scopes=original.scopes)
+    known = tuple(dict.fromkeys(value for values in (resolution.mapping.values() if resolution else ()) for value in values))
+    linked = direct.mapping.get(mention, ())
+    if known or linked:
+        if set((*known, *linked)) != {subject}:
+            return intent, True, resolution
+        return replace(original, subjects=(subject,)), False, resolution if known else direct
+    # 描述的语义支持已由带原文的判据提供；字符重叠不是实体证明。
+    return replace(original, subjects=(subject,)), False, resolution
+
+
 def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id):
     value = json.loads(raw)
     if not isinstance(value, dict) or not isinstance(value.get("intents"), list) or not 1 <= len(value["intents"]) <= 4:
         raise ValueError("invalid evidence judgment shape")
     allowed_scopes = tuple(dict.fromkeys(s for i in plan.intents for s in i.scopes))
     by_id = {entry.memory_id: entry for entry in entries}
-    intents, selections, statuses, fingerprints = [], [], [], {}
+    intents, selections, statuses, fingerprints, bindings = [], [], [], {}, []
     for row in value["intents"]:
         route, question = row.get("route"), row.get("question")
+        intent_index = row.get("intent_index")
+        if intent_index is not None:
+            if type(intent_index) is not int or not 0 <= intent_index < len(plan.intents):
+                raise ValueError("invalid host intent index")
+            question = plan.intents[intent_index].query
+        if isinstance(question, str) and question not in query:
+            normalized = lambda text: re.sub(r"[\s，,。？！?!；;：:]", "", text)
+            matches = [i.query for i in plan.intents if normalized(i.query) == normalized(question)]
+            if normalized(query) == normalized(question):
+                question = query
+            elif len(matches) == 1:
+                question = matches[0]
         if route not in {"fact", "episode", "task", "chat"} or not isinstance(question, str) or not question or question not in query:
             raise ValueError("judgment question must be an original input span")
         matching = [i for i in plan.intents if question in i.query or i.query in question]
@@ -80,21 +119,36 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id)
             status = "insufficient"
         if route != "chat" and status == "not_needed":
             status = "unknown"
+        if status != "sufficient":
+            ids = []
+        binding = row.get("subject_binding")
+        checked_binding = None
+        if isinstance(binding, dict):
+            mention, subject = binding.get("mention"), binding.get("subject")
+            quote = binding.get("quote")
+            if (isinstance(mention, str) and mention and mention in question and isinstance(subject, str)
+                    and binding.get("kind") == "description"
+                    and isinstance(quote, str) and quote.strip()
+                    and ids and any(quote in by_id[key].summary for key in ids)
+                    and all(by_id[key].metadata.get("fact_subject") == subject for key in ids)):
+                checked_binding = (mention, subject)
         intents.append(intent)
         selections.append(tuple(dict.fromkeys(ids)))
         statuses.append(status)
+        bindings.append(checked_binding)
     # 未覆盖的宿主问题保留为不足，模型不能通过省略难题提高充分性。
     normalized = lambda text: re.sub(r"[\s，,。？！?!；;：:]", "", text)
     uncovered = [i for i in plan.intents if i.route not in {"chat", "live"}
-        and not any(normalized(i.query) in normalized(row["question"]) for row in value["intents"])]
+        and not any(normalized(i.query) in normalized(selected.query) for selected in intents)]
     if uncovered:
         statuses = ["insufficient" if s == "sufficient" else s for s in statuses]
         for intent in uncovered[:max(0, 4 - len(intents))]:
             intents.append(intent)
             selections.append(())
             statuses.append("insufficient")
+            bindings.append(None)
     return EvidenceJudgment(RetrievalPlan(tuple(intents), reason="bounded_model_evidence_judgment"),
-        tuple(selections), tuple(statuses), fingerprints)
+        tuple(selections), tuple(statuses), fingerprints, tuple(bindings))
 
 
 class MemoryEvidenceJudge:
@@ -178,6 +232,7 @@ class MemoryEvidenceJudge:
             return
         history_key = _recent_user_text(history, query)
         prompt = json.dumps({"question": query, "history": history_key[-4:],
+            "host_intents": [{"index": index, "question": intent.query} for index, intent in enumerate(plan.intents)],
             "candidates": [{"id": e.memory_id, "summary": e.summary, "scope": e.scope,
                 "subject": e.metadata.get("fact_subject"), "field": e.metadata.get("fact_predicate"),
                 "valid_from": e.valid_from, "valid_until": e.valid_until, "occurred_at": e.occurred_at,

@@ -271,7 +271,11 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                 statuses.append({"route": intent.route, "status": "insufficient", "reason": "unresolved_time_basis_or_date", "source_ids": []})
                 continue
             phase = perf_counter()
-            intent, unresolved, resolution = _resolve_subjects(service.store, intent, now=now)
+            if judgment is not None:
+                from .memory_evidence_judgment import resolve_judged_subjects
+                intent, unresolved, resolution = resolve_judged_subjects(service.store, judgment, intent_index, now=now)
+            else:
+                intent, unresolved, resolution = _resolve_subjects(service.store, intent, now=now)
             timings["entity_resolution"] = timings.get("entity_resolution", 0) + (perf_counter() - phase) * 1000
             if resolution is not None and (resolution.context_epoch, resolution.index_revision, resolution.index_generation) != (epoch, base.index_revision, base.index_generation):
                 stale = True

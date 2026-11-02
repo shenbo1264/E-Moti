@@ -39,7 +39,7 @@ _ATTRIBUTES = (
 _FILLER = re.compile(
     r"还记得|记不记得|以前告诉过|告诉过|告诉|提醒|帮我回想|回想|回忆|帮我|请你|"
     r"现在|目前|如今|当时|以前|历史|今年|那会儿|那时候|原本|原来|常用|"
-    r"用的|使用的|选的|叫做|叫什么|是什么|什么|哪里|哪个|哪种|多少|几个|几只|是否|怎么|"
+    r"用的|使用的|选的|叫做|叫什么|是什么|是哪|什么|哪里|哪个|哪种|多少|几个|几只|是否|怎么|"
     r"每周|每星期|星期|哪天|时候|哪儿|放在|放到|应该|该|可以|已经|"
     r"自己|用户|[那这][只台个箱盆件本部条张项]|那我|我的|你的|他的|她的|它的|"
     r"[我你他她它的了呢吗呀啊是为在去哪再把这那有用和到]|[?？。！!，,；;：:\s]"
@@ -102,7 +102,8 @@ def literal_field_support(entry, query: str) -> bool:
     """
     meta = entry.metadata
     values = literal_values(meta.get("fact_value"))
-    if not values or not entry.source_ids:
+    if not values or not (entry.source_ids or (entry.user_confirmed and
+            entry.source in {"explicit_user_request", "user_correction", "profile_edit"})):
         return False
     # Use the same scalar-boundary proof as structured corrections: 7 cannot
     # be substantiated by 17, nor false by falsehood.
