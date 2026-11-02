@@ -1066,6 +1066,8 @@ class EmotionalMemoryStore:
         memory = replace(memory, version=old.version + 1, supersedes=old.memory_id,
                          occurred_at=old.occurred_at if preserve_occurred_at else memory.occurred_at,
                          created_at=now, updated_at=now)
+        if "occurred_time" in memory.metadata:
+            memory = replace(memory, metadata={**memory.metadata, "occurred_time": memory.occurred_at})
         self._retire(document, [old], now=now)
         document["entries"] = [memory.to_dict(), *document["entries"]]
         return memory
