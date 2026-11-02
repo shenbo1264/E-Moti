@@ -1,6 +1,6 @@
 # SQLite 索引、迁移与生命周期契约
 
-本页描述本轮实际实现的存储层。权威存档继续使用 `memory_state.payload` 的 schema 2 JSON 文档；结构化字段、来源关系、章节索引和词法索引都是同一 SQLite 文件中的可重建投影。首发投影版本 `memory_index_meta.version=1` 与权威 schema 分开；额外的 `algorithm_version` 标识字面事实解析、值表示、中文 token 和 FTS rowid 规则，规则改变时也会重建，不需要把存档升级成另一套事实数据库。当前字面解析标识为 `typed-literal-v2`，值投影追加 `structured-value-v1`；单独的 red/green 测试确认 generation 改变、原始正文和 metadata 保留，epoch 不因纯重建而重置。第 9 节先保留 `f7a4e23` 的历史冻结检查点，第 9.1 节记录包含结构化值及公共纠正补足的 `1eef5cb` 三尺度正式复测，两个版本的原始证据分别保存。
+本页描述已实现的存储层。权威存档继续使用 `memory_state.payload` 的 schema 2 JSON 文档；结构化字段、来源关系、章节索引和词法索引都是同一 SQLite 文件中的可重建投影。首发投影版本 `memory_index_meta.version=1` 与权威 schema 分开；额外的 `algorithm_version` 标识字面事实解析、值表示、中文 token 和 FTS rowid 规则，规则改变时也会重建，不需要把存档升级成另一套事实数据库。当前字面解析标识为 `typed-literal-v4`，值投影仍为 `structured-value-v1`；v3恢复旧明确卡片，v4补足可信旧宠物名称读取。真实旧索引重建时，权威正文、来源和epoch保持不变，见 [升级记录](legacy-card-contract-fix.md)。第9节及9.1节保留包内v2时代的三尺度历史结果，当前Windows成本见 [存储复测](storage-performance-windows.md)，各版本证据分别保存。
 
 实现位置：`src/guanghe_companion/memory_document.py`、`memory_index_schema.py`、`memory_index.py`，以及 `EmotionalMemoryStore` 的新增包装接口。检索充分性、人格提示词和模型回答由上层负责，索引命中不能自动证明某个回答正确。
 

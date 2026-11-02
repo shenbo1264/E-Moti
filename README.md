@@ -26,7 +26,7 @@ The November on-demand memory increment is integrated into the desktop context p
 
 The [November 1 memory upgrade work package](docs/modernization/20261101-memory-upgrade/README.md) records the current requirements, the decision to use structured facts plus hybrid retrieval, implementation status, migration behavior, and Claude/Codex handoff. Use its delivery record to distinguish tested code from planned capabilities.
 
-**The on-demand retriever remains a development candidate.** The supplied second independent holdout delivered complete evidence for only 7/33 answerable queries. The subsequent Windows increment adds an explicitly enabled, bounded model evidence judge: on a new sealed set, strict delivery was 28/38 (29/38 with hierarchy), versus 16/38 for old BGE. Unknown-query injection remained 3/14 and 4/14, and unnecessary preparation occurred on all 9 no-retrieval questions. These opt-in results do not describe the default local-only policy. All 320 real Flash answers and failure records are retained, with answer quality reviewed separately. See the [current implementation and Claude integration](docs/modernization/20261101-memory-upgrade/backend-increment-20261101.md) and the preserved [earlier default-path assessment](docs/modernization/20261101-memory-upgrade/retrieval-release-assessment.md).
+**The on-demand retriever remains a development candidate.** The Windows increment adds an explicitly enabled, bounded model evidence judge, source spans, lifecycle/Host consistency and measured storage improvements. The sixth sealed set delivered complete evidence on 30/30 answerable queries (29/30 with hierarchy), versus 28/30 for old BGE, with zero unknown-query injection on 11 questions. Independent AI review of real Flash answers found 30/30 answerable responses correct, but 29/30 deliverable after schema validation; overall deliverable correctness was 45/48 versus old BGE's 47/48. Unnecessary preparation and two schema failures remain recorded. These opt-in results do not describe the default local-only policy or human persona acceptance. Earlier independent failures, including the supplied 7/33 baseline, remain intact. See the [Windows delivery, patches and evidence](docs/modernization/20261101-memory-upgrade/windows-delivery.md), [Claude integration](docs/modernization/20261101-memory-upgrade/backend-increment-20261101.md) and preserved [earlier default-path assessment](docs/modernization/20261101-memory-upgrade/retrieval-release-assessment.md).
 
 The first modernization increment connects Emotional Memory V2 to the actual model prompt and adds source/version tracking, time validity, transactional correction and forgetting, derived-profile/chapter invalidation, and context-epoch checks for old conversation context and late expression results. Stable persona is loaded from the active character pack and an optional `persona.json`; memory edits do not rewrite it.
 
@@ -162,7 +162,7 @@ python -m pytest tests\test_app.py tests\test_desktop_pet_smoke.py -q
 python -m pytest tests\test_repository_hygiene.py -q
 ```
 
-The final local integration baseline passed `1185` tests, including `327` focused memory/plugin tests and Windows GUI/build smoke verification.
+The earlier October integration baseline passed `1185` tests, including `327` focused memory/plugin tests and Windows GUI/build smoke verification. Current Windows memory results and remaining acceptance gaps are recorded in the [incremental delivery report](docs/modernization/20261101-memory-upgrade/windows-delivery.md).
 
 Validate character packs:
 

@@ -2,6 +2,8 @@
 
 本页补充 [原评测规划](evaluation-plan.md)，不改变其样本量、公式和门槛。检索首评冻结在 `6440ecf`，旧三路线使用 prerequisite-only 重建基线 `1e10b715`；后续修复和测试不能改写这次首评。第三集首次运行后已经曝光，今后重跑应标为回归。
 
+后续 `1337d0e` 修复旧明确卡片读取与来源绑定判断。38 条开发合同的包内基线及修复前均为 29/38，最终 Prompt 2/11；修复后 `development-38-legacy-card-final.json` 为 38/38、最终 Prompt 11/11、无关注入 0/3，相关 145 项测试通过。下文第三集首评及 E9 首次失败仍为历史原证据；新泛化结论必须另看新密封集，不能把这些修复重标为首评。
+
 第三集含 8 个档案、64 个不同问题，五路线共 320 行。320 次回答已由实际 `deepseek-flash` 生成并完成隐藏路线标签的独立 AI 审阅。两位 AI 评审各负责160条、没有重叠，每条回答只有一位评审；这不是双评审一致性验证或人工人格验收。人工校准、评审间一致性和真实用户长期体验仍为 `not_run`。方法重复、同故事多轮和步骤数不增加独立样本数。
 
 ## 证据入口
@@ -16,9 +18,19 @@
 | E6 | [自然事实闭环](../../../artifacts/codex_handoff/memory-upgrade/live-lifecycle-regression.json)：3 个关系/活动故事、17 阶段记录，包含更正、清空聊天历史后的重启召回、遗忘后重启；真实 Flash 请求和存储内容保留。 |
 | E7 | [Windows 存储与缓存性能](storage-performance-windows.md)：300/3000/10000 条合成长来源负载，读/组装各 5 次，更正/遗忘各 3 次；真实 BGE 各规模 3 个进程阶段。不是实际用户长度分布。 |
 | E8 | [Host 覆盖核查](../../../artifacts/codex_handoff/memory-upgrade/sealed-supplemental-first/README.md#host-coverage-review)：真实 loopback HTTP、Qt 生命周期、两个实际宿主进程重启的具体测试与缺口。测试日志保留在 `artifacts/codex_handoff/lifecycle-*.log`；不能把本地合同作为真实手机验收。 |
-| E9 | [当前38条开发合同](../../../artifacts/codex_handoff/memory-upgrade/development-38-after-cleanup.json)：`879026a` 运行，29/38通过、9/38失败；候选召回11/11，最终Prompt交付2/11。旧包对照及失败定位进行中，不能引用历史38条通过记录代替当前结果。 |
+| E9 | [38条合同修复后复测](../../../artifacts/codex_handoff/memory-upgrade/development-38-final-v3.json)：`8e296ce` 为38/38通过，最终Prompt交付11/11、无关注入0/3。包内及 `879026a` 的29/38与Prompt 2/11失败保留在 `development-38-after-cleanup.json`，不改写历史。 |
+| E10 | [第四集首评](../../../artifacts/codex_handoff/memory-upgrade/sealed-fourth-first/ANSWER_REVIEW.md)：6档案/48问×5路，30道有证据、11道无答案；240次真实生成及逐条盲评。候选 `1337d0e`。 |
+| E11 | [第五集首评](../../../artifacts/codex_handoff/memory-upgrade/sealed-fifth-first/ANSWER_REVIEW.md)：6档案/48问×5路，30道有证据、11道无答案；240次真实生成及逐条盲评。候选 `8e296ce`。一题角色职业与用户职业的负向证据存在标注争议，原始gold、五条评审意见和争议记录均保留。 |
+| E12 | [第六集首评与盲评](../../../artifacts/codex_handoff/memory-upgrade/sealed-sixth-first/ANSWER_REVIEW.md)：6档案/48问×5路，30道有据、11道未知、6道无需准备；240次真实回答、238次格式合法。候选 `bd9fabd`，新两路严格交付30/30与29/30，未知误注入均0/11，原文有据回答正确30/30与29/30，可交付29/30与28/30。复烧题存在标注歧义，保留全部五路原评分。 |
+| E13 | [最终约束验证](../../../artifacts/codex_handoff/memory-upgrade/claim-use-constraints-flash/README.md)：`1c68a80` 在未查看第六题目前修复独立协议漏洞；4次真实Flash判断4/4通过，属于开发回归。整句闲聊跳过另有13个正负合同，不以此替代无需检索率的独立评测。 |
+| E14 | [宠物旧索引前后复测](../../../artifacts/codex_handoff/memory-upgrade/owned-pet-regression/README.md)：三个正例和一个错误主体，修前/后各4次真实Flash生成；原档案空历史重启，v3→v4只重建派生索引，权威内容和epoch不变。最新38合同见 `development-38-delivery-final.json`，仍38/38。 |
+| E15 | [最终版本原判据回放](../../../artifacts/codex_handoff/memory-upgrade/sealed-sixth-validation-final-v4/README.md)：94条原wire严格匹配，96份最终prompt与前一验证版本一致。零API回放不算真实新增模型请求；此前唯一变化prompt另外实际生成1次并独立评审，记录在 `sealed-sixth-validation-replay/`。 |
 
-## 13 套覆盖矩阵
+第六批提供了新的正向独立证据，同时保留分层误拒、格式失败与准备开销。新两路人格通过为47/48与45/48，旧BGE为43/48；每条仍仅一位AI评审，非人工验收。此批跨卡多证据分母为0，多轮为2题，未扩大原13套完整规模。更正/遗忘闭环继续见E6及 `live-lifecycle-final-v3.json` 的第二次40请求实测，不能由这批已入库检索成绩推断抽取或长期陪伴质量。
+
+第四集有据回答正确数（none/lexical/bge_rrf/routed/layered）为1、27、29、19、22 /30；严格证据交付为0、26、28、20、22 /30。第五集有据回答正确数为1、23、26、25、25 /30；严格证据交付为0、25、29、26、25 /30。第五集全部48问回答通过数为18、40、41、43、42，不能用总体分数覆盖有据问题仍低于旧BGE的事实。第四/第五集分别使用587,334和596,282生成tokens，事件格式分别240/240和239/240通过。第五集两条判据推理耗尽的原始失败另存，后续降低判断推理强度的四请求对照不替代新的独立验证。
+
+## 13 套覆盖矩阵（第三批首次快照）
 
 | 套件及原计划规模 | 本轮实际执行 | 未完成范围与状态 |
 |---|---|---|
@@ -36,7 +48,7 @@
 | D02 iOS/华为原生 HarmonyOS，360 流程重复 | 本轮无实机执行。 | `not_run`；不包括 Mac 桌面。 |
 | S01 存储/迁移，180 存档 | E7 三个规模读写/BGE 缓存实测；E3/E4 logical 迁移保留逻辑时间；本地临时档案用于故障回归。 | 180 份故障存档、崩溃恢复总矩阵、真实用户存档迁移 `not_run`。本轮没有行式权威迁移。 |
 
-## 28 项指标覆盖矩阵
+## 28 项指标覆盖矩阵（第三批首次快照）
 
 编号按原规划指标表顺序。下表的提示词检查与回答评分分开；`0/64` 的 query 级来源检查不能转换为 story 级全通道泄漏率。
 

@@ -1,5 +1,7 @@
 # 本轮按需记忆评测：数据、方法、真实失败与结果索引
 
+本页保留开发包第二批评测历史，以下“最终”均指当时的 `b5b43e2` 检查点。后续Windows实际代码、第三至第六密封首评、真实Flash回答及补丁见 [当前交付](windows-delivery.md) 与 [评测覆盖](evaluation-coverage-windows.md)。本页原始失败和未运行记录不被后续结果覆盖。
+
 本文件是 [完整评测计划](evaluation-plan.md) 的执行增量，沿用原有 13 套评测、28 项指标；不是将计划中尚未执行的数量改写为已通过。
 
 最终验证清单为 [ondemand-validation.json](ondemand-validation.json)：生产 `b5b43e2` 全量 **2,150 passed / 4 skipped / 0 failed，602.68 秒**，1 个既有端口占用线程警告；运行内 Python 文件哈希不变。工具契约对齐后的真实 Qt/SQLite smoke **10/10**，生产源码仍与全测相同。4 个 provider 抽取跳过项和 [240 条生成 not_run](../evidence/ondemand-memory-20261101/generation-delivery-not-run.json)未计作通过。测试通过不改变下面独立质量失败结论。

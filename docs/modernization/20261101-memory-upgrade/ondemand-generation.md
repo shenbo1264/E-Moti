@@ -1,5 +1,7 @@
 # 按需记忆的真实生成评测入口
 
+Windows后续已实际运行第三至第六密封集的五路Flash生成与独立AI盲评，完整请求、模型返回、token、耗时和格式失败见 [当前交付](windows-delivery.md) 及 [覆盖记录](evaluation-coverage-windows.md)。下文保留原工具契约和包内历史运行状态；旧not_run不代表这些后续批次未运行。
+
 本页补充现有 [Memory Benchmark 计划](evaluation-plan.md)，用于将五条检索路线保存的上下文送入同一个真实生成模型。它不替代检索评测、桌面交互评测或人格盲评，也不把检索成功推断成回答正确。
 
 ## 已实现的入口

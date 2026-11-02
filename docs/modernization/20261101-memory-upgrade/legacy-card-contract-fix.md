@@ -25,3 +25,9 @@
 因此将已有派生 `ALGORITHM_VERSION` 的 `typed-literal-v2` 提升为 `typed-literal-v3`，复用现成索引重建机制。四项升级测试先失败后通过，关联 55 项测试通过。同四份真实旧进程档案再次重开，直接精确查询 4/4；权威 JSON 逐字节相同，来源指纹和 context_epoch 均保持不变，仅派生索引 generation 更新。无需迁移或重写长期事实。
 
 原始升级证据：`artifacts/codex_handoff/memory-upgrade/legacy-index-restart/` 下的 `baseline.json`、`current.json`、`after-algorithm-upgrade.json`，以及 `legacy-index-version-red.log`、`legacy-index-version-focused.log`、`legacy-index-rebuild.log`。档案均为独立合成存档，没有访问真实用户数据。
+
+## Claude 当前问题核查后的补修
+
+`51f21d5` 继续修复已确认旧卡片的“我养/拥有一只叫X的宠物”及毛色修饰句式。复用既有宠物字段支持范围，来源必须可信；名称不写成用户姓名，不反写权威事实。猫、兔子、鹦鹉保存重启后召回先红3项，负例3项通过；修后相关114项通过。
+
+真实Flash修前/后各4次，复用原档案且聊天历史为空：三个正例由unknown变为正确名称，别人宠物负例保持unknown，8次输出均通过生产解析器。这些是开发回归，非新增密封结论。旧v3索引在重开时自动提升为v4；四份权威payload逐字不变、epoch保持0，比较在访问计数写回之前完成。完整前后请求、回答及迁移证据见 `artifacts/codex_handoff/memory-upgrade/owned-pet-regression/`。
