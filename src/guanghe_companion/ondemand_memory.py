@@ -21,11 +21,20 @@ from .memory_index import IndexedMemoryQuery
 from .retrieval_contract import (EvidenceContextBundle, EvidenceDecision, RetrievalBudget,
                                  RetrievalResult, RetrievalTrace, RetrievalIntent, RetrievalPlan)
 from .retrieval_evidence import check_evidence, fact_view, topic_terms
-from .retrieval_router import MemoryRetrievalRouter
+from .retrieval_router import MemoryRetrievalRouter, _CASUAL
 from .retrieval_literal import mention_candidates
 
 
 def prepare_retrieval(service, query: str, *, now: int, history: Sequence[object] = (), scope="companion"):
+    text = str(query).strip()
+    # 仅整句封闭闲聊语法可跳过准备；模糊chat仍需判据补救省略主体的问题。
+    if not text or _CASUAL.fullmatch(text):
+        if service.evidence_judge is not None:
+            service.evidence_judge.invalidate()
+            service.evidence_judge.status = "not_needed"
+            service.evidence_judge.prepare_rows_loaded = 0
+            service.evidence_judge.prepare_retrieval_calls = 0
+        return None
     future = _prepare_semantic(service, query, now=now, history=history, scope=scope)
     if service.evidence_judge is not None:
         return service.evidence_judge.prepare(service, query, now=now, history=history,

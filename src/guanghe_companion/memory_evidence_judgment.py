@@ -55,6 +55,13 @@ def hard_eligibility(entry, intent, *, now, owner_id, character_id, allow_planne
         allow_planned_attribute=allow_planned_attribute) is None
 
 
+def _asks_occurred_event(question):
+    if re.search(r"实际.*(?:完成|参加|发生)|已经完成|参加过|完成了吗", question):
+        return True
+    # 经历体限定在主问句谓语；“做过某事的同事现在住哪”属于属性问句。
+    return bool(re.search(r"过[^的，。？！?]{0,24}(?:吗|么|没有|没)[？?]?$", question))
+
+
 def resolve_judged_subjects(store, judgment, index, *, now):
     from .ondemand_memory import _resolve_subjects
     original = judgment.plan.intents[index]
@@ -111,11 +118,11 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
             scopes=scopes, requires_shared_event=base.requires_shared_event,
             reason="bounded_model_evidence_judgment")
         attribute_use = (row.get("claim_use") == "current_attribute" and route == "fact"
-            and not base.requires_shared_event and not re.search(r"实际.*(?:完成|参加|发生)|已经完成|参加过|完成了吗", question))
+            and not base.requires_shared_event and not _asks_occurred_event(question))
         if attribute_use and base.as_of is None and base.temporal_mode in {"planned", "history"}:
             intent = replace(intent, temporal_mode="current")
         if (row.get("claim_use") == "planned_event" and base.temporal_mode in {"current", "as_of"}
-                and not re.search(r"实际.*(?:完成|参加|发生)|已经完成|参加过|完成了吗", question)):
+                and not base.requires_shared_event and not _asks_occurred_event(question)):
             intent = replace(intent, temporal_mode="planned")
         ids = []
         evidence = row.get("evidence", [])
