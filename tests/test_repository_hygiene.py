@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
+
+import pytest
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -72,6 +75,34 @@ def _tracked_files() -> list[Path]:
     return [REPO_ROOT / line for line in output.splitlines() if line]
 
 
+def _privacy_hits(text: str) -> list[str]:
+    private_user = "199" + "70"
+    hits = [token for token in FORBIDDEN_TEXT if token != private_user and token in text]
+    # 数字指标及摘要可以包含相同数字；这里只匹配独立用户名。
+    if re.search(r"(?<![A-Za-z0-9_.])" + private_user + r"(?![A-Za-z0-9_.])", text):
+        hits.append(private_user)
+    normalized = text.replace("/", "\\").casefold()
+    for prefix in FORBIDDEN_TEXT[:1]:
+        if prefix.casefold() in normalized and prefix not in hits:
+            hits.append(prefix)
+    return hits
+
+
+@pytest.mark.parametrize("text,expected", [
+    ("用户：" + "199" + "70", True),
+    ('{"username":"' + "199" + "70" + '"}', True),
+    ("C:" + "\\Users\\" + "199" + "70" + "\\data.json", True),
+    ("c:" + "/Users/" + "199" + "70" + "/data.json", True),
+    ("c:" + "/Users/example/data.json", True),
+    ('{"latency":0.14742199709871784}', False),
+    ('{"latency":0.019970000721514225}', False),
+    ('{"count":1199702,"scientific":1.19970e-05}', False),
+    ('{"sha256":"aabbccdd19970aabbccdd19970aabbccdd19970aabbccdd19970aabbccdd19970aa"}', False),
+])
+def test_privacy_detection_distinguishes_identifiers_from_measurements(text, expected):
+    assert bool(_privacy_hits(text)) is expected
+
+
 def test_tracked_text_files_do_not_expose_local_paths_or_private_note_names() -> None:
     leaks: list[str] = []
     for path in _tracked_files():
@@ -81,9 +112,8 @@ def test_tracked_text_files_do_not_expose_local_paths_or_private_note_names() ->
             continue
         text = path.read_text(encoding="utf-8-sig")
         relative = path.relative_to(REPO_ROOT).as_posix()
-        for token in FORBIDDEN_TEXT:
-            if token in text:
-                leaks.append(f"{relative}: {token}")
+        for token in _privacy_hits(text):
+            leaks.append(f"{relative}: {token}")
 
     assert leaks == []
 

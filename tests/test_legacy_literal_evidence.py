@@ -1,4 +1,6 @@
 """Old explicit saves need literal verification when no typed slot exists."""
+from copy import deepcopy
+
 import pytest
 
 from guanghe_companion.emotional_memory_service import EmotionalMemoryService
@@ -15,10 +17,12 @@ def test_saved_literal_attribute_can_be_verified_without_inference(tmp_path, sta
     memory = EmotionalMemoryService(root=tmp_path, character_id="pet")
     row = memory.remember(kind="用户偏好", title="用户主动记住", summary=statement,
                           source="explicit_user_request", now=1, source_ids=("turn:1",))
+    saved_metadata = deepcopy(memory.store.load_memories()[0].metadata)
+    assert "facts" not in saved_metadata
     result = memory.retrieve(query, now=2)
     assert result.trace.status == "sufficient"
     assert [e.memory_id for e in result.bundle.memories] == [row.memory_id]
-    assert memory.store.load_memories()[0].metadata == {}  # read-only derivation
+    assert memory.store.load_memories()[0].metadata == saved_metadata
 
 
 @pytest.mark.parametrize("statement,query,source", [

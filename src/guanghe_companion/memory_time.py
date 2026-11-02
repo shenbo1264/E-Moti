@@ -29,6 +29,8 @@ def temporal_metadata(*, time_basis: str, timezone_name: str = "", now: int,
 def bind_archive_time(store, *, time_basis: str | None = None,
                       timezone_name: str | None = None) -> tuple[str, str]:
     with store._document() as document:
+        # 初始化也会提交时间标记，先验证待确认内容，损坏档案必须原样保留。
+        store._pending_rows(document)
         existing = document.get("time_basis")
         # 缺少标记的旧存档使用逻辑时间，不根据数字大小推测日历。
         if existing is None and document.get("entries"):
