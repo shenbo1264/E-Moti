@@ -1,5 +1,11 @@
 # 开发交接：后续工作要做什么
 
+## Windows 后端增量接入
+
+先读 [本次实现与接口](backend-increment-20261101.md)；以下旧 B1—B4 与第二批分工仅作为历史编号。当前 `plugin_enabled_controller.py`、`emotional_memory_service.py`、`desktop_dialogue_service.py`、`host_service.py` 及共享请求链由 Codex 单写；Claude 接入现有界面时复用接口，不同时改这些文件。`app.py` 未由本次修改。
+
+判据模型由 `controller.enable_memory_evidence_judgment(True)` 显式开启，随后仍走异步 prepare/retrieve，不在 Qt 主线程请求模型。默认关闭；首次独立结果改善了证据交付和未知误注入，但仍有误拒与不必要调用。展示来源使用 `source_spans`，不得退回整段原话。Host 以 `request_id/input_version/committed_version/context_epoch` 区分自身提交与外部撤销。新增 change/purge 为核心 API，尚无新的网络端点。真实设备、在途网络恢复与人工角色体验验收仍待进行。
+
 ## 当前增量优先级：按需 RAG 已进入生产路径
 
 以下 B1—B4 是第一批交接的工作分解，仍可用于定位编号；其中 B3a/B3b 和部分 B2/B4 已在第二批实际实现，不能按旧文字再造一套检索/数据库。先读 [差距矩阵](ondemand-gap-matrix.md)、[架构](memory-architecture.md)、[检索契约](retrieval-contract.md)、[存储](storage-index-v1.md) 和 [本轮评测](ondemand-evaluation.md)。

@@ -100,6 +100,7 @@ class CaseHarness:
         controller.ai_expressor.llm_client = None
         if owner_id != "local_user":
             # Owner scoping is a service contract; the desktop UI is currently single-user.
+            controller.story_runtime.memory.close(wait=True)
             controller.story_runtime.memory = self.api["service"].EmotionalMemoryService(
                 root=self.root, character_id=character_id, owner_id=owner_id,
             )
@@ -107,6 +108,7 @@ class CaseHarness:
 
     def close(self) -> None:
         for controller in self.actors.values():
+            controller.story_runtime.memory.close(wait=True)
             controller.close()
 
     def operation(self, row: dict[str, object]) -> None:
@@ -171,6 +173,7 @@ class CaseHarness:
         elif kind == "reopen":
             old = controller.story_runtime.memory
             owner, character = old.owner_id, old.character_id
+            old.close(wait=True)
             controller.close()
             self.add_actor(actor, character, owner)
         elif kind == "actor":
@@ -219,6 +222,7 @@ class CaseHarness:
                 next_expressor.llm_client = None
                 return replace_expressor(next_expressor)
             with patch.object(self.api["story"].CompanionStoryRuntime, "build_expression_context", capture), patch.object(controller, "_replace_ai_expressor", offline_expressor):
+                controller.story_runtime.memory.close(wait=True)
                 controller.switch_character(str(row["character"]), include_ai_expression=bool(row.get("expression", False)))
             self.observed["scope_mismatch"] = any(item["state"] != item["memory"] for item in mixed)
             self.observed["switch_contexts"] = mixed
