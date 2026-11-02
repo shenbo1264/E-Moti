@@ -1,13 +1,7 @@
-"""Pinned real-BGE restart/mutation benchmark with independent processes.
-
-Synthetic text only. This measures indexing and cache maintenance, not answer
-quality, persona behavior or a production service-level objective. A parent
-retains one temporary SQLite database across three fresh child processes per
-scale, then removes that synthetic database after saving all measurements.
-"""
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 from dataclasses import replace
 from datetime import datetime, timezone
 import hashlib
@@ -16,13 +10,14 @@ import json
 import os
 from pathlib import Path
 import platform
-import resource
 import sqlite3
 import statistics
 import subprocess
 import sys
 import tempfile
 from time import perf_counter
+
+from memory_profile_metrics import peak_rss_bytes
 
 
 TEMPLATES = (
@@ -51,7 +46,7 @@ def write_result(path, data):
 
 
 def cache_size(store):
-    with sqlite3.connect(store.state_path) as connection:
+    with closing(sqlite3.connect(store.state_path)) as connection:
         rows, blob_bytes = connection.execute("SELECT COUNT(*),COALESCE(SUM(length(vector)),0) FROM memory_vector_cache").fetchone()
         page_size = connection.execute("PRAGMA page_size").fetchone()[0]
         pages = connection.execute("PRAGMA page_count").fetchone()[0]
@@ -82,15 +77,25 @@ def child(args):
             summary=TEMPLATES[i % len(TEMPLATES)] + f" 记录编号{i}。", source="explicit_user_request",
             occurred_at=i + 1, created_at=i + 1, updated_at=i + 1, source_ids=(f"synthetic:{i}",))
             for i in range(args.size)]
+        if args.corpus_profile == "long-source":
+            from benchmark_memory_index import records
+
+            entries = [replace(row, memory_id=f"synthetic-{i:06d}")
+                       for i, row in enumerate(records(args.size, corpus_profile="long-source"))]
         entries[0] = replace(entries[0], summary="用户喜欢绿茶", metadata={"speaker": "user",
             "fact_slot": "preference:饮料偏好:like", "fact_domain": "饮料偏好", "fact_value": "绿茶"})
         started = perf_counter()
         memory.store.save_memories(entries)
         result["seed_sqlite_ms"] = (perf_counter() - started) * 1000
-        result["corpus"] = {"source": "synthetic six-template Chinese text; no private data",
+        result["corpus"] = {"source": ("synthetic structured facts with long Chinese sources; no private data"
+            if args.corpus_profile == "long-source" else "synthetic six-template Chinese text; no private data"),
+            "profile": args.corpus_profile,
             "min_chars": min(len(e.summary) for e in entries), "median_chars": statistics.median(len(e.summary) for e in entries),
             "max_chars": max(len(e.summary) for e in entries), "all_current_companion": True,
             "current_entries": args.size, "vector_distance": "normalized float32 exact cosine"}
+        result["corpus"]["source_chars"] = {"min": min(len(e.metadata.get("original_quote", "")) for e in entries),
+            "median": statistics.median(len(e.metadata.get("original_quote", "")) for e in entries),
+            "max": max(len(e.metadata.get("original_quote", "")) for e in entries)}
     else:
         now += 5 if args.phase == "reopen_verify" else 0
     retriever = SemanticMemoryRetriever(cache_dir=args.model_cache, character_id=memory.character_id,
@@ -106,7 +111,7 @@ def child(args):
             result["passage_encoder_guard"] = "raises_if_called"
         def run(query, instant):
             started = perf_counter()
-            retriever.prepare_indexed(query, memory.store, now=instant).result(timeout=360)
+            retriever.prepare_indexed(query, memory.store, now=instant).result(timeout=900)
             return {"wall_ms": (perf_counter() - started) * 1000, "status": retriever.status,
                     "top_ids": list(retriever.candidate_ids(query, limit=4))}
         result["first_query"] = run(QUERY, now)
@@ -145,7 +150,8 @@ def child(args):
             assert result["forgotten"]["status"]["persistent_cache_writes"] == 0
             assert "synthetic-000000" not in retriever.last_cosines and corrected.memory_id not in retriever.last_cosines
         result["cache_final"] = cache_size(memory.store)
-        result["peak_rss_mib"] = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024
+        result["peak_rss_mib"] = peak_rss_bytes() / (1024 * 1024)
+        result["peak_rss_measurement"] = "psutil PeakWorkingSetSize" if sys.platform == "win32" else "resource ru_maxrss"
         result["final_vector_bytes"] = sum(value.nbytes for value in retriever._vectors.values())
         result["final_matrix_cache_bytes"] = sum(value.nbytes for value in retriever._matrix_cache.values())
         result["assertions"] = "cold N / restart 0 / correction 1 / forget 0 passage encodes; transactionally revoked cache rows absent"
@@ -160,30 +166,33 @@ def child(args):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="真实 BGE 跨进程缓存与更正/遗忘成本测量")
     parser.add_argument("--source-root", type=Path, required=True)
     parser.add_argument("--model-cache", type=Path, required=True)
     parser.add_argument("--size", type=int)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--state-root", type=Path)
     parser.add_argument("--phase", choices=("cold", "reopen_mutate", "reopen_verify"))
+    parser.add_argument("--corpus-profile", choices=("short", "long-source"), default="short")
     args = parser.parse_args()
     if args.phase:
         if args.size is None or args.state_root is None:
             parser.error("child phase requires --size and --state-root")
         return child(args)
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    temporary_root = args.source_root / "artifacts/codex_handoff/storage-profile-temp"
+    temporary_root.mkdir(parents=True, exist_ok=True)
     summaries = []
     for size in (args.size,) if args.size else (300, 3000, 10000):
         phases = {}
-        with tempfile.TemporaryDirectory(prefix=f"emoti-persistent-bge-{size}-") as temporary:
+        with tempfile.TemporaryDirectory(prefix=f"emoti-persistent-bge-{size}-", dir=temporary_root) as temporary:
             for phase in ("cold", "reopen_mutate", "reopen_verify"):
                 path = args.output.with_name(f"{args.output.stem}-{size}-{phase}.json")
                 command = [sys.executable, str(Path(__file__).resolve()), "--source-root", str(args.source_root),
                     "--model-cache", str(args.model_cache), "--size", str(size), "--output", str(path),
-                    "--state-root", temporary, "--phase", phase]
+                    "--state-root", temporary, "--phase", phase, "--corpus-profile", args.corpus_profile]
                 started = perf_counter()
-                completed = subprocess.run(command, text=True, capture_output=True, timeout=420)
+                completed = subprocess.run(command, text=True, encoding="utf-8", capture_output=True, timeout=1200)
                 process_wall_ms = (perf_counter() - started) * 1000
                 path.with_suffix(".log").write_text(completed.stdout + completed.stderr, encoding="utf-8")
                 if completed.returncode:

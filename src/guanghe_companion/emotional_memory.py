@@ -8,12 +8,15 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Iterable, Mapping
 
+from .memory_lifecycle import origin_revoked, revision_ids
+
 CURRENT_EMOTIONAL_MEMORY_SCHEMA_VERSION = 2
 MAX_EMOTIONAL_MEMORY_ENTRIES = 300
 MAX_MEMORY_TEXT_LENGTH = 240
 MAX_MEMORY_TITLE_LENGTH = 60
 MAX_MEMORY_TAGS = 8
 MAX_SOURCE_IDS = 8
+_CONTROL_SPACES = str.maketrans({code: " " for code in (*range(32), 127)})
 
 
 def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
@@ -23,7 +26,7 @@ def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
 def _clean_text(value: object, max_length: int) -> str:
     if not isinstance(value, str):
         return ""
-    normalized = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value)
+    normalized = value.translate(_CONTROL_SPACES)
     return " ".join(normalized.strip().split())[:max_length]
 
 
@@ -733,8 +736,13 @@ class EmotionalMemoryStore:
         document["retired_ids"] = sorted(set(document.get("retired_ids", [])) | ids)
         document["retired_origins"] = sorted(set(document.get("retired_origins", [])) |
                                             {origin for entry in entries for origin in self._origins(entry)})
-        document["entries"] = [replace(entry, deleted=True, updated_at=now).to_dict()
-                               if entry.memory_id in ids else entry.to_dict() for entry in self._entries(document)]
+        # 撤销只更新命中的原始行；其他记录及未来扩展字段不应被全库规范化改写。
+        for index, row in enumerate(document.get("entries", [])):
+            if not isinstance(row, Mapping) or _clean_text(row.get("memory_id"), 80) not in ids:
+                continue
+            entry = EmotionalMemoryEntry.from_dict(row)
+            if entry is not None and entry.character_id == self.character_id and entry.owner_id == self.owner_id:
+                document["entries"][index] = {**row, "deleted": True, "updated_at": now}
         self._invalidate_derived(document, ids)
         document["context_epoch"] = int(document.get("context_epoch", 0)) + 1
 
@@ -834,7 +842,7 @@ class EmotionalMemoryStore:
         with self._document() as document:
             self._check_document(document)
             origins = self._origins(entry) if entry is not None else {"legacy_key:" + legacy_key}
-            return bool(origins.intersection(document.get("retired_origins", [])))
+            return origin_revoked(document, origins)
 
     def load_memories(self) -> tuple[EmotionalMemoryEntry, ...]:
         with self._document() as document:
@@ -894,7 +902,7 @@ class EmotionalMemoryStore:
                 raise ValueError("memory candidate id conflict")
             if source_key in receipts:
                 raise ValueError("memory candidate source already resolved")
-            if set(origins).intersection(document.get("retired_origins", [])):
+            if origin_revoked(document, origins):
                 raise ValueError("stale memory proposal source")
             for key, row in rows.items():
                 if row["source_key"] == source_key:
@@ -1001,8 +1009,8 @@ class EmotionalMemoryStore:
 
         # Corrections can legitimately retain their original event's source id.
         # Only already-held origins of an active row are exempt from the fence.
-        new_origins = self._origins(memory) - (self._origins(old) if old is not None else set())
-        if new_origins.intersection(document.get("retired_origins", [])):
+        if origin_revoked(document, self._origins(memory),
+                          retained_origins=self._origins(old) if old is not None else ()):
             return old if old is not None else replace(memory, deleted=True)
         if old is not None:
             if old.version > memory.version:
@@ -1053,6 +1061,8 @@ class EmotionalMemoryStore:
             raise ValueError("correction must have an unused memory id")
         if memory.deleted:
             raise ValueError("correction must supply an active replacement")
+        if origin_revoked(document, self._origins(memory), retained_origins=self._origins(old)):
+            raise ValueError("correction source has been revoked")
         memory = replace(memory, version=old.version + 1, supersedes=old.memory_id,
                          occurred_at=old.occurred_at if preserve_occurred_at else memory.occurred_at,
                          created_at=now, updated_at=now)
@@ -1069,13 +1079,8 @@ class EmotionalMemoryStore:
             target = next((entry for entry in entries if entry.memory_id == memory_id), None)
             if target is None:
                 return None
-            # Forgetting a superseded card must also revoke its current descendants.
-            ids = {memory_id}
-            while True:
-                descendants = {entry.memory_id for entry in entries if entry.supersedes in ids}
-                if descendants <= ids:
-                    break
-                ids.update(descendants)
+            # 遗忘当前事实时一并撤销历史版本，避免历史查询重新交付。
+            ids = revision_ids(entries, memory_id)
             affected = [entry for entry in entries if entry.memory_id in ids]
             if any(not entry.deleted for entry in affected):
                 self._retire(document, affected, now=_clean_timestamp(now))

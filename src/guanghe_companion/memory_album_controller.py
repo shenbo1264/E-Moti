@@ -9,6 +9,7 @@ from typing import Callable
 from .companion_story_runtime import CompanionStoryRuntime
 from .emotional_memory import MAX_MEMORY_TEXT_LENGTH, MAX_MEMORY_TITLE_LENGTH
 from .memory_album_view_model import build_memory_album
+from .memory_source_spans import resolve_source_spans
 
 
 class MemoryAlbumStaleError(ValueError):
@@ -137,6 +138,8 @@ class MemoryAlbumController:
             None,
         )
         if memory is not None:
+            resolved = resolve_source_spans(self.story.memory.store,
+                {memory.memory_id: memory.evidence_fingerprint()}, expected_epoch=epoch, now=timestamp, scope=memory.scope)
             details = {
                 "memory_id": memory.memory_id,
                 "title": memory.title,
@@ -154,9 +157,12 @@ class MemoryAlbumController:
                 "user_confirmed": memory.user_confirmed,
                 "supersedes": memory.supersedes,
                 "provenance": {key: memory.metadata[key] for key in (
-                    "original_quote", "message_id", "speaker", "scene", "recorded_at", "confidence_reason",
+                    "message_id", "speaker", "scene", "recorded_at", "confidence_reason",
                     "fact_domain", "fact_slot") if key in memory.metadata},
+                "source_expansion": resolved,
             }
+            if resolved["spans"]:
+                details["provenance"]["original_quote"] = resolved["spans"][0]["text"]
             self._require_epoch(epoch)
             return details
         chapter = next(
@@ -208,8 +214,7 @@ class MemoryAlbumController:
         if value is not None:
             return max(0, int(value))
         latest = max((row.updated_at for row in self.story.memory.store.load_memories()), default=0)
-        # Preserve the demo's logical clock; real saves still expire while idle.
-        return int(time.time()) if latest >= 946_684_800 else latest
+        return int(time.time()) if self.story.memory.time_basis == "unix" else latest
 
     @staticmethod
     def _check_text(summary: str, *, title: str = "") -> None:

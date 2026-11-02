@@ -12,6 +12,7 @@ from .expression_expressor import ShinsekaiAIExpressor
 class DesktopDialogueService(QObject):
     snapshot_changed = Signal(object)
     failed = Signal(str)
+    memory_committed = Signal(object)
     _dispatch = Signal(object)
 
     def __init__(self, controller, parent=None):
@@ -33,6 +34,7 @@ class DesktopDialogueService(QObject):
         # 召回准备期间也保留同一角色的串行权威，禁止另一入口抢先提交对话。
         c._desktop_dialogue_pending = True
         result = Future()
+        result.dialogue_metadata = {}
         self._active = {"result": result, "request": request, "include_ai": include_ai_expression,
                         "generation": c.host_context_generation, "character": c.state.character_id,
                         "epoch": c._dialogue_context_epoch(), "ticket": None}
@@ -129,6 +131,9 @@ class DesktopDialogueService(QObject):
         ticket = c.prepare_host_dialogue(state["request"], include_ai_expression=state["include_ai"],
                                          memory_prepared=handled)
         state["ticket"] = ticket
+        state["result"].dialogue_metadata.update(context_epoch=c._dialogue_context_epoch(),
+                                                  generation=c.host_context_generation)
+        self.memory_committed.emit(state["result"])
         if ticket.expression_request is None:
             self._complete(None)
         else:
@@ -150,6 +155,14 @@ class DesktopDialogueService(QObject):
         events = work.result() if work is not None else None
         snapshot = self.controller.complete_host_dialogue(state["ticket"], events)
         if not state["result"].done():
+            ticket = state["ticket"]
+            fallback = ticket.expressor.last_fallback_reason if ticket.expression_request is not None else "local_confirmation"
+            state["result"].dialogue_metadata.update(
+                events=[{"type": e.event_type, "character_name": e.character_name, "speech": e.speech,
+                         "payload": dict(e.payload)} for e in self.controller.last_events
+                        if e.event_type in {"speech", "visual", "intent"}],
+                expression_mode="model" if ticket.expression_request is not None and fallback is None else "local",
+                fallback_reason=fallback)
             state["result"].set_result(snapshot)
             self.snapshot_changed.emit(snapshot)
         self._active = None
@@ -188,6 +201,9 @@ class DesktopDialogueService(QObject):
                     retriever = self.controller.story_runtime.memory.semantic_retriever
                     if hasattr(retriever, "invalidate"):
                         retriever.invalidate()
+                    judge = getattr(self.controller.story_runtime.memory, "evidence_judge", None)
+                    if judge is not None:
+                        judge.invalidate()
                 self.controller._desktop_dialogue_pending = False
                 self._active = None
 

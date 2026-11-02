@@ -26,9 +26,18 @@ from .retrieval_literal import mention_candidates
 
 
 def prepare_retrieval(service, query: str, *, now: int, history: Sequence[object] = (), scope="companion"):
+    future = _prepare_semantic(service, query, now=now, history=history, scope=scope)
+    if service.evidence_judge is not None:
+        return service.evidence_judge.prepare(service, query, now=now, history=history,
+            scope=scope, semantic_future=future)
+    return future
+
+
+def _prepare_semantic(service, query: str, *, now: int, history: Sequence[object] = (), scope="companion"):
     plan = service.retrieval_router.plan(query, history=history, scope=scope, now=now)
     retriever = service.semantic_retriever
-    semantic_intents = tuple(i for i in plan.intents if i.route in {"episode", "task", "bounded"}
+    semantic_intents = tuple(i for i in plan.intents if (i.route in {"episode", "task", "bounded"}
+                             or service.evidence_judge is not None)
                              and i.temporal_mode != "unresolved")
     if retriever is None or not semantic_intents or plan.unresolved_reference:
         return None
@@ -171,6 +180,7 @@ def _bound_bundle(bundle, budget, *, chapters=(), layered=True):
                 (not row.get("dependent_memory_ids") or kept.intersection(row["dependent_memory_ids"])))
             bundle = replace(bundle, memories=memories, overview=layers.overview,
                 overview_source_ids=layers.represented_ids, resolution_evidence=bindings,
+                source_spans=tuple(row for row in bundle.source_spans if row["memory_id"] in kept),
                 retrieval={**bundle.retrieval, "status": "insufficient", "budget_limited": True,
                            "evidence_level": layers.level, "intent_status": intents})
         elif bundle.external_state:
@@ -200,6 +210,10 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
     started = perf_counter()
     budget: RetrievalBudget = service.retrieval_budget
     plan = service.retrieval_router.plan(query, history=history, scope=scope, now=now)
+    judgment = (service.evidence_judge.prepared(service, query, scope=scope, now=now, history=history)
+                if service.evidence_judge is not None else None)
+    if judgment is not None:
+        plan = judgment.plan
     top_k = min(max(0, int(top_k)), budget.max_source_entries)
     for attempt in range(3):
         timings = {"routing": (perf_counter() - started) * 1000 if attempt == 0 else 0.0}
@@ -227,7 +241,7 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
         stage = profile.relationship_stage
         scope_set = set()
         stale = False
-        for original_intent in plan.intents:
+        for intent_index, original_intent in enumerate(plan.intents):
             intent = original_intent
             if intent.route == "chat":
                 statuses.append({"route": "chat", "status": "not_needed", "source_ids": []})
@@ -284,6 +298,10 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                 occurred_after=(intent.as_of or 0) if intent.route in {"episode", "task"} and intent.temporal_mode == "as_of" else 0,
                 occurred_before=(intent.as_of_end or 0) if intent.route in {"episode", "task"} and intent.temporal_mode == "as_of" else 0,
                 limit=budget.max_candidates - len(semantic_ids))
+            if judgment is not None:
+                request = replace(request, subjects=(), predicates=(), query="",
+                    memory_ids=judgment.selections[intent_index], limit=budget.max_candidates)
+                semantic_ids = ()
             snapshot = service.store.read_indexed_snapshot(request, now=now, include_chapters=layered and intent.route == "episode")
             calls += 1
             rows += snapshot.rows_loaded
@@ -344,6 +362,14 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
             accepted = []
             for entry in current.values():
                 decision = check_evidence(entry, intent, now=now, owner_id=service.owner_id, character_id=service.character_id)
+                if judgment is not None:
+                    from .memory_evidence_judgment import hard_eligibility
+                    accepted_judgment = (entry.memory_id in judgment.selections[intent_index]
+                        and entry.evidence_fingerprint() == judgment.fingerprints.get(entry.memory_id)
+                        and hard_eligibility(entry, intent, now=now, owner_id=service.owner_id,
+                            character_id=service.character_id))
+                    decision = EvidenceDecision(entry.memory_id, accepted_judgment,
+                        "source_bound_model_support" if accepted_judgment else "judgment_source_invalid", intent.route)
                 decisions.append(decision)
                 if decision.accepted:
                     accepted.append(entry)
@@ -353,7 +379,7 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
             supported_fields = {field for d in decisions if d.accepted and d.memory_id in {e.memory_id for e in accepted}
                                 for field in d.supported_details}
             needs_expansion = not accepted or any(field not in supported_fields for field in intent.details)
-            if needs_expansion and expansions < budget.max_expansions and (structured or len(current) < budget.max_candidates):
+            if judgment is None and needs_expansion and expansions < budget.max_expansions and (structured or len(current) < budget.max_candidates):
                 phase = perf_counter()
                 extra = service.store.read_indexed_snapshot(IndexedMemoryQuery(scopes=intent.scopes, query=search_text,
                     history=request.history, occurred_after=request.occurred_after, occurred_before=request.occurred_before,
@@ -418,6 +444,8 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                              or applicability == "requires_current_validation" else "sufficient" if ranked else "unknown",
                              "source_ids": [e.memory_id for e in ranked], "missing_details": missing,
                              **({"applicability": applicability} if applicability else {})})
+            if judgment is not None and judgment.statuses[intent_index] != "sufficient":
+                statuses[-1]["status"] = judgment.statuses[intent_index]
         if stale:
             continue
         # Round-robin source allocation gives each intent a chance within the
@@ -492,6 +520,7 @@ def expand_sources(service, source_fingerprints: Mapping[str, str], *, expected_
     A caller may not expand revoked/expired material by labeling it historical.
     """
     from .emotional_memory_service import _active_memory_index, _valid_profile
+    from .memory_source_spans import resolve_source_spans
 
     started = perf_counter()
     if (not isinstance(source_fingerprints, Mapping) or not source_fingerprints
@@ -499,6 +528,8 @@ def expand_sources(service, source_fingerprints: Mapping[str, str], *, expected_
             or any(not isinstance(k, str) or not isinstance(v, str) or not k or not v
                    for k, v in source_fingerprints.items())):
         raise ValueError("source expansion requires bounded source IDs and fingerprints")
+    spans = resolve_source_spans(service.store, source_fingerprints, expected_epoch=expected_epoch,
+        now=now, scope=scope, max_sources=service.retrieval_budget.max_source_entries)
     plan = RetrievalPlan((RetrievalIntent("source_expansion", "", scopes=(scope,), detail=True,
                                          reason="explicit_source_expansion"),))
     snapshot = service.store.read_indexed_snapshot(IndexedMemoryQuery(scopes=(scope,),
@@ -520,8 +551,11 @@ def expand_sources(service, source_fingerprints: Mapping[str, str], *, expected_
     if status == "unavailable":
         profile = CoreBondProfile(service.character_id, service.owner_id)
     policy = {"status": status, "routes": ["source_expansion"], "evidence_level": "L2",
-              "reason": "stale_projection" if status == "unavailable" else "verified_source_read"}
-    bundle = EvidenceContextBundle(profile, memories, None, snapshot.context_epoch, retrieval=policy)
+              "reason": "stale_projection" if status == "unavailable" else "verified_source_read",
+              "source_span_status": spans["status"], "unavailable_sources": spans.get("unavailable_sources", {})}
+    allowed_ids = {entry.memory_id for entry in memories}
+    bundle = EvidenceContextBundle(profile, memories, None, snapshot.context_epoch, retrieval=policy,
+        source_spans=tuple(row for row in spans["spans"] if row["memory_id"] in allowed_ids) if status != "unavailable" else ())
     bundle = _bound_bundle(bundle, service.retrieval_budget.max_context_chars, layered=False)
     status = bundle.retrieval["status"]
     trace = RetrievalTrace(plan.routes, plan.reason, status, retrieval_calls=1, rows_loaded=snapshot.rows_loaded,

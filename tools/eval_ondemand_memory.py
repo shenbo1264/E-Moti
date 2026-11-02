@@ -41,6 +41,8 @@ from typing import Any
 METHODS = ("none", "lexical", "bge_rrf", "routed", "layered")
 SPLITS = ("development", "validation", "holdout")
 ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(ROOT))
+from tools.memory_profile_metrics import peak_rss_bytes
 BASELINE_COMMIT = "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb"
 
 
@@ -88,6 +90,22 @@ def source_hashes(root):
             for p in sorted((root / "src/guanghe_companion").glob("*.py"))}
 
 
+def validate_baseline(root, expected_commit):
+    actual = git(root, "rev-parse", "HEAD")
+    if actual != expected_commit:
+        raise ValueError("Legacy source revision differs from --baseline-commit")
+    if git(root, "status", "--porcelain", "--", "src/guanghe_companion"):
+        raise ValueError("Frozen baseline production sources must be clean")
+    return actual
+
+
+def story_clock(data, story):
+    basis = story.get("time_basis", data.get("time_basis", "unix"))
+    if basis not in {"logical", "unix"}:
+        raise ValueError("time_basis must be logical or unix")
+    return story.get("now", data.get("now", 0)), basis
+
+
 def rss_mib():
     try:
         return int(Path("/proc/self/statm").read_text().split()[1]) * os.sysconf("SC_PAGE_SIZE") / 2**20
@@ -96,12 +114,7 @@ def rss_mib():
 
 
 def peak_rss_mib():
-    try:
-        import resource
-    except ImportError:
-        return None
-    value = resource.getrusage(resource.RUSAGE_SELF).ru_maxrss
-    return value / (2**20 if sys.platform == "darwin" else 1024)
+    return peak_rss_bytes() / 2**20
 
 
 def environment():
@@ -165,6 +178,8 @@ def load_datasets(directory, splits):
 def make_input_rows(data, story_id, size):
     """Freeze authored input plus deterministic noise before any Entry sanitizer."""
     raw_rows = [dict(m) for m in data["memories"] if m["story_id"] == story_id]
+    story = next((s for s in data.get("stories", ()) if s["id"] == story_id), {})
+    now, time_basis = story_clock(data, story)
     if size < len(raw_rows):
         raise ValueError("Corpus size is smaller than its source story")
     # Stable IDs/content let each method reuse its own BGE passage vectors
@@ -174,6 +189,7 @@ def make_input_rows(data, story_id, size):
     objects = ("树叶", "纸盒", "玻璃杯", "水彩笔", "小石头", "帆布袋", "纸灯", "木架", "地图", "布偶", "明信片", "纸船", "铅笔", "围巾", "折扇")
     moods = ("平静", "轻松", "专注", "好奇", "慢悠悠", "惬意", "有精神", "安静")
     for n in range(size - len(raw_rows)):
+        timestamp = min(n, now) if time_basis == "logical" else 1_600_000_000 + n
         topic, place = topics[n % len(topics)], places[(n // len(topics)) % len(places)]
         obj, mood = objects[(n // 120) % len(objects)], moods[(n // 1800) % len(moods)]
         summary = (f"日常记录第{n}项：在{place}{topic}，注意到{obj}的形状和颜色。"
@@ -181,8 +197,8 @@ def make_input_rows(data, story_id, size):
         raw_rows.append(dict(id=f"noise_{n:05d}", story_id=story_id, character_id=data["character_id"], owner_id=data["owner_id"],
                       kind="日常片段", title=f"{place}的{topic}片段{n}", summary=summary,
                       source="synthetic_distractor", source_ids=[f"noise:{n}"],
-                      occurred_at=1_600_000_000 + n, created_at=1_600_000_000 + n,
-                      updated_at=1_600_000_000 + n, valid_from=0, importance=.3, scope="companion"))
+                      occurred_at=timestamp, created_at=timestamp,
+                      updated_at=timestamp, valid_from=0, importance=.3, scope="companion"))
     return raw_rows
 
 
@@ -377,6 +393,34 @@ def score_query(query, prompt, selected_ids, trace, source_rows, *, error=None):
             "actual_expression_request": prompt, "error": error}
 
 
+def retrieval_performed(row):
+    return bool(row["trace"].get("retrieval_calls", 0) or row.get("prepare_rows_loaded", 0)
+                or row.get("prepare_retrieval_calls", 0)
+                or row.get("embedding_query_calls", 0) or row.get("evidence_judgment", {}).get("requests"))
+
+
+def summarize_evidence(rows):
+    judgments = [r["evidence_judgment"] for r in rows if "evidence_judgment" in r]
+    requests = [request for judgment in judgments for request in judgment.get("requests", [])]
+    usages = [request.get("provider_response", {}).get("usage") for request in requests
+              if isinstance(request.get("provider_response"), dict)]
+    usages = [usage for usage in usages if isinstance(usage, dict)]
+    def tokens(key, alternative):
+        values = [usage.get(key, usage.get(alternative)) for usage in usages]
+        values = [value for value in values if type(value) is int]
+        return sum(values) if values else None
+    reasoning = [usage.get("completion_tokens_details", {}).get("reasoning_tokens") for usage in usages]
+    reasoning = [value for value in reasoning if type(value) is int]
+    return {"status": "run" if requests else "not_run", "actual_requests": len(requests),
+            "judgment_status_counts": dict(Counter(j.get("status", "not_run") for j in judgments)),
+            "completed_judgments": sum(j.get("status") == "completed" and bool(j.get("requests")) for j in judgments),
+            "failed_judgments": sum(bool(j.get("requests")) and j.get("status") != "completed" for j in judgments),
+            "usage_coverage": rate(len(usages), len(requests)),
+            "input_tokens": tokens("input_tokens", "prompt_tokens"),
+            "output_tokens": tokens("output_tokens", "completion_tokens"),
+            "reasoning_tokens": sum(reasoning) if reasoning else None}
+
+
 def summarize(rows):
     answerable = [r for r in rows if r["gold_ids"]]
     absent = [r for r in rows if not r["gold_ids"] and r["expected_status"] == "unknown"]
@@ -409,7 +453,7 @@ def summarize(rows):
             "mixed_request_source_delivery": rate(sum(r["supported_gold_delivered"] for r in mixed if r["gold_ids"]), sum(bool(r["gold_ids"]) for r in mixed)),
             "unrecorded_episode_injection": rate(sum(r["no_answer_injection"] for r in unknown_episodes), len(unknown_episodes)),
             "no_answer_injection": rate(sum(r["no_answer_injection"] for r in absent), len(absent)),
-            "unnecessary_retrieval": rate(sum(r["trace"].get("retrieval_calls", 0) > 0 for r in no_retrieval), len(no_retrieval)),
+            "unnecessary_retrieval": rate(sum(retrieval_performed(r) for r in no_retrieval), len(no_retrieval)),
             "route_exact": rate(sum(r["route_exact"] for r in route_rows), len(route_rows)),
             "status_exact": rate(sum(r["status_exact"] for r in route_rows), len(route_rows)),
             "correct_unknown_with_no_injection": rate(sum(r["trace"].get("status") == "unknown" and not r["all_context_evidence_ids"] for r in unknown), len(unknown)),
@@ -440,9 +484,12 @@ def summarize(rows):
             "embedding_query_calls": sum(r.get("embedding_query_calls", 0) for r in rows),
             "passage_encoded_entries": sum(r.get("encoded_entries", 0) for r in rows),
             "rows_loaded": distribution(r["trace"].get("rows_loaded", 0) for r in rows),
+            "prepare_rows_loaded": distribution(r.get("prepare_rows_loaded", 0) for r in rows),
+            "prepare_retrieval_calls": sum(r.get("prepare_retrieval_calls", 0) for r in rows),
             "context_chars": distribution(r["memory_context_chars"] for r in rows),
             "bge_tokenizer_prompt_tokens": distribution(r["bge_tokenizer_prompt_tokens"] for r in token_rows),
-            "provider_tokens": "not_run", "actual_answer_accuracy": "not_run", "persona_behavior": "not_run"}
+            "provider_tokens": {"evidence_judgment": summarize_evidence(rows), "answer_generation": "not_run"},
+            "actual_answer_accuracy": "not_run", "persona_behavior": "not_run"}
 
 
 def _serializable(value):
@@ -488,6 +535,8 @@ def paired_story_bootstrap(baseline, candidate, repetitions=1000):
 
 def worker(args):
     source_root = args.baseline_root if args.worker in {"none", "lexical", "bge_rrf"} else args.source_root
+    if args.worker in {"none", "lexical", "bge_rrf"}:
+        validate_baseline(source_root, args.baseline_commit)
     sys.path.insert(0, str(source_root / "src"))
     from guanghe_companion.emotional_memory import EmotionalMemoryEntry, MemoryContextBundle, CoreBondProfile
     from guanghe_companion.emotional_memory_service import EmotionalMemoryService
@@ -526,6 +575,21 @@ def worker(args):
               "measurement_scope": "real temporary SQLite + retrieval + ExpressionRequest + final production provider prompt, no generation",
               "not_run": ["generative answer accuracy", "model persona behavior", "desktop real-user interaction", "phone device validation", "provider token billing"]}
     args.worker_output.parent.mkdir(parents=True, exist_ok=True)
+    temporary_root = ROOT / "artifacts/codex_handoff/ondemand-evaluation-temp"
+    temporary_root.mkdir(parents=True, exist_ok=True)
+    result["temporary_root"] = str(temporary_root)
+    result["baseline_expected_commit"] = args.baseline_commit
+    judge, judge_client, judge_meter, judge_secret = None, None, None, ""
+    if args.evidence_settings and args.worker in {"routed", "layered"}:
+        from tools.eval_ondemand_generation import recorded_app_client, redact
+        from guanghe_companion.memory_evidence_judgment import MemoryEvidenceJudge
+        judge_client, judge_meter, metadata, judge_secret = recorded_app_client(
+            args.evidence_settings, max_requests=args.max_evidence_requests,
+            max_output_tokens=args.max_evidence_output_tokens)
+        judge = MemoryEvidenceJudge(judge_client)
+        result["evidence_provider"] = metadata
+        result["not_run"] = [item for item in result["not_run"] if item != "provider token billing"]
+        result["not_run"].append("answer-generation provider token billing")
     def checkpoint():
         write_json_atomic(args.worker_output, result)
     semantic, tokenizer = None, None
@@ -548,6 +612,7 @@ def worker(args):
     try:
         for data in datasets:
             for story in data["stories"]:
+                now, time_basis = story_clock(data, story)
                 input_rows = make_input_rows(data, story["id"], args.size)
                 entries = make_entries(data, story["id"], args.size, EmotionalMemoryEntry, input_rows=input_rows)
                 source_rows = {m["id"]: m for m in data["memories"] if m["story_id"] == story["id"]}
@@ -556,15 +621,18 @@ def worker(args):
                                for key, row in source_rows.items()}
                 own = [m for m in entries if m.owner_id == data["owner_id"] and m.character_id == data["character_id"]]
                 story_result = {"story_id": story["id"], "split": data["split"], "source_count": len(source_rows),
+                                "now": now, "time_basis": time_basis,
                                 "archive_entries": len(entries), "main_namespace_entries": len(own),
                                 **corpus_provenance(input_rows, entries),
                                 "summary_chars": distribution(len(m.summary) for m in entries), "rss_before_mib": rss_mib()}
-                with tempfile.TemporaryDirectory(prefix="emoti-ondemand-") as directory:
+                with tempfile.TemporaryDirectory(prefix="emoti-ondemand-", dir=temporary_root) as directory:
                     kwargs = {}
                     if args.worker in {"routed", "layered"}:
                         from guanghe_companion.retrieval_contract import RetrievalBudget
                         kwargs["retrieval_budget"] = RetrievalBudget(max_context_chars=6000)
-                        kwargs["time_basis"] = "unix"  # fixture timestamps explicitly use Unix UTC
+                        kwargs["time_basis"] = time_basis
+                        if judge is not None:
+                            kwargs["evidence_judge"] = judge
                     service = EmotionalMemoryService(root=directory, character_id=data["character_id"],
                                                      owner_id=data["owner_id"], semantic_retriever=semantic, **kwargs)
                     _, story_result["seed_ms"] = timed(lambda: service.store.save_memories(own))
@@ -573,11 +641,12 @@ def worker(args):
                         other.store.save_memories(m for m in entries if m.owner_id == owner and m.character_id == character)
                     if semantic and args.worker == "bge_rrf":
                         _, story_result["initial_index_prepare_ms"] = timed(lambda: semantic.prepare(
-                            "初始化检索索引", own, now=data["now"], scope="companion").result(timeout=600))
+                            "初始化检索索引", own, now=now, scope="companion").result(timeout=600))
                         story_result["initial_index_entries"] = semantic.status.get("indexed_entries")
                     result["stories"].append(story_result)
                     queries = [q for q in data["queries"] if q["story_id"] == story["id"]]
                     for q in queries:
+                        judge_start = len(judge_meter.records) if judge_meter else 0
                         timing, error, selected_ids = {}, None, []
                         prompt, expression_payload, provider_prompt = {}, {}, ""
                         semantic_before = dict(semantic.status) if semantic else {}
@@ -589,32 +658,32 @@ def worker(args):
                         try:
                             if args.worker in {"routed", "layered"}:
                                 def prepare_new():
-                                    pending = service.prepare_retrieval(q["text"], now=data["now"], history=q.get("history", ()), scope=q["scope"])
+                                    pending = service.prepare_retrieval(q["text"], now=now, history=q.get("history", ()), scope=q["scope"])
                                     if pending is not None:
                                         pending.result(timeout=600)
                                 _, timing["index_and_query_prepare"] = timed(prepare_new)
                                 retrieved, timing["retrieve"] = timed(lambda: service.retrieve(
-                                    q["text"], now=data["now"], history=q.get("history", ()), scope=q["scope"],
+                                    q["text"], now=now, history=q.get("history", ()), scope=q["scope"],
                                     top_k=4, layered=args.worker == "layered"))
                                 bundle = retrieved.bundle
                                 trace = {**_serializable(retrieved.trace), "router_evaluated": True}
                                 selected_ids = list(trace.get("selected_memory_ids", [m.memory_id for m in bundle.memories]))
                                 timing.update({"retrieval_" + k: v for k, v in trace.get("stage_ms", {}).items()})
                             elif args.worker != "none":
-                                snapshot, timing["database_read"] = timed(lambda: service.store.read_context_snapshot(now=data["now"]))
+                                snapshot, timing["database_read"] = timed(lambda: service.store.read_context_snapshot(now=now))
                                 active, timing["qualification"] = timed(lambda: tuple(m for m in snapshot.entries
                                     if m.owner_id == data["owner_id"] and m.character_id == data["character_id"]
-                                    and m.is_active(now=data["now"], scope=q["scope"])))
+                                    and m.is_active(now=now, scope=q["scope"])))
                                 scores = {}
                                 if semantic:
                                     _, timing["index_and_query_prepare"] = timed(lambda: semantic.prepare(
-                                        q["text"], active, now=data["now"], scope=q["scope"]).result(timeout=600))
+                                        q["text"], active, now=now, scope=q["scope"]).result(timeout=600))
                                     scores, timing["semantic_scores"] = timed(lambda: semantic(q["text"], active))
                                 ranked, timing["lexical_and_fusion"] = timed(lambda: rank_memories(
-                                    active, q["text"], now=data["now"], top_k=4, scope=q["scope"], semantic_scores=scores))
+                                    active, q["text"], now=now, top_k=4, scope=q["scope"], semantic_scores=scores))
                                 selected = tuple(m for m, _ in ranked)
                                 selected, timing["finalize_recall"] = timed(lambda: service.store.finalize_recall(
-                                    selected, expected_epoch=snapshot.context_epoch, now=data["now"], scope=q["scope"]))
+                                    selected, expected_epoch=snapshot.context_epoch, now=now, scope=q["scope"]))
                                 selected = selected or ()
                                 bundle = MemoryContextBundle(snapshot.profile, selected, context_epoch=snapshot.context_epoch)
                                 selected_ids = [m.memory_id for m in selected]
@@ -664,6 +733,11 @@ def worker(args):
                         row["persona_config_unchanged"] = hashlib.sha256(json.dumps(persona, sort_keys=True, ensure_ascii=False).encode()).hexdigest() == persona_hash
                         if tokenizer is not None:
                             row["bge_tokenizer_prompt_tokens"] = len(tokenizer.encode(provider_prompt).ids)
+                        if judge_meter is not None:
+                            row["prepare_rows_loaded"] = judge.prepare_rows_loaded
+                            row["prepare_retrieval_calls"] = judge.prepare_retrieval_calls
+                            row["evidence_judgment"] = {"status": judge.status,
+                                "requests": redact(judge_meter.records[judge_start:], judge_secret)}
                         result["rows"].append(row)
                         query_counter += 1
                         if query_counter % 24 == 0:
@@ -674,6 +748,10 @@ def worker(args):
                     checkpoint()
     finally:
         expressor.close()
+        if judge is not None:
+            judge.close()
+        if judge_client is not None:
+            judge_client.close()
         if semantic is not None:
             semantic.close()
     result["summary"] = summarize(result["rows"])
@@ -694,6 +772,10 @@ def main():
     p = argparse.ArgumentParser(description=__doc__)
     p.add_argument("--source-root", type=Path, default=ROOT)
     p.add_argument("--baseline-root", type=Path, default=ROOT)
+    p.add_argument("--baseline-commit", default=BASELINE_COMMIT)
+    p.add_argument("--evidence-settings", type=Path)
+    p.add_argument("--max-evidence-requests", type=int, default=10000)
+    p.add_argument("--max-evidence-output-tokens", type=int, default=4096)
     p.add_argument("--dataset-dir", type=Path, default=ROOT / "tests/fixtures")
     p.add_argument("--splits", nargs="+", choices=SPLITS, default=["development", "validation"])
     p.add_argument("--story-ids", nargs="+", help="Predeclared scale subset; saved explicitly in the manifest")
@@ -707,6 +789,10 @@ def main():
     p.add_argument("--size", type=int)
     p.add_argument("--worker-output", type=Path)
     args = p.parse_args()
+    if not 1 <= args.max_evidence_requests <= 10000:
+        p.error("--max-evidence-requests must be between 1 and 10000 per worker")
+    if not 1 <= args.max_evidence_output_tokens <= 4096:
+        p.error("--max-evidence-output-tokens must be between 1 and 4096")
     if args.worker:
         worker(args)
         return
@@ -717,17 +803,14 @@ def main():
     if args.no_semantic and "bge_rrf" in args.methods:
         p.error("--no-semantic cannot be used to label a run bge_rrf")
     if any(method in {"none", "lexical", "bge_rrf"} for method in args.methods):
-        if git(args.baseline_root, "rev-parse", "HEAD") != BASELINE_COMMIT:
-            p.error("Legacy methods require --baseline-root checked out at the frozen BASELINE_COMMIT")
-        if git(args.baseline_root, "status", "--porcelain", "--", "src/guanghe_companion"):
-            p.error("Frozen baseline production sources must be clean")
+        validate_baseline(args.baseline_root, args.baseline_commit)
     args.output_dir.mkdir(parents=True, exist_ok=True)
     manifest = {"schema_version": 1, "status": "running", "methods": args.methods, "sizes": args.sizes,
                 "started_at_utc": datetime.now(timezone.utc).isoformat(),
                 "splits": args.splits, "dataset_sha256": {d["split"]: d["dataset_sha256"] for d in datasets},
                 "split_roles": {d["split"]: d["split_usage"] for d in datasets},
                 "story_filter": args.story_ids,
-                "script_sha256": digest(Path(__file__)), "baseline_expected_commit": BASELINE_COMMIT,
+                "script_sha256": digest(Path(__file__)), "baseline_expected_commit": args.baseline_commit,
                 "baseline_actual_commit": git(args.baseline_root, "rev-parse", "HEAD"),
                 "new_source_start_sha256": source_hashes(args.source_root), "runs": [],
                 "data_policy": "Independent story archives; synthetic stress tests, no population inference; fixed order; no generative LLM"}
@@ -741,9 +824,14 @@ def main():
             command = [sys.executable, str(Path(__file__).resolve()), "--worker", method, "--size", str(size),
                        "--worker-output", str(output), "--source-root", str(args.source_root),
                        "--baseline-root", str(args.baseline_root), "--dataset-dir", str(args.dataset_dir),
+                       "--baseline-commit", args.baseline_commit,
                        "--splits", *args.splits]
             if args.model_cache:
                 command += ["--model-cache", str(args.model_cache)]
+            if args.evidence_settings:
+                command += ["--evidence-settings", str(args.evidence_settings),
+                            "--max-evidence-requests", str(args.max_evidence_requests),
+                            "--max-evidence-output-tokens", str(args.max_evidence_output_tokens)]
             if args.story_ids:
                 command += ["--story-ids", *args.story_ids]
             if args.local_files_only:

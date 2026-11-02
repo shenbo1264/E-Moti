@@ -8,6 +8,7 @@ from __future__ import annotations
 
 from dataclasses import replace
 from datetime import datetime, timedelta, timezone
+from zoneinfo import ZoneInfo
 import re
 from collections.abc import Mapping, Sequence
 
@@ -114,21 +115,60 @@ def _recent_user_text(history: Sequence[object], query: str) -> tuple[str, ...]:
     return tuple(result[-4:])
 
 
-def _temporal(query: str, *, now: int | None = None) -> tuple[str, int | None, int | None]:
-    date = re.search(r"(20\d{2})[-年](\d{1,2})[-月](\d{1,2})(?:日)?", query)
+def _calendar_number(text: str) -> int:
+    digits = {char: number for number, char in enumerate("零一二三四五六七八九")}
+    digits.update({"〇": 0, "两": 2})
+    if text.isascii() and text.isdigit():
+        return int(text)
+    if all(char in digits for char in text):
+        return int("".join(str(digits[char]) for char in text))
+    total, current, previous_unit = 0, 0, 10000
+    for char in text:
+        if char in digits:
+            if current:
+                raise ValueError("invalid calendar numeral")
+            current = digits[char]
+        elif char in {"十", "百", "千"}:
+            unit = {"十": 10, "百": 100, "千": 1000}[char]
+            if unit >= previous_unit:
+                raise ValueError("invalid calendar numeral unit order")
+            total += (current or 1) * unit
+            current, previous_unit = 0, unit
+        else:
+            raise ValueError("invalid calendar numeral")
+    return total + current
+
+
+def _temporal(query: str, *, now: int | None = None, calendar_zone=timezone.utc) -> tuple[str, int | None, int | None]:
+    # 仅转换年月日的位置，原问题及人物、活动等实体保持不变。
+    try:
+        query = re.sub(r"([0-9零〇一二三四五六七八九十百千两]+)(?=[年月])",
+                       lambda match: str(_calendar_number(match[0])), query)
+        query = re.sub(r"(月(?:份)?)([0-9零〇一二三四五六七八九十百千两]+)(?=[日号])",
+                       lambda match: match[1] + str(_calendar_number(match[2])), query)
+    except ValueError:
+        return "unresolved", None, None
+    if re.search(r"农历|阴历|\d+月(?:初|廿|[上中下]旬|[某几A-Za-z?？]{1,3}[日号])", query):
+        return "unresolved", None, None
+    explicit_year = re.search(r"(\d+)年(?=\d+月)", query)
+    if explicit_year and len(explicit_year[1]) != 4:
+        return "unresolved", None, None
+    date = re.search(r"(?<!\d)(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})(?:日|号)?", query)
     if date:
         try:
-            stamp = int(datetime(*(int(x) for x in date.groups()), tzinfo=timezone.utc).timestamp())
-            return "as_of", stamp, stamp + 86400
+            start = datetime(*(int(x) for x in date.groups()), tzinfo=calendar_zone)
+            # 日历日可能跨夏令时切换；先增加本地日期，再换算时间戳。
+            end = start + timedelta(days=1)
+            return "as_of", int(start.timestamp()), int(end.timestamp())
         except ValueError:
             return "unresolved", None, None
-    month_day = re.search(r"(?:(20\d{2})年|(今年|去年|明年))?(\d{1,2})月(?:份)?(?:(\d{1,2})[日号])?", query)
+    month_day = re.search(r"(?:(\d{4})年|(今年|去年|明年))?(\d{1,2})月(?:份)?(?:(\d{1,2})[日号])?", query)
     relative_month = re.search(r"上个月|上月|这个月|本月", query)
     if month_day or relative_month:
         if month_day and month_day[1]:
             year = int(month_day[1])
         elif now is not None:
-            year = datetime.fromtimestamp(now, timezone.utc).year
+            year = datetime.fromtimestamp(now, calendar_zone).year
             if month_day and month_day[2]:
                 year += {"今年": 0, "去年": -1, "明年": 1}[month_day[2]]
         else:
@@ -138,17 +178,20 @@ def _temporal(query: str, *, now: int | None = None) -> tuple[str, int | None, i
                 month = int(month_day[3])
                 day = int(month_day[4]) if month_day[4] else 1
             else:
-                anchor = datetime.fromtimestamp(now, timezone.utc)
+                anchor = datetime.fromtimestamp(now, calendar_zone)
                 month = anchor.month - int(relative_month[0] in {"上个月", "上月"})
                 if month == 0:
                     year, month = year - 1, 12
                 day = 1
-            start = datetime(year, month, day, tzinfo=timezone.utc)
+            start = datetime(year, month, day, tzinfo=calendar_zone)
             end = (start + timedelta(days=1) if month_day and month_day[4] else
-                   datetime(year + (month == 12), month % 12 + 1, 1, tzinfo=timezone.utc))
+                   datetime(year + (month == 12), month % 12 + 1, 1, tzinfo=calendar_zone))
             return "as_of", int(start.timestamp()), int(end.timestamp())
         except (ValueError, OverflowError):
             return "unresolved", None, None
+    if re.search(r"\d{4}年|\d+月|今年|去年|前年|昨天|前天|上周|上星期|季度|"
+                 r"[0-9零〇一二三四五六七八九十]+号(?:那天|那会|的时候)", query):
+        return "unresolved", None, None
     if _HISTORY.search(query) and re.search(r"现在|目前|如今", query):
         return "timeline", None, None
     if _HISTORY.search(query):
@@ -277,11 +320,13 @@ def _is_chat(query: str) -> bool:
 
 
 class MemoryRetrievalRouter:
-    def __init__(self, budget: RetrievalBudget | None = None, *, time_basis: str = "unix"):
+    def __init__(self, budget: RetrievalBudget | None = None, *, time_basis: str = "unix",
+                 timezone_name: str = "UTC"):
         if time_basis not in {"logical", "unix"}:
             raise ValueError("time_basis must be 'logical' or 'unix'")
         self.budget = budget or RetrievalBudget()
         self.time_basis = time_basis
+        self.calendar_zone = ZoneInfo(timezone_name or "UTC")
 
     def plan(self, query: str, *, history: Sequence[object] = (), scope: str = "companion",
              now: int | None = None) -> RetrievalPlan:
@@ -298,7 +343,7 @@ class MemoryRetrievalRouter:
             # question. They are not separate requests to search the archive.
             parts = [text.strip("。！？!?")]
         if len(parts) >= 2:
-            time_mode, _, _ = _temporal(parts[0], now=now)
+            time_mode, _, _ = _temporal(parts[0], now=now, calendar_zone=self.calendar_zone)
             if (re.search(r"(?:时|时候|的话|方面|的话题)$", parts[0])
                     or (time_mode in {"as_of", "unresolved"} and not _QUESTION.search(parts[0]))
                     or (_task_demand(parts[1]) and not _QUESTION.search(parts[0]) and not _CREATIVE.search(parts[0]))
@@ -379,6 +424,11 @@ class MemoryRetrievalRouter:
                                                reason="bounded_user_reference"))
                     else:
                         updated.append(intent)
+                if re.search(r"现在|目前|如今|当前|当下|现阶段", text):
+                    # 当前问题明确切回现在时，仅承接主体/话题，不继承前轮日期。
+                    updated = [replace(item, temporal_mode="current", as_of=None, as_of_end=None)
+                               if original.temporal_mode == "current" else item
+                               for original, item in zip(intents, updated)]
                 intents, inherited = updated, True
             elif re.search(r"^那?[他她它]|^那我的呢|^那次|^那段|^详细|^展开|^后来呢|^然后呢", text):
                 unresolved = True
@@ -386,7 +436,7 @@ class MemoryRetrievalRouter:
 
     def _one(self, query: str, scope: str, implicit_fact: bool = False,
              now: int | None = None) -> RetrievalIntent:
-        temporal, as_of, as_of_end = _temporal(query, now=now)
+        temporal, as_of, as_of_end = _temporal(query, now=now, calendar_zone=self.calendar_zone)
         if self.time_basis == "logical" and temporal == "as_of":
             # Desktop saves historically use an accumulated logical clock.
             # A calendar date cannot be compared to it or silently migrated.

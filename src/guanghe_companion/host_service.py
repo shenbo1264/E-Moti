@@ -1,5 +1,5 @@
 import copy
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, CancelledError
 from hashlib import sha256
 import json
 import threading
@@ -9,7 +9,7 @@ from PySide6.QtCore import QObject, Signal, Slot, Qt, QTimer
 
 from .dialogue import DialogueRequest
 from .controller import HostDialogueStaleError
-from .expression_expressor import ShinsekaiAIExpressor
+from .desktop_dialogue_service import DesktopDialogueService
 from .host_auth import AuthenticationError, DeviceCredentials
 from .memory_album_controller import MemoryAlbumStaleError
 from .plugin_enabled_controller import PluginEnabledCompanionController
@@ -38,7 +38,8 @@ class CompanionHost(QObject):
         self._requests = {}
         self._active = None
         self._closed = False
-        self._worker = ThreadPoolExecutor(max_workers=1, thread_name_prefix="companion-expression")
+        self._dialogue = DesktopDialogueService(controller, self)
+        self._dialogue.memory_committed.connect(self._memory_committed)
         self.dispatch.connect(self._execute, Qt.ConnectionType.QueuedConnection)
         self._timer = QTimer(self)
         self._timer.setInterval(250)
@@ -59,7 +60,7 @@ class CompanionHost(QObject):
         self._owner_thread()
         self.credentials.revoke(device_id)
         if self._active is not None and self._active[0] == device_id:
-            self.controller.cancel_host_dialogue()
+            self._dialogue.cancel()
         for key, item in self._requests.items():
             if key[0] == device_id:
                 item["result"] = {"request_id": key[1], "status": "revoked"}
@@ -90,7 +91,7 @@ class CompanionHost(QObject):
             raise HostError("character_forbidden", "device is not paired to the current character", 403)
         return identity
 
-    def _sync(self):
+    def _sync(self, preserve_request=None):
         self._owner_thread()
         if self._closed:
             return
@@ -104,7 +105,8 @@ class CompanionHost(QObject):
             self._version = version
             self._revision += 1
             for key, item in self._requests.items():
-                item["result"] = {"request_id": key[1], "status": "stale"}
+                if key != preserve_request:
+                    item["result"] = {"request_id": key[1], "status": "stale"}
             self._events.append({"sequence": self._revision, "type": "context_invalidated",
                                  "character_id": version[0], "context_epoch": version[1],
                                  "clear_cached_content": True})
@@ -153,7 +155,7 @@ class CompanionHost(QObject):
             if key not in self._requests:
                 raise HostError("request_not_found", "request not found", 404)
             if self._active == key:
-                c.cancel_host_dialogue()
+                self._dialogue.cancel()
                 self._sync()
                 self._requests[key]["result"] = {"request_id": key[1], "status": "cancelled",
                                                  "remote_compute_cancelled": False}
@@ -172,20 +174,24 @@ class CompanionHost(QObject):
         if action == "message":
             if self._active is not None:
                 raise HostError("session_busy", "another reply is still running")
-            ticket = c.prepare_host_dialogue(DialogueRequest(payload["text"], source="mobile"))
-            result = {**self._session(), "request_id": key[1], "status": "running"}
+            result = {**self._session(), "request_id": key[1], "status": "running",
+                      "input_version": self._revision, "committed_version": None}
             self._requests[key] = {"digest": digest, "result": result}
             self._active = key
-            if ticket.expression_request is None:
-                self._finish(key, token, ticket, None)
-            else:
-                worker = self._worker.submit(self._express, ticket)
-                worker.add_done_callback(lambda done: self.dispatch.emit(
-                    (Future(), lambda: self._finish(key, token, ticket, done))))
+            try:
+                worker = self._dialogue.submit(DialogueRequest(payload["text"], source="mobile"))
+            except Exception:
+                self._active = None
+                self._requests.pop(key)
+                raise
+            self._requests[key]["worker"] = worker
+            worker.add_done_callback(lambda done: self.dispatch.emit(
+                (Future(), lambda: self._finish(key, token, done))))
             return copy.deepcopy(self._requests[key]["result"])
         if action != "memory_edit":
             raise HostError("unknown_operation", "unsupported operation", 400)
         album = c.memory_album_controller
+        input_version = self._revision
         common = {"now": int(c.now), "expected_epoch": payload["expected_epoch"]}
         operation = payload["operation"]
         try:
@@ -203,53 +209,51 @@ class CompanionHost(QObject):
         except MemoryAlbumStaleError as exc:
             raise HostError("stale_context", "stale memory album; refresh") from exc
         self._sync()
-        result = {**self._session(), "request_id": key[1], "status": "completed", "album": result}
+        result = {**self._session(), "request_id": key[1], "status": "completed", "album": result,
+                  "input_version": input_version, "committed_version": self._revision}
         self._requests[key] = {"digest": digest, "result": result}
         self.snapshot_changed.emit(c.get_snapshot())
         return copy.deepcopy(result)
 
-    def _finish(self, key, token, ticket, worker):
+    @Slot(object)
+    def _memory_committed(self, worker):
+        self._owner_thread()
+        key = self._active
+        if key is None or self._requests[key].get("worker") is not worker:
+            return
+        self._sync(preserve_request=key)
+        self._requests[key]["result"].update(committed_version=self._revision,
+            context_epoch=self._version[1], revision=self._revision)
+
+    def _finish(self, key, token, worker):
         self._owner_thread()
         try:
             self._identity(token)
         except HostError:
-            self.controller.cancel_host_dialogue()
-        events = None
-        error = None
-        if worker is not None:
-            try:
-                events = worker.result()
-            except Exception as exc:
-                error = type(exc).__name__
-                self.controller.cancel_host_dialogue()
+            self._active = None
+            return
         try:
-            self.controller.complete_host_dialogue(ticket, events)
+            worker.result()
             self._sync()
-            fallback = ticket.expressor.last_fallback_reason if ticket.expression_request is not None else "local_confirmation"
+            previous = self._requests[key]["result"]
+            if previous["status"] in {"stale", "revoked", "cancelled"}:
+                return
+            meta = worker.dialogue_metadata
             self._requests[key]["result"] = {**self._session(), "request_id": key[1], "status": "completed",
-                "events": [{"type": e.event_type, "character_name": e.character_name,
-                            "speech": e.speech, "payload": dict(e.payload)}
-                           for e in self.controller.last_events if e.event_type in {"speech", "visual", "intent"}],
-                "expression_mode": "model" if ticket.expression_request is not None and fallback is None else "local",
-                "fallback_reason": fallback}
+                "input_version": previous["input_version"], "committed_version": previous["committed_version"],
+                "events": meta["events"], "expression_mode": meta["expression_mode"],
+                "fallback_reason": meta["fallback_reason"]}
             self.snapshot_changed.emit(self.controller.get_snapshot())
-        except RuntimeError as exc:
-            self._requests[key]["result"] = {"request_id": key[1], "status": "failed" if error else "cancelled",
-                                             "error": error or type(exc).__name__}
+        except Exception as exc:
+            if self._requests[key]["result"]["status"] not in {"stale", "revoked", "cancelled"}:
+                self._requests[key]["result"] = {"request_id": key[1],
+                    "status": "cancelled" if isinstance(exc, (CancelledError, HostDialogueStaleError)) else "failed",
+                    "error": type(exc).__name__}
         finally:
             self._active = None
 
-    @staticmethod
-    def _express(ticket):
-        if ticket.cancelled.is_set():
-            raise HostDialogueStaleError("reply was cancelled before model submission")
-        if isinstance(ticket.expressor, ShinsekaiAIExpressor):
-            return ticket.expressor.express(ticket.expression_request, effect="ATTENTION", cancel_event=ticket.cancelled)
-        return ticket.expressor.express(ticket.expression_request, effect="ATTENTION")
-
     def close(self):
         self._owner_thread()
-        self.controller.cancel_host_dialogue()
+        self._dialogue.close()
         self._closed = True
         self._timer.stop()
-        self._worker.shutdown(wait=False, cancel_futures=True)

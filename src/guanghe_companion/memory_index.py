@@ -574,6 +574,15 @@ def read_snapshot(store, request=None, *, now, include_chapters=True, chapter_li
             "fts5" if meta["fts_enabled"] else "token_scan")
 
 
+def read_edit_target(store, memory_id):
+    # 管理入口允许纠正尚未生效或已到期的事实；身份和撤销仍需检查。
+    with _ready(store) as (connection, meta):
+        row = connection.execute("SELECT * FROM memory_index_entries" + _PRIMARY_LOOKUP +
+            " WHERE memory_id=? AND owner_id=? AND character_id=? AND deleted=0",
+            (memory_id, store.owner_id, store.character_id)).fetchone()
+        return (_decode(row) if row is not None else None), meta["context_epoch"]
+
+
 def finalize(store, selected: Iterable[EmotionalMemoryEntry], *, expected_epoch, now,
              scope="companion", scopes=None, allow_history=False, dependency_entries=()):
     expected = {}

@@ -10,6 +10,7 @@ from uuid import uuid4
 from .emotional_memory_policy import MemoryCandidate
 from .emotional_memory_service import EmotionalMemoryService
 from .grounded_facts import CORRECTION_PREFIX, relation_fact, relation_forget_match, has_relation_forget_scope
+from .memory_source_spans import source_span_metadata
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,12 +193,16 @@ class ChatMemory:
         written: list[str] = []
         pending: list[str] = []
         inherited_subject = False
+        source_cursor = 0
         for index, clause in enumerate(clauses):
             if clause in {"，", "；"}:
                 continue
             if clause in {"。", "！"}:
                 inherited_subject = False
                 continue
+            source_clause = clause
+            source_start = text.find(source_clause, source_cursor)
+            source_cursor = source_start + len(source_clause)
             if inherited_subject and re.match(r"^(?:也|还)?(?:喜欢|不再喜欢|不喜欢|不太喜欢|讨厌|偏爱)", clause):
                 clause = "我" + re.sub(r"^(?:也|还)", "", clause)
             parsed = _parse_fact(clause)
@@ -231,6 +236,7 @@ class ChatMemory:
                         "message_id": source_id, "recorded_at": datetime.now(timezone.utc).isoformat(),
                         "fact_slot": slot, "fact_domain": domain, "fact_value": value,
                         "confidence_reason": "明确第一人称自述，原话直接支持；未推断共同经历"}
+            metadata.update(source_span_metadata(text, source_clause, start=source_start))
             bound = relation_fact(clause)
             if bound:
                 metadata.update(bound.metadata)

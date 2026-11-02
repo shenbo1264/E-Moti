@@ -15,6 +15,18 @@ class LayeredEvidence:
     level: str
 
 
+def event_sources(entry: EmotionalMemoryEntry) -> tuple[str, ...]:
+    for key in ("event_id", "run_id"):
+        value = entry.metadata.get(key)
+        if isinstance(value, str) and value:
+            return (f"{entry.owner_id}:{entry.character_id}:{key}:{value}",)
+    return entry.source_ids
+
+
+def claim_event_sources(claim: dict) -> tuple[str, ...]:
+    return tuple(claim.get("event_sources") or claim.get("source_ids") or (claim.get("source_memory_id"),))
+
+
 def distinct_event_count(source_sets) -> int:
     """Connected source groups count events, not supporting-document count."""
     groups = []
@@ -53,6 +65,8 @@ def build_layers(entries: tuple[EmotionalMemoryEntry, ...], *, chapters: tuple[M
         seen_sources.add(identity)
         claim = {"text": entry.summary, "source_memory_id": entry.memory_id, "source_ids": list(entry.source_ids),
                  "source_fingerprint": entry.evidence_fingerprint(), "occurred_at": entry.occurred_at}
+        if event_sources(entry) != entry.source_ids:
+            claim["event_sources"] = list(event_sources(entry))
         if len(json.dumps(claims + [claim], ensure_ascii=False)) > max(256, budget_chars - 600):
             represented.pop()
             break
@@ -63,7 +77,7 @@ def build_layers(entries: tuple[EmotionalMemoryEntry, ...], *, chapters: tuple[M
     chapter_ids = [chapter.chapter_id for chapter in chapters if selected_ids.intersection(chapter.source_memory_ids)]
     times = [int(claim["occurred_at"]) for claim in claims]
     overview = {"level": "L1", "catalog": {"topic": "已记录的共同经历", "period": [min(times), max(times)],
-                "event_count": distinct_event_count(c["source_ids"] for c in claims), "chapter_ids": chapter_ids[:4]},
+                "event_count": distinct_event_count(claim_event_sources(c) for c in claims), "chapter_ids": chapter_ids[:4]},
                 "claims": claims, "expansion": "ask_for_details_to_read_valid_sources"}
     return LayeredEvidence(overview, tuple(represented), "L1")
 
@@ -79,6 +93,7 @@ def validate_layers(overview: dict[str, object], entries: tuple[EmotionalMemoryE
             return False
         entry = by_id.get(claim.get("source_memory_id"))
         if (entry is None or not grounded_shared_event(entry) or claim.get("text") != entry.summary
-                or claim.get("source_fingerprint") != entry.evidence_fingerprint()):
+                or claim.get("source_fingerprint") != entry.evidence_fingerprint()
+                or claim_event_sources(claim) != event_sources(entry)):
             return False
     return bool(claims)

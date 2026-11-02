@@ -304,9 +304,29 @@ class PluginEnabledCompanionController(_BaseController):
     def prepare_semantic_recall(self, request):
         self._require_host_thread()
         memory = self.story_runtime.memory
+        if getattr(self, "_memory_evidence_judgment_enabled", False):
+            self._sync_memory_evidence_judge()
         epoch = memory.store.current_context_epoch(now=int(self.now))
         history = tuple(entry for entry in self.dialogue_history if entry.context_epoch == epoch)
         return memory.prepare_retrieval(request.normalized_text(), now=int(self.now), history=history)
+
+    def enable_memory_evidence_judgment(self, enabled=True):
+        """显式选择候选证据判断路径，复用当前表达模型与角色存档。"""
+        self._require_host_thread()
+        self._memory_evidence_judgment_enabled = bool(enabled)
+        self._invalidate_host_dialogue()
+        self._sync_memory_evidence_judge()
+
+    def _sync_memory_evidence_judge(self):
+        from .memory_evidence_judgment import MemoryEvidenceJudge
+        memory = self.story_runtime.memory
+        client = getattr(self.ai_expressor, "llm_client", None) if self._memory_evidence_judgment_enabled else None
+        judge = memory.evidence_judge
+        if judge is not None and judge.client is client:
+            return
+        if judge is not None:
+            judge.close()
+        memory.evidence_judge = MemoryEvidenceJudge(client) if client is not None else None
 
     def disable_semantic_memory(self):
         self._require_host_thread()

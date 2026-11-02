@@ -10,10 +10,11 @@ from datetime import datetime, timezone
 import json
 import re
 from typing import Mapping
+from .memory_source_spans import SPAN_FIELDS, source_span_metadata
 
 FACT_FIELDS = frozenset({"fact_slot", "fact_domain", "fact_value", "fact_subject", "fact_predicate"})
 PLAN_FIELDS = frozenset({"plan_status", "time_expression", "expiry_basis", "expiry_note"})
-CONTENT_FIELDS = FACT_FIELDS | PLAN_FIELDS | {
+CONTENT_FIELDS = FACT_FIELDS | PLAN_FIELDS | SPAN_FIELDS | {
     "profile_field", "original_quote", "evidence_quote", "source_text",
     "source_memory_ids", "supersedes_memory_id", "message_id",
     "confidence_reason", "extraction",
@@ -98,6 +99,7 @@ def correction_metadata(previous, summary: str, supplied: Mapping[str, object] |
                         recorded_at=datetime.now(timezone.utc).isoformat())
         if source_id:
             metadata["message_id"] = source_id
+        metadata.update(source_span_metadata(summary, summary))
     # These are proposal validation fields, not ongoing dependencies of an
     # accepted replacement. The actual revision chain is supersedes.
     metadata.pop("source_memory_ids", None)

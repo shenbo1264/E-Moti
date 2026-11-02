@@ -82,6 +82,7 @@ artifacts/spirit-sequence-drafts/
 artifacts/pixel-pet-sequence-drafts/
 artifacts/windows-build-validation*.json
 artifacts/codex_handoff/
+artifacts/memory-upgrade-package/
 artifacts/plugin-overlay-backup/
 artifacts/plugin-overlay-verification/
 assets/companion/original_oc/preview/pyside_*smoke*.png

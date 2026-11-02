@@ -89,8 +89,8 @@ class CompanionStoryRuntime:
             memories = []
             epoch = self.memory.store.current_context_epoch(now=now)
         # 一个宿主事件可能形成多种记忆，不能把同一事件累计成多次共同经历。
-        from .memory_hierarchy import distinct_event_count
-        count = min(6, distinct_event_count(memory.source_ids for memory in memories))
+        from .memory_hierarchy import distinct_event_count, event_sources
+        count = min(6, distinct_event_count(event_sources(memory) for memory in memories))
         return {
             "shared_moment_count": count,
             "expression_stage": "familiar_shared_moments" if count >= 3 else "first_shared_moments" if count else "getting_acquainted",

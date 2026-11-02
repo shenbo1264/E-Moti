@@ -39,6 +39,11 @@ def grounded_shared_event(entry: EmotionalMemoryEntry) -> bool:
         return False
     if is_unfinished_event(entry):
         return False
+    # 执行回执证明执行者的报告；共同经历还需要用户验收。
+    if (entry.source in {"executor", "relay", "task_executor"}
+            or entry.metadata.get("user_accepted") is False):
+        if entry.metadata.get("user_accepted") is not True:
+            return False
     if is_shared_experience(entry):
         return True
     participants = entry.metadata.get("participants", ())
@@ -169,8 +174,8 @@ def _supported_details(entry: EmotionalMemoryEntry, intent: RetrievalIntent) -> 
     return tuple(detail for detail in intent.details if signals.get(detail, False))
 
 
-def check_evidence(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, now: int,
-                   owner_id: str, character_id: str) -> EvidenceDecision:
+def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, now: int,
+                      owner_id: str, character_id: str) -> EvidenceDecision | None:
     supported = _supported_details(entry, intent)
     def result(ok: bool, reason: str):
         return EvidenceDecision(entry.memory_id, ok, reason, intent.route, supported,
@@ -209,6 +214,29 @@ def check_evidence(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, now:
         return result(False, "plan_is_not_completed_event_or_current_fact")
     elif intent.route in {"episode", "task", "bounded"} and is_unfinished_event(entry):
         return result(False, "unfinished_event_is_not_completed_experience")
+    if intent.requires_shared_event and not grounded_shared_event(entry) and intent.temporal_mode != "planned":
+        return result(False, "missing_completed_shared_event_evidence")
+    if intent.route == "task":
+        allowed_outcomes = {"planned"} if intent.temporal_mode == "planned" else {"completed", "succeeded", "success", "failed", "failure"}
+        if not entry.source_ids or entry.metadata.get("outcome") not in allowed_outcomes:
+            return result(False, "missing_execution_outcome")
+        if intent.app and str(entry.metadata.get("app", "")).casefold() != intent.app.casefold():
+            return result(False, "application_mismatch")
+        if intent.version and str(entry.metadata.get("version", "")).lstrip("v") != intent.version:
+            return result(False, "application_version_mismatch")
+    return None
+
+
+def check_evidence(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, now: int,
+                   owner_id: str, character_id: str) -> EvidenceDecision:
+    hard_rejection = check_eligibility(entry, intent, now=now, owner_id=owner_id, character_id=character_id)
+    if hard_rejection is not None:
+        return hard_rejection
+    supported = _supported_details(entry, intent)
+    def result(ok: bool, reason: str):
+        return EvidenceDecision(entry.memory_id, ok, reason, intent.route, supported,
+                                tuple(d for d in intent.details if d not in supported))
+    planned = intent.temporal_mode == "planned"
     view = fact_view(entry)
     if (view.metadata.get("fact_subject") or view.metadata.get("fact_slot")) and not literal_subject_match(view, intent.subjects, intent.query):
         return result(False, "subject_mismatch_or_unproved")
@@ -227,16 +255,6 @@ def check_evidence(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, now:
         return result(True, "structured_subject_field_time_match")
     if intent.route == "bounded" and (view.metadata.get("fact_predicate") or view.metadata.get("fact_slot")):
         return result(literal_field_support(view, intent.query), "bounded_literal_attribute_verification")
-    if intent.route == "episode" and intent.requires_shared_event and not grounded_shared_event(entry) and intent.temporal_mode != "planned":
-        return result(False, "missing_completed_shared_event_evidence")
-    if intent.route == "task":
-        allowed_outcomes = {"planned"} if intent.temporal_mode == "planned" else {"completed", "succeeded", "success", "failed", "failure"}
-        if not entry.source_ids or entry.metadata.get("outcome") not in allowed_outcomes:
-            return result(False, "missing_execution_outcome")
-        if intent.app and str(entry.metadata.get("app", "")).casefold() != intent.app.casefold():
-            return result(False, "application_mismatch")
-        if intent.version and str(entry.metadata.get("version", "")).lstrip("v") != intent.version:
-            return result(False, "application_version_mismatch")
     searchable = " ".join((entry.title, entry.summary, *entry.tags)).casefold()
     quoted = re.findall(r"《([^》]+)》|[“\"]([^”\"]+)[”\"]", intent.query)
     if any((a or b).casefold() not in searchable for a, b in quoted):

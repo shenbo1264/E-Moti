@@ -123,6 +123,7 @@ class EvidenceContextBundle(MemoryContextBundle):
     external_state: tuple[ExternalStateEvidence, ...] = ()
     overview_source_ids: tuple[str, ...] = ()
     resolution_evidence: tuple[dict[str, object], ...] = ()
+    source_spans: tuple[dict[str, object], ...] = ()
 
     def to_prompt_payload(self) -> dict[str, object]:
         payload = super(EvidenceContextBundle, self).to_prompt_payload()
@@ -151,6 +152,8 @@ class EvidenceContextBundle(MemoryContextBundle):
             payload["external_state"] = [asdict(state) for state in self.external_state]
         if self.resolution_evidence:
             payload["resolution_evidence"] = list(self.resolution_evidence)
+        if self.source_spans:
+            payload["source_spans"] = list(self.source_spans)
         return payload
 
 

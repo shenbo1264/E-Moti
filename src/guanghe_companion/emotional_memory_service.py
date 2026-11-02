@@ -35,7 +35,9 @@ class EmotionalMemoryService:
         semantic_retriever: Callable[[str, tuple[EmotionalMemoryEntry, ...]], Mapping[str, float]] | None = None,
         retrieval_budget: RetrievalBudget | None = None,
         external_state_readers: Mapping[str, Callable] | None = None,
-        time_basis: str = "logical",
+        time_basis: str | None = None,
+        timezone_name: str | None = None,
+        evidence_judge=None,
     ) -> None:
         self.store = EmotionalMemoryStore(root=root, character_id=character_id, owner_id=owner_id)
         self.character_id = character_id
@@ -43,12 +45,16 @@ class EmotionalMemoryService:
         self.policy = policy or EmotionalMemoryPolicy()
         self.reflection = reflection or MemoryReflectionService()
         self.semantic_retriever = semantic_retriever
+        self.evidence_judge = evidence_judge
         self.retrieval_budget = retrieval_budget or RetrievalBudget()
         # Existing desktop saves use pet logical seconds, not Unix dates.
         # Calendar lookup is opt-in only for archives whose caller guarantees
         # a uniform Unix valid-time basis; legacy timestamps are never guessed.
-        self.time_basis = time_basis
-        self.retrieval_router = MemoryRetrievalRouter(self.retrieval_budget, time_basis=time_basis)
+        from .memory_time import bind_archive_time
+        self.time_basis, self.timezone_name = bind_archive_time(self.store,
+            time_basis=time_basis, timezone_name=timezone_name)
+        self.retrieval_router = MemoryRetrievalRouter(self.retrieval_budget, time_basis=self.time_basis,
+            timezone_name=self.timezone_name)
         self.external_state_readers = dict(external_state_readers or {})
         self.last_retrieval_trace = None
         self._maintenance_scheduler = None
@@ -183,9 +189,13 @@ class EmotionalMemoryService:
         valid_until: int = 0,
         expected_epoch: int | None = None,
         preserve_occurred_at: bool = True,
+        occurred_at: int | None = None,
     ) -> EmotionalMemoryEntry:
         if source in {"model", "assistant", "llm", "llm_generated", "assistant_generated", "model_generated"} and not user_confirmed:
             raise ValueError("model output is not evidence of a user fact or completed event")
+        from .memory_time import temporal_metadata
+        temporal = temporal_metadata(time_basis=self.time_basis, timezone_name=self.timezone_name,
+            now=now, occurred_at=occurred_at, valid_from=valid_from, valid_until=valid_until)
         candidate = MemoryCandidate(
             character_id=self.character_id,
             owner_id=self.owner_id,
@@ -193,11 +203,11 @@ class EmotionalMemoryService:
             title=title,
             summary=summary,
             source=source,
-            occurred_at=now,
+            occurred_at=temporal["occurred_time"],
             tags=tags,
             importance=importance,
             pinned=pinned,
-            metadata=dict(metadata or {}),
+            metadata={**dict(metadata or {}), **temporal},
             source_ids=source_ids,
         )
         memory = replace(candidate.to_memory(now=now, user_confirmed=user_confirmed),
@@ -210,9 +220,9 @@ class EmotionalMemoryService:
     def correct(self, memory_id: str, *, title: str, summary: str, now: int,
                 expected_epoch: int | None = None, source_ids: tuple[str, ...] = (),
                 metadata: Mapping[str, object] | None = None) -> EmotionalMemoryEntry:
-        epoch = self.store.context_epoch if expected_epoch is None else expected_epoch
-        previous = next((entry for entry in self.store.load_memories()
-                         if entry.memory_id == memory_id and not entry.deleted), None)
+        from .memory_index import read_edit_target
+        previous, read_epoch = read_edit_target(self.store, memory_id)
+        epoch = read_epoch if expected_epoch is None else expected_epoch
         if previous is None:
             raise KeyError(f"active memory not found: {memory_id}")
         direct_sources = tuple(dict.fromkeys(source_ids)) or (f"user-correction:{uuid4().hex}",)
@@ -225,6 +235,25 @@ class EmotionalMemoryService:
             supersedes=memory_id, metadata=corrected_metadata,
             source_ids=direct_sources, scope=previous.scope, confidence=1.0,
             valid_from=previous.valid_from, valid_until=previous.valid_until, expected_epoch=epoch)
+
+    def change(self, memory_id: str, *, title: str, summary: str, now: int, effective_at: int,
+               metadata: Mapping[str, object] | None = None, source_ids: tuple[str, ...] = (),
+               expected_epoch: int | None = None) -> EmotionalMemoryEntry:
+        from .memory_index import read_edit_target
+        from .memory_lifecycle import change_memory
+        previous, epoch = read_edit_target(self.store, memory_id)
+        if previous is None:
+            raise KeyError(f"active memory not found: {memory_id}")
+        sources = tuple(dict.fromkeys(source_ids)) or (f"user-change:{uuid4().hex}",)
+        changed = replace(previous, memory_id=uuid4().hex, title=title, summary=summary,
+            source="user_change", source_ids=sources, user_confirmed=True, valid_until=0,
+            metadata=correction_metadata(previous, summary, metadata, source_id=sources[0]))
+        return change_memory(self.store, memory_id, changed, now=now, effective_at=effective_at,
+            expected_epoch=epoch if expected_epoch is None else expected_epoch)
+
+    def purge(self, memory_id: str, *, now: int, expected_epoch: int | None = None) -> tuple[str, ...]:
+        from .memory_lifecycle import purge_memory
+        return purge_memory(self.store, memory_id, now=now, expected_epoch=expected_epoch)
 
     def recall(
         self,
@@ -397,6 +426,8 @@ class EmotionalMemoryService:
 
     def close(self, *, wait: bool = False) -> None:
         self._maintenance_closed = True
+        if self.evidence_judge is not None:
+            self.evidence_judge.close()
         if self._maintenance_scheduler is not None:
             self._maintenance_scheduler.close(wait=wait)
 
@@ -475,7 +506,8 @@ class EmotionalMemoryService:
         return updated
 
     def forget(self, memory_id: str, *, now: int, expected_epoch: int | None = None) -> EmotionalMemoryEntry | None:
-        return self.store.forget_memory(memory_id, now=now, expected_epoch=expected_epoch)
+        from .memory_lifecycle import forget_fact_memory
+        return forget_fact_memory(self.store, memory_id, now=now, expected_epoch=expected_epoch)
 
     def album(self) -> dict[str, tuple[EmotionalMemoryEntry, ...]]:
         visible = [memory for memory in self.store.load_memories() if not memory.deleted]

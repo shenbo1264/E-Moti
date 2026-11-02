@@ -1,14 +1,7 @@
-#!/usr/bin/env python3
-"""Real SQLite storage benchmark, separate from retrieval/answer quality.
-
-Run this same script in two processes with PYTHONPATH set to the prerequisite
-checkout (``--backend document``) and the upgraded checkout (``--backend index``).
-Both use the same deterministic records, four evidence IDs, and timings. Never
-point this benchmark at a user save directory: it creates its own temp store.
-"""
 from __future__ import annotations
 
 import argparse
+from contextlib import closing
 from dataclasses import replace
 import gc
 import hashlib
@@ -27,7 +20,7 @@ import tracemalloc
 from guanghe_companion.emotional_memory import EmotionalMemoryEntry, EmotionalMemoryStore
 
 
-def records(size):
+def records(size, *, corpus_profile="short"):
     topics = ("散步看落日", "一起做晚饭", "修复部署错误", "阅读天文学", "游玩合作游戏", "练习电吉他")
     rows = []
     for index in range(size):
@@ -35,14 +28,22 @@ def records(size):
         summary = (f"用户的联系人{index:05d}叫{name}。那天我们讨论{topics[index % len(topics)]}，"
                    "用户明确说明这段经历和自己的习惯有关。记录保留原始来源、发生时间以及独立的角色命名空间。"
                    + "后续根据真实反馈继续调整。" * (index % 4))
+        metadata = {"speaker": "user", "fact_subject": f"relation:联系人{index:05d}",
+                    "fact_predicate": "name", "fact_value": name,
+                    "fact_slot": f"relation:联系人{index:05d}:name"}
+        if corpus_profile == "long-source":
+            details = ("讨论时我们把各自的想法分开记录，对不确定的地方没有作出结论。"
+                       "我希望以后能找到这段交流的原文，尤其是提到具体条件和个人选择的部分。"
+                       "这次只描述当时的经历，没有把建议或计划当成已经完成的事情。")
+            summary = (summary + details)[:180 + index % 61]
+            target_length = (512, 1024, 2048)[index % 3]
+            metadata["original_quote"] = (summary + details * (target_length // len(details) + 1))[:target_length]
         rows.append(EmotionalMemoryEntry(
             memory_id=f"record-{index:05d}", character_id="xingxi_pixel_pet", owner_id="local_user",
             kind="用户自述", title=f"人物姓名 {index:05d}", summary=summary, source="user_chat",
             occurred_at=1000 + index, created_at=1000 + index, updated_at=1000 + index,
             source_ids=(f"chat:{index:05d}",), tags=(topics[index % len(topics)], "真实数据库基准"),
-            metadata={"speaker": "user", "fact_subject": f"relation:联系人{index:05d}",
-                      "fact_predicate": "name", "fact_value": name,
-                      "fact_slot": f"relation:联系人{index:05d}:name"}))
+            metadata=metadata))
     return rows
 
 
@@ -79,14 +80,16 @@ def source_hashes():
             for name in names if (root / name).exists()}
 
 
-def benchmark_size(size, *, backend, repeats, writes):
+def benchmark_size(size, *, backend, repeats, writes, corpus_profile="short"):
     if backend == "index":
         from guanghe_companion.memory_index import IndexedMemoryQuery
-    corpus = records(size)
+    corpus = records(size, corpus_profile=corpus_profile)
     canonical = json.dumps([row.to_dict() for row in corpus], ensure_ascii=False, sort_keys=True)
     now = 100_000
     ids = tuple(f"record-{index:05d}" for index in (5, 42, size // 2, size - 1))
-    with tempfile.TemporaryDirectory(prefix="emoti-index-bench-") as directory:
+    temporary_root = Path(__file__).resolve().parents[1] / "artifacts/codex_handoff/storage-profile-temp"
+    temporary_root.mkdir(parents=True, exist_ok=True)
+    with tempfile.TemporaryDirectory(prefix="emoti-index-bench-", dir=temporary_root) as directory:
         store = EmotionalMemoryStore(directory, "xingxi_pixel_pet")
         started = time.perf_counter_ns()
         store.save_memories(corpus)
@@ -117,6 +120,10 @@ def benchmark_size(size, *, backend, repeats, writes):
             "count": size, "backend": backend, "corpus_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
             "summary_chars": {"min": min(len(r.summary) for r in corpus),
                 "median": statistics.median(len(r.summary) for r in corpus), "max": max(len(r.summary) for r in corpus)},
+            "corpus_profile": corpus_profile,
+            "source_chars": {"min": min(len(r.metadata.get("original_quote", "")) for r in corpus),
+                "median": statistics.median(len(r.metadata.get("original_quote", "")) for r in corpus),
+                "max": max(len(r.metadata.get("original_quote", "")) for r in corpus)},
             "serialized_corpus_bytes": len(canonical.encode()), "initial_save_ms": initial_write,
             "db_bytes": before_size, "selected_evidence_count": len(ids),
             "warm_snapshot": measure(snapshot, repeats),
@@ -147,7 +154,7 @@ def benchmark_size(size, *, backend, repeats, writes):
             result["manifest_unchanged_delta"] = measure(lambda: store.index_manifest(now=now,
                 after_revision=manifest.revision), repeats)
             result["rows_decoded_for_four"] = snapshot().rows_loaded
-            with sqlite3.connect(store.state_path) as connection:
+            with closing(sqlite3.connect(store.state_path)) as connection:
                 connection.execute("DROP TABLE memory_index_entries")
             started = time.perf_counter_ns()
             snapshot()
@@ -177,11 +184,12 @@ def benchmark_size(size, *, backend, repeats, writes):
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
+    parser = argparse.ArgumentParser(description="同语料真实 SQLite 读取与写入测量，不接触用户存档")
     parser.add_argument("--backend", choices=("index", "document"), default="index")
     parser.add_argument("--sizes", default="300,3000,10000")
     parser.add_argument("--repeats", type=int, default=9)
     parser.add_argument("--writes", type=int, default=3)
+    parser.add_argument("--corpus-profile", choices=("short", "long-source"), default="short")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.repeats < 1 or args.writes < 1:
@@ -205,10 +213,11 @@ def main():
     for size in map(int, args.sizes.split(",")):
         if size < 50:
             parser.error("sizes must be at least 50")
-        report["results"].append(benchmark_size(size, backend=args.backend, repeats=args.repeats, writes=args.writes))
+        report["results"].append(benchmark_size(size, backend=args.backend, repeats=args.repeats,
+                                               writes=args.writes, corpus_profile=args.corpus_profile))
         report["source_hashes_end"] = source_hashes()
         report["storage_source_unchanged"] = report["source_hashes_start"] == report["source_hashes_end"]
-        args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n")
+        args.output.write_text(json.dumps(report, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
         row = report["results"][-1]
         print(json.dumps({"count": size, "backend": args.backend,
             "snapshot_p50_ms": row["warm_snapshot"]["p50_ms"],

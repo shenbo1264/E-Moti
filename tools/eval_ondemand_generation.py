@@ -8,7 +8,7 @@ blind-review fields remain pending_review until a reviewer supplies judgments.
 from __future__ import annotations
 
 import argparse
-from dataclasses import fields
+from dataclasses import fields, replace
 from datetime import datetime, timezone
 import hashlib
 import json
@@ -24,7 +24,9 @@ sys.path.insert(0, str(ROOT / "src"))
 from guanghe_companion.expression_clients import (
     OpenAIResponsesClient, OpenAICompatibleChatClient, _default_transport,
     MAX_OPENAI_PROMPT_LENGTH, MAX_OPENAI_RESPONSE_BYTES,
+    client_config_from_settings,
 )
+from guanghe_companion.expression_settings import ExpressionSettingsStore, provider_api_style, provider_api_key_required
 from guanghe_companion.expression_expressor import ShinsekaiAIExpressor
 from guanghe_companion.expression_request import ExpressionRequest
 from guanghe_companion.expression_parser import parse_shinsekai_object_stream, ExpressionPayloadError
@@ -42,12 +44,13 @@ def parse_args(argv=None):
     p.add_argument("--input", type=Path, nargs="+", required=True, help="Per-method JSON files from eval_ondemand_memory")
     p.add_argument("--output", type=Path, default=ROOT / "artifacts/ondemand-memory/generation.json")
     p.add_argument("--model", help="Explicit model; alternatively EMOTI_LLM_MODEL")
+    p.add_argument("--app-settings", type=Path, help="Existing expression_settings.json; preserves provider protocol and model")
     p.add_argument("--base-url", help="Explicit API endpoint/base; alternatively EMOTI_LLM_BASE_URL")
-    p.add_argument("--api-style", choices=("responses", "chat"), default="responses")
+    p.add_argument("--api-style", choices=("responses", "chat"))
     p.add_argument("--api-key-env", help="Environment variable containing the key; never a literal CLI key")
     p.add_argument("--max-requests", type=int, default=20)
     p.add_argument("--max-output-tokens", type=int, default=512)
-    p.add_argument("--timeout", type=float, default=30)
+    p.add_argument("--timeout", type=float)
     p.add_argument("--query-ids", nargs="+")
     p.add_argument("--splits", nargs="+", choices=("development", "validation", "holdout"))
     p.add_argument("--input-price-per-million", type=float)
@@ -58,7 +61,9 @@ def parse_args(argv=None):
         p.error("--max-requests must be between 1 and 10000")
     if not 1 <= args.max_output_tokens <= 4096:
         p.error("--max-output-tokens must be between 1 and 4096 (existing client contract)")
-    if not math.isfinite(args.timeout) or not 1 <= args.timeout <= 60:
+    if args.app_settings and any(value is not None for value in (args.model, args.base_url, args.api_style, args.api_key_env)):
+        p.error("--app-settings cannot be combined with provider overrides")
+    if args.timeout is not None and (not math.isfinite(args.timeout) or not 1 <= args.timeout <= 60):
         p.error("--timeout must be between 1 and 60 seconds")
     prices = (args.input_price_per_million, args.cached_input_price_per_million, args.output_price_per_million)
     if any(value is not None and (not math.isfinite(value) or value < 0) for value in prices):
@@ -158,12 +163,16 @@ def measured_cost(usage, args):
 
 
 class RecordingTransport:
-    def __init__(self, *, delegate, api_style, max_output_tokens):
+    def __init__(self, *, delegate, api_style, max_output_tokens, max_requests=None):
         self.delegate, self.api_style, self.max_output_tokens = delegate, api_style, max_output_tokens
         self.calls = 0
         self.last = {}
+        self.records = []
+        self.max_requests = max_requests
 
     def __call__(self, request, timeout):
+        if self.max_requests is not None and self.calls >= self.max_requests:
+            raise RuntimeError("provider request budget exhausted")
         body = json.loads(request.data)
         if self.api_style == "responses":
             body["max_output_tokens"] = self.max_output_tokens
@@ -176,6 +185,7 @@ class RecordingTransport:
             self.last["response_bytes"] = len(raw) if isinstance(raw, (bytes, bytearray)) else None
             if isinstance(raw, (bytes, bytearray)) and len(raw) <= MAX_OPENAI_RESPONSE_BYTES:
                 self.last["response_sha256"] = sha256(bytes(raw))
+                self.last["raw_response_text"] = raw.decode("utf-8", errors="replace")
                 try:
                     self.last["provider_response"] = json.loads(raw)
                 except (UnicodeDecodeError, json.JSONDecodeError):
@@ -183,6 +193,28 @@ class RecordingTransport:
             return raw
         finally:
             self.last["transport_latency_ms"] = (perf_counter() - started) * 1000
+            self.records.append(dict(self.last))
+
+
+def recorded_app_client(path, *, max_requests=10000, max_output_tokens=4096):
+    if not path.is_file():
+        raise ValueError("app settings file is missing")
+    settings = ExpressionSettingsStore(path).load()
+    config = client_config_from_settings(settings)
+    if config.client is None:
+        raise ValueError("app settings must enable a configured expression provider")
+    style = "responses" if provider_api_style(settings.provider) == "responses" else "chat"
+    meter = RecordingTransport(delegate=_default_transport, api_style=style,
+                               max_output_tokens=max_output_tokens, max_requests=max_requests)
+    client = config.client
+    client.transport = meter
+    if isinstance(client, OpenAICompatibleChatClient):
+        client.max_tokens = max_output_tokens
+    metadata = {"api_style": style, "requested_model": settings.model, "base_url": settings.base_url,
+                "credential_source": "app_settings", "transport": "real_http",
+                "timeout_seconds": settings.timeout_seconds, "max_requests": max_requests,
+                "max_output_tokens": max_output_tokens}
+    return client, meter, metadata, settings.api_key
 
 
 def run(args, *, environ=None, transport=None):
@@ -193,6 +225,24 @@ def run(args, *, environ=None, transport=None):
     model = (args.model if args.model is not None else environ.get("EMOTI_LLM_MODEL", "")).strip()
     base_url = (args.base_url if args.base_url is not None else environ.get("EMOTI_LLM_BASE_URL", "")).strip()
     missing = [name for name, value in (("api_key", api_key), ("model", model), ("base_url", base_url)) if not value]
+    settings = None
+    api_style = args.api_style or "responses"
+    timeout = args.timeout if args.timeout is not None else 30
+    if args.app_settings:
+        settings = ExpressionSettingsStore(args.app_settings).load()
+        if args.timeout is not None:
+            settings = replace(settings, timeout_seconds=args.timeout)
+        api_key, model, base_url = settings.api_key, settings.model, settings.base_url
+        key_env = None
+        timeout = settings.timeout_seconds
+        api_style = "responses" if provider_api_style(settings.provider) == "responses" else "chat"
+        missing = []
+        if not args.app_settings.is_file():
+            missing.append("app_settings")
+        if not settings.enabled:
+            missing.append("enabled")
+        if provider_api_key_required(settings.provider) and not api_key:
+            missing.append("api_key")
     invalid = []
     if model and (len(model) > 80 or any(ord(char) < 32 for char in model)):
         invalid.append("model")
@@ -207,26 +257,32 @@ def run(args, *, environ=None, transport=None):
         "scope": "actual model generation from saved retrieval evidence; not desktop interaction",
         "sources": sources, "script_sha256": sha256(Path(__file__).read_bytes()),
         "fallback_prompt_builder_sha256": sha256((ROOT / "src/guanghe_companion/expression_expressor.py").read_bytes()),
-        "provider": {"api_style": args.api_style, "requested_model": model, "base_url": base_url,
+        "provider": {"api_style": api_style, "requested_model": model, "base_url": base_url,
+                     "credential_source": "app_settings" if settings else "environment",
                      "credential_env_name": key_env, "transport": "injected_test" if transport else "real_http"},
         "budget": {"max_requests": args.max_requests, "max_output_tokens": args.max_output_tokens,
-                   "timeout_seconds": args.timeout, "max_prompt_chars": MAX_OPENAI_PROMPT_LENGTH},
+                   "timeout_seconds": timeout, "max_prompt_chars": MAX_OPENAI_PROMPT_LENGTH},
         "pricing": {"source": "user_supplied" if args.input_price_per_million is not None else "not_configured",
                     "input_per_million": args.input_price_per_million,
                     "cached_input_per_million": args.cached_input_price_per_million,
                     "output_per_million": args.output_price_per_million},
         "missing_configuration": missing, "invalid_configuration": invalid,
         "actual_requests": 0, "rows": [], "evaluation": {}}
-    meter = RecordingTransport(delegate=transport or _default_transport, api_style=args.api_style,
+    meter = RecordingTransport(delegate=transport or _default_transport, api_style=api_style,
                                max_output_tokens=args.max_output_tokens)
     client = None
     if not missing and not invalid:
-        if args.api_style == "responses":
+        if settings is not None:
+            client = client_config_from_settings(settings).client
+            client.transport = meter
+            if isinstance(client, OpenAICompatibleChatClient):
+                client.max_tokens = args.max_output_tokens
+        elif api_style == "responses":
             client = OpenAIResponsesClient(api_key=api_key, model=model, base_url=base_url,
-                                           timeout_seconds=args.timeout, transport=meter)
+                                           timeout_seconds=timeout, transport=meter)
         else:
             client = OpenAICompatibleChatClient(api_key=api_key, model=model, base_url=base_url,
-                timeout_seconds=args.timeout, max_tokens=args.max_output_tokens, transport=meter)
+                timeout_seconds=timeout, max_tokens=args.max_output_tokens, transport=meter)
     def checkpoint():
         args.output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.output.with_suffix(args.output.suffix + ".pending")
@@ -285,6 +341,10 @@ def run(args, *, environ=None, transport=None):
                 record.update(status="failed", reason=getattr(exc, "public_reason", "generation_error"),
                               error_type=type(exc).__name__)
             record.update(client_latency_ms=(perf_counter() - started) * 1000, **meter.last)
+            response = meter.last.get("provider_response")
+            if isinstance(response, dict):
+                record.update(provider_model=response.get("model"), usage=response.get("usage"),
+                              provider_response_id=response.get("id"), cost_usd=measured_cost(response.get("usage"), args))
             report["actual_requests"] = meter.calls
             checkpoint()
     finally:

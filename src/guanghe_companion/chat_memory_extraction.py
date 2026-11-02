@@ -11,6 +11,7 @@ from .chat_memory import ChatMemoryResult, _fact_view, _DRINK, forget_target, ma
 from .emotional_memory_policy import MemoryCandidate
 from .chat_memory_plans import plan_view, correct_plan
 from .expression_clients import LLMClient
+from .memory_source_spans import source_span_metadata
 from .grounded_facts import RELATION_DOMAINS, REPORTED_RELATION, relation_fact, relation_forget_match, has_relation_forget_scope, has_relation_copula
 
 
@@ -343,6 +344,7 @@ class ChatMemoryExtraction:
                         "message_id": envelope.request_id, "recorded_at": datetime.now(timezone.utc).isoformat(),
                         "confidence_reason": "用户直接自述；语义候选通过原话、身份和来源校验",
                         "scene": "companion_chat", "extraction": "semantic"}
+            metadata.update(source_span_metadata(envelope.text, p.quote))
             refs = (f"chat-extraction:{envelope.request_id}:{index}",)
             bound = _proposal_relation(p, p.quote) if p.predicate in RELATION_DOMAINS else None
             summary = bound.summary if bound else _TEMPLATES[p.predicate].format(p.value)

@@ -15,13 +15,19 @@ def _reconcile(memory: dict) -> None:
     if overview and not claims:
         memory.pop("memory_overview", None)
     elif claims:
-        from .memory_hierarchy import distinct_event_count
+        from .memory_hierarchy import distinct_event_count, claim_event_sources
         catalog = overview.get("catalog", {})
-        catalog["event_count"] = distinct_event_count(row.get("source_ids") or (row.get("source_memory_id"),) for row in claims)
+        catalog["event_count"] = distinct_event_count(claim_event_sources(row) for row in claims)
         times = [row["occurred_at"] for row in claims if isinstance(row.get("occurred_at"), (int, float))]
         if times:
             catalog["period"] = [min(times), max(times)]
     kept = evidence_ids(memory)
+    if "source_spans" in memory:
+        spans = [row for row in memory["source_spans"] if row.get("memory_id") in kept]
+        if spans:
+            memory["source_spans"] = spans
+        else:
+            memory.pop("source_spans")
     if "resolution_evidence" in memory:
         bindings = [row for row in memory["resolution_evidence"] if kept and
                     (not row.get("dependent_memory_ids") or kept.intersection(row["dependent_memory_ids"]))]
