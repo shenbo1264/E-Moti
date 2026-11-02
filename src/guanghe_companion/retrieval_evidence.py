@@ -175,7 +175,7 @@ def _supported_details(entry: EmotionalMemoryEntry, intent: RetrievalIntent) -> 
 
 
 def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, now: int,
-                      owner_id: str, character_id: str) -> EvidenceDecision | None:
+                      owner_id: str, character_id: str, allow_planned_attribute: bool = False) -> EvidenceDecision | None:
     supported = _supported_details(entry, intent)
     def result(ok: bool, reason: str):
         return EvidenceDecision(entry.memory_id, ok, reason, intent.route, supported,
@@ -230,7 +230,7 @@ def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, n
     if intent.temporal_mode == "planned":
         if not planned:
             return result(False, "not_a_plan")
-    elif planned:
+    elif planned and not (allow_planned_attribute and intent.route == "fact" and not intent.requires_shared_event):
         return result(False, "plan_is_not_completed_event_or_current_fact")
     elif intent.route in {"episode", "task", "bounded"} and is_unfinished_event(entry):
         return result(False, "unfinished_event_is_not_completed_experience")

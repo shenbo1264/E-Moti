@@ -374,7 +374,9 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                     accepted_judgment = (entry.memory_id in judgment.selections[intent_index]
                         and entry.evidence_fingerprint() == judgment.fingerprints.get(entry.memory_id)
                         and hard_eligibility(entry, intent, now=now, owner_id=service.owner_id,
-                            character_id=service.character_id))
+                            character_id=service.character_id,
+                            allow_planned_attribute=(intent_index < len(judgment.attribute_uses)
+                                and judgment.attribute_uses[intent_index])))
                     decision = EvidenceDecision(entry.memory_id, accepted_judgment,
                         "source_bound_model_support" if accepted_judgment else "judgment_source_invalid", intent.route)
                 decisions.append(decision)

@@ -157,7 +157,10 @@ class OpenAICompatibleChatClient:
     def __call__(self, prompt: str) -> str:
         return self.complete(prompt)
 
-    def complete(self, prompt: str, *, system_prompt: str = "", timeout_seconds: float | None = None) -> str:
+    def complete(
+        self, prompt: str, *, system_prompt: str = "",
+        timeout_seconds: float | None = None, reasoning_effort: str | None = None,
+    ) -> str:
         if self._closed:
             raise _provider_error("OpenAI-compatible expression provider failed", "closed")
         if self.require_api_key and not self.api_key:
@@ -187,6 +190,8 @@ class OpenAICompatibleChatClient:
             payload_dict["messages"].insert(0, {"role": "system", "content": system_prompt})
         if self.max_tokens is not None:
             payload_dict["max_tokens"] = self.max_tokens
+        if reasoning_effort is not None:
+            payload_dict["reasoning_effort"] = reasoning_effort
         payload = json.dumps(payload_dict, ensure_ascii=False).encode("utf-8")
         api_request = request.Request(
             _chat_completions_url(self.base_url),
