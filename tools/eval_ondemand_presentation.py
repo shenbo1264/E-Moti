@@ -22,11 +22,11 @@ from guanghe_companion.expression_request import ExpressionRequest
 from guanghe_companion.persona import build_persona_payload
 from tools.eval_ondemand_generation import render_prompt
 from tools.eval_ondemand_memory import (
-    digest, evidence_representations, git, load_datasets, provider_evidence_payload,
+    digest, evidence_representations, expression_history, git, load_datasets, provider_evidence_payload,
     score_query, source_hashes, summarize,
 )
 
-PRESENTATION_VERSION = "current-production-expression-v2-authored-persona"
+PRESENTATION_VERSION = "current-production-expression-v3-authored-persona-history"
 
 
 def json_digest(value):
@@ -91,7 +91,10 @@ def normalize_artifact(path, datasets):
             raise ValueError("missing or invalid saved ExpressionRequest")
         request = ExpressionRequest(**payload)
         persona = personas[split]
-        request = replace(request, persona=deepcopy(persona), character_name=persona["character_name"])
+        history = ExpressionRequest.from_snapshot({"character_name": persona["character_name"],
+            "focus": 50, "charge": 50, "stability": 50, "mood": 50, "trust": 50,
+            "recent_dialogue": expression_history(query.get("history", []), persona["character_name"])}).recent_dialogue
+        request = replace(request, persona=deepcopy(persona), character_name=persona["character_name"], recent_dialogue=history)
         updated_payload = request.to_prompt_dict()
         started = perf_counter()
         prompt = render_prompt(updated_payload)
@@ -131,7 +134,7 @@ def normalize_artifact(path, datasets):
     result["presentation"] = {"version": PRESENTATION_VERSION, "normalized_at_utc": datetime.now(timezone.utc).isoformat(),
         "source_root": str(ROOT), "source_commit": git(ROOT, "rev-parse", "HEAD"), "source_sha256": source_hashes(ROOT),
         "script_sha256": digest(Path(__file__)), "persona_sha256": {split: json_digest(value) for split, value in personas.items()},
-        "changed_fields": ["persona", "character_name"], "retrieval_reexecuted": False, "model_requests": 0,
+        "changed_fields": ["persona", "character_name", "recent_dialogue"], "retrieval_reexecuted": False, "model_requests": 0,
         "evidence_source": "original saved ExpressionRequest; memory and selected IDs unchanged",
         "scoring": "score_query applied to the rebuilt final provider prompt; original metrics retained",
         "timing_note": "retrieval timings remain original; presentation_assembly_ms is measured separately",

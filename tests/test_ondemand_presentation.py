@@ -13,13 +13,13 @@ runner = importlib.util.module_from_spec(spec)
 spec.loader.exec_module(runner)
 
 
-def inputs(tmp_path, *, wrong_body=False):
+def inputs(tmp_path, *, wrong_body=False, history=()):
     memory = {"id": "m1", "story_id": "s1", "kind": "用户自述", "title": "饮品偏好",
               "summary": "用户喜欢白茶。", "source": "explicit_user_request", "source_ids": ["source:1"],
               "user_confirmed": True, "scope": "companion", "occurred_at": 1, "created_at": 1, "updated_at": 1}
     query = {"id": "q1", "story_id": "s1", "family": "drink", "text": "我喜欢什么茶？",
              "gold_ids": ["m1"], "forbidden_ids": [], "expected_routes": ["fact"],
-             "expected_status": "sufficient", "should_retrieve_long_term": True, "scope": "companion"}
+             "expected_status": "sufficient", "should_retrieve_long_term": True, "scope": "companion", "history": list(history)}
     dataset = {"schema_version": 1, "split": "validation", "owner_id": "owner", "character_id": "character",
                "stories": [{"id": "s1", "template_family": "drink"}], "memories": [memory], "queries": [query]}
     dataset_path = tmp_path / "ondemand_memory_validation.json"
@@ -75,6 +75,17 @@ def test_common_persona_is_the_actual_desktop_authored_persona(tmp_path):
         assert runner.render_prompt(request.to_prompt_dict()) == controller.ai_expressor.build_prompt(request)
     finally:
         controller.close()
+
+
+def test_dataset_history_reaches_actual_expression_and_provider_prompt(tmp_path):
+    history = [{"role": "user", "text": "我刚才说的是陶艺工作室的收纳规则。"}]
+    path, raw, datasets = inputs(tmp_path, history=history)
+    result = runner.normalize_artifact(path, datasets)
+    row = result["rows"][0]
+    assert row["actual_expression_request"]["recent_dialogue"] == [
+        {"role": "user", "speaker": "玩家", "text": history[0]["text"]}]
+    assert history[0]["text"] in row["actual_provider_prompt"]
+    assert row["actual_expression_request"]["emotional_memory"] == raw["rows"][0]["actual_expression_request"]["emotional_memory"]
 
 
 def test_recomputes_final_evidence_support_instead_of_trusting_old_score(tmp_path):

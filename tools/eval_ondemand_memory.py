@@ -99,6 +99,12 @@ def validate_baseline(root, expected_commit):
     return actual
 
 
+def expression_history(history, character_name):
+    return [{"role": row.get("role", "user"),
+             "speaker": row.get("speaker") or (character_name if row.get("role") == "assistant" else "玩家"),
+             "text": row.get("text", row.get("content", ""))} for row in history]
+
+
 def story_clock(data, story):
     basis = story.get("time_basis", data.get("time_basis", "unix"))
     if basis not in {"logical", "unix"}:
@@ -690,8 +696,7 @@ def worker(args):
                                 trace.update(rows_loaded=len(snapshot.entries), candidate_count=len(active),
                                              selected_memory_ids=selected_ids)
                             context = {"memory_v2_authoritative": True, "emotional_memory": bundle.to_prompt_payload(), "persona": persona}
-                            recent = [{"role": h.get("role", "user"), "text": h.get("text", h.get("content", ""))}
-                                      for h in q.get("history", [])]
+                            recent = expression_history(q.get("history", []), persona["character_name"])
                             request, timing["context_assembly"] = timed(lambda: ExpressionRequest.from_snapshot(
                                 {"character_name": persona["character_name"], "focus": 50, "charge": 50,
                                  "stability": 50, "mood": 50, "trust": 50, "player_message": q["text"],
