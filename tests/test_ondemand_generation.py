@@ -132,6 +132,25 @@ def test_missing_usage_is_unknown_cost_not_free(tmp_path):
     assert result["cost_coverage"]["known_requests"] == 0
 
 
+def test_production_mode_requires_matching_saved_request_before_any_call(tmp_path):
+    path = source(tmp_path, count=1)
+    data = json.loads(path.read_text())
+    data["rows"][0]["actual_provider_prompt"] = "旧版本提示词，不能伪称当前生产调用"
+    path.write_text(json.dumps(data, ensure_ascii=False))
+    args = config(tmp_path, [path], "--production-expression")
+    result = runner.run(args, environ={})
+    assert result["actual_requests"] == 0
+    assert result["rows"][0]["reason"] == "prompt_build_failed"
+
+
+def test_production_mode_without_credentials_is_not_run(tmp_path):
+    args = config(tmp_path, [source(tmp_path, count=1)], "--production-expression")
+    result = runner.run(args, environ={})
+    assert result["status"] == "not_run"
+    assert result["generation_mode"] == "production_expression"
+    assert result["rows"][0]["answer"] is None
+
+
 @pytest.mark.parametrize("option,value", [("--max-requests", "0"), ("--max-output-tokens", "4097"), ("--timeout", "61")])
 def test_budget_rejects_values_the_existing_client_cannot_honor(tmp_path, option, value):
     with pytest.raises(SystemExit):

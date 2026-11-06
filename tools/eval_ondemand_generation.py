@@ -51,6 +51,8 @@ def parse_args(argv=None):
     p.add_argument("--max-requests", type=int, default=20)
     p.add_argument("--max-output-tokens", type=int, default=512)
     p.add_argument("--timeout", type=float)
+    p.add_argument("--production-expression", action="store_true",
+                   help="Use the desktop expressor including its bounded review; retain every raw provider call")
     p.add_argument("--query-ids", nargs="+")
     p.add_argument("--splits", nargs="+", choices=("development", "validation", "holdout"))
     p.add_argument("--input-price-per-million", type=float)
@@ -85,7 +87,8 @@ def load_cases(args):
         digest = sha256(raw)
         sources.append({"path": str(path.resolve()), "sha256": digest, "method": data["method"],
                         "size": data.get("size"), "source_commit": data.get("source_commit"),
-                        "source_sha256": data.get("source_sha256"), "dataset_sha256": data.get("dataset_sha256")})
+                        "source_sha256": data.get("source_sha256"), "dataset_sha256": data.get("dataset_sha256"),
+                        "presentation": data.get("presentation")})
         for row in data["rows"]:
             if args.query_ids and row.get("query_id") not in args.query_ids:
                 continue
@@ -254,6 +257,7 @@ def run(args, *, environ=None, transport=None):
         invalid.append("api_key")
     cases, sources = load_cases(args)
     report = {"schema_version": 1, "status": "not_run", "started_at_utc": datetime.now(timezone.utc).isoformat(),
+        "generation_mode": "production_expression" if args.production_expression else "raw_provider",
         "scope": "actual model generation from saved retrieval evidence; not desktop interaction",
         "sources": sources, "script_sha256": sha256(Path(__file__).read_bytes()),
         "fallback_prompt_builder_sha256": sha256((ROOT / "src/guanghe_companion/expression_expressor.py").read_bytes()),
@@ -269,7 +273,7 @@ def run(args, *, environ=None, transport=None):
         "missing_configuration": missing, "invalid_configuration": invalid,
         "actual_requests": 0, "rows": [], "evaluation": {}}
     meter = RecordingTransport(delegate=transport or _default_transport, api_style=api_style,
-                               max_output_tokens=args.max_output_tokens)
+                               max_output_tokens=args.max_output_tokens, max_requests=args.max_requests)
     client = None
     if not missing and not invalid:
         if settings is not None:
@@ -283,6 +287,7 @@ def run(args, *, environ=None, transport=None):
         else:
             client = OpenAICompatibleChatClient(api_key=api_key, model=model, base_url=base_url,
                 timeout_seconds=timeout, max_tokens=args.max_output_tokens, transport=meter)
+    expressor = ShinsekaiAIExpressor(llm_client=client, timeout_seconds=timeout) if client and args.production_expression else None
     def checkpoint():
         args.output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.output.with_suffix(args.output.suffix + ".pending")
@@ -306,6 +311,9 @@ def run(args, *, environ=None, transport=None):
                 else:
                     prompt = render_prompt(case.get("actual_expression_request"))
                     record["prompt_origin"] = "rebuilt_with_current_production_builder"
+                if args.production_expression:
+                    if render_prompt(case.get("actual_expression_request")) != prompt:
+                        raise ValueError("saved prompt differs from the current production request")
                 record.update(final_prompt=prompt, final_prompt_sha256=sha256(prompt), final_prompt_chars=len(prompt),
                               final_prompt_evidence_ids=final_evidence_ids(prompt))
             except (ValueError, TypeError, KeyError) as exc:
@@ -320,8 +328,16 @@ def run(args, *, environ=None, transport=None):
                 continue
             started = perf_counter()
             meter.last = {}
+            call_start = len(meter.records)
             try:
-                output = client(prompt)
+                if expressor is not None:
+                    events = expressor.express(ExpressionRequest(**case["actual_expression_request"]))
+                    if expressor.last_fallback_reason:
+                        record["fallback_reason"] = expressor.last_fallback_reason
+                        raise ValueError("production expression did not deliver a validated model answer")
+                    output = json.dumps(events, ensure_ascii=False)
+                else:
+                    output = client(prompt)
                 response = meter.last.get("provider_response") or {}
                 response = response if isinstance(response, dict) else {}
                 usage = response.get("usage")
@@ -341,6 +357,26 @@ def run(args, *, environ=None, transport=None):
                 record.update(status="failed", reason=getattr(exc, "public_reason", "generation_error"),
                               error_type=type(exc).__name__)
             record.update(client_latency_ms=(perf_counter() - started) * 1000, **meter.last)
+            if args.production_expression:
+                calls = meter.records[call_start:]
+                record["provider_calls"] = calls
+                record["provider_call_count"] = len(calls)
+                draft_response = calls[0].get("provider_response", {}) if calls else {}
+                choices = draft_response.get("choices", []) if isinstance(draft_response, dict) else []
+                draft = choices[0].get("message", {}).get("content") if choices else None
+                record["draft_output_text"] = draft
+                if isinstance(draft, str):
+                    try:
+                        record["draft_schema_status"] = "valid" if parse_shinsekai_object_stream(draft, None) else "invalid"
+                    except ExpressionPayloadError as exc:
+                        record["draft_schema_status"] = exc.reason
+                usages = [call.get("provider_response", {}).get("usage") for call in calls]
+                complete_usage = usages and all(isinstance(u, dict)
+                    and type(u.get("prompt_tokens", u.get("input_tokens"))) is int
+                    and type(u.get("completion_tokens", u.get("output_tokens"))) is int for u in usages)
+                record["total_usage"] = ({"input_tokens": sum(u.get("prompt_tokens", u.get("input_tokens")) for u in usages),
+                                          "output_tokens": sum(u.get("completion_tokens", u.get("output_tokens")) for u in usages)}
+                                         if complete_usage else None)
             response = meter.last.get("provider_response")
             if isinstance(response, dict):
                 record.update(provider_model=response.get("model"), usage=response.get("usage"),
@@ -348,7 +384,9 @@ def run(args, *, environ=None, transport=None):
             report["actual_requests"] = meter.calls
             checkpoint()
     finally:
-        if client is not None:
+        if expressor is not None:
+            expressor.close()
+        elif client is not None:
             client.close()
     completed = sum(row["status"] == "completed" for row in report["rows"])
     failed = sum(row["status"] == "failed" for row in report["rows"])
@@ -360,7 +398,8 @@ def run(args, *, environ=None, transport=None):
     report["evaluation"] = {name: {"status": "pending_review" if completed else "not_run", "value": None,
         "completed_output_denominator": completed, "planned_denominator": len(cases)}
         for name in ("answer_correctness", "persona_behavior", "unsupported_claims", "natural_unknown")}
-    known_costs = [row["cost_usd"] for row in report["rows"] if row.get("cost_usd") is not None]
+    call_costs = [measured_cost(call.get("provider_response", {}).get("usage"), args) for call in meter.records]
+    known_costs = [cost for cost in call_costs if cost is not None]
     report["cost_coverage"] = {"known_requests": len(known_costs), "attempted_requests": meter.calls}
     report["estimated_cost_usd"] = sum(known_costs) if known_costs and len(known_costs) == meter.calls else None
     report["valid_schema_outputs"] = sum(row.get("schema_status") == "valid" for row in report["rows"])
