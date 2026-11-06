@@ -302,13 +302,17 @@ class ShinsekaiAIExpressor:
             event = candidate
         state = _state_from_snapshot(review_request.to_prompt_dict())
         if not isinstance(event, str) and (not isinstance(event, dict) or _normalize_expression_event(state, event) is None):
-            return draft
+            if not isinstance(event, dict) or event.get("type") != "speech":
+                return draft
+            # 格式失败的表达只作为引用草稿审阅；不复制未验证字段到最终事件。
+            event = candidate
         try:
             refinement = build_refinement_prompt(review_request, event)
         except ValueError as exc:
             raise _ExpressionPayloadError("refinement_context_too_large") from exc
         # 同一个 future、deadline 和不可变请求；草稿从不进入事件、历史或 TTS。
         reviewed = client.complete(refinement, system_prompt=review_rules(), timeout_seconds=remaining())
+        remaining()
         try:
             result = json.loads(_json_candidate_from_llm_text(_validated_llm_response_text(reviewed)))
         except json.JSONDecodeError as exc:
