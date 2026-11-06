@@ -221,7 +221,7 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
     started = perf_counter()
     budget: RetrievalBudget = service.retrieval_budget
     plan = service.retrieval_router.plan(query, history=history, scope=scope, now=now)
-    judgment = (service.evidence_judge.prepared(service, query, scope=scope, now=now, history=history)
+    judgment = (service.evidence_judge.prepared(service, query, scope=scope, now=now, history=history, claim=True)
                 if service.evidence_judge is not None else None)
     if judgment is not None:
         plan = judgment.plan
@@ -280,6 +280,9 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                 continue
             if intent.temporal_mode == "unresolved":
                 statuses.append({"route": intent.route, "status": "insufficient", "reason": "unresolved_time_basis_or_date", "source_ids": []})
+                continue
+            if judgment is not None and judgment.statuses[intent_index] == "unknown" and not judgment.selections[intent_index]:
+                statuses.append({"route": intent.route, "status": "unknown", "source_ids": []})
                 continue
             phase = perf_counter()
             if judgment is not None:
@@ -499,14 +502,15 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
         layers = build_layers(memories, chapters=tuple(chapters.values()),
             detail=any(i.detail for i in plan.intents if i.route == "episode"), enabled=layered, budget_chars=budget.max_context_chars)
         temporal_modes = tuple(dict.fromkeys(i.temporal_mode for i in plan.intents if i.route not in {"chat", "live"}))
-        prompt_policy = {"status": status, "routes": list(plan.routes), "temporal_mode": temporal_modes[0] if len(temporal_modes) == 1 else "mixed",
+        from .retrieval_clock import query_clock
+        prompt_policy = {"status": status, "query_clock": judgment.query_clock if judgment is not None else query_clock(service, now), "routes": list(plan.routes), "temporal_mode": temporal_modes[0] if len(temporal_modes) == 1 else "mixed",
             "intent_status": [{"route": s["route"], "status": s["status"], "source_ids": s["source_ids"],
                                "missing_details": s.get("missing_details", []),
                                **({"applicability": s["applicability"]} if "applicability" in s else {}),
                                **({"reason": s["reason"]} if "reason" in s else {}),
                                **({"authority": s["authority"]} if "authority" in s else {})} for s in statuses],
             "evidence_level": layers.level,
-            "instruction": "只依据有效来源回答具体事实；未知时自然说明没有可靠记录；部分有据时只回答有据部分；实时接口不可用不等于任务未完成。任务经验只证明当时结果，当前版本与前提未经确认时不保证照做成功。"}
+            "instruction": "只依据有效来源回答具体事实；未知时自然说明没有可靠记录；部分有据时只回答有据部分；实时接口不可用不等于任务未完成。任务经验只证明当时结果，当前版本与前提未经确认时不保证照做成功。当前时间只用query_clock：unix的local_datetime是可信日历，logical不代表日期；不自行假设今天，不把记录时间当查询时间。"}
         bundle = EvidenceContextBundle(profile, memories, None, epoch, retrieval=prompt_policy,
             overview=layers.overview, external_state=tuple(external), overview_source_ids=layers.represented_ids,
             resolution_evidence=tuple(binding_evidence.values()))
