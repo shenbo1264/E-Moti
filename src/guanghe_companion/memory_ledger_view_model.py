@@ -12,13 +12,15 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from .emotional_memory import EmotionalMemoryEntry
+from .retrieval_evidence import grounded_shared_event, is_unfinished_event
 
 _SECTIONS = (
     ("pending", "待你确认", "还没有记住。确认后才会长期保存。"),
     ("fact", "当前有效的事实", "聊天时可以直接用。"),
     ("plan", "计划", "还没有发生，不会被说成已经做过。"),
     ("episode", "共同经历", "真实发生过、有来源的事。"),
-    ("task", "任务经验", "过去做事的结果。不能保证这次也一样。"),
+    ("personal_episode", "其他经历记录", "个人经历和其他记录，不作为共同经历。"),
+    ("task", "任务经验", "执行报告与用户验收分开显示。不能保证这次也一样。"),
     ("external", "外部实时状态", "未接入。任务、游戏等当前状态由各自系统负责，E-Moti 不保存。"),
     ("history", "历史事实", "曾经成立，现在已结束。只在问起过去时使用。"),
     ("retired", "已更正或忘记", "不再用于聊天，这里也不再显示原来的内容。"),
@@ -34,7 +36,6 @@ SOURCE_LABELS = {
     "user_chat": "普通聊天",
 }
 _SCOPE_LABELS = {"companion": "陪伴", "task_experience": "任务经验"}
-_EPISODE_SOURCES = {"game_event", "relationship_unlock", "confirmed_companion_skill"}
 _FACT_SOURCES = {"user_chat", "explicit_user_request", "user_correction", "user_change"}
 _LIVE_ACTIONS = ("固定", "修改", "忘记", "彻底删除")
 
@@ -59,14 +60,14 @@ def classify_memory(entry: EmotionalMemoryEntry, *, now: int) -> str:
     if ended:
         return "history"
     meta = entry.metadata
-    if meta.get("plan_status") == "planned" or meta.get("planned") is True or entry.valid_from > now:
+    if is_unfinished_event(entry) or entry.valid_from > now:
         return "plan"
-    if entry.source in _EPISODE_SOURCES:
+    if grounded_shared_event(entry):
         return "episode"
     if (entry.source in _FACT_SOURCES or entry.kind == "玩家希望被记住" or "关于你" in entry.tags
             or meta.get("fact_subject") or meta.get("fact_slot")):
         return "fact"
-    return "episode"
+    return "personal_episode"
 
 
 def build_memory_ledger(memories: Iterable[EmotionalMemoryEntry], *, now: int, time_basis: str = "logical",
@@ -147,6 +148,8 @@ def _subject(entry, section) -> str:
         return "你的" + subject.split(":", 1)[1]
     if subject:
         return subject
+    if section == "personal_episode" and "user:self" in entry.metadata.get("participants", ()):
+        return "你"
     return "你们" if section == "episode" else "你" if section == "fact" else ""
 
 
@@ -171,5 +174,18 @@ def _valid_label(entry, basis, zone) -> str:
 
 
 def _status(entry, section) -> str:
-    return {"fact": "当前有效", "plan": "计划中", "episode": "已发生", "task": "过去的结果",
+    state = next((entry.metadata.get(key) for key in ("event_status", "plan_status", "task_status", "status")
+                  if entry.metadata.get(key)), "")
+    if section in {"plan", "task"}:
+        if state in {"cancelled", "canceled"}:
+            return "已取消"
+        if state in {"running", "in_progress"}:
+            return "进行中"
+    if section == "task":
+        if entry.metadata.get("user_accepted") is True:
+            return "已验收"
+        if is_unfinished_event(entry):
+            return "尚未完成"
+        return "执行记录，未验收"
+    return {"fact": "当前有效", "plan": "计划中", "episode": "已发生", "personal_episode": "经历记录",
             "history": "已结束"}.get(section, section)

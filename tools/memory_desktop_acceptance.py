@@ -27,7 +27,8 @@ def seed(controller) -> None:
     album.remember_explicit("我住在杭州")
     memory.remember(kind="日常", title="周末计划", summary="周六一起看展", source="user_chat", now=200_000,
                     metadata={"plan_status": "planned"})
-    memory.remember(kind="共同学习", title="一起练琴", summary="第一次一起练琴，弹错了三次", source="game_event", now=200_000)
+    memory.remember(kind="共同学习", title="一起练琴", summary="第一次一起练琴，弹错了三次", source="game_event", now=200_000,
+                    source_ids=("acceptance-practice-event",))
     memory.remember(kind="任务", title="导出备份", summary="导出成功", source="trusted_executor", now=200_000,
                     scope="task_experience", metadata={"outcome": "succeeded"})
     secret = album.remember_explicit("测试用的秘密：橙色猫")

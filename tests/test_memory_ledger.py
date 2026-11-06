@@ -32,7 +32,8 @@ def test_ledger_separates_every_memory_state(tmp_path):
     _fact(service, "用户以前住在苏州", valid_until=150)
     service.remember(kind="日常", title="周末计划", summary="周六一起看展", source="user_chat", now=100,
                      metadata={"plan_status": "planned"})
-    service.remember(kind="共同学习", title="一起学吉他", summary="今天第一次一起练琴", source="game_event", now=100)
+    service.remember(kind="共同学习", title="一起学吉他", summary="今天第一次一起练琴", source="game_event", now=100,
+                     source_ids=("local-practice-event",))
     service.remember(kind="任务", title="导出备份", summary="导出成功", source="trusted_executor", now=100,
                      scope="task_experience", metadata={"outcome": "succeeded"})
 
