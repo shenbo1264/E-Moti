@@ -62,6 +62,21 @@ def test_rebuilds_current_prompt_keeps_retrieval_and_original_evidence(tmp_path)
     assert result["summary"]["supported_delivery"] == {"numerator": 1, "denominator": 1, "rate": 1.0}
 
 
+def test_common_persona_is_the_actual_desktop_authored_persona(tmp_path):
+    from guanghe_companion.plugin_enabled_controller import PluginEnabledCompanionController
+    controller = PluginEnabledCompanionController(user_data_root=tmp_path)
+    try:
+        persona = runner.common_persona("isolated-evaluation-namespace")
+        assert persona["source"] == "persona.json"
+        assert persona["config_hash"] == controller._persona_payload["config_hash"]
+        request = ExpressionRequest.from_snapshot({"character_name": persona["character_name"],
+            "focus": 50, "charge": 50, "stability": 50, "mood": 50, "trust": 50,
+            "player_message": "你好"}, context={"persona": persona})
+        assert runner.render_prompt(request.to_prompt_dict()) == controller.ai_expressor.build_prompt(request)
+    finally:
+        controller.close()
+
+
 def test_recomputes_final_evidence_support_instead_of_trusting_old_score(tmp_path):
     path, raw, datasets = inputs(tmp_path, wrong_body=True)
     result = runner.normalize_artifact(path, datasets)

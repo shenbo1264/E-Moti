@@ -14,7 +14,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "src"))
 
-from guanghe_companion.character_pack import load_default_character_pack
+from guanghe_companion.character_pack import ASSETS_ROOT, load_default_character_pack
+from guanghe_companion.character_performance_profile import load_character_performance_profile
 from guanghe_companion.emotional_memory import EmotionalMemoryEntry
 from guanghe_companion.expression_clients import MAX_OPENAI_PROMPT_LENGTH
 from guanghe_companion.expression_request import ExpressionRequest
@@ -25,7 +26,7 @@ from tools.eval_ondemand_memory import (
     score_query, source_hashes, summarize,
 )
 
-PRESENTATION_VERSION = "current-production-expression-v1"
+PRESENTATION_VERSION = "current-production-expression-v2-authored-persona"
 
 
 def json_digest(value):
@@ -48,7 +49,10 @@ def source_rows(data, story_id):
 
 
 def common_persona(character_id):
-    persona = build_persona_payload(replace(load_default_character_pack(), character_id=character_id))
+    # 合成存档命名空间不改变角色身份；与桌面同样读取作者配置及演出边界。
+    pack = load_default_character_pack()
+    directory = ASSETS_ROOT / pack.character_id
+    persona = build_persona_payload(pack, load_character_performance_profile(directory), pack_dir=directory)
     request = ExpressionRequest.from_snapshot({"character_name": persona["character_name"], "focus": 50,
         "charge": 50, "stability": 50, "mood": 50, "trust": 50}, context={"persona": persona})
     return request.persona

@@ -30,6 +30,9 @@ from guanghe_companion.expression_settings import ExpressionSettingsStore, provi
 from guanghe_companion.expression_expressor import ShinsekaiAIExpressor
 from guanghe_companion.expression_request import ExpressionRequest
 from guanghe_companion.expression_parser import parse_shinsekai_object_stream, ExpressionPayloadError
+from guanghe_companion.character_pack import ASSETS_ROOT, load_default_character_pack
+from guanghe_companion.character_performance_profile import load_character_performance_profile
+from guanghe_companion.companion_dialogue_policy import CompanionDialoguePolicy
 
 
 KEY_ENV_NAMES = ("EMOTI_HOLDOUT_API_KEY", "EMOTI_LLM_API_KEY", "OPENAI_API_KEY")
@@ -124,6 +127,11 @@ def final_evidence_ids(prompt):
     return list(dict.fromkeys(result))
 
 
+def production_policy():
+    pack = load_default_character_pack()
+    return CompanionDialoguePolicy(performance_profile=load_character_performance_profile(ASSETS_ROOT / pack.character_id))
+
+
 def render_prompt(payload):
     if not isinstance(payload, dict) or not payload:
         raise ValueError("missing saved ExpressionRequest")
@@ -131,7 +139,7 @@ def render_prompt(payload):
     if set(payload) - allowed:
         raise ValueError("saved ExpressionRequest has unknown fields")
     request = ExpressionRequest(**payload)
-    with ShinsekaiAIExpressor(enabled=False) as expressor:
+    with ShinsekaiAIExpressor(enabled=False, dialogue_policy=production_policy()) as expressor:
         return expressor.build_prompt(request)
 
 
@@ -287,7 +295,8 @@ def run(args, *, environ=None, transport=None):
         else:
             client = OpenAICompatibleChatClient(api_key=api_key, model=model, base_url=base_url,
                 timeout_seconds=timeout, max_tokens=args.max_output_tokens, transport=meter)
-    expressor = ShinsekaiAIExpressor(llm_client=client, timeout_seconds=timeout) if client and args.production_expression else None
+    expressor = ShinsekaiAIExpressor(llm_client=client, timeout_seconds=timeout,
+        dialogue_policy=production_policy()) if client and args.production_expression else None
     def checkpoint():
         args.output.parent.mkdir(parents=True, exist_ok=True)
         temporary = args.output.with_suffix(args.output.suffix + ".pending")
