@@ -345,7 +345,11 @@ def run(args, *, environ=None, transport=None):
                     provider_response_id=response.get("id"), usage=usage, cost_usd=measured_cost(usage, args),
                     review={name: "pending_review" for name in record["review"]})
                 try:
-                    events = parse_shinsekai_object_stream(output, None)
+                    # express() 返回的是已验证的桌面事件，不再是 provider 的 type/speech 对象。
+                    if expressor is not None:
+                        record["final_events"] = events
+                    else:
+                        events = parse_shinsekai_object_stream(output, None)
                     record["schema_status"] = "valid" if events else "invalid"
                     record["answer"] = "\n".join(event["speech"] for event in events) if events else output
                 except ExpressionPayloadError as exc:
