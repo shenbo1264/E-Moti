@@ -119,7 +119,7 @@ class MemoryAlbumController:
         memory = self.story.memory
         turn_trace = memory.last_retrieval_trace
         try:
-            result = memory.retrieve(query, now=timestamp, history=history)
+            result = memory.retrieve(query, now=timestamp, history=history, record_access=False)
         finally:
             memory.last_retrieval_trace = turn_trace
         claims = {row.memory_id: self._claim(row) for row in result.bundle.memories}
@@ -135,7 +135,7 @@ class MemoryAlbumController:
         memory = self.story.memory
         turn_trace = memory.last_retrieval_trace
         try:
-            result = memory.expand_sources(bindings, expected_epoch=expected_epoch, now=timestamp)
+            result = memory.expand_sources(bindings, expected_epoch=expected_epoch, now=timestamp, record_access=False)
         finally:
             memory.last_retrieval_trace = turn_trace
         status = result.trace.status

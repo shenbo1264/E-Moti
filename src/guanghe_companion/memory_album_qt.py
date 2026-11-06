@@ -5,6 +5,7 @@ from __future__ import annotations
 import sqlite3
 
 from .memory_album_controller import MemoryAlbumStaleError
+from .memory_album_query import MemoryAlbumQueryService
 from .memory_edit_session import EDIT_INTENTS, MemoryEditSession, save_failure_reason
 from .memory_settings_view_model import ledger_card_details, ledger_card_text, source_details_text
 
@@ -180,6 +181,8 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
         if snapshot.get("character_id") != displayed_character or claims_epoch != displayed_epoch:
             # 概览是某一版本的缓存：版本或角色一变就整体清掉，不让旧内容留在屏幕上。
             clear_claims()
+            query_service.cancel()
+            ask_button.setEnabled(True)
         displayed_character = str(snapshot.get("character_id", ""))
         ledger = snapshot.get("ledger", [])
         pending = snapshot.get("pending_candidates", [])
@@ -448,7 +451,21 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
         album = current_album()
         if not query or album is None:
             return
-        show_claims(album.ask(query))
+        clear_claims()
+        ask_button.setEnabled(False)
+        evidence_label.setText("正在查找回忆…")
+        evidence_label.show()
+        query_service.submit(query)
+
+    def query_completed(result) -> None:
+        ask_button.setEnabled(True)
+        show_claims(result)
+
+    def query_failed(reason) -> None:
+        ask_button.setEnabled(True)
+        clear_claims()
+        evidence_label.setText("这次没能查找回忆：" + reason)
+        evidence_label.show()
 
     def show_turn_evidence() -> None:
         album = current_album()
@@ -477,6 +494,10 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
         refresh()
         if callable(on_changed):
             on_changed()
+    query_service = MemoryAlbumQueryService(current_album, parent=widget)
+    query_service.completed.connect(query_completed)
+    query_service.failed.connect(query_failed)
+    widget.destroyed.connect(query_service.close)
     refresh_button.clicked.connect(refresh_and_notify)
     list_widget.currentItemChanged.connect(update_actions)
     pin_button.clicked.connect(pin_selected)
@@ -503,4 +524,5 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
     widget.memory_edit_dialog = None  # type: ignore[attr-defined]
     widget.show_turn_evidence = show_turn_evidence  # type: ignore[attr-defined]
     widget.refresh_memory_album = refresh  # type: ignore[attr-defined]
+    widget.close_memory_query = query_service.close
     return widget

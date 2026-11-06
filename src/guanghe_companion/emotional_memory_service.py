@@ -317,18 +317,19 @@ class EmotionalMemoryService:
         return prepare_retrieval(self, query, now=now, history=history, scope=scope)
 
     def retrieve(self, query: str, *, now: int, history=(), scope="companion", top_k=4,
-                 relationship_stage: str | None = None, layered: bool = True):
+                 relationship_stage: str | None = None, layered: bool = True, record_access: bool = True):
         from .ondemand_memory import retrieve
         result = retrieve(self, query, now=now, history=history, scope=scope, top_k=top_k,
-                          relationship_stage=relationship_stage, layered=layered)
+                          relationship_stage=relationship_stage, layered=layered, record_access=record_access)
         self.last_retrieval_trace = result.trace
         return result
 
     def expand_sources(self, source_fingerprints: Mapping[str, str], *, expected_epoch: int,
-                       now: int, scope: str = "companion"):
+                       now: int, scope: str = "companion", record_access: bool = True):
         """Expand an authenticated overview, never a stale client's cached text."""
         from .ondemand_memory import expand_sources
-        result = expand_sources(self, source_fingerprints, expected_epoch=expected_epoch, now=now, scope=scope)
+        result = expand_sources(self, source_fingerprints, expected_epoch=expected_epoch, now=now, scope=scope,
+                                record_access=record_access)
         self.last_retrieval_trace = result.trace
         return result
 

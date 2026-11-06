@@ -584,7 +584,7 @@ def read_edit_target(store, memory_id):
 
 
 def finalize(store, selected: Iterable[EmotionalMemoryEntry], *, expected_epoch, now,
-             scope="companion", scopes=None, allow_history=False, dependency_entries=()):
+             scope="companion", scopes=None, allow_history=False, dependency_entries=(), record_access=True):
     expected = {}
     for entry in selected:
         previous = expected.get(entry.memory_id)
@@ -626,7 +626,10 @@ def finalize(store, selected: Iterable[EmotionalMemoryEntry], *, expected_epoch,
             eligible, reason = _eligibility(row, now=now, scopes=allowed_scopes)
             if not (eligible or (allow_history and reason == "expired")) or row["fingerprint"] != source.evidence_fingerprint():
                 return None
-            touched.append(_decode(row).touch(now))
+            entry = _decode(row)
+            touched.append(entry.touch(now) if record_access else entry)
+        if not record_access:
+            return tuple(touched)
         # One JSON1 update maintains the sole canonical document. SQLite still
         # serializes its JSON text, but Python never parses unrelated records.
         # Chunk at 32 to support builds with a conservative SQL-argument limit.

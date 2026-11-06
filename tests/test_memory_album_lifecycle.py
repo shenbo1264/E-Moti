@@ -374,6 +374,7 @@ def test_qt_overview_expands_sources_and_clears_after_forget(qapp, tmp_path, mon
     widget = create_memory_album_widget(album)
     widget.memory_ask_input.setText("我喜欢喝什么")
     widget.memory_ask_button.click()
+    qapp.processEvents()
 
     assert widget.memory_claim_list.count() == 1
     assert "有依据" in widget.memory_evidence_label.text()
@@ -397,6 +398,7 @@ def test_qt_unknown_answer_is_calm_and_says_not_never_said(qapp, tmp_path):
     widget = create_memory_album_widget(album)
     widget.memory_ask_input.setText("我的牙医叫什么名字")
     widget.memory_ask_button.click()
+    qapp.processEvents()
 
     assert "不代表你没说过" in widget.memory_evidence_label.text()
     assert widget.memory_claim_list.count() == 0

@@ -762,6 +762,9 @@ class CompanionWindow(QMainWindow):
         self.tick_timer.stop()
         self.countdown_timer.stop()
         self.screen_observation_timer.stop()
+        close_memory_query = getattr(self.memory_album_page, "close_memory_query", None)
+        if callable(close_memory_query):
+            close_memory_query()
         try:
             if self.desktop_dialogue is not None:
                 self.desktop_dialogue.close()
@@ -2141,6 +2144,23 @@ class CompanionWindow(QMainWindow):
     def _hide_memory_receipts(self) -> None:
         for button in (self.memory_receipt_button, self.memory_undo_button, self.memory_evidence_button):
             button.hide()
+            button.setToolTip("")
+        self.memory_receipt_button.setText("")
+        self.memory_evidence_button.setText("")
+        self._last_saved_memory_ids = ()
+
+    def _sync_memory_presentation(self) -> None:
+        album = getattr(self.controller, "memory_album_controller", None)
+        if album is None:
+            return
+        key = (id(album), album.story.memory.store.context_epoch)
+        previous = getattr(self, "_memory_ui_context_key", None)
+        self._memory_ui_context_key = key
+        if previous is not None and previous != key:
+            self._hide_memory_receipts()
+            page = getattr(self, "memory_album_page", None)
+            if page is not None and callable(getattr(page, "refresh_memory_album", None)):
+                page.refresh_memory_album()
 
     def _capture_turn_evidence(self, _result: object = None) -> None:
         album = getattr(self.controller, "memory_album_controller", None)
@@ -2476,6 +2496,7 @@ class CompanionWindow(QMainWindow):
 
     def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
         self._invalidate_tts_context(snapshot)
+        self._sync_memory_presentation()
         pending_count = self._pending_memory_count()
         self.memory_pending_button.setText(f"待确认回忆 {pending_count}")
         self.memory_pending_button.setVisible(pending_count > 0)

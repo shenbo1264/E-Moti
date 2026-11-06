@@ -215,7 +215,7 @@ def _bound_bundle(bundle, budget, *, chapters=(), layered=True):
 
 
 def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), scope="companion", top_k=4,
-             relationship_stage: str | None = None, layered: bool = True) -> RetrievalResult:
+             relationship_stage: str | None = None, layered: bool = True, record_access: bool = True) -> RetrievalResult:
     from .emotional_memory_service import _active_memory_index, _valid_profile, _valid_chapters
 
     started = perf_counter()
@@ -483,7 +483,7 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
         memories = service.store.finalize_indexed_recall(tuple(chosen), expected_epoch=epoch, now=now,
             scopes=tuple(scope_set | {scope}), allow_history=any(i.temporal_mode in {"history", "as_of", "timeline"}
                 or (i.temporal_mode == "planned" and i.as_of is not None) for i in plan.intents),
-            dependency_entries=tuple(dependencies.values()))
+            dependency_entries=tuple(dependencies.values()), record_access=record_access)
         timings["finalize"] = (perf_counter() - phase) * 1000
         if memories is None:
             continue
@@ -532,7 +532,7 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
 
 
 def expand_sources(service, source_fingerprints: Mapping[str, str], *, expected_epoch: int,
-                   now: int, scope: str = "companion") -> RetrievalResult:
+                   now: int, scope: str = "companion", record_access: bool = True) -> RetrievalResult:
     """Bounded L2 read for a detail button; the caller's L1 view is not evidence.
 
     Fingerprints are required even if a legacy writer failed to bump the epoch.
@@ -562,7 +562,7 @@ def expand_sources(service, source_fingerprints: Mapping[str, str], *, expected_
         memories, status = (), "unavailable"
     else:
         verified = service.store.finalize_indexed_recall(memories, expected_epoch=expected_epoch,
-            now=now, scopes=(scope,), dependency_entries=snapshot.source_entries)
+            now=now, scopes=(scope,), dependency_entries=snapshot.source_entries, record_access=record_access)
         if verified is None:
             memories, status = (), "unavailable"
         else:
