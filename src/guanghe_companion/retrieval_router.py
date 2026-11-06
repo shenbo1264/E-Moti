@@ -92,6 +92,10 @@ def _literal_subject(query: str, subjects: tuple[str, ...] = (),
 
 
 def _task_demand(query: str) -> bool:
+    # 当前执行状态中的“怎么样”不等于询问过去的操作方法。
+    if (_LIVE.search(query) and re.search(r"现在|目前|当前|正在|最新", query)
+            and not _PAST_EXECUTION.search(query)):
+        return False
     if _TASK.search(query) and re.search(r"上次|上回|上月|之前|以前|过去|历史|为什么|怎么|如何|原因|经验|失败|踩坑|报错|计划|需要|后来.*成功", query):
         return True
     return bool(_PAST_EXECUTION.search(query) and _PROCEDURE.search(query)
@@ -100,7 +104,8 @@ def _task_demand(query: str) -> bool:
 
 def _live_demand(query: str) -> bool:
     current = re.search(r"今天|今晚|现在|目前|当前|正在|最新|已经|了吗|了没|恢复了吗", query)
-    external_state = re.search(r"营业|关门|开门|闭馆|开到|开放|发布|更新|修好|恢复|同步服务|出窑|出炉|运行|完成|进度|进展|状态|连接.*了吗", query)
+    # 完成、进展和状态本身没有执行者身份；个人记录仍交给记忆证据判断。
+    external_state = re.search(r"营业|关门|开门|闭馆|开到|开放|发布|更新|修好|恢复|同步服务|出窑|出炉|运行|连接.*了吗", query)
     # A stated current precondition is not a request to re-read live state.
     return bool(current and external_state and _QUESTION.search(query)
                 and not (_PAST_EXECUTION.search(query) and _PROCEDURE.search(query)))
@@ -299,7 +304,7 @@ def _open_field_heading(query: str) -> bool:
         r"^(?:什么是|何谓|如何|怎么|怎样|帮我|请|回想|回忆)|时候|时", query))
 
 
-def _is_chat(query: str) -> bool:
+def _is_chat(query: str, *, has_calendar_query: bool = False) -> bool:
     if _CASUAL.fullmatch(query) or _NO_RECALL.search(query):
         return True
     if _FIELD_HEADING.fullmatch(query) or _open_field_heading(query):
@@ -314,7 +319,8 @@ def _is_chat(query: str) -> bool:
     subjects = _literal_subject(query, subjects, predicates)
     if subjects and subjects != ("user:self",):
         return False
-    if re.search(r"(?:20\d{2}年|\d{1,2}月|上个月|上月|这个月|本月)", query) and _QUESTION.search(query):
+    # 时间已由统一解析器识别；不能再用数字写法决定中文日期是否值得检索。
+    if has_calendar_query and _QUESTION.search(query):
         return False
     if re.search(r"^(?:嗨|[你您]好|早上好|晚上好|晚安|谢谢)|陪.*(?:发呆|发会儿呆|待一会|安静|聊聊)|安静.*(?:陪|待)|(?:累|天气|放松|无聊|休息)", query) and not _QUESTION.search(query):
         return True
@@ -463,7 +469,7 @@ class MemoryRetrievalRouter:
             owner = ("user:self",) if re.match(r"^(?:我的?|用户|my )", query, re.I) else ()
             return RetrievalIntent("fact", **base, subjects=owner,
                                    predicates=("unresolved_field",), reason="literal_field_heading")
-        if _is_chat(query) and not (implicit_fact and predicates):
+        if _is_chat(query, has_calendar_query=as_of is not None or temporal == "unresolved") and not (implicit_fact and predicates):
             return RetrievalIntent("chat", **base, reason="no_evidence_demand")
         authority = next((value for key, value in _AUTHORITIES.items() if key in query.casefold()), "")
         if ((_LIVE.search(query) and (authority or _TASK.search(query) or "任务" in query))

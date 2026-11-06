@@ -31,13 +31,16 @@ insufficient表示该子问题仍缺必要证据，不得附上只证明前提�
 一张计划卡也可能明确记载当前地点等独立属性：只能引用直接证明该属性的原文，不能从计划推断已完成或后来未完成。
 明确记载尚未参加、未完成等否定现状也属于current_attribute，回答是否发生时是充分的否定证据；仅有计划或尚未确认结果不构成否定证据。
 别名只在候选明确给出关系时使用；同名歧义不得猜人。计划不等于发生，完成报告不等于验收。
-返回一个JSON对象：{"intents":[{"route":"fact","question":"当前问题中的连续片段",
-"status":"sufficient|insufficient|unknown|not_needed","evidence":[{"id":"候选id","quote":"原文"}]}]}。
+返回一个JSON对象：{"intents":[{"route":"fact","question_ref":0,
+"claim_use":"current_attribute","status":"sufficient|insufficient|unknown|not_needed","evidence":[{"id":"候选id","quote":"原文"}]}]}。
+question_ref必须引用question_refs中的整数编号，不生成或改写question。编号0是完整问题；其余编号是宿主原文片段。若共同主体与多个属性分散在句中，可用编号0整体判断；只有全部被问属性均有据才为sufficient，缺任意一项须insufficient。可分别引用宿主提供的独立问题，不把话题前缀当成额外问题。
+question_refs中allowed=false的整问引用不能使用：不同日期、scope、权威或共同参与要求必须分别按片段编号判断，不可合成一项。
+明确否定发生的证据须逐条标记occurrence="explicitly_not_occurred"，quote包括完整否定小句及限定语。该标记表示原文明说未发生，不表示根据预约、没有记录、未确认结果或禁止标记完成来推断；条件句、疑问、转述猜测不能标记。
 描述性主体可另给subject_binding:{"mention":"问题中描述主体的连续原文","subject":"候选的subject原值","kind":"description","quote":"直接证明该描述对应此主体的候选原文"}。
 kind=description只用于职责、外观、用途等描述或省略，不用于专名、昵称等身份猜测；专名须kind=alias并有明确别名来源。
+若当前问题用“她/他”等指代历史中的昵称，subject_binding仍给当前问题的mention，另给antecedent为history中连续原文昵称，kind=alias，并引用候选中的明确身份来源。历史只能定位所指，不能单独证明昵称对应的真实身份。
 主体描述必须指向该来源的人或物，不得把未认识的名字绑定到别的人；别名仍需明确来源。
 描述性指代按对象核心名称、归属、用途和所问字段匹配，不要求原文逐字重复修饰语。用户问属性时，修饰性关系表述不是额外待证事件，除非它用于区别多个候选。只有一个与核心对象及字段匹配的用户确认记录、没有不同归属或用途冲突时，可用该记录回答属性；不能仅因修饰语未复述而拒绝。多个同类对象无法区分时保留不足，专名仍须验证身份。
-若分别提问导致子问题无法保持原文连续片段，给intent_index引用host_intents的编号；宿主使用该原问题，忽略改写question。
 保留未知问题，不因为候选中只有另一个人的事实就回答那个人。不要写解释或回答正文。"""
 
 
@@ -69,9 +72,18 @@ def _asks_occurred_event(question):
     return bool(re.search(r"过[^的，。？！?]{0,24}(?:吗|么|没有|没)[？?]?$", question))
 
 
-def _explicit_negative_occurrence(entry, quote):
+def _explicit_negative_occurrence(entry, quote, *, asserted=False):
     # 原文的否定现状可以回答“发生了吗”；预约、未知结果和禁止记为完成都不能代替它。
     if re.search(r"如果|假如|假设|若", entry.summary):
+        return False
+    if asserted:
+        # 模型判定被问动作的语义；宿主保留完整原文边界，不用主语或活动词表再做一次语义解析。
+        for clause in re.split(r"[，,。.;；\n]", entry.summary):
+            clause = clause.strip()
+            if (clause and clause in quote
+                    and not re.search(r"是否|不知|不清楚|未确认|不确定|可能|也许|不是|不代表|[？?]|吗|么", clause)
+                    and re.search(r"(?:尚未|还没有|还没|没有|未曾|从未)[^，,。.;；\n？！?]+", clause)):
+                return True
         return False
     from .grounded_facts import _UNSAFE
     # 模型负责动作/对象语义；宿主只核查完整否定声明，避免按活动词表误拒原文。
@@ -120,9 +132,36 @@ def _identity_labels(entry):
     return aliases, targets
 
 
-def _alias_source_binding(binding, entries, intent, *, now, owner_id, character_id):
+def _history_identity_sources(service, history, *, now, scopes):
+    snapshot = service.store.read_indexed_snapshot(IndexedMemoryQuery(scopes=scopes,
+        query=" ".join(history), limit=32), now=now, include_chapters=False, include_profile_sources=False)
+    mentions = " ".join(history)
+    by_alias = {}
+    intent = RetrievalIntent("fact", mentions, scopes=scopes)
+    for entry in snapshot.entries:
+        if not hard_eligibility(entry, intent, now=now, owner_id=service.owner_id,
+                character_id=service.character_id, allow_planned_attribute=True):
+            continue
+        labels, targets = _identity_labels(entry)
+        if targets:
+            for label in labels:
+                if label in mentions:
+                    by_alias.setdefault(label, {})[entry.memory_id] = entry
+    selected = {}
+    for sources in by_alias.values():
+        # 同名冲突来源一起提供；不能用容量截断制造唯一身份。
+        if len(set(selected) | set(sources)) <= 4:
+            selected.update(sources)
+    return tuple(selected.values()), snapshot.rows_loaded
+
+
+def _alias_source_binding(binding, entries, intent, *, now, owner_id, character_id, history=()):
     mention, subject, quote = (binding.get(key) for key in ("mention", "subject", "quote"))
     if not all(isinstance(value, str) and value for value in (mention, subject, quote)) or mention not in intent.query:
+        return None, (), False
+    antecedent = binding.get("antecedent", mention)
+    if "antecedent" in binding and (not isinstance(antecedent, str) or not antecedent
+            or not any(antecedent in text for text in history)):
         return None, (), False
     eligible = [entry for entry in entries if hard_eligibility(entry, intent, now=now,
         owner_id=owner_id, character_id=character_id, allow_planned_attribute=True)]
@@ -130,8 +169,8 @@ def _alias_source_binding(binding, entries, intent, *, now, owner_id, character_
     for entry in eligible:
         labels, targets = _identity_labels(entry)
         for label in labels:
-            described = (mention.startswith(label) and re.match(r"^(?:的|[那这][个只台盆件本部条张项])", mention[len(label):]))
-            if (mention == label or described) and label in quote and quote in entry.summary and subject in targets:
+            described = (antecedent.startswith(label) and re.match(r"^(?:的|[那这][个只台盆件本部条张项])", antecedent[len(label):]))
+            if (antecedent == label or described) and label in quote and quote in entry.summary and subject in targets:
                 matches.append((label, entry))
     if not matches:
         return None, (), False
@@ -178,7 +217,14 @@ def resolve_judged_subjects(store, judgment, index, *, now):
     return replace(original, subjects=(subject,)), False, resolution
 
 
-def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id, allowed_scopes=None):
+def _compatible_reference_constraints(intents):
+    return len({(intent.as_of, intent.as_of_end, intent.temporal_mode == "unresolved", intent.scopes,
+                 intent.requires_shared_event, intent.authority)
+        for intent in intents if intent.route != "chat" or intent.as_of is not None
+        or intent.requires_shared_event or intent.authority}) <= 1
+
+
+def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id, allowed_scopes=None, history=()):
     value = json.loads(raw)
     if not isinstance(value, dict) or not isinstance(value.get("intents"), list) or not 1 <= len(value["intents"]) <= 4:
         raise ValueError("invalid evidence judgment shape")
@@ -189,10 +235,22 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
     for row in value["intents"]:
         route, question = row.get("route"), row.get("question")
         intent_index = row.get("intent_index")
-        if intent_index is not None:
+        referenced_intent = None
+        if "question_ref" in row:
+            reference = row["question_ref"]
+            references = (query, *(intent.query for intent in plan.intents))
+            if type(reference) is not int or not 0 <= reference < len(references):
+                raise ValueError("invalid question reference")
+            question = references[reference]
+            if reference:
+                referenced_intent = plan.intents[reference - 1]
+            elif not _compatible_reference_constraints(plan.intents):
+                raise ValueError("question reference spans incompatible host constraints")
+        elif intent_index is not None:
             if type(intent_index) is not int or not 0 <= intent_index < len(plan.intents):
                 raise ValueError("invalid host intent index")
             question = plan.intents[intent_index].query
+            referenced_intent = plan.intents[intent_index]
         if isinstance(question, str) and question not in query:
             normalized = lambda text: re.sub(r"[\s，,。？！?!；;：:]", "", text)
             matches = [i.query for i in plan.intents if normalized(i.query) == normalized(question)]
@@ -204,9 +262,11 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
             raise ValueError("judgment question must be an original input span")
         if row.get("status") == "not_needed" and row.get("evidence") == [] and _context_declaration(question):
             route = "chat"
-        matching = [i for i in plan.intents if question in i.query or i.query in question]
+        matching = ([referenced_intent] if referenced_intent is not None else
+                    [i for i in plan.intents if question in i.query or i.query in question])
         dated = [i for i in matching if i.as_of is not None or i.temporal_mode == "unresolved"]
-        base = (dated or matching or list(plan.intents))[0]
+        base = (dated or [intent for intent in matching if intent.route != "chat"]
+                or matching or list(plan.intents))[0]
         # 日历与权限由宿主原计划继承，模型输出没有修改这些字段的入口。
         scopes = ("task_experience",) if route == "task" else tuple(s for s in allowed_scopes if s != "task_experience")
         literal_subjects = tuple(s for s in base.subjects if s != "user:self" and not s.startswith(("relation:", "entity:")))
@@ -226,7 +286,8 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
         negative_status = bool(evidence) and all(
             isinstance(proof, dict) and (entry := by_id.get(proof.get("id"))) is not None
             and isinstance(proof.get("quote"), str) and proof["quote"] in entry.summary
-            and _explicit_negative_occurrence(entry, proof["quote"]) for proof in evidence)
+            and _explicit_negative_occurrence(entry, proof["quote"],
+                asserted=proof.get("occurrence") == "explicitly_not_occurred") for proof in evidence)
         if (negative_status and route == "episode" and row.get("claim_use") == "current_attribute"
                 and not base.requires_shared_event):
             route = "fact"
@@ -266,7 +327,7 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
             quote = binding.get("quote")
             if binding.get("kind") == "alias" and ids:
                 checked_binding, alias_sources, ambiguous = _alias_source_binding(binding, entries, intent,
-                    now=now, owner_id=owner_id, character_id=character_id)
+                    now=now, owner_id=owner_id, character_id=character_id, history=_recent_user_text(history, query))
                 if ambiguous or (checked_binding is None and isinstance(mention, str) and mention in question
                         and not any(mention in by_id[key].summary for key in ids)):
                     ids = []
@@ -350,6 +411,7 @@ class MemoryEvidenceJudge:
             return
         state = service.store.current_index_state(now=now)
         scopes = tuple(dict.fromkeys((scope, *(s for i in plan.intents for s in i.scopes))))
+        history_key = _recent_user_text(history, query)
         history_allowed = any(i.temporal_mode in {"history", "as_of", "timeline"}
                               or (i.temporal_mode == "planned" and i.as_of is not None) for i in plan.intents)
         search = " ".join(dict.fromkeys([query, *(i.query for i in plan.intents)]))
@@ -389,6 +451,14 @@ class MemoryEvidenceJudge:
             rows.update((e.memory_id, e) for e in proofs.entries)
             self.prepare_rows_loaded += proofs.rows_loaded
             self.prepare_retrieval_calls += 1
+        if history_key:
+            identity_sources, loaded = _history_identity_sources(service, history_key, now=now, scopes=scopes)
+            self.prepare_rows_loaded += loaded
+            self.prepare_retrieval_calls += 1
+            identity_ids = [entry.memory_id for entry in identity_sources]
+            if len(set(binding_ids[:4]) | set(identity_ids)) <= 4:
+                binding_ids = list(dict.fromkeys([*binding_ids[:4], *identity_ids]))
+                rows.update((entry.memory_id, entry) for entry in identity_sources)
         retriever = service.semantic_retriever
         semantic_ids = tuple(dict.fromkeys(key for sc in scopes for key in
             retriever.candidate_ids(query, limit=16, scope=sc))) if hasattr(retriever, "candidate_ids") else ()
@@ -412,10 +482,12 @@ class MemoryEvidenceJudge:
         if not entries:
             self.status = "no_candidates"
             return
-        history_key = _recent_user_text(history, query)
         clock = query_clock(service, now)
         prompt = json.dumps({"question": query, "query_clock": clock, "history": history_key[-4:],
             "host_intents": [{"index": index, "question": intent.query} for index, intent in enumerate(plan.intents)],
+            "question_refs": [{"index": index, "text": text,
+                "allowed": bool(index) or _compatible_reference_constraints(plan.intents)}
+                for index, text in enumerate((query, *(intent.query for intent in plan.intents)))],
             "candidates": [{"id": e.memory_id, "summary": e.summary, "scope": e.scope,
                 "subject": e.metadata.get("fact_subject"), "field": e.metadata.get("fact_predicate"),
                 "valid_from": e.valid_from, "valid_until": e.valid_until, "occurred_at": e.occurred_at,
@@ -430,7 +502,7 @@ class MemoryEvidenceJudge:
             else:
                 raw = self.client(_INSTRUCTION + "\n" + prompt)
             judgment = validate_judgment(raw, query=query, plan=plan, entries=entries, now=now,
-                owner_id=service.owner_id, character_id=service.character_id, allowed_scopes=scopes)
+                owner_id=service.owner_id, character_id=service.character_id, allowed_scopes=scopes, history=history)
         except (LLMProviderError, ValueError, TypeError, AttributeError) as exc:
             self.status = "unavailable:" + type(exc).__name__
             return
