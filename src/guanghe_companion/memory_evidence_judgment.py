@@ -74,12 +74,11 @@ def _explicit_negative_occurrence(entry, quote):
     if re.search(r"如果|假如|假设|若", entry.summary):
         return False
     from .grounded_facts import _UNSAFE
-    # 日期和宾语是声明的一部分；仍以完整小句为边界，不截取未知/疑问中的否定词。
+    # 模型负责动作/对象语义；宿主只核查完整否定声明，避免按活动词表误拒原文。
     date = r"截至(?:\d{4}年)?\d{1,2}月\d{1,2}(?:日|号)"
     pattern = (rf"(?:{date})?(?:用户|我|他|她|它)?(?:{date})?(?:明确)?(?:目前|现在|至今|仍然|仍)?"
         r"(?:尚未|还没有|还没|没有|未曾|从未)(?:实际)?"
-        r"(?:参加|完成|发生|成行|去过|做过|上过|开始|结束|提交|交付|验收)(?:过|了)?"
-        r"(?:(?:这|那|该)(?:个|项|次|门|场|份|段)[\u4e00-\u9fff]{1,24})?")
+        r"[^，,。.;；\n？！?]{1,96}")
     return any(not _UNSAFE.search(clause) and not re.search(r"是否|不知|不清楚|未确认", clause)
         and re.fullmatch(pattern, clause.strip()) and clause.strip() in quote
         for clause in re.split(r"[，,。.;；\n]", entry.summary))
@@ -99,11 +98,13 @@ def _identity_labels(entry):
     fields = value if isinstance(value, dict) else {meta.get("fact_predicate", ""): value}
     named, aliases = set(), set()
     for field, value in fields.items():
-        if field not in labels:
-            continue
         for label in value if isinstance(value, (list, tuple)) else (value,):
             if isinstance(label, str) and 1 < len(label) <= 32 and label in entry.summary:
-                aliases.add(label)
+                # 开放的身份字段仍需原文明示命名关系；地址/职业等普通属性不成为别名。
+                declared_name = (isinstance(field, str) and re.search(r"(?:名|称呼|[代绰外]号)$", field)
+                    and re.search(re.escape(field[-2:]) + r"(?:是|叫|为)" + re.escape(label), entry.summary))
+                if field in labels or declared_name:
+                    aliases.add(label)
                 if field in names:
                     named.add(label)
     for key in ("subject_aliases", "entity_aliases", "fact_aliases"):
@@ -204,7 +205,8 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
         if row.get("status") == "not_needed" and row.get("evidence") == [] and _context_declaration(question):
             route = "chat"
         matching = [i for i in plan.intents if question in i.query or i.query in question]
-        base = (matching or list(plan.intents))[0]
+        dated = [i for i in matching if i.as_of is not None or i.temporal_mode == "unresolved"]
+        base = (dated or matching or list(plan.intents))[0]
         # 日历与权限由宿主原计划继承，模型输出没有修改这些字段的入口。
         scopes = ("task_experience",) if route == "task" else tuple(s for s in allowed_scopes if s != "task_experience")
         literal_subjects = tuple(s for s in base.subjects if s != "user:self" and not s.startswith(("relation:", "entity:")))
@@ -229,7 +231,7 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
                 and not base.requires_shared_event):
             route = "fact"
             intent = replace(intent, route=route)
-        attribute_use = (row.get("claim_use") == "current_attribute" and route == "fact"
+        attribute_use = ((row.get("claim_use") == "current_attribute" or (negative_status and row.get("claim_use") is None)) and route == "fact"
             and not base.requires_shared_event and (not _asks_occurred_event(question) or negative_status))
         if attribute_use and base.as_of is None and base.temporal_mode in {"planned", "history"}:
             intent = replace(intent, temporal_mode="current")
@@ -362,12 +364,15 @@ class MemoryEvidenceJudge:
                 continue
             # 语义向量通常只索引当前事实；明确日历查询补充有界历史读取。
             historical = service.store.read_indexed_snapshot(IndexedMemoryQuery(
-                scopes=scopes, subjects=intent.subjects, history=True, limit=32), now=now,
+                scopes=scopes, subjects=intent.subjects, history=True, limit=32,
+                valid_at=(intent.as_of_end - 1 if intent.as_of_end else intent.as_of)), now=now,
                 include_chapters=False, include_profile_sources=False)
             self.prepare_rows_loaded += historical.rows_loaded
             self.prepare_retrieval_calls += 1
             for entry in historical.entries:
-                if hard_eligibility(entry, intent, now=now, owner_id=service.owner_id, character_id=service.character_id):
+                candidate_intent = replace(intent, route="fact") if intent.route == "bounded" else intent
+                if hard_eligibility(entry, candidate_intent, now=now, owner_id=service.owner_id, character_id=service.character_id,
+                        allow_planned_attribute=candidate_intent.route == "fact"):
                     rows[entry.memory_id] = entry
                     temporal_ids.append(entry.memory_id)
         # 原计划中的显式别名复用现有来源绑定；最终retrieve仍需验证绑定依赖。

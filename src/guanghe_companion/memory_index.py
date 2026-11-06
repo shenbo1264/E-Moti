@@ -39,6 +39,7 @@ class IndexedMemoryQuery:
     history: bool = False
     occurred_after: int = 0
     occurred_before: int = 0
+    valid_at: int | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -367,7 +368,7 @@ def _where(store, request, now, *, fts_enabled):
     terms = ["e.character_id=?", "e.owner_id=?", "e.deleted=0", "e.confidence>0"]
     terms.append(_in_clause("e.scope", request.scopes, params))
     terms.append("e.valid_from<=?")
-    params.append(now)
+    params.append(now if request.valid_at is None else request.valid_at)
     if not request.history:
         terms.append("(e.valid_until=0 OR e.valid_until>?)")
         params.append(now)
@@ -584,7 +585,8 @@ def read_edit_target(store, memory_id):
 
 
 def finalize(store, selected: Iterable[EmotionalMemoryEntry], *, expected_epoch, now,
-             scope="companion", scopes=None, allow_history=False, dependency_entries=(), record_access=True):
+             scope="companion", scopes=None, allow_history=False, dependency_entries=(), record_access=True,
+             valid_at_by_id=None):
     expected = {}
     for entry in selected:
         previous = expected.get(entry.memory_id)
@@ -624,6 +626,10 @@ def finalize(store, selected: Iterable[EmotionalMemoryEntry], *, expected_epoch,
         for key, source in expected.items():
             row = rows.get(key)
             eligible, reason = _eligibility(row, now=now, scopes=allowed_scopes)
+            if reason == "future" and valid_at_by_id and key in valid_at_by_id:
+                # 查询日期只用于该来源有效区间；存档到期与撤销始终使用宿主 now。
+                eligible = (source.metadata.get("time_basis") == "unix"
+                    and _eligibility(row, now=valid_at_by_id[key], scopes=allowed_scopes)[0])
             if not (eligible or (allow_history and reason == "expired")) or row["fingerprint"] != source.evidence_fingerprint():
                 return None
             entry = _decode(row)

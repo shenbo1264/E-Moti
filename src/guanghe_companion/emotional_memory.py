@@ -513,12 +513,14 @@ class EmotionalMemoryStore:
     def finalize_indexed_recall(self, selected: Iterable[EmotionalMemoryEntry], *,
                                expected_epoch: int, now: int, scope: str = "companion",
                                scopes: tuple[str, ...] | None = None, allow_history: bool = False,
-                               dependency_entries: Iterable[EmotionalMemoryEntry] = (), record_access: bool = True):
+                               dependency_entries: Iterable[EmotionalMemoryEntry] = (), record_access: bool = True,
+                               valid_at_by_id: Mapping[str, int] | None = None):
         """Authenticate selected revisions, then update access within one commit."""
         from .memory_index import finalize
         return finalize(self, selected, expected_epoch=expected_epoch, now=now,
                         scope=scope, scopes=scopes, allow_history=allow_history,
-                        dependency_entries=dependency_entries, record_access=record_access)
+                        dependency_entries=dependency_entries, record_access=record_access,
+                        valid_at_by_id=valid_at_by_id)
 
     def current_context_epoch(self, *, now: int | None = None) -> int:
         """Cheap generation barrier; optional now also applies due TTL fences."""

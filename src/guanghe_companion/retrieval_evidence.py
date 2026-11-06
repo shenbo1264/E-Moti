@@ -193,7 +193,9 @@ def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, n
         return result(False, "revoked_or_untrusted_source")
     if intent.temporal_mode == "unresolved":
         return result(False, "unresolved_time_basis_or_date")
-    if entry.valid_from > now:
+    dated_fact = (intent.route == "fact" and intent.temporal_mode in {"as_of", "planned"}
+                  and intent.as_of is not None and entry.metadata.get("time_basis") == "unix")
+    if entry.valid_from > now and not dated_fact:
         return result(False, "not_yet_valid")
     expired = bool(entry.valid_until and now >= entry.valid_until)
     if intent.temporal_mode == "history":

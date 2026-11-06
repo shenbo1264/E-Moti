@@ -232,6 +232,7 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
         decisions = []
         statuses = []
         selected = []
+        valid_at_by_id = {}
         dependencies = {}
         binding_evidence = {}
         external = []
@@ -311,6 +312,8 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                 except Exception:
                     semantic_status = "unavailable"
             request = IndexedMemoryQuery(scopes=intent.scopes, subjects=intent.subjects,
+                valid_at=(intent.as_of_end - 1 if intent.as_of_end else intent.as_of)
+                    if intent.route == "fact" and intent.temporal_mode in {"as_of", "planned"} else None,
                 predicates=() if open_field else intent.predicates, query="" if structured else search_text,
                 history=intent.temporal_mode in {"history", "as_of", "timeline"}
                     or (intent.temporal_mode == "planned" and intent.as_of is not None),
@@ -455,6 +458,8 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                             binding_evidence.get(entry.memory_id, {}).get("dependent_memory_ids", []) +
                             [m.memory_id for m in ranked]))}
             chosen_ids = {e.memory_id for e in ranked}
+            if intent.route == "fact" and intent.temporal_mode in {"as_of", "planned"} and intent.as_of is not None:
+                valid_at_by_id.update((e.memory_id, max(intent.as_of, e.valid_from)) for e in ranked)
             covered = {field for decision in decisions if decision.accepted and decision.memory_id in chosen_ids
                        for field in decision.supported_details}
             missing = [field for field in intent.details if field not in covered]
@@ -486,7 +491,8 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
         memories = service.store.finalize_indexed_recall(tuple(chosen), expected_epoch=epoch, now=now,
             scopes=tuple(scope_set | {scope}), allow_history=any(i.temporal_mode in {"history", "as_of", "timeline"}
                 or (i.temporal_mode == "planned" and i.as_of is not None) for i in plan.intents),
-            dependency_entries=tuple(dependencies.values()), record_access=record_access)
+            dependency_entries=tuple(dependencies.values()), record_access=record_access,
+            valid_at_by_id=valid_at_by_id)
         timings["finalize"] = (perf_counter() - phase) * 1000
         if memories is None:
             continue
