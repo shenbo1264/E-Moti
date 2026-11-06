@@ -11,6 +11,7 @@ MORNING_END_SECONDS = 10 * 3600
 RETURN_AFTER_IDLE_SECONDS = 300
 RECENT_GIFT_SECONDS = 60
 HIGH_TRUST_THRESHOLD = 35
+LONG_ABSENCE_SECONDS = 3 * 86_400
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,9 +49,21 @@ def companion_moment_candidates(
     perception_summary: str = "",
     tool_results: Sequence[Mapping[str, object]] | None = None,
     allow_context_topic: bool = True,
+    wall_seconds: int | None = None,
+    away_seconds: int | None = None,
 ) -> tuple[CompanionMomentCandidate, ...]:
     candidates: list[CompanionMomentCandidate] = []
     idle_seconds = max(0, int(now) - int(state.last_interaction_at))
+
+    if away_seconds is not None and away_seconds >= LONG_ABSENCE_SECONDS:
+        line = "好久不见。不用说去哪了，想聊就聊，不聊我也在。"
+        candidates.append(
+            CompanionMomentCandidate(
+                kind="long_absence",
+                speech=line,
+                summary=f"很久没见后的自然招呼：{line}",
+            )
+        )
 
     if state.charge < 25:
         line = _state_line(state, "low_charge")
@@ -82,7 +95,7 @@ def companion_moment_candidates(
             )
         )
 
-    if _is_morning(now):
+    if _is_morning(now if wall_seconds is None else wall_seconds):
         line = "早呀。我先把亮度放轻一点，陪你把今天慢慢打开。"
         candidates.append(
             CompanionMomentCandidate(

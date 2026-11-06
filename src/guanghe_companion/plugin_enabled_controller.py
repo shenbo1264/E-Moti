@@ -66,7 +66,7 @@ class PluginEnabledCompanionController(_BaseController):
             focus_settings=_load_focus_settings(self._focus_settings_path),
         )
         self._focus_activity_reader = WindowsForegroundActivityReader()
-        self.memory_album_controller = MemoryAlbumController(self.story_runtime)
+        self.memory_album_controller = MemoryAlbumController(self.story_runtime, clock=lambda: int(self.now))
         self.plugin_subsystem = PluginSubsystem(application_root=plugins_root().parent, user_data_root=data_root)
         self.plugin_boot_report = self.plugin_subsystem.start()
         self.plugin_story_bridge = PluginStoryBridge(
@@ -94,10 +94,12 @@ class PluginEnabledCompanionController(_BaseController):
             self._last_proactive_at = {key: int(value) for key, value in schedule["last_proactive_at"].items()}
             self._proactive_daily_counts = {key: int(value) for key, value in schedule["daily_counts"].items()}
             self._last_dialogue_at = schedule.get("last_dialogue_at")
+            self._last_dialogue_wall = schedule.get("last_dialogue_wall")
         else:
             self._last_proactive_at = {}
             self._proactive_daily_counts = {}
             self._last_dialogue_at = None
+            self._last_dialogue_wall = None
         self.last_chat_memory_result = ChatMemoryResult()
         if not memory.store.migration_done("long_term_v1"):
             migrate_legacy_entries(memory, (entry.to_dict() for entry in self.long_term_memory_service.entries),
@@ -267,6 +269,7 @@ class PluginEnabledCompanionController(_BaseController):
     def _commit_dialogue_exchange(self, request, dialogue_epoch: int) -> None:
         if request.normalized_text():
             self._last_dialogue_at = int(self.now)
+            self._last_dialogue_wall = int(time.time())
         from .memory_index import IndexedMemoryQuery
         ids = self.last_chat_memory_result.memory_ids
         corrected = bool(ids) and any(m.metadata.get("corrected_by_user")
@@ -351,7 +354,8 @@ class PluginEnabledCompanionController(_BaseController):
             pending = path.with_suffix(".pending")
             pending.write_text(json.dumps({"logical_time": int(self.now),
                 "last_proactive_at": self._last_proactive_at, "daily_counts": self._proactive_daily_counts,
-                "last_dialogue_at": self._last_dialogue_at}),
+                "last_dialogue_at": self._last_dialogue_at,
+                "last_dialogue_wall": self._last_dialogue_wall}),
                 encoding="utf-8")
             pending.replace(path)
 
@@ -359,6 +363,19 @@ class PluginEnabledCompanionController(_BaseController):
         snapshot = super().reject_proactive_request()
         self._persist()
         return snapshot
+
+    def defer_proactive_request(self, seconds: int = 3600):
+        snapshot = super().defer_proactive_request(seconds)
+        self._persist()
+        return snapshot
+
+    def _proactive_focus_active(self) -> bool:
+        return self.story_runtime.focus.settings.enabled and self.story_runtime.focus.observation.is_focus_work
+
+    def _proactive_away_seconds(self) -> int | None:
+        if self._last_dialogue_wall is None:
+            return None
+        return max(0, int(time.time()) - int(self._last_dialogue_wall))
 
     def _process_chat_memory(self, request) -> ChatMemoryResult:
         epoch = self._dialogue_context_epoch()
@@ -647,7 +664,7 @@ class PluginEnabledCompanionController(_BaseController):
             character_id=character_id,
             focus_settings=_load_focus_settings(self._focus_settings_path),
         )
-        self.memory_album_controller = MemoryAlbumController(self.story_runtime)
+        self.memory_album_controller = MemoryAlbumController(self.story_runtime, clock=lambda: int(self.now))
         self.plugin_story_bridge = PluginStoryBridge(self.story_runtime, self.plugin_subsystem.runtime, character_id)
         self._initialize_personal_context()
         if include_ai:

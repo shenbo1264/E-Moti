@@ -5,6 +5,7 @@ from dataclasses import dataclass, replace
 from pathlib import Path
 import re
 from threading import Event, get_ident
+import time
 from typing import Protocol
 
 from .actions import CompanionActionLayer, CompanionActionRequest, action_label
@@ -66,6 +67,7 @@ from .proactive_companion import (
     ProactiveCompanionDecision,
     ProactiveCompanionService,
     ProactiveFeedback,
+    proactive_defer_updates,
     proactive_rejection_cooldown_updates,
 )
 from .relationship import RelationshipService
@@ -1064,8 +1066,20 @@ class CompanionController:
             proactive_rejection_cooldown_updates(
                 kind=str(feedback.get("kind", "")) if feedback else "",
                 now=self.now,
+                history=self._last_proactive_at,
+                last_dialogue_at=getattr(self, "_last_dialogue_at", None),
             )
         )
+        self.last_proactive_feedback = None
+        self.last_feedback = self._local_copy_line("reject_proactive")
+        self.last_delta_text = "proactive postponed"
+        self.last_allowed = True
+        self.last_item_feedback_icon = None
+        self.last_events = []
+        return self.get_snapshot()
+
+    def defer_proactive_request(self, seconds: int = 3600) -> dict[str, object]:
+        self._last_proactive_at.update(proactive_defer_updates(now=self.now, seconds=seconds))
         self.last_proactive_feedback = None
         self.last_feedback = self._local_copy_line("reject_proactive")
         self.last_delta_text = "proactive postponed"
@@ -1294,10 +1308,23 @@ class CompanionController:
             forced_kind=forced_kind,
             memory_candidate=self._memory_recollection_candidate(),
             last_dialogue_at=getattr(self, "_last_dialogue_at", None),
+            wall_seconds=None if forced_kind else self._proactive_wall_seconds(),
+            focus_active=self._proactive_focus_active(),
+            away_seconds=self._proactive_away_seconds(),
         ).select_decision(motion=self.last_motion)
         return self._with_character_proactive_copy(decision)
 
     def _memory_recollection_candidate(self):
+        return None
+
+    def _proactive_wall_seconds(self) -> int:
+        local = time.localtime()
+        return local.tm_hour * 3600 + local.tm_min * 60 + local.tm_sec
+
+    def _proactive_focus_active(self) -> bool:
+        return False
+
+    def _proactive_away_seconds(self) -> int | None:
         return None
 
     def _with_character_proactive_copy(self, decision: ProactiveCompanionDecision) -> ProactiveCompanionDecision:

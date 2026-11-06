@@ -4438,7 +4438,7 @@ def test_pending_memory_hint_appears_after_chat_and_opens_album(monkeypatch, tmp
     window.memory_pending_button.click()
     app.processEvents()
     assert window.content_stack.currentWidget() is window.memory_album_page
-    items = window.memory_album_page.findChild(QListWidget)
+    items = window.memory_album_page.memory_list
     assert any("桂花茶" in items.item(i).text() for i in range(items.count()))
 
     window.close()

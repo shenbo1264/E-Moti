@@ -202,7 +202,7 @@ def test_approved_chat_interest_can_start_a_grounded_topic_without_shared_histor
     decision = ProactiveCompanionService(state=state, previous_state=state, now=50000,
         settings=ProactiveCompanionSettings(enabled=True), last_proactive_at={}, daily_counts={},
         memory_candidate=candidate).select_decision("Default")
-    assert "你之前提过" in decision.feedback.speech
+    assert "你说过" in decision.feedback.speech
     assert "爬山" in decision.feedback.speech
     assert "一起" not in decision.feedback.speech
     assert len(decision.feedback.speech) < 80

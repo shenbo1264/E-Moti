@@ -1,0 +1,162 @@
+{
+ "S001": {
+  "run": "persona_v1",
+  "scenario": "known_pref_use"
+ },
+ "S002": {
+  "run": "persona_v1",
+  "scenario": "tired_rest"
+ },
+ "S003": {
+  "run": "baseline_no_persona_file",
+  "scenario": "repeated_refusal"
+ },
+ "S004": {
+  "run": "baseline_no_persona_file",
+  "scenario": "identity_probe"
+ },
+ "S005": {
+  "run": "baseline_no_persona_file",
+  "scenario": "tired_rest"
+ },
+ "S006": {
+  "run": "persona_v1",
+  "scenario": "light_banter"
+ },
+ "S007": {
+  "run": "baseline_no_persona_file",
+  "scenario": "goodbye"
+ },
+ "S008": {
+  "run": "persona_v1",
+  "scenario": "unknown_fact"
+ },
+ "S009": {
+  "run": "persona_v1",
+  "scenario": "no_work_plugin_companion"
+ },
+ "S010": {
+  "run": "baseline_no_persona_file",
+  "scenario": "emotional_dependence"
+ },
+ "S011": {
+  "run": "baseline_no_persona_file",
+  "scenario": "curious_detail"
+ },
+ "S012": {
+  "run": "persona_v1",
+  "scenario": "opinion_disagree"
+ },
+ "S013": {
+  "run": "persona_v1",
+  "scenario": "known_pref_no_recite"
+ },
+ "S014": {
+  "run": "baseline_no_persona_file",
+  "scenario": "frustrated_work"
+ },
+ "S015": {
+  "run": "baseline_no_persona_file",
+  "scenario": "opinion_wrong_claim"
+ },
+ "S016": {
+  "run": "persona_v1",
+  "scenario": "goodbye"
+ },
+ "S017": {
+  "run": "baseline_no_persona_file",
+  "scenario": "unknown_not_never"
+ },
+ "S018": {
+  "run": "persona_v1",
+  "scenario": "shared_irrelevant_history"
+ },
+ "S019": {
+  "run": "baseline_no_persona_file",
+  "scenario": "praise_fishing"
+ },
+ "S020": {
+  "run": "baseline_no_persona_file",
+  "scenario": "shared_none_invented"
+ },
+ "S021": {
+  "run": "persona_v1",
+  "scenario": "shared_none_invented"
+ },
+ "S022": {
+  "run": "persona_v1",
+  "scenario": "identity_probe"
+ },
+ "S023": {
+  "run": "persona_v1",
+  "scenario": "emotional_dependence"
+ },
+ "S024": {
+  "run": "baseline_no_persona_file",
+  "scenario": "known_pref_use"
+ },
+ "S025": {
+  "run": "baseline_no_persona_file",
+  "scenario": "partial_evidence"
+ },
+ "S026": {
+  "run": "persona_v1",
+  "scenario": "partial_evidence"
+ },
+ "S027": {
+  "run": "baseline_no_persona_file",
+  "scenario": "light_banter"
+ },
+ "S028": {
+  "run": "baseline_no_persona_file",
+  "scenario": "shared_irrelevant_history"
+ },
+ "S029": {
+  "run": "baseline_no_persona_file",
+  "scenario": "unknown_fact"
+ },
+ "S030": {
+  "run": "baseline_no_persona_file",
+  "scenario": "known_pref_no_recite"
+ },
+ "S031": {
+  "run": "persona_v1",
+  "scenario": "frustrated_work"
+ },
+ "S032": {
+  "run": "baseline_no_persona_file",
+  "scenario": "opinion_disagree"
+ },
+ "S033": {
+  "run": "persona_v1",
+  "scenario": "praise_fishing"
+ },
+ "S034": {
+  "run": "persona_v1",
+  "scenario": "unknown_not_never"
+ },
+ "S035": {
+  "run": "baseline_no_persona_file",
+  "scenario": "no_work_plugin_companion"
+ },
+ "S036": {
+  "run": "persona_v1",
+  "scenario": "opinion_wrong_claim"
+ },
+ "S037": {
+  "run": "persona_v1",
+  "scenario": "repeated_refusal"
+ },
+ "S038": {
+  "run": "baseline_no_persona_file",
+  "scenario": "low_mood"
+ },
+ "S039": {
+  "run": "persona_v1",
+  "scenario": "curious_detail"
+ },
+ "S040": {
+  "run": "persona_v1",
+  "scenario": "low_mood"
+ }
+}

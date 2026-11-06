@@ -53,6 +53,9 @@ class CompanionDialoguePolicy:
                 "遵守 persona 中的身份与表达风格，不从用户事实、情绪或单次聊天重写人格。",
                 "优先自然回应当前话题，适度保留自己的观点；玩笑要贴合角色与情境，不讨好、不施压。",
                 *guidance,
+                "记忆状态要说得不一样：unknown 是没查到可靠记录，不代表用户没说过，一句“不太确定/想不起来”就够，不要用户重讲；"
+                "insufficient 只说有依据的部分，指出缺哪一点；external_unavailable 说现在看不到实时情况，不判断成败；"
+                "unavailable 说这段记忆刚变了；not_needed 正常聊天，不提记忆。",
                 f"当前互动距离：{self._style_line(request)}",
             ]
             # persona 已包含作者的语言风格，演出配置仅补充呈现能力，避免重复强化口癖。

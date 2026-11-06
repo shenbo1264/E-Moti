@@ -10,6 +10,9 @@ from .models import CompanionState
 
 GLOBAL_COOLDOWN_KEY = "__global__"
 PROACTIVE_REJECTION_COOLDOWN_KEY = "__rejection__"
+PROACTIVE_REJECTION_STREAK_KEY = "__rejection_streak__"
+PROACTIVE_DEFERRED_UNTIL_KEY = "__deferred_until__"
+MAX_REJECTION_COOLDOWN_SECONDS = 7 * 86_400
 
 
 @dataclass(frozen=True, slots=True)
@@ -85,6 +88,9 @@ class ProactiveCompanionService:
         forced_kind: str = "",
         memory_candidate: MemoryRecollection | None = None,
         last_dialogue_at: int | None = None,
+        wall_seconds: int | None = None,
+        focus_active: bool = False,
+        away_seconds: int | None = None,
     ) -> None:
         self.state = state
         self.previous_state = previous_state
@@ -97,6 +103,10 @@ class ProactiveCompanionService:
         self.forced_kind = forced_kind if isinstance(forced_kind, str) else ""
         self.memory_candidate = memory_candidate
         self.last_dialogue_at = last_dialogue_at
+        # now 是逻辑秒，几点钟只能来自宿主给的本地墙钟；没有时保持旧行为。
+        self.wall_seconds = wall_seconds
+        self.focus_active = focus_active
+        self.away_seconds = away_seconds
 
     def select_feedback(self) -> ProactiveFeedback | None:
         if not self._can_emit_any():
@@ -108,6 +118,8 @@ class ProactiveCompanionService:
             perception_summary=self.perception_summary,
             tool_results=self.tool_results,
             allow_context_topic=self.settings.allow_context_topic,
+            wall_seconds=self.wall_seconds,
+            away_seconds=self.away_seconds,
         )
         for candidate in candidates:
             if candidate.kind in {"context_topic", "return_after_idle"}:
@@ -136,7 +148,7 @@ class ProactiveCompanionService:
         last_at = self.last_proactive_at.get(candidate.cooldown_key)
         if last_at is not None and self.now - last_at < 86400:
             return None
-        speech = (f"你之前提过喜欢{candidate.interest_topic}，最近有新的发现吗？" if candidate.interest_topic
+        speech = (f"刚想到你说过喜欢{candidate.interest_topic}。不用接话，就是想起来了。" if candidate.interest_topic
                   else f"我刚想起一件小事：{candidate.summary}")
         return ProactiveFeedback("memory_recollection", speech,
                                  candidate.summary, candidate)
@@ -149,13 +161,15 @@ class ProactiveCompanionService:
         )
 
     def _can_emit_any(self) -> bool:
-        if not self.settings.enabled:
+        if not self.settings.enabled or self.focus_active:
+            return False
+        if self.now < self.last_proactive_at.get(PROACTIVE_DEFERRED_UNTIL_KEY, 0):
             return False
         if (self.last_dialogue_at is not None
                 and self.now - self.last_dialogue_at < self.settings.global_cooldown_seconds):
             return False
         if self.settings.quiet_hours_enabled and _is_quiet_time(
-            self.now,
+            self.now if self.wall_seconds is None else self.wall_seconds,
             self.settings.quiet_start,
             self.settings.quiet_end,
         ):
@@ -163,7 +177,8 @@ class ProactiveCompanionService:
         if self.daily_counts.get(daily_count_key(self.now), 0) >= self.settings.daily_limit:
             return False
         last_rejection = self.last_proactive_at.get(PROACTIVE_REJECTION_COOLDOWN_KEY)
-        if last_rejection is not None and self.now - last_rejection < rejection_cooldown_seconds(self.settings):
+        streak = self.last_proactive_at.get(PROACTIVE_REJECTION_STREAK_KEY, 1)
+        if last_rejection is not None and self.now - last_rejection < rejection_cooldown_seconds(self.settings, streak):
             return False
         last_global = self.last_proactive_at.get(GLOBAL_COOLDOWN_KEY)
         if last_global is not None and self.now - last_global < self.settings.global_cooldown_seconds:
@@ -178,16 +193,29 @@ def daily_count_key(now: int) -> str:
     return str(max(0, int(now)) // 86_400)
 
 
-def proactive_rejection_cooldown_updates(*, kind: str, now: int) -> dict[str, int]:
+def proactive_rejection_cooldown_updates(*, kind: str, now: int, history: Mapping[str, int] | None = None,
+                                         last_dialogue_at: int | None = None) -> dict[str, int]:
+    """Each rejection with no conversation in between doubles the quiet period."""
     timestamp = max(0, int(now))
-    updates = {GLOBAL_COOLDOWN_KEY: timestamp, PROACTIVE_REJECTION_COOLDOWN_KEY: timestamp}
+    history = history or {}
+    last_rejection = history.get(PROACTIVE_REJECTION_COOLDOWN_KEY)
+    talked_since = last_rejection is None or (last_dialogue_at is not None and last_dialogue_at > last_rejection)
+    streak = 1 if talked_since else history.get(PROACTIVE_REJECTION_STREAK_KEY, 1) + 1
+    updates = {GLOBAL_COOLDOWN_KEY: timestamp, PROACTIVE_REJECTION_COOLDOWN_KEY: timestamp,
+               PROACTIVE_REJECTION_STREAK_KEY: streak}
     if kind:
         updates[kind] = timestamp
     return updates
 
 
-def rejection_cooldown_seconds(settings: ProactiveCompanionSettings) -> int:
-    return min(86_400, max(settings.interval_seconds, settings.global_cooldown_seconds * 2))
+def proactive_defer_updates(*, now: int, seconds: int) -> dict[str, int]:
+    """Later is not a rejection: nothing backs off, it only waits."""
+    return {PROACTIVE_DEFERRED_UNTIL_KEY: max(0, int(now)) + max(0, int(seconds))}
+
+
+def rejection_cooldown_seconds(settings: ProactiveCompanionSettings, streak: int = 1) -> int:
+    base = min(86_400, max(settings.interval_seconds, settings.global_cooldown_seconds * 2))
+    return min(MAX_REJECTION_COOLDOWN_SECONDS, base * 2 ** min(max(0, streak - 1), 16))
 
 
 def _is_quiet_time(now: int, quiet_start: str, quiet_end: str) -> bool:

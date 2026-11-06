@@ -4,11 +4,14 @@ from guanghe_companion.capability_settings import ProactiveCompanionSettings
 from guanghe_companion.engine import create_initial_state
 from guanghe_companion.proactive_companion import (
     PROACTIVE_REJECTION_COOLDOWN_KEY,
+    PROACTIVE_REJECTION_STREAK_KEY,
     GLOBAL_COOLDOWN_KEY,
     ProactiveCompanionDecision,
     ProactiveCompanionService,
     ProactiveFeedback,
+    proactive_defer_updates,
     proactive_rejection_cooldown_updates,
+    rejection_cooldown_seconds,
 )
 
 
@@ -177,6 +180,7 @@ def test_rejection_feedback_extends_global_cooldown() -> None:
         "low_charge": 100,
         GLOBAL_COOLDOWN_KEY: 100,
         PROACTIVE_REJECTION_COOLDOWN_KEY: 100,
+        PROACTIVE_REJECTION_STREAK_KEY: 1,
     }
     assert (
         ProactiveCompanionService(
@@ -200,3 +204,72 @@ def test_rejection_feedback_extends_global_cooldown() -> None:
         ).select_feedback()
         is not None
     )
+
+
+def _service(state, now, **kwargs):
+    defaults = dict(settings=ProactiveCompanionSettings(enabled=True), last_proactive_at={}, daily_counts={})
+    return ProactiveCompanionService(state=state, previous_state=replace(state), now=now, **{**defaults, **kwargs})
+
+
+def _low_charge():
+    state = create_initial_state(now=0)
+    state.charge = 24
+    return state
+
+
+def test_consecutive_rejections_back_off_and_a_reply_resets_them() -> None:
+    first = proactive_rejection_cooldown_updates(kind="x", now=1000)
+    second = proactive_rejection_cooldown_updates(kind="x", now=9000, history=first)
+    third = proactive_rejection_cooldown_updates(kind="x", now=20000, history=second)
+    assert [row[PROACTIVE_REJECTION_STREAK_KEY] for row in (first, second, third)] == [1, 2, 3]
+
+    settings = ProactiveCompanionSettings(enabled=True)
+    assert rejection_cooldown_seconds(settings, 3) == 4 * rejection_cooldown_seconds(settings, 1)
+    assert rejection_cooldown_seconds(settings, 50) == 7 * 86_400
+
+    reset = proactive_rejection_cooldown_updates(kind="x", now=30000, history=third, last_dialogue_at=25000)
+    assert reset[PROACTIVE_REJECTION_STREAK_KEY] == 1
+
+
+def test_streak_extends_the_quiet_period() -> None:
+    settings = ProactiveCompanionSettings(enabled=True)
+    history = {PROACTIVE_REJECTION_COOLDOWN_KEY: 1000, PROACTIVE_REJECTION_STREAK_KEY: 3}
+    now = 1000 + rejection_cooldown_seconds(settings, 1) + 1
+    assert _service(_low_charge(), now, last_proactive_at=history).select_feedback() is None
+
+
+def test_deferred_until_blocks_then_releases() -> None:
+    updates = proactive_defer_updates(now=1000, seconds=3600)
+    state = _low_charge()
+    assert _service(state, 2000, last_proactive_at=updates).select_feedback() is None
+    assert _service(state, 4601, last_proactive_at=updates).select_feedback() is not None
+
+
+def test_focus_silences_every_proactive_kind() -> None:
+    assert _service(_low_charge(), 900, focus_active=True).select_feedback() is None
+
+
+def test_quiet_hours_and_morning_follow_the_real_clock_not_logical_seconds() -> None:
+    settings = ProactiveCompanionSettings(enabled=True, quiet_hours_enabled=True,
+                                          quiet_start="23:00", quiet_end="08:00")
+    state = _low_charge()
+    assert _service(state, 12 * 3600, settings=settings, wall_seconds=2 * 3600).select_feedback() is None
+    assert _service(state, 2 * 3600, settings=settings, wall_seconds=12 * 3600).select_feedback() is not None
+
+    calm = create_initial_state(now=8 * 3600 - 10)
+    assert _service(calm, 8 * 3600, wall_seconds=20 * 3600).select_feedback() is None
+    calm = create_initial_state(now=20 * 3600 - 10)
+    assert _service(calm, 20 * 3600, wall_seconds=8 * 3600).select_feedback().kind == "morning_greeting"
+
+
+def test_long_absence_is_a_gentle_return_without_guilt() -> None:
+    state = create_initial_state(now=995)
+    feedback = _service(state, 1000, wall_seconds=12 * 3600, away_seconds=4 * 86_400).select_feedback()
+    assert feedback.kind == "long_absence"
+    assert "？" not in feedback.speech
+
+
+def test_companionship_does_not_depend_on_work_context() -> None:
+    feedback = _service(_low_charge(), 900, wall_seconds=12 * 3600).select_feedback()
+    assert feedback is not None
+    assert all(word not in feedback.speech for word in ("任务", "工作", "进度"))

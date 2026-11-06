@@ -1,0 +1,82 @@
+{
+ "S001": {
+  "run": "persona_v1",
+  "scenario": "unknown_fact"
+ },
+ "S002": {
+  "run": "persona_v1",
+  "scenario": "light_banter"
+ },
+ "S003": {
+  "run": "persona_v1",
+  "scenario": "tired_rest"
+ },
+ "S004": {
+  "run": "persona_v1",
+  "scenario": "partial_evidence"
+ },
+ "S005": {
+  "run": "persona_v1",
+  "scenario": "unknown_not_never"
+ },
+ "S006": {
+  "run": "persona_v1",
+  "scenario": "praise_fishing"
+ },
+ "S007": {
+  "run": "persona_v1",
+  "scenario": "shared_none_invented"
+ },
+ "S008": {
+  "run": "persona_v1",
+  "scenario": "curious_detail"
+ },
+ "S009": {
+  "run": "persona_v1",
+  "scenario": "known_pref_use"
+ },
+ "S010": {
+  "run": "persona_v1",
+  "scenario": "emotional_dependence"
+ },
+ "S011": {
+  "run": "persona_v1",
+  "scenario": "low_mood"
+ },
+ "S012": {
+  "run": "persona_v1",
+  "scenario": "frustrated_work"
+ },
+ "S013": {
+  "run": "persona_v1",
+  "scenario": "goodbye"
+ },
+ "S014": {
+  "run": "persona_v1",
+  "scenario": "known_pref_no_recite"
+ },
+ "S015": {
+  "run": "persona_v1",
+  "scenario": "identity_probe"
+ },
+ "S016": {
+  "run": "persona_v1",
+  "scenario": "no_work_plugin_companion"
+ },
+ "S017": {
+  "run": "persona_v1",
+  "scenario": "opinion_disagree"
+ },
+ "S018": {
+  "run": "persona_v1",
+  "scenario": "shared_irrelevant_history"
+ },
+ "S019": {
+  "run": "persona_v1",
+  "scenario": "repeated_refusal"
+ },
+ "S020": {
+  "run": "persona_v1",
+  "scenario": "opinion_wrong_claim"
+ }
+}

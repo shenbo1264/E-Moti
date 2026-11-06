@@ -50,9 +50,10 @@ def test_memory_album_widget_rebinds_after_character_switch(tmp_path: Path):
     assert "伊卡洛斯的回忆" in widget.memory_list.item(1).text()
     assert {button.text() for button in widget.memory_action_buttons} == {
         "固定",
-        "纠正",
+        "修改",
         "忘记",
         "查看来源",
+        "彻底删除",
     }
 
 
