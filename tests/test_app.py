@@ -3944,6 +3944,8 @@ def test_window_tick_refreshes_authorized_context_before_proactive_topic(monkeyp
             )
 
     app, window = make_window(monkeypatch, tmp_path)
+    # 此例验证上下文刷新顺序，不能让运行机器的早安时段抢占话题候选。
+    monkeypatch.setattr(window.controller, "_proactive_wall_seconds", lambda: 12 * 3600)
     screen_service = FakeScreenObservationService()
     search_service = FakeWebSearchService()
     window.screen_observation_service = screen_service
