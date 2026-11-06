@@ -149,6 +149,26 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
         for button in pending_buttons:
             button.setEnabled(bool(card and card.get("pending")))
 
+    def selection_changed() -> None:
+        source_view.clear()
+        update_actions()
+
+    def select_expanded_source(cards) -> None:
+        target = None
+        if len(cards) == 1:
+            memory_id = cards[0]["memory_id"]
+            for index in range(list_widget.count()):
+                item = list_widget.item(index)
+                if item.data(Qt.ItemDataRole.UserRole) == memory_id:
+                    target = item
+                    break
+        # 来源正文与操作按钮共用列表目标；多来源不能默认操作先前选中的条目。
+        list_widget.clearSelection()
+        list_widget.setCurrentItem(target)
+        if target is not None:
+            list_widget.scrollToItem(target)
+        update_actions()
+
     def clear_claims() -> None:
         nonlocal claims_epoch
         claims_epoch = None
@@ -436,6 +456,9 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
     def show_claims(result: dict[str, object]) -> None:
         nonlocal claims_epoch
         claim_list.clear()
+        source_view.clear()
+        if len(result.get("claims", [])) > 1:
+            select_expanded_source([])
         view = result.get("presentation")
         evidence_label.setText(f"{view['label']}。{view['detail']}" if view else "这句话不需要查回忆。")
         evidence_label.show()
@@ -484,6 +507,7 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
             evidence_label.setText(f"{view['label']}。{view['detail']}")
             evidence_label.show()
             return
+        select_expanded_source(result["cards"])
         lines = [result["note"]]
         lines += [source_details_text(card) for card in result["cards"]]
         lines += [f"你的原话：{span['text']}" for span in result["spans"]]
@@ -499,7 +523,7 @@ def create_memory_album_widget(controller: object, on_changed=None, parent: obje
     query_service.failed.connect(query_failed)
     widget.destroyed.connect(query_service.close)
     refresh_button.clicked.connect(refresh_and_notify)
-    list_widget.currentItemChanged.connect(update_actions)
+    list_widget.currentItemChanged.connect(selection_changed)
     pin_button.clicked.connect(pin_selected)
     correct_button.clicked.connect(edit_selected)
     forget_button.clicked.connect(forget_selected)
