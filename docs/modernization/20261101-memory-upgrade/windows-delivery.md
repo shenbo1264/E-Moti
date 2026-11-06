@@ -1,5 +1,7 @@
 # Windows 核心后端增量交付
 
+2026-11-06 的后续修复、Claude 本地整合、独立集失败和新补丁见 [本轮交付](integration-followup-20261106.md)。以下是上一批交付的原始记录；此前“本轮未修改app.py”“Claude继续单写”等描述仅适用于上一批。
+
 代码在独立工作目录 `E:/E-Moti/.worktrees/memory-generalization`、分支 `codex/memory-generalization`。重新核查远端 main 仍为 `238f361c856584c7f93cc15dca5cbf5a387393e8`，没有开放 PR。本轮没有推送、创建 PR 或发布；原 Claude 目录和真实存档保持原样。
 
 ## 实现与对接
