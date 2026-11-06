@@ -108,6 +108,7 @@ Windows 原生窗口下实际点击查询、展开来源、滚动到底部、点
 本轮增量包位于 `artifacts/codex_handoff/memory-upgrade/delivery-20261106/`：
 
 - `incremental-from-2db8739.patch`：只适用于内容等价 `2db8739` 的上一轮完整交付。
+- `cumulative-from-main-238f361.patch`：适用于干净 main `238f361`，包含此前完整记忆升级及本轮整合；因保留历史证据，未压缩体积较大。两个补丁均收录在 `E-Moti-Code-Patches-20261106.zip`，只按基线选择其中一个。
 - `E-Moti-Integration-Evidence-20261106.zip`：保留第七至第九首评、已见回归、原始provider输入输出、格式与人格对照、失败日志、鼠标截图、检索与回答分母。模型权重、真实存档与凭据不进入包。
 
 在对应干净副本先执行 `git apply --check`，通过后再应用补丁。已有部分改动或Claude正在编辑时按实际差异接入，不能强制覆盖。Claude后续应从本地集成结果继续，勿再次整包应用 `865ee1f..5d9d631`。`MemoryAlbumQueryService` 已接入页面异步查询，手动新增页面应复用页面关闭和刷新取消逻辑；共享controller/ExpressionRequest继续明确单写负责人。
