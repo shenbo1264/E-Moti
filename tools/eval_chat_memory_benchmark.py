@@ -123,9 +123,15 @@ def run(args):
         report["memories_after_replay"] = [asdict(entry) for entry in controller.story_runtime.memory.store.load_memories()]
         controller.enable_semantic_memory(cache_dir=args.model_cache, local_files_only=True).result(timeout=180)
         controller.enable_memory_evidence_judgment()
+        query_traces = []
+        def capture_query(_result):
+            trace = controller.story_runtime.memory.last_retrieval_trace
+            query_traces.append(trace.to_dict() if trace else None)
+        desktop.memory_committed.connect(capture_query)
         report["answer"] = turn(app, controller, desktop, item["question"])
-        trace = controller.story_runtime.memory.last_retrieval_trace
-        report["retrieval"] = trace.to_dict() if trace else None
+        desktop.memory_committed.disconnect(capture_query)
+        # 完成后的快照会做空查询；在表达ticket建立时保存本题实际trace。
+        report["retrieval"] = query_traces[-1] if query_traces else None
         report["status"] = "completed" if not report["answer"].get("error") else "failed"
         report["model_status"] = "failed" if (report["answer"].get("error") or report["answer"].get("fallback")) else "completed"
         save()
