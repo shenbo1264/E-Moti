@@ -2,9 +2,9 @@
 
 ## 结论与当前状态
 
-建议采用这个外部公开基准，补充 E-Moti 的“原始聊天进入记忆、跨时间独立答题”验证。它不能替代独立密封样本、人格体验、来源撤销与桌面生命周期验证。当前只完成源码审查和上游离线工具验证，**没有完成 E-Moti 的 714 题模型作答或评分，也没有可报告的 E-Moti 基准成绩**。
+建议采用这个外部公开基准，补充 E-Moti 的“原始聊天进入记忆、跨时间独立答题”验证。它不能替代独立密封样本、人格体验、来源撤销与桌面生命周期验证。现已完成源码审查、上游离线工具验证和一个公开示例的真实 Flash 接入试跑；单题知情评审 **0/1**。**没有完成 E-Moti 的 714 题模型作答或评分，不能报告正式基准成绩。**
 
-固定上游版本为 [`07a11f4074cde1106c5fed9f627e662ff1a3abc1`](https://github.com/Ornn8/chat-memory-benchmark/tree/07a11f4074cde1106c5fed9f627e662ff1a3abc1)。本地只读副本在忽略目录 `artifacts/codex_handoff/chat-memory-benchmark-upstream/`。审查读取方法、接入、评分实现和测试；没有向开发模型展示正式题目、答案或证据。完整性测试程序会读取正式文件进行校验。正式数据已经公开，即使本轮开发未阅卷，也只能称外部公开测试，不能称新密封样本。
+固定上游版本为 [`07a11f4074cde1106c5fed9f627e662ff1a3abc1`](https://github.com/Ornn8/chat-memory-benchmark/tree/07a11f4074cde1106c5fed9f627e662ff1a3abc1)。本地只读副本在忽略目录 `artifacts/codex_handoff/chat-memory-benchmark-upstream/`。审查读取方法、接入、评分实现和测试；单题作答后读取公开示例前五轮及该题判据，没有向开发模型展示正式题目、答案或证据。完整性测试程序会读取正式文件进行校验。正式数据已经公开，即使本轮开发未阅卷，也只能称外部公开测试，不能称新密封样本。
 
 ## 适用范围
 
@@ -41,6 +41,18 @@
 公开示例最早考试为 `PUB01-C001/d00`，截止第 **5** 轮，考试时间 `2026-01-07T19:10:01+08:00`。可以用这一小段先验证回放与答题边界。由于只有五轮且是当天问题，答案可能直接存在近期窗口；单题成功不能证明长期记忆。
 
 ## E-Moti 原生接入约束
+
+### 已完成的公开示例试跑
+
+`tools/eval_chat_memory_benchmark.py` 在 `63cdf797bc4e966937001c2afba9017c50b37087` 执行最早示例，回放 5 轮后关闭、复制并以新 controller 打开存档，考试清空短期历史为 0 轮。原助手文本通过原生 `_commit_dialogue_exchange` 保存，保留纠正/遗忘屏障；没有依据答案补造卡片。它是同进程重开存档，不是独立进程重启。
+
+真实 `deepseek-flash` 调用 3 次，7,500 token，网络调用总耗时约 8.25 秒，无表达 fallback。第 5 轮抽取调用成功却返回空提议，回放后持久记忆为空；最终回答“这个我不知道”，遗漏题目所需信息，知情评审 0/1。`should_extract` 已放行，根因是本地事实/计划解析和模型提取字段没有覆盖来源化借还约定，模型 prompt 同时要求短期计划忽略。该结果揭示端到端提取缺口，不能以检索算法改进代替修复。
+
+首轮评测工具在完成后的快照刷新之后读取 `last_retrieval_trace`，实际题目追踪被后续空查询覆盖成 `chat/not_needed`。工具提交 `9514d8a` 改为在 `memory_committed` 捕获题目 trace；生产代码没有改变。第二次真实复跑记录两条 fact 意图、3 次检索、0 条记忆/候选，状态 unknown。Flash 仍返回空抽取提议，回答“这个我现在不知道”，同题仍为 0/1；不能把两次运行算成两个独立样本或修复后的泛化提升。第二次使用 3 次调用、7,558 token、约 7.75 秒网络调用时间。两次失败与原始输出分别保留。
+
+本地证据：[首轮实际结果](../../../artifacts/codex_handoff/memory-upgrade/followup-benchmark-20261106/public-demo-pilot/result.json)、[首轮原始输出](../../../artifacts/codex_handoff/memory-upgrade/followup-benchmark-20261106/public-demo-pilot/provider-calls.json)、[首轮评审](../../../artifacts/codex_handoff/memory-upgrade/followup-benchmark-20261106/public-demo-pilot/pilot-review.md)、[追踪修正后结果](../../../artifacts/codex_handoff/memory-upgrade/followup-benchmark-20261106/public-demo-pilot-v2/result.json)、[追踪修正后评审](../../../artifacts/codex_handoff/memory-upgrade/followup-benchmark-20261106/public-demo-pilot-v2/pilot-review.md)。这些文件位于忽略目录，随本轮证据包交付，不是正式题成绩。
+
+### 后续完整接入要求
 
 当前 `tools/eval_ondemand_memory.py` 使用预置卡片评测检索。正式接入不能依据上游答案或事实证据生成“正确卡片”，也不能外挂另一套检索补答案。
 

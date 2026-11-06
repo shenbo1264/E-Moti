@@ -1,6 +1,14 @@
 # 核心后端与宿主交接
 
-## 当前入口：2026-11-06 本地整合与真实验证
+## 当前入口：2026-11-06 查询证据修复与外部基准
+
+最新进展见 [本轮真实结果](docs/modernization/20261101-memory-upgrade/benchmark-followup-20261106.md)。生产冻结 `63cdf79`，工具trace修正 `9514d8a`。已修中文日期/个人进展路由、原文编号判据、部分否定claim及历史别名来源依赖；第九已见回归严格交付与有据回答从4/8、3/8提升到两路7/8。第十独立集仍两路4/8，泛化未达标，不改首评数据。
+
+外部 `Ornn8/chat-memory-benchmark` 固定 `07a11f4`，原生单题试跑0/1，暴露普通借还约定未入库；714题正式模型成绩not_run。上游公开题与密封集分开。完整回归2466通过/9跳过；108条真实Flash回答全格式合法，AI方法盲评人格106通过/2部分。源码、失败、实际provider请求及前后回答保留在报告指向的产物目录，未推送或合并。
+
+接续时优先处理 [剩余证据边界](docs/modernization/20261101-memory-upgrade/benchmark-followup-failures-20261106.md) 和来源化约定的原生提取；不能把评测state标签注入metadata补答案。当前controller/表达路径保留Claude整合。第十已见，后续只作回归。工具 `eval_chat_memory_benchmark.py` 支持公开示例单题回放，0近期窗口、同进程重新开档；考试副本不污染回放主档，原始助手回复不重新生成。
+
+## 前一批：2026-11-06 本地整合与真实验证
 
 最新状态见 [本轮集成与失败记录](docs/modernization/20261101-memory-upgrade/integration-followup-20261106.md)。本轮接续 `2db8739`，Claude `5d9d631` 相对共同基线的补丁已在 Codex 分支整合，Claude 工作目录保持原样；本轮 Codex 单写整合后的桌面与后端。生产冻结 `4846c53`，后续文档提交不改变首评代码。没有推送、创建PR或合并 main。
 
