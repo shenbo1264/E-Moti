@@ -6,13 +6,14 @@ import importlib.util
 import json
 from pathlib import Path
 import sys
+from threading import Event
 from urllib.request import Request
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 sys.path.insert(0, str(ROOT / "tools"))
 
-from eval_chat_memory_formal import load_inputs, read_json, save_json, sha
+from eval_chat_memory_formal import load_inputs, read_json, save_json, sha, journal_requires_payment
 from persona_behavior_eval import FlashMeter, measured_usage
 from guanghe_companion.expression_clients import _chat_completions_url, _json_request_headers
 from guanghe_companion.expression_settings import ExpressionSettingsStore, provider_api_style
@@ -71,6 +72,7 @@ def run(args):
     batches = [packets[index:index + args.batch_size] for index in range(0, len(packets), args.batch_size)]
     if len(batches) > args.max_requests and not args.resume:
         raise ValueError("grading request cap smaller than required batch count")
+    payment_required = Event()
 
     def review(index_packet):
         index, packet = index_packet
@@ -83,8 +85,8 @@ def run(args):
             return result
         result = {"ids": [row["id"] for row in packet], "status": "inflight"}
         save_json(path, result)
-        if index >= args.max_requests:
-            result.update(status="not_run", error="request budget")
+        if index >= args.max_requests or payment_required.is_set():
+            result.update(status="not_run", error="provider HTTP 402" if payment_required.is_set() else "request budget")
             save_json(path, result)
             return result
         meter = FlashMeter(1, api_style=provider_api_style(settings.provider),
@@ -109,6 +111,8 @@ def run(args):
             result.update(status="not_run", error=type(exc).__name__ + ": " + str(exc))
         finally:
             result["usage"] = measured_usage(meter)
+            if journal_requires_payment(args.output / "batches" / f"{index:04d}-provider.json"):
+                payment_required.set()
             save_json(path, result)
         return result
 

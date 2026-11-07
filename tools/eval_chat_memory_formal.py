@@ -43,6 +43,10 @@ def read_json(path):
     return json.loads(path.read_text(encoding="utf-8"))
 
 
+def journal_requires_payment(path):
+    return path.exists() and any(call.get("http_status") == 402 for call in read_json(path)["calls"])
+
+
 def sha(path):
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
@@ -177,8 +181,14 @@ def run_worker(args):
 
     def finish():
         state["calls"] += meter.calls
+        journal = Path(state["inflight"]["journal"])
+        unavailable = journal_requires_payment(journal)
         state["inflight"] = None
+        if unavailable:
+            state["status"] = "provider_payment_required"
         save_json(checkpoint, state)
+        if unavailable:
+            raise RuntimeError("provider HTTP 402; campaign stopped without automatic retries")
 
     # 未完成的考试不重试刷答案；回放档案未受影响，可继续其他题。
     inflight = state.get("inflight")

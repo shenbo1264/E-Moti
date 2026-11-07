@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from tools.eval_chat_memory_formal import ordered_questions, load_checkpoint, save_json, collect_answers
+from tools.eval_chat_memory_formal import ordered_questions, load_checkpoint, save_json, collect_answers, journal_requires_payment
 from tools.grade_chat_memory_formal import parse_review_batch
 
 
@@ -80,3 +80,12 @@ def test_runner_repair_preserves_original_configuration_and_rejects_production_c
     revised["source_files"]["src/core.py"] = "changed"
     with pytest.raises(ValueError, match="configuration"):
         load_checkpoint(path, revised, resume=True, accept_runner_recovery=True)
+
+
+def test_actual_http_402_journal_stops_campaign_even_if_following_call_succeeded(tmp_path):
+    journal = tmp_path / "provider.json"
+    save_json(journal, {"calls": [{"http_status": 402, "raw_response_text": "Insufficient Balance"},
+                                   {"provider_response": {"choices": []}}]})
+    assert journal_requires_payment(journal)
+    save_json(journal, {"calls": [{"provider_response": {"choices": []}}]})
+    assert not journal_requires_payment(journal)
