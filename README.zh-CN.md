@@ -24,6 +24,8 @@ E-Moti 是一个具有稳定人格与共同记忆的独立个人 AI 伙伴，当
 
 ### 个人伙伴记忆闭环（2026 年 10 月增量）
 
+[11 月 7 日实现与证据](docs/modernization/20261101-memory-upgrade/completion-20261107.md)补充普通事件/约定、分人物与活动范围的偏好、自然纠正/遗忘、重叠原文失效和模型格式恢复。最新已完成独立对照中，新两路严格证据与有据回答均为 6/8，旧词法/BGE 为 8/8；未知误注入为 0/2 对 2/2，泛化验收仍未通过。公开 714 题已保存 154 条生成完成回答、216 条失败，344 条未答，语义评分未运行。API 余额不足阻止最终版本真实复测；以下旧分数各自对应历史冻结版本。
+
 11 月的按需记忆增量已接入桌面上下文路径：本地意图路由、主体/字段/有效时间查询、有界 FTS5/BGE 候选、未知与部分证据状态，以及有来源的概览/细节视图。原 SQLite 文档继续作为唯一事实权威，规范化表、FTS 和同库持久向量都是可重建投影。普通闲聊跳过候选检索，未变化的来源不必逐轮重新编码。详见[当前架构](docs/modernization/20261101-memory-upgrade/memory-architecture.md)、[检索接口](docs/modernization/20261101-memory-upgrade/retrieval-contract.md)与[实测对照](docs/modernization/20261101-memory-upgrade/ondemand-evaluation.md)。检索与确定性测试、真实模型回答、人格行为和 Windows 真机体验分别报告。完整语义写入仍随 JSON 文档规模增长，不能把快速索引读取理解为恒定耗时的纠正/遗忘。
 
 [2026-11-01 记忆升级工作包](docs/modernization/20261101-memory-upgrade/README.md)集中记录当前需求、结构化事实与混合检索的技术决策、实际实现、迁移和 Claude/Codex 交接。已验证代码与待开发能力以其中的交付记录区分。
