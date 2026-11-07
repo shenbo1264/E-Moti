@@ -1,7 +1,7 @@
 from dataclasses import replace
 from hashlib import sha256
 
-from .memory_source_spans import SPAN_FIELDS
+from .memory_source_spans import SPAN_FIELDS, overlapping_claims
 from .memory_time import temporal_metadata
 
 
@@ -79,10 +79,12 @@ def purge_memory(store, memory_id, *, now: int, expected_epoch: int | None = Non
             return ()
         # 用户删除一个事实时一并删除其纠错和现实变化链，避免历史重现。
         ids = revision_ids(entries, memory_id)
-        affected = [entry for entry in entries if entry.memory_id in ids]
+        targets = [entry for entry in entries if entry.memory_id in ids]
+        affected = overlapping_claims(entries, targets)
+        ids.update(entry.memory_id for entry in affected)
         groups = {(entry.metadata.get("message_id"), entry.metadata.get("source_text_digest"))
                   for entry in affected if entry.metadata.get("message_id")}
-        store._retire(document, affected, now=now)
+        store._retire(document, targets, now=now)
         origins = {origin for entry in affected for origin in store._origins(entry)}
         document["retired_origins"] = sorted(set(document.get("retired_origins", ())) - origins)
         document["purged_origin_digests"] = sorted(set(document.get("purged_origin_digests", ())) |

@@ -732,6 +732,9 @@ class EmotionalMemoryStore:
         document["profile"] = profile
 
     def _retire(self, document: dict, entries: list[EmotionalMemoryEntry], *, now: int) -> None:
+        from .memory_source_spans import overlapping_claims
+        if any(entry.metadata.get("message_id") for entry in entries):
+            entries = overlapping_claims(self._entries(document), entries)
         ids = {entry.memory_id for entry in entries}
         if not ids:
             return
@@ -1233,7 +1236,15 @@ def _sanitize_metadata(value: object) -> dict[str, object]:
         key = _clean_text(raw_key, 40)
         if not key:
             continue
-        if key == "fact_value" and (
+        if key == "source_support_spans":
+            text = value.get("original_quote")
+            if (not isinstance(text, str) or not isinstance(raw_value, (list, tuple)) or len(raw_value) > 8
+                    or any(not isinstance(part, (list, tuple)) or len(part) != 2
+                        or any(type(position) is not int for position in part)
+                        or not 0 <= part[0] < part[1] <= len(text) for part in raw_value)):
+                raise ValueError("source support spans must be bounded original text ranges")
+            result[key] = [list(part) for part in raw_value]
+        elif key == "fact_value" and (
             isinstance(raw_value, Mapping)
             or (isinstance(raw_value, (list, tuple))
                 and any(not (isinstance(item, (str, int, float, bool)) or item is None)

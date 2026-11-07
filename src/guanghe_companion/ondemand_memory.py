@@ -344,7 +344,8 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                     if not ids:
                         continue
                     matching = [key for key in ids if key in candidate_rows and check_evidence(candidate_rows[key], intent,
-                        now=now, owner_id=service.owner_id, character_id=service.character_id).accepted]
+                        now=now, owner_id=service.owner_id, character_id=service.character_id,
+                        archive_time_basis=service.time_basis, archive_timezone=service.timezone_name).accepted]
                     by_input[alias] = ((matching or [key for key in ids if key in candidate_rows] or list(ids))[0],)
                 proof_ids = tuple(dict.fromkeys(key for ids in by_input.values() for key in ids))
                 resolution = replace(resolution, source_ids=proof_ids,
@@ -383,13 +384,17 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
             phase = perf_counter()
             accepted = []
             for entry in current.values():
-                decision = check_evidence(entry, intent, now=now, owner_id=service.owner_id, character_id=service.character_id)
+                decision = check_evidence(entry, intent, now=now, owner_id=service.owner_id, character_id=service.character_id,
+                    archive_time_basis=service.time_basis, archive_timezone=service.timezone_name)
                 if judgment is not None:
                     from .memory_evidence_judgment import hard_eligibility
                     accepted_judgment = (entry.memory_id in judgment.selections[intent_index]
                         and entry.evidence_fingerprint() == judgment.fingerprints.get(entry.memory_id)
                         and hard_eligibility(entry, intent, now=now, owner_id=service.owner_id,
                             character_id=service.character_id,
+                            archive_time_basis=service.time_basis, archive_timezone=service.timezone_name,
+                            source_claim=(judgment.source_claims[intent_index].get(entry.memory_id)
+                                if intent_index < len(judgment.source_claims) else None),
                             allow_planned_attribute=(intent_index < len(judgment.attribute_uses)
                                 and judgment.attribute_uses[intent_index])))
                     decision = EvidenceDecision(entry.memory_id, accepted_judgment,
@@ -420,7 +425,8 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                 for entry in extra.entries:
                     if entry.memory_id in current:
                         continue
-                    decision = check_evidence(entry, intent, now=now, owner_id=service.owner_id, character_id=service.character_id)
+                    decision = check_evidence(entry, intent, now=now, owner_id=service.owner_id, character_id=service.character_id,
+                        archive_time_basis=service.time_basis, archive_timezone=service.timezone_name)
                     decisions.append(decision)
                     if decision.accepted:
                         accepted.append(entry)

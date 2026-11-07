@@ -491,7 +491,7 @@ class MemoryRetrievalRouter:
         if _EPISODE.search(query) and (_QUESTION.search(query) or re.search(r"第一次|回顾", query)):
             return RetrievalIntent("episode", **{**base, "temporal_mode": temporal if temporal in {"planned", "as_of", "unresolved"} else "current"},
                                    subjects=subjects,
-                                   requires_shared_event=bool(re.search(r"我们|咱们|一起|共同", query)),
+                                   requires_shared_event=bool(re.search(r"我们|咱们|(?:我[和跟与]你|你[和跟与]我)", query)),
                                    reason="episode_evidence")
         if predicates and (_QUESTION.search(query) or re.search(r"我|用户|计划|打算", query) or _FIELD_HEADING.fullmatch(query)):
             return RetrievalIntent("fact", **base, subjects=subjects, predicates=predicates,

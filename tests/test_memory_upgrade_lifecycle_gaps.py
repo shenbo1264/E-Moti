@@ -74,7 +74,8 @@ def test_overlapping_original_quote_is_withheld_after_one_claim_is_forgotten(tmp
     result = resolve_source_spans(memory.store, {broad.memory_id: broad.evidence_fingerprint()},
                                  expected_epoch=memory.store.context_epoch, now=20)
     assert result["spans"] == []
-    assert result["unavailable_sources"][broad.memory_id] == "withdrawn_overlapping_span"
+    assert result["unavailable_sources"][broad.memory_id] == "invalid_or_revoked_source"
+    assert next(row for row in memory.store.load_memories() if row.memory_id == broad.memory_id).deleted
 
 
 def test_disjoint_source_span_survives_sibling_expiry_and_restart(tmp_path):

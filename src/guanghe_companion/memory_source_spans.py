@@ -2,7 +2,7 @@ from hashlib import sha256
 from collections.abc import Mapping
 
 
-SPAN_FIELDS = frozenset({"source_span_start", "source_span_end", "source_text_digest", "source_claim_digest"})
+SPAN_FIELDS = frozenset({"source_span_start", "source_span_end", "source_text_digest", "source_claim_digest", "source_support_spans"})
 
 
 def source_span_metadata(text: str, quote: str, *, start: int | None = None) -> dict:
@@ -37,6 +37,38 @@ def _source_group(entry):
             entry.metadata.get("source_text_digest"))
 
 
+def _claim_spans(entry):
+    primary = _span(entry)
+    if primary is None:
+        return None
+    support = entry.metadata.get("source_support_spans", [])
+    if (not isinstance(support, list) or len(support) > 8
+            or any(not isinstance(part, (list, tuple)) or len(part) != 2
+                or any(type(value) is not int for value in part)
+                or not 0 <= part[0] < part[1] <= len(entry.metadata["original_quote"])
+                for part in support)):
+        return None
+    return (primary[:2], *(tuple(part) for part in support))
+
+
+def overlapping_claims(entries, withdrawn):
+    targets = tuple(withdrawn)
+    result = {entry.memory_id: entry for entry in targets}
+    for entry in entries:
+        if not entry.metadata.get("message_id"):
+            continue
+        for target in targets:
+            if _source_group(entry) != _source_group(target):
+                continue
+            spans, removed_span = _claim_spans(entry), _span(target)
+            if (spans is None or removed_span is None
+                    or any(max(part[0], removed_span[0]) < min(part[1], removed_span[1]) for part in spans)):
+                result[entry.memory_id] = entry
+                break
+    # 只从用户撤回的原始片段扩展一次，不能通过整段卡片继续撤回不相交的独立事实。
+    return list(result.values())
+
+
 def resolve_source_spans(store, bindings, *, expected_epoch: int, now: int,
                          scope: str = "companion", max_sources: int = 8) -> dict:
     if (not isinstance(bindings, Mapping) or not bindings or len(bindings) > max_sources
@@ -55,7 +87,8 @@ def resolve_source_spans(store, bindings, *, expected_epoch: int, now: int,
             unavailable[memory_id] = "invalid_or_revoked_source"
             continue
         span = _span(entry)
-        if span is None or not entry.metadata.get("message_id"):
+        parts = _claim_spans(entry)
+        if span is None or parts is None or not entry.metadata.get("message_id"):
             unavailable[memory_id] = "unbound_source_span"
             continue
         blocked = False
@@ -65,7 +98,7 @@ def resolve_source_spans(store, bindings, *, expected_epoch: int, now: int,
             if sibling.is_active(now=now, scope=scope):
                 continue
             withdrawn = _span(sibling)
-            if withdrawn is None or max(span[0], withdrawn[0]) < min(span[1], withdrawn[1]):
+            if withdrawn is None or any(max(part[0], withdrawn[0]) < min(part[1], withdrawn[1]) for part in parts):
                 blocked = True
                 break
         if blocked:

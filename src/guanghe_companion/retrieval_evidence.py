@@ -182,7 +182,9 @@ def _supported_details(entry: EmotionalMemoryEntry, intent: RetrievalIntent) -> 
 
 
 def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, now: int,
-                      owner_id: str, character_id: str, allow_planned_attribute: bool = False) -> EvidenceDecision | None:
+                      owner_id: str, character_id: str, allow_planned_attribute: bool = False,
+                      archive_time_basis: str | None = None, archive_timezone: str | None = None,
+                      source_plan: bool = False, source_shared_event: bool = False) -> EvidenceDecision | None:
     supported = _supported_details(entry, intent)
     def result(ok: bool, reason: str):
         return EvidenceDecision(entry.memory_id, ok, reason, intent.route, supported,
@@ -193,8 +195,13 @@ def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, n
         return result(False, "revoked_or_untrusted_source")
     if intent.temporal_mode == "unresolved":
         return result(False, "unresolved_time_basis_or_date")
+    # 缺少单卡标记时沿用档案已声明的基准；明确逻辑时间不能被覆盖。
+    time_basis = entry.metadata.get("time_basis", archive_time_basis)
+    calendar_zone = entry.metadata.get("timezone") or archive_timezone or "UTC"
+    if intent.as_of is not None and time_basis == "logical":
+        return result(False, "unresolved_time_basis_or_date")
     dated_fact = (intent.route == "fact" and intent.temporal_mode in {"as_of", "planned"}
-                  and intent.as_of is not None and entry.metadata.get("time_basis") == "unix")
+                  and intent.as_of is not None and time_basis == "unix")
     if entry.valid_from > now and not dated_fact:
         return result(False, "not_yet_valid")
     expired = bool(entry.valid_until and now >= entry.valid_until)
@@ -208,14 +215,14 @@ def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, n
             from zoneinfo import ZoneInfo
             from .retrieval_router import _temporal
             # 计划发生日来自原文，不拿记录时间代替；档案时区与日历查询一致。
-            basis = entry.metadata.get("time_basis")
+            basis = time_basis
             mode, target, target_end = _temporal(entry.summary, now=entry.created_at,
-                calendar_zone=ZoneInfo(entry.metadata.get("timezone") or "UTC"))
+                calendar_zone=ZoneInfo(calendar_zone))
             date_parts = re.findall(
                 r"(?:\d{4}[-/年])?[0-9零〇一二三四五六七八九十两]{1,3}(?:月|[-/])[0-9零〇一二三四五六七八九十两]{1,3}(?:日|号)?",
                 entry.summary)
             dates = {_temporal(part, now=entry.created_at,
-                calendar_zone=ZoneInfo(entry.metadata.get("timezone") or "UTC")) for part in date_parts}
+                calendar_zone=ZoneInfo(calendar_zone)) for part in date_parts}
             # 一段原文同时有登记日、改期日等时，不把第一个日期猜成计划发生日。
             if len(dates) > 1:
                 return result(False, "ambiguous_plan_dates")
@@ -237,13 +244,13 @@ def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, n
     planned = (entry.metadata.get("planned") is True or entry.metadata.get("plan_status") == "planned"
                or entry.metadata.get("event_status") in {"planned", "proposed"})
     if intent.temporal_mode == "planned":
-        if not planned:
+        if not planned and not source_plan:
             return result(False, "not_a_plan")
     elif planned and not (allow_planned_attribute and intent.route == "fact" and not intent.requires_shared_event):
         return result(False, "plan_is_not_completed_event_or_current_fact")
     elif intent.route in {"episode", "task", "bounded"} and is_unfinished_event(entry):
         return result(False, "unfinished_event_is_not_completed_experience")
-    if intent.requires_shared_event and not grounded_shared_event(entry) and intent.temporal_mode != "planned":
+    if intent.requires_shared_event and not (grounded_shared_event(entry) or source_shared_event) and intent.temporal_mode != "planned":
         return result(False, "missing_completed_shared_event_evidence")
     if intent.route == "task":
         allowed_outcomes = {"planned"} if intent.temporal_mode == "planned" else {"completed", "succeeded", "success", "failed", "failure"}
@@ -257,8 +264,10 @@ def check_eligibility(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, n
 
 
 def check_evidence(entry: EmotionalMemoryEntry, intent: RetrievalIntent, *, now: int,
-                   owner_id: str, character_id: str) -> EvidenceDecision:
-    hard_rejection = check_eligibility(entry, intent, now=now, owner_id=owner_id, character_id=character_id)
+                   owner_id: str, character_id: str, archive_time_basis: str | None = None,
+                   archive_timezone: str | None = None) -> EvidenceDecision:
+    hard_rejection = check_eligibility(entry, intent, now=now, owner_id=owner_id, character_id=character_id,
+        archive_time_basis=archive_time_basis, archive_timezone=archive_timezone)
     if hard_rejection is not None:
         return hard_rejection
     supported = _supported_details(entry, intent)

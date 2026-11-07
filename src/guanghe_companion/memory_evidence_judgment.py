@@ -36,6 +36,7 @@ insufficient表示该子问题仍缺必要证据，不得附上只证明前提�
 question_ref必须引用question_refs中的整数编号，不生成或改写question。编号0是完整问题；其余编号是宿主原文片段。若共同主体与多个属性分散在句中，可用编号0整体判断；只有全部被问属性均有据才为sufficient，缺任意一项须insufficient。可分别引用宿主提供的独立问题，不把话题前缀当成额外问题。
 question_refs中allowed=false的整问引用不能使用：不同日期、scope、权威或共同参与要求必须分别按片段编号判断，不可合成一项。
 明确否定发生的证据须逐条标记occurrence="explicitly_not_occurred"，quote包括完整否定小句及限定语。该标记表示原文明说未发生，不表示根据预约、没有记录、未确认结果或禁止标记完成来推断；条件句、疑问、转述猜测不能标记。
+计划内容须引用原文明确约定/计划的小句；已经约好不等于活动完成。共同经历证据额外给participants=["user:self","character:self"]，只在原文明确用户和当前角色都参与且已发生时填写，引用必须包含参与者与完成情况；与亲属或其他人一起不等于与角色一起。不能凭“我们”猜测角色在场。
 描述性主体可另给subject_binding:{"mention":"问题中描述主体的连续原文","subject":"候选的subject原值","kind":"description","quote":"直接证明该描述对应此主体的候选原文"}。
 kind=description只用于职责、外观、用途等描述或省略，不用于专名、昵称等身份猜测；专名须kind=alias并有明确别名来源。
 若当前问题用“她/他”等指代历史中的昵称，subject_binding仍给当前问题的mention，另给antecedent为history中连续原文昵称，kind=alias，并引用候选中的明确身份来源。历史只能定位所指，不能单独证明昵称对应的真实身份。
@@ -54,15 +55,50 @@ class EvidenceJudgment:
     attribute_uses: tuple[bool, ...] = ()
     binding_sources: tuple[tuple[str, ...], ...] = ()
     query_clock: dict | None = None
+    source_claims: tuple[dict[str, dict], ...] = ()
 
     @property
     def source_ids(self):
         return tuple(dict.fromkeys(key for group in self.selections for key in group))
 
 
-def hard_eligibility(entry, intent, *, now, owner_id, character_id, allow_planned_attribute=False):
+def _source_claim_flags(entry, claim):
+    if not claim or not entry.source_ids:
+        return False, False
+    quote, use = claim.get("quote"), claim.get("use")
+    if (not isinstance(quote, str) or not quote.strip() or quote not in entry.summary
+            or entry.source.casefold() in {"model", "assistant", "llm", "llm_generated", "model_generated", "assistant_generated"}
+            or entry.metadata.get("user_accepted") is False
+            or (entry.source in {"executor", "relay", "task_executor"} and entry.metadata.get("user_accepted") is not True)):
+        return False, False
+    # 原文限定语必须仍在引用中；条件、未知与转述不能升级成既成事实。
+    if re.search(r"如果|假如|假设|也许|可能|是否|不知|不清楚|不确定|据说|听说|[？?]", entry.summary):
+        return False, False
+    clauses = [part.strip() for part in re.split(r"[，,。.;；\n]", entry.summary) if part.strip()]
+    complete = any(clause in quote for clause in clauses)
+    plan = bool(re.search(r"约好|约定|预约|计划|打算|准备|安排|改到|改为", quote))
+    if use == "planned_event":
+        states = [entry.metadata.get(key) for key in ("event_status", "plan_status", "task_status", "outcome")]
+        if (any(state in {"cancelled", "canceled", "completed", "succeeded", "success", "failed", "failure"}
+                for state in states if isinstance(state, str))
+                or re.search(r"(?:已|已经)?取消|不再(?:去|进行|执行)|作废", entry.summary)):
+            return False, False
+        return complete and plan, False
+    shared = (use == "completed_event" and complete and not plan
+        and claim.get("participants") == ["user:self", "character:self"]
+        and bool(re.search(r"我[跟和与]你|你[跟和与]我|用户[和与]角色", quote))
+        # 只接受显式完成提示或句末体标记，“了解”“过来”中的字不是发生证明。
+        and bool(re.search(r"已经|(?:了|过)(?=[，,。.;；\n]|$)", quote))
+        and not re.search(r"尚未|还没|没有|未曾|从未|未完成|明天|后天|下(?:周|月|星期)|下个|将要", quote))
+    return False, shared
+
+
+def hard_eligibility(entry, intent, *, now, owner_id, character_id, allow_planned_attribute=False,
+                     archive_time_basis=None, archive_timezone=None, source_claim=None):
+    source_plan, source_shared_event = _source_claim_flags(entry, source_claim)
     return check_eligibility(entry, intent, now=now, owner_id=owner_id, character_id=character_id,
-        allow_planned_attribute=allow_planned_attribute) is None
+        allow_planned_attribute=allow_planned_attribute, archive_time_basis=archive_time_basis,
+        archive_timezone=archive_timezone, source_plan=source_plan, source_shared_event=source_shared_event) is None
 
 
 def _asks_occurred_event(question):
@@ -224,7 +260,8 @@ def _compatible_reference_constraints(intents):
         or intent.requires_shared_event or intent.authority}) <= 1
 
 
-def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id, allowed_scopes=None, history=()):
+def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id, allowed_scopes=None, history=(),
+                      archive_time_basis=None, archive_timezone=None):
     value = json.loads(raw)
     if not isinstance(value, dict) or not isinstance(value.get("intents"), list) or not 1 <= len(value["intents"]) <= 4:
         raise ValueError("invalid evidence judgment shape")
@@ -232,6 +269,7 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
                       tuple(dict.fromkeys(s for i in plan.intents for s in i.scopes)))
     by_id = {entry.memory_id: entry for entry in entries}
     intents, selections, statuses, fingerprints, bindings, attribute_uses, binding_sources = [], [], [], {}, [], [], []
+    source_claims = []
     for row in value["intents"]:
         route, question = row.get("route"), row.get("question")
         intent_index = row.get("intent_index")
@@ -288,11 +326,10 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
             and isinstance(proof.get("quote"), str) and proof["quote"] in entry.summary
             and _explicit_negative_occurrence(entry, proof["quote"],
                 asserted=proof.get("occurrence") == "explicitly_not_occurred") for proof in evidence)
-        if (negative_status and route == "episode" and row.get("claim_use") == "current_attribute"
-                and not base.requires_shared_event):
+        if negative_status and route == "episode" and not base.requires_shared_event:
             route = "fact"
             intent = replace(intent, route=route)
-        attribute_use = ((row.get("claim_use") == "current_attribute" or (negative_status and row.get("claim_use") is None)) and route == "fact"
+        attribute_use = ((row.get("claim_use") == "current_attribute" or negative_status) and route == "fact"
             and not base.requires_shared_event and (not _asks_occurred_event(question) or negative_status))
         if attribute_use and base.as_of is None and base.temporal_mode in {"planned", "history"}:
             intent = replace(intent, temporal_mode="current")
@@ -300,6 +337,7 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
                 and not base.requires_shared_event and not _asks_occurred_event(question)):
             intent = replace(intent, temporal_mode="planned")
         ids = []
+        claims = {}
         for proof in evidence:
             entry = by_id.get(proof.get("id"))
             quote = proof.get("quote")
@@ -307,9 +345,11 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
                     or not set(scopes).issubset(allowed_scopes) or route == "chat"):
                 continue
             if hard_eligibility(entry, intent, now=now, owner_id=owner_id, character_id=character_id,
-                    allow_planned_attribute=attribute_use):
+                    allow_planned_attribute=attribute_use, archive_time_basis=archive_time_basis,
+                    archive_timezone=archive_timezone, source_claim={**proof, "use": row.get("claim_use")}):
                 ids.append(entry.memory_id)
                 fingerprints[entry.memory_id] = entry.evidence_fingerprint()
+                claims[entry.memory_id] = {**proof, "use": row.get("claim_use")}
         status = row.get("status")
         if status not in {"sufficient", "insufficient", "unknown", "not_needed"}:
             raise ValueError("invalid evidence judgment status")
@@ -352,6 +392,7 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
         bindings.append(checked_binding)
         attribute_uses.append(attribute_use)
         binding_sources.append(alias_sources)
+        source_claims.append(claims)
     # 未覆盖的宿主问题保留为不足，模型不能通过省略难题提高充分性。
     normalized = lambda text: re.sub(r"[\s，,、。？！?!；;：:]", "", text)
     def covered(original):
@@ -370,8 +411,10 @@ def validate_judgment(raw, *, query, plan, entries, now, owner_id, character_id,
             bindings.append(None)
             attribute_uses.append(False)
             binding_sources.append(())
+            source_claims.append({})
     return EvidenceJudgment(RetrievalPlan(tuple(intents), reason="bounded_model_evidence_judgment"),
-        tuple(selections), tuple(statuses), fingerprints, tuple(bindings), tuple(attribute_uses), tuple(binding_sources))
+        tuple(selections), tuple(statuses), fingerprints, tuple(bindings), tuple(attribute_uses), tuple(binding_sources),
+        source_claims=tuple(source_claims))
 
 
 class MemoryEvidenceJudge:
@@ -434,7 +477,8 @@ class MemoryEvidenceJudge:
             for entry in historical.entries:
                 candidate_intent = replace(intent, route="fact") if intent.route == "bounded" else intent
                 if hard_eligibility(entry, candidate_intent, now=now, owner_id=service.owner_id, character_id=service.character_id,
-                        allow_planned_attribute=candidate_intent.route == "fact"):
+                        allow_planned_attribute=candidate_intent.route == "fact", archive_time_basis=service.time_basis,
+                        archive_timezone=service.timezone_name):
                     rows[entry.memory_id] = entry
                     temporal_ids.append(entry.memory_id)
         # 原计划中的显式别名复用现有来源绑定；最终retrieve仍需验证绑定依赖。
@@ -502,7 +546,8 @@ class MemoryEvidenceJudge:
             else:
                 raw = self.client(_INSTRUCTION + "\n" + prompt)
             judgment = validate_judgment(raw, query=query, plan=plan, entries=entries, now=now,
-                owner_id=service.owner_id, character_id=service.character_id, allowed_scopes=scopes, history=history)
+                owner_id=service.owner_id, character_id=service.character_id, allowed_scopes=scopes, history=history,
+                archive_time_basis=service.time_basis, archive_timezone=service.timezone_name)
         except (LLMProviderError, ValueError, TypeError, AttributeError) as exc:
             self.status = "unavailable:" + type(exc).__name__
             return
