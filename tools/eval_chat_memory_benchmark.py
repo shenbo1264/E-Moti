@@ -22,7 +22,7 @@ from guanghe_companion.desktop_dialogue_service import DesktopDialogueService
 from guanghe_companion.dialogue import DialogueRequest
 from guanghe_companion.emotional_memory_service import EmotionalMemoryService
 from guanghe_companion.events import CompanionEvent
-from guanghe_companion.expression_clients import client_config_from_settings
+from guanghe_companion.expression_clients import client_config_from_settings, LLMProviderError
 from guanghe_companion.expression_settings import ExpressionSettingsStore, provider_api_style
 
 
@@ -45,10 +45,10 @@ def replay_turn(controller, row):
                 now=int(controller.now), generation=controller.host_context_generation,
                 mode=controller.chat_memory.mode)
             extraction_status = "completed"
-        except ValueError as exc:
+        except (ValueError, LLMProviderError) as exc:
             # 回放保留拒绝原因；不能补造事实或因失败改写固定历史。
             extraction.discard(prepared)
-            extraction_status = "rejected:" + str(exc)
+            extraction_status = ("provider_failed:" if isinstance(exc, LLMProviderError) else "rejected:") + str(exc)
         if before != controller._dialogue_context_epoch():
             controller._on_memory_invalidated()
     # 原助手文本只进入原生聊天历史，不生成新回复、不提升为用户事实。

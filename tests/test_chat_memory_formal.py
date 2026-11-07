@@ -67,3 +67,16 @@ def test_judgment_accepts_pretty_json_wrapper_and_preserves_reason():
     packet = {"id": "a", "answer_sha256": "answer", "rubric_sha256": "rubric"}
     raw = json.dumps({"reviews": [{"id": "a", "required": [True], "reason": "有明确证据"}]}, indent=2)
     assert parse_review_batch(raw, [packet])[0]["reason"] == "有明确证据"
+
+
+def test_runner_repair_preserves_original_configuration_and_rejects_production_changes(tmp_path):
+    path = tmp_path / "checkpoint.json"
+    original = {"persona": "P01", "source_files": {"tools/eval_chat_memory_formal.py": "old", "src/core.py": "same"}}
+    save_json(path, load_checkpoint(path, original, resume=False))
+    revised = {**original, "source_files": {**original["source_files"], "tools/eval_chat_memory_formal.py": "new"}}
+    state = load_checkpoint(path, revised, resume=True, accept_runner_recovery=True)
+    assert state["config"] == original
+    assert state["runner_revisions"][0]["source_files"] == revised["source_files"]
+    revised["source_files"]["src/core.py"] = "changed"
+    with pytest.raises(ValueError, match="configuration"):
+        load_checkpoint(path, revised, resume=True, accept_runner_recovery=True)

@@ -23,6 +23,8 @@ from eval_chat_memory_benchmark import replay_turn
 from persona_behavior_eval import FlashMeter, measured_usage
 from guanghe_companion.desktop_dialogue_service import DesktopDialogueService
 from guanghe_companion.emotional_memory_service import EmotionalMemoryService
+from guanghe_companion.dialogue import DialogueRequest
+from guanghe_companion.events import CompanionEvent
 from guanghe_companion.expression_clients import client_config_from_settings
 from guanghe_companion.expression_settings import ExpressionSettingsStore, provider_api_style
 
@@ -80,7 +82,7 @@ def ordered_questions(records, persona):
     return rows
 
 
-def load_checkpoint(path, config, *, resume):
+def load_checkpoint(path, config, *, resume, accept_runner_recovery=False):
     if not path.exists():
         return {"config": config, "status": "running", "committed_turn": 0,
                 "completed_ids": [], "calls": 0, "inflight": None}
@@ -88,8 +90,19 @@ def load_checkpoint(path, config, *, resume):
         raise FileExistsError(path)
     state = read_json(path)
     if state["config"] != config:
-        raise ValueError("resume configuration or source changed")
-    if (state.get("inflight") or {}).get("kind") == "replay":
+        old = state["config"]
+        changed = {key for key in set(old.get("source_files", {})) | set(config.get("source_files", {}))
+                   if old.get("source_files", {}).get(key) != config.get("source_files", {}).get(key)}
+        allowed = {"tools/eval_chat_memory_formal.py", "tools/eval_chat_memory_benchmark.py"}
+        if (not accept_runner_recovery or not changed or not changed <= allowed
+                or {k: v for k, v in old.items() if k != "source_files"}
+                != {k: v for k, v in config.items() if k != "source_files"}):
+            raise ValueError("resume configuration or source changed")
+        revision = {"reason": "retain provider failure and continue fixed history without retry",
+                    "source_files": config["source_files"]}
+        if revision not in state.setdefault("runner_revisions", []):
+            state["runner_revisions"].append(revision)
+    if (state.get("inflight") or {}).get("kind") == "replay" and not accept_runner_recovery:
         raise RuntimeError("uncertain replay commit; inspect the saved archive and journal before any retry")
     return state
 
@@ -130,7 +143,7 @@ def run_worker(args):
         "short_term_turns": 0, "time_basis": "unix", "timezone": "Asia/Shanghai",
         "evidence_judgment": True, "maintenance": "native scheduling plus exam-time bounded maintenance"}
     checkpoint = output / "checkpoint.json"
-    state = load_checkpoint(checkpoint, config, resume=args.resume)
+    state = load_checkpoint(checkpoint, config, resume=args.resume, accept_runner_recovery=args.accept_runner_recovery)
     if "source_commit_at_start" not in state:
         state["source_commit_at_start"] = subprocess.check_output(["git", "-C", str(ROOT), "rev-parse", "HEAD"], text=True).strip()
     app = QApplication.instance() or QApplication([])
@@ -169,6 +182,39 @@ def run_worker(args):
 
     # 未完成的考试不重试刷答案；回放档案未受影响，可继续其他题。
     inflight = state.get("inflight")
+    if inflight and inflight["kind"] == "replay":
+        # 已确认失败在提取apply之前。保留已发生的到期清理，只补交固定对话，不重新提取。
+        if state.get("status") != "replay_failed" or "invalid_response_text" not in state.get("error", ""):
+            raise RuntimeError("replay interruption is not a verified pre-apply provider failure")
+        journal = read_json(Path(inflight["journal"]))
+        response = journal["calls"][-1]["provider_response"]["choices"][0]
+        if response.get("finish_reason") != "length" or response["message"].get("content"):
+            raise RuntimeError("replay recovery requires the recorded empty truncated provider response")
+        failed_turn = int(inflight["id"])
+        row = next(row for row in reader.read_input(folder, questions[-1])["history"] if row["turn"] == failed_turn)
+        if failed_turn != state["committed_turn"] + 1:
+            raise RuntimeError("failed replay is not the next uncommitted turn")
+        meter = FlashMeter(0, api_style=provider_api_style(settings.provider), secret=settings.api_key)
+        controller = open_controller(output / "replay-archive", new_client)
+        try:
+            controller.now = int(datetime.fromisoformat(row["time"]).timestamp())
+            request = DialogueRequest(row["user"], source="benchmark_replay")
+            controller.last_events = [CompanionEvent("speech", controller.state.character_name, row["assistant"])]
+            controller._commit_dialogue_exchange(request, controller._dialogue_context_epoch())
+            if not controller.story_runtime.memory.wait_for_maintenance(timeout=60):
+                raise TimeoutError("recovery maintenance did not finish")
+            recovery = {"turn": failed_turn, "now": int(controller.now), "extraction": "provider_failed",
+                "error": state["error"], "original_journal": inflight["journal"], "model_retried": False,
+                "usage": state["inflight_usage"], "recovery": "fixed dialogue committed without re-running memory preparation"}
+            save_json(output / "replayed" / f"{failed_turn:04d}.json", recovery)
+        finally:
+            controller.close()
+        state.setdefault("recovered_provider_failures", []).append(recovery)
+        state["committed_turn"] = failed_turn
+        state["inflight"] = None
+        state["status"] = "running"
+        save_json(checkpoint, state)
+        inflight = None
     if inflight:
         ident = inflight["id"]
         path = output / "answers" / (hashlib.sha256(ident.encode()).hexdigest()[:24] + ".json")
@@ -272,6 +318,7 @@ def main():
     parser.add_argument("--max-calls", type=int, default=9000, help="Total call cap divided among selected persona workers")
     parser.add_argument("--limit", type=int, help="First N chronological questions per persona; partial pilot only")
     parser.add_argument("--resume", action="store_true")
+    parser.add_argument("--accept-runner-recovery", action="store_true", help="Allow documented runner-only repair and verified pre-apply provider failure recovery")
     parser.add_argument("--validate-only", action="store_true")
     args = parser.parse_args()
     folder, reader, records = load_inputs(args.benchmark_root)
@@ -299,6 +346,8 @@ def main():
             "--output", str(args.output), "--persona", persona, "--max-calls", str(per_worker)]
         if args.resume:
             command.append("--resume")
+        if args.accept_runner_recovery:
+            command.append("--accept-runner-recovery")
         if args.limit:
             command.extend(("--limit", str(args.limit)))
         log = args.output / f"{persona}.log"
