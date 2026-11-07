@@ -168,6 +168,11 @@ def load_datasets(directory, splits):
         for q in data["queries"]:
             if q["id"] in seen_queries or q["story_id"] not in local_stories:
                 raise ValueError("Duplicate query or missing story")
+            story = next(s for s in data["stories"] if s["id"] == q["story_id"])
+            clock_now = story.get("now", data.get("now", 0))
+            if "now" in q and q["now"] != clock_now:
+                raise ValueError(f"Inconsistent query clock for {q['id']}: query.now={q['now']} "
+                                 f"but story/archive now={clock_now}; declare the intended archive clock")
             if set(q["gold_ids"]) & set(q["forbidden_ids"]):
                 raise ValueError("Gold and forbidden evidence overlap")
             for mid in q["gold_ids"] + q["forbidden_ids"]:

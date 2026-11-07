@@ -48,7 +48,7 @@ def main():
 
     report = {"source_root": str(args.source_root), "package_path": str(guanghe_companion.__file__),
         "source_commit": subprocess.check_output(["git", "-C", str(args.source_root), "rev-parse", "HEAD"], text=True).strip(),
-        "model": settings.model, "dataset": dataset["name"], "status": "running",
+        "model": settings.model, "dataset": dataset.get("name", args.dataset.stem), "status": "running",
         "restart_mode": "controller and storage closed/reopened in same process; history cleared before reopen",
         "grading": "pending_semantic_review", "scenarios": []}
 

@@ -1,6 +1,7 @@
 """Evaluation integrity: grade delivered evidence, never the expected answer."""
 import importlib.util
 import json
+import pytest
 from dataclasses import replace
 from pathlib import Path
 
@@ -16,6 +17,26 @@ def query():
             "history": [], "gold_ids": ["name"], "forbidden_ids": [],
             "expected_routes": ["fact"], "expected_status": "sufficient",
             "should_retrieve_long_term": True}
+
+
+@pytest.mark.parametrize("archive_now,story_now", [(None, None), (10, None), (20, 10)])
+def test_query_clock_cannot_be_silently_ignored(tmp_path, archive_now, story_now):
+    data = {"split": "holdout", "stories": [{"id": "s", "template_family": "clock"}],
+            "memories": [{"id": "name", "story_id": "s"}], "queries": [{**query(), "now": 20}]}
+    if archive_now is not None:
+        data['now'] = archive_now
+    if story_now is not None:
+        data['stories'][0]['now'] = story_now
+    (tmp_path / 'ondemand_memory_holdout.json').write_text(json.dumps(data), encoding='utf-8')
+    with pytest.raises(ValueError, match='query clock'):
+        evaluation.load_datasets(tmp_path, ['holdout'])
+
+
+def test_matching_query_clock_preserves_authored_time(tmp_path):
+    data = {"split": "holdout", "now": 20, "stories": [{"id": "s", "template_family": "clock"}],
+            "memories": [{"id": "name", "story_id": "s"}], "queries": [{**query(), "now": 20}]}
+    (tmp_path / 'ondemand_memory_holdout.json').write_text(json.dumps(data), encoding='utf-8')
+    assert evaluation.load_datasets(tmp_path, ['holdout'])[0]['now'] == 20
 
 
 def test_frozen_datasets_keep_stories_and_gold_in_their_split():
