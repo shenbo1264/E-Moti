@@ -17,4 +17,4 @@ ZIP 保留原目录结构，排除运行档案、SQLite、模型缓存和本机�
 
 第十二原版查询时钟不被工具读取，纠正版本只调整明确时钟所在层级；第十三原版缺必填时间字段，修正版只补未变更来源的记录时间。原始输入与失败均保留。第十三没有完成新的泛化质量评价。
 
-`full-pytest-d3c55d2.log`：2589 passed、9 skipped、3 warnings。`final-tool-tests.log`：随后评测工具28项通过。`ui-isolated-final.log`：离屏页面5项通过。38条开发记忆契约结果在检索证据包内。这些工程验证与真实模型效果分别报告。
+`engineering-checks.zip` 原样保存三份日志：`full-pytest-d3c55d2.log` 为2589 passed、9 skipped、3 warnings；`final-tool-tests.log` 为随后评测工具28项通过；`ui-isolated-final.log` 为离屏页面5项通过。38条开发记忆契约结果在检索证据包内。这些工程验证与真实模型效果分别报告。
