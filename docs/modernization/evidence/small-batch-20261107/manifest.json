@@ -1,0 +1,31 @@
+{
+  "files": [
+    {
+      "name": "results.json",
+      "bytes": 217036,
+      "sha256": "a61415c5f1cb49f8e92b10a6759e1f511b934176585981610581158e4fd64f7e"
+    },
+    {
+      "name": "before-answers.json",
+      "bytes": 129355,
+      "sha256": "027d2a4ac7a425a2be12445295bccac2ba31026c2ecb3f0072118f052c661d64"
+    },
+    {
+      "name": "provider-calls.json",
+      "bytes": 177968,
+      "sha256": "c9cd0505633482477bdf467f60983d381069f44e669fcd7b63279609f96ead9b"
+    },
+    {
+      "name": "input-dataset.json",
+      "bytes": 19909,
+      "sha256": "cae1e180fc4ca5a4219c2bd3f83f2c47ba0866bf71d2fa639e4bc34cb848d451"
+    },
+    {
+      "name": "budget-tests.log",
+      "bytes": 100,
+      "sha256": "0cd3c807521251f03fc12059102b1e1b04be2dbdece624503f9b9f9c1c405d16"
+    }
+  ],
+  "archive_bytes": 123260,
+  "privacy": "原始本机结果不变，公开副本只移除账户余额绝对值；不含凭据、SQLite或模型缓存。"
+}
