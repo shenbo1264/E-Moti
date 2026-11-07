@@ -22,6 +22,7 @@ from collections import Counter, defaultdict
 from dataclasses import asdict, is_dataclass, replace
 from datetime import datetime, timezone
 import hashlib
+import inspect
 import importlib.metadata
 import json
 import math
@@ -638,6 +639,8 @@ def worker(args):
                                 "summary_chars": distribution(len(m.summary) for m in entries), "rss_before_mib": rss_mib()}
                 with tempfile.TemporaryDirectory(prefix="emoti-ondemand-", dir=temporary_root) as directory:
                     kwargs = {}
+                    if "character_name" in inspect.signature(EmotionalMemoryService).parameters:
+                        kwargs["character_name"] = persona["character_name"]
                     if args.worker in {"routed", "layered"}:
                         from guanghe_companion.retrieval_contract import RetrievalBudget
                         kwargs["retrieval_budget"] = RetrievalBudget(max_context_chars=6000)
@@ -747,6 +750,8 @@ def worker(args):
                             row["prepare_rows_loaded"] = judge.prepare_rows_loaded
                             row["prepare_retrieval_calls"] = judge.prepare_retrieval_calls
                             row["evidence_judgment"] = {"status": judge.status,
+                                "format_repair_attempted": getattr(judge, "format_repair_attempted", False),
+                                "format_failures": getattr(judge, "format_failures", []),
                                 "requests": redact(judge_meter.records[judge_start:], judge_secret)}
                         result["rows"].append(row)
                         query_counter += 1
