@@ -1,0 +1,272 @@
+{
+  "scope": "Lifecycle, persona, extraction format and performance raw evaluation records",
+  "file_count": 51,
+  "uncompressed_bytes": 14161016,
+  "credential_scan": "passed; actual configured/environment secret values matched in UTF-8 and UTF-16-LE",
+  "excluded": [
+    "runtime archives and SQLite databases",
+    "settings and credentials",
+    "model caches",
+    "ongoing full test logs"
+  ],
+  "interpretation": "Preserves failed and blocked runs. Thirteenth lifecycle and legacy-lifecycle-after have no successful model response due to HTTP 402; see thirteenth-lifecycle-blocked.md.",
+  "entries": [
+    {
+      "path": "inputs/eleventh/lifecycle_holdout.json",
+      "bytes": 8399,
+      "sha256": "b815d870aecfc7e3c32434d123cf838a00c272ac8dda19063e2c42caa61edca5"
+    },
+    {
+      "path": "inputs/persona/rubric.json",
+      "bytes": 2848,
+      "sha256": "2c02ffc20b541e70a39e0570325eb4d253fd8545a4b97af08879490557771806"
+    },
+    {
+      "path": "inputs/persona/scenarios.json",
+      "bytes": 3797,
+      "sha256": "e606222f26a1f756b02776adccfa073e93e4e801c13759368d83635d81dadd62"
+    },
+    {
+      "path": "inputs/thirteenth/lifecycle_holdout.json",
+      "bytes": 5396,
+      "sha256": "7a30caf799c008d0ae5cf685b45c36472372bf676d789d4660c68c649b69fd2b"
+    },
+    {
+      "path": "inputs/twelfth/lifecycle_holdout.json",
+      "bytes": 6568,
+      "sha256": "e08b1b72adec05a0138fcd6ef3df9772ee09ec7246cebecd4bab7d86d5b5f05a"
+    },
+    {
+      "path": "runs/extraction-format-none.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "runs/extraction-format-none/provider-calls.json",
+      "bytes": 25333,
+      "sha256": "cae6b6ccdfc405f63939d792ae4d792c4c0b5c2cf5219dd657ee6407f25cbf77"
+    },
+    {
+      "path": "runs/extraction-format-none/results.json",
+      "bytes": 5389,
+      "sha256": "e00c94eb5586f0b26524b4aa22145efb8e4552faa762d3ceb70ac6e1b53230ec"
+    },
+    {
+      "path": "runs/legacy-lifecycle-after/provider-calls.json",
+      "bytes": 262239,
+      "sha256": "6ce75cdc8bace959f9ee595c73bf3b0cd9c94bf4b3aee4d4f9a88f9764e9dcbc"
+    },
+    {
+      "path": "runs/legacy-lifecycle-after/results.json",
+      "bytes": 120268,
+      "sha256": "9287fe822c01f87755c0648287522d7d6745efdc586ac42afe8da6bfd7481d99"
+    },
+    {
+      "path": "runs/legacy-lifecycle-final/provider-calls.json",
+      "bytes": 512946,
+      "sha256": "67f38329f31d0d962a2d153a20a6edafba5f09cc5337f3c44825e9c25bddd62f"
+    },
+    {
+      "path": "runs/legacy-lifecycle-final/results.json",
+      "bytes": 119173,
+      "sha256": "4e714496502233b8855b78a57b5f39bf9a6a99f0e6171c9a4ef846dab8a21f56"
+    },
+    {
+      "path": "runs/legacy-lifecycle-regression.json",
+      "bytes": 1919,
+      "sha256": "ef6b01cb4083eb3d08bf71eea84eccc667178ce6c05f2f92131a0bce152cd669"
+    },
+    {
+      "path": "runs/lifecycle-after/provider-calls.json",
+      "bytes": 1157973,
+      "sha256": "8e12b0f3432859d76291d5101cee52b85e284a36f4df89e05c4305f8bfe968f4"
+    },
+    {
+      "path": "runs/lifecycle-after/results.json",
+      "bytes": 124013,
+      "sha256": "32997bbc09b772865ca38424cf1e524c07a25ab2c8d046eff2575d70a04feddc"
+    },
+    {
+      "path": "runs/lifecycle-before/provider-calls.json",
+      "bytes": 1060015,
+      "sha256": "b9b18e9a1e28e7d75e29bb6cc9220aa86689cbd2ac0de079b711fbc40eff6d6d"
+    },
+    {
+      "path": "runs/lifecycle-before/results.json",
+      "bytes": 90150,
+      "sha256": "a67a97bb7707628a31334fcec0509b5790b45147f0a66668c2cb48fb03d48be5"
+    },
+    {
+      "path": "runs/lifecycle-fix-first/provider-calls.json",
+      "bytes": 1011692,
+      "sha256": "15a3dccb9cbb0f73eef05d4b95f9b9b4dc0fa33723d7be1040330e570d5a0b23"
+    },
+    {
+      "path": "runs/lifecycle-fix-first/results.json",
+      "bytes": 196713,
+      "sha256": "a2a4c2e7d75f45b69550279f21f80861acb44cf95d15f81bd64b6c4600cee7e0"
+    },
+    {
+      "path": "runs/lifecycle-fix-review.md",
+      "bytes": 2235,
+      "sha256": "6de9f58656d93ed7932cdc87f80533b5eff7fc09913b19c82cbe5f3a90668a0a"
+    },
+    {
+      "path": "runs/lifecycle-fix-second/provider-calls.json",
+      "bytes": 1155192,
+      "sha256": "585d29c2b9b6d5ee541833d014c3b273af2bd41b180a9168c807f5f9106bb65d"
+    },
+    {
+      "path": "runs/lifecycle-fix-second/results.json",
+      "bytes": 242569,
+      "sha256": "e885d44062d47a2f411ab3f312ba66e036913f2347c5bb47cb74aa641006860f"
+    },
+    {
+      "path": "runs/lifecycle-language-regression/provider-calls.json",
+      "bytes": 479403,
+      "sha256": "d1606bf31e42fc125648de9c96ceb95e6e3cb8d865cf7f94f9dec0566ffb7a2b"
+    },
+    {
+      "path": "runs/lifecycle-language-regression/results.json",
+      "bytes": 116942,
+      "sha256": "85f8cd91f9faa8cf1985277fce8983eba9563df85ade9a8274c2d59218c2e3a3"
+    },
+    {
+      "path": "runs/lifecycle-language-review.md",
+      "bytes": 3037,
+      "sha256": "89a60665ec54c254cadf187c255abdfc2c6d7e5f43a88b03736dcb636902f37e"
+    },
+    {
+      "path": "runs/lifecycle-language-scope-regression/provider-calls.json",
+      "bytes": 287238,
+      "sha256": "789d57cb5fad5a43667fcc9f5d5e3a66f222bf7f587aa1b3736294d3d3af0f57"
+    },
+    {
+      "path": "runs/lifecycle-language-scope-regression/results.json",
+      "bytes": 66524,
+      "sha256": "3fa08c35aa7b2a56611b9a22c5fa8524864765ae80c0785342b3e7601d094efd"
+    },
+    {
+      "path": "runs/lifecycle-review.md",
+      "bytes": 2945,
+      "sha256": "4e6b86f7bf2c1e0eff4dfec8a90d75350dc249eaad060b2bd3ff0e6251af195f"
+    },
+    {
+      "path": "runs/performance-after-run.log",
+      "bytes": 665,
+      "sha256": "31dfbe2f1ecd415c3f8f466c882653e61b6709aae67463b96c606b86b2254aab"
+    },
+    {
+      "path": "runs/performance-after.json",
+      "bytes": 18686,
+      "sha256": "1af2434f0bfb066b9c5ddfcbeda8385abfa84a31c1fb42cb0fdb1d18eb9d343d"
+    },
+    {
+      "path": "runs/performance-after.log",
+      "bytes": 701,
+      "sha256": "c76eda4096f1cafb8cf0aecfbadaa9ffba3bb3a178311c18d6a484f28e4b01d7"
+    },
+    {
+      "path": "runs/performance-before.json",
+      "bytes": 18694,
+      "sha256": "27fc82c7ecbae2e2f13e041252aab6578275e62463bf06104d54fc3718f7efe8"
+    },
+    {
+      "path": "runs/performance-before.log",
+      "bytes": 807,
+      "sha256": "c88a535e519c97344897cc78ac3bf2f23478e3902cd6b464643220c574aa1dc6"
+    },
+    {
+      "path": "runs/performance-final.json",
+      "bytes": 18687,
+      "sha256": "866e864eab8d7b7e2411b8d4180b0810753d3d8139b0385cacb10d23a65d21c6"
+    },
+    {
+      "path": "runs/performance-final.log",
+      "bytes": 664,
+      "sha256": "8dec131c5cf3158537b0e3ca28d27c00eaa90924dc1d67d88da522de5790498c"
+    },
+    {
+      "path": "runs/persona-after.log",
+      "bytes": 1003,
+      "sha256": "2ee0bf999a8ed7bd17015d1ee9c8a17023b16a260a124de934cc12ecf0d9bb5b"
+    },
+    {
+      "path": "runs/persona-after/blind-review-key.json",
+      "bytes": 1496,
+      "sha256": "39075f59847149c8dcde0c88297ca7625c708a1b6d93f4a711d314816b88a97c"
+    },
+    {
+      "path": "runs/persona-after/blind-review-sheet.md",
+      "bytes": 6804,
+      "sha256": "772e2282f46dd5ad79bdb9e8d62f720f9450c5c80b87151bd2416fbcaa1eb607"
+    },
+    {
+      "path": "runs/persona-after/provider-calls.json",
+      "bytes": 1871038,
+      "sha256": "576b66bec9634a5c0d731621857e7b7ded7ce3f4293923cbafaec8e059aae102"
+    },
+    {
+      "path": "runs/persona-after/raw-results.json",
+      "bytes": 1940437,
+      "sha256": "0304f4e6ee46b1c19806350df71f7a1de812c61809830e94569e7307818cdc1a"
+    },
+    {
+      "path": "runs/persona-d3c55d2.log",
+      "bytes": 363,
+      "sha256": "6fab414163122e7b14f2bfd7e0c3c738c4a98c6479309fb558f4a0bd08cd28eb"
+    },
+    {
+      "path": "runs/thirteenth-lifecycle-after/provider-calls.json",
+      "bytes": 417153,
+      "sha256": "96c42d7f1b3601349d9354d2126ff99d79462b3688af3bb88eb9d7521619302e"
+    },
+    {
+      "path": "runs/thirteenth-lifecycle-after/results.json",
+      "bytes": 76595,
+      "sha256": "91eb64fcc551fc1b63141e9b3e278c6dd367b71325446f4c863800cfbdb3436c"
+    },
+    {
+      "path": "runs/thirteenth-lifecycle-before/provider-calls.json",
+      "bytes": 348525,
+      "sha256": "0bf64c13b59a812fbf0bba6467078592391da73f4ddabfaddc6696fa30c3f24a"
+    },
+    {
+      "path": "runs/thirteenth-lifecycle-before/results.json",
+      "bytes": 78262,
+      "sha256": "7d1a9acf33103e03585a83487d02cedcdc2ff542edec77f1fd095ebfcc7b2f3b"
+    },
+    {
+      "path": "runs/thirteenth-lifecycle-blocked.md",
+      "bytes": 2024,
+      "sha256": "c3064b8152e53263b50eb05f3e00f627a8afa031176c6c4a3ea4ed8342577465"
+    },
+    {
+      "path": "runs/twelfth-lifecycle-after/provider-calls.json",
+      "bytes": 1011282,
+      "sha256": "64ebe9e7e1de62c2d318298c5f3a1334014b9f874c4e746c64f56ba119c27b2b"
+    },
+    {
+      "path": "runs/twelfth-lifecycle-after/results.json",
+      "bytes": 209922,
+      "sha256": "0b316f5e2c58dc0550cedc79555109eceb63d8aba0bdb1d5a085e0ed0bc6e284"
+    },
+    {
+      "path": "runs/twelfth-lifecycle-before/provider-calls.json",
+      "bytes": 932799,
+      "sha256": "17e21e6cdacd72b266619152a24daeca3a16cf23131e236d404f7dfe1d41c585"
+    },
+    {
+      "path": "runs/twelfth-lifecycle-before/results.json",
+      "bytes": 130235,
+      "sha256": "96642841f350653df9cf01011a641108688b2357ed83645fedd044abd13b027e"
+    },
+    {
+      "path": "runs/twelfth-lifecycle-review.md",
+      "bytes": 3258,
+      "sha256": "e87c24ff488082720631df2f6329891e3d14580492c13974d6cbeff4d0857e6f"
+    }
+  ],
+  "archive_bytes": 2836852,
+  "archive_sha256": "7cf78b326c370d72127fcfa2634a742415e47db5e8bc0b6bf6c073258039205d"
+}
