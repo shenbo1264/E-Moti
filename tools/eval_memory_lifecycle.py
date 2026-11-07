@@ -15,6 +15,7 @@ def main():
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--app-settings", type=Path, required=True)
     parser.add_argument("--model-cache", type=Path, required=True)
+    parser.add_argument("--scenario-id", action="append", default=[])
     args = parser.parse_args()
     sys.path.insert(0, str(args.source_root / "src"))
     # 先绑定被测生产包；公共评测工具随后导入时不得切换到工具目录所属版本。
@@ -28,6 +29,9 @@ def main():
 
     args.output.mkdir(parents=True, exist_ok=False)
     dataset = json.loads(args.dataset.read_text(encoding="utf-8"))
+    selected = [case for case in dataset["scenarios"] if not args.scenario_id or case["id"] in args.scenario_id]
+    if args.scenario_id and {case["id"] for case in selected} != set(args.scenario_id):
+        raise ValueError("unknown lifecycle scenario id")
     settings = ExpressionSettingsStore(args.app_settings).load()
     if settings.model != "deepseek-flash":
         raise ValueError("lifecycle comparison requires deepseek-flash")
@@ -48,15 +52,16 @@ def main():
 
     report = {"source_root": str(args.source_root), "package_path": str(guanghe_companion.__file__),
         "source_commit": subprocess.check_output(["git", "-C", str(args.source_root), "rev-parse", "HEAD"], text=True).strip(),
+        "source_dirty": bool(subprocess.check_output(["git", "-C", str(args.source_root), "status", "--porcelain"], text=True).strip()),
         "model": settings.model, "dataset": dataset.get("name", args.dataset.stem), "status": "running",
         "restart_mode": "controller and storage closed/reopened in same process; history cleared before reopen",
-        "grading": "pending_semantic_review", "scenarios": []}
+        "grading": "pending_semantic_review", "selected_scenarios": [case["id"] for case in selected], "scenarios": []}
 
     def save():
         report["usage"] = measured_usage(meter)
         (args.output / "results.json").write_text(json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8")
 
-    for scenario in dataset["scenarios"]:
+    for scenario in selected:
         root = args.output / "archives" / scenario["id"]
         controller, desktop = reopen(root)
         rows = []
@@ -91,6 +96,10 @@ def main():
                     "memories": [asdict(entry) for entry in memory.store.load_memories()]})
                 save()
                 print(scenario["id"], index, answer, flush=True)
+                if any(record.get("http_status") == 402 for record in meter.records[start:]):
+                    report.update(status="blocked", grading="not_run", model_status="blocked_provider_http_402")
+                    save()
+                    return
         finally:
             desktop.close()
             controller.close()
