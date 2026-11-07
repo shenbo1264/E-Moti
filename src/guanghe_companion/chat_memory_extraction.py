@@ -8,23 +8,26 @@ from threading import get_ident
 from uuid import uuid4
 from urllib.parse import urlsplit
 
-from .chat_memory import ChatMemoryResult, _fact_view, _DRINK, forget_target, matches_forget_target
+from .chat_memory import ChatMemoryResult, _fact_view, _DRINK, forget_target, matches_forget_target, qualified_forget
 from .emotional_memory_policy import MemoryCandidate
 from .chat_memory_plans import plan_view, correct_plan
 from .expression_clients import LLMClient
 from .memory_source_spans import source_span_metadata
 from .chat_memory_events import EVENT_DOMAIN, validate_event, event_metadata, event_summary, event_kind
+from .chat_memory_attributes import ATTRIBUTE_DOMAIN, attribute_slot, attribute_metadata, validate_attribute
+from .chat_memory_preferences import preference_scope, preference_slot, preference_metadata
 from .grounded_facts import RELATION_DOMAINS, REPORTED_RELATION, relation_fact, relation_forget_match, has_relation_forget_scope, has_relation_copula
 
 
 _UNSAFE = re.compile(r"假如|假设|如果|也许|可能|据说|他说|她说|朋友说|小说|角色扮演|游戏里|游戏中|故事里|梦里|[？?]|吗|举例|原话|才怪|假话|反话|[‘’“”\"「」]")
 _TEMPORARY = re.compile(r"打算|准备|计划|今天|明天|最近|暂时")
 _FORGET = re.compile(r"忘记|忘掉|不要再记|别再记|不要记|删掉|删除")
-_CORRECT = re.compile(r"说错|写错|记错|更正|纠正|改成|改叫|改为|不对|其实|搬到|搬家|不再|现在")
+_CORRECT = re.compile(r"说错|写错|记错|更正|纠正|改成|改叫|改为|换成|换了|不对|其实|搬到|搬家|不再|现在")
 _DOMAINS = {"like": "个人偏好", "avoid": "个人偏好", "allergy": "过敏", "diet": "长期忌口",
             "residence": "居住地", "occupation": "职业", "name": "称呼", "legal_name": "姓名", "pet": "宠物",
             **RELATION_DOMAINS}
 _DOMAINS["event"] = EVENT_DOMAIN
+_DOMAINS["attribute"] = ATTRIBUTE_DOMAIN
 _TEMPLATES = {"like": "用户喜欢{}", "avoid": "用户不喜欢{}", "allergy": "用户对{}过敏",
               "diet": "用户长期不吃{}", "residence": "用户住在{}", "occupation": "用户职业是{}",
               "name": "用户希望被称呼为{}", "legal_name": "用户的姓名是{}", "pet": "用户的宠物信息：{}"}
@@ -48,6 +51,7 @@ class ExtractionFact:
     summary: str
     fingerprint: str
     event: dict | None = None
+    fact: dict | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -74,9 +78,12 @@ class MemoryProposal:
     certainty: str
     scene: str
     event: dict | None = None
+    fact: dict | None = None
 
 
 def should_extract(text: str, mode: str = "auto") -> bool:
+    if qualified_forget(text):
+        return False
     if REPORTED_RELATION.search(text):
         return False
     if forget_target(text) is not None:
@@ -87,12 +94,17 @@ def should_extract(text: str, mode: str = "auto") -> bool:
 
 def _slot(p):
     domain = p.domain
+    if p.predicate == "attribute":
+        return attribute_slot(p.fact), ATTRIBUTE_DOMAIN
     if p.predicate == "event":
         return "event:" + p.event["anchor"] + ":" + p.event.get("activity", p.event["anchor"]), EVENT_DOMAIN
     if p.predicate in RELATION_DOMAINS:
         bound = _proposal_relation(p, p.quote)
         return bound.slot, bound.domain
     if p.predicate in {"like", "avoid"}:
+        scoped = p.fact or preference_scope(p.quote)
+        if scoped:
+            return preference_slot(scoped, p.predicate), "个人偏好"
         domain = "饮料偏好" if _DRINK.search(p.value) else "个人偏好"
         return f"preference:{domain}:{p.predicate}", domain
     return domain, domain
@@ -123,7 +135,7 @@ def _self_fact_slot(entry):
 
 
 def _single_value_slot(slot):
-    return slot in {"居住地", "职业", "姓名", "称呼", "宠物"} or slot.startswith(("relation:", "weekly:", "event:"))
+    return slot in {"居住地", "职业", "姓名", "称呼", "宠物"} or slot.startswith(("relation:", "weekly:", "event:", "attribute:"))
 
 
 def _coherent_batch(proposals):
@@ -153,7 +165,7 @@ def extract_memory(envelope: ExtractionInput, client: LLMClient) -> tuple[Memory
         "现实事实、具体约定/计划/经历或明确纠正/遗忘命令。假设、转述、虚构、游戏、询问均ignore；短期计划不写画像，可记录为事件。"
         "输出JSON对象{\"proposals\": [...]}，最多3条；每条字段action(remember/correct/forget/ignore),"
         "quote(原话连续片段),value(必须在quote中逐字出现的连续字面值，不补全；forget可为空),predicate,domain,target_ids(现有事实ID列表),"
-        "certainty(explicit/uncertain),scene(personal/other)，可选event字段。predicate与domain只能使用以下映射："
+        "certainty(explicit/uncertain),scene(personal/other)，可选event或fact字段。predicate与domain只能使用以下映射："
         + json.dumps(_DOMAINS, ensure_ascii=False)
         + "。宠物value保留完整宠物及名字字面片段。普通冲突用remember并引用冲突事实；明确改正才correct。"
         "人物关系事实使用relation_name/relation_residence/relation_occupation，quote保留完整的我的关系标签及字段，"
@@ -172,11 +184,21 @@ def extract_memory(envelope: ExtractionInput, client: LLMClient) -> tuple[Memory
         "必须唯一绑定同一对象及activity，优先沿用现有event的anchor/activity；anchor只选具体对象或地点，不能只用参与者名字。"
         "新引用只保留新事实，不能复述已纠正旧值。一个新事件只能用remember，不猜target_ids。"
         "事件不写入like/occupation等画像。无须把所有闲聊都记忆化，纯寒暄、无实际信息和一般建议ignore。"
+        "普通物品的属性、位置、名称、尺寸及某类事物的明确选择偏好使用attribute/对象属性，"
+        "附fact={subject:原文中对象或类别的连续字面名称,field:原文明确支持的属性名}。"
+        "field优先沿用现有同对象字段；位置、颜色、名字、容量、偏好等用常用属性名，其余用原文字面字段。"
+        "subject只含对象名词或选择类别，不含时间、频率或动作，不能拼接非连续词语，不能把本次属性值放进subject。"
+        "输出前检查subject字符串确实完整连续出现在quote中。不同对象的偏好分别记忆，不能互相覆盖。"
+        "quote必须同时包含明确的我、对象和新值；每条只提取一个原子事实。转述或指代不明不得猜主体。"
+        "更正省略对象时，只有本轮明确提及唯一旧值才可沿用target中的subject/field；quote仍仅取新值小句。"
+        "已知人物关系、用户自身姓名职业和饮料偏好继续用既有专门predicate。"
+        "明确换成、现在、改为、旧值不再等现实变化使用correct，绑定同对象同属性的唯一已有ID。"
+        "旧属性未存储时用remember；不是必须先有旧值才允许记下当前值。"
         "不要输出owner、角色、权限或任意额外字段。没有事实时proposals为空。\n"
-        + json.dumps({"text": envelope.text, "facts": [{"id": f.memory_id, "summary": f.summary, "event": f.event}
+        + json.dumps({"text": envelope.text, "facts": [{"id": f.memory_id, "summary": f.summary, "event": f.event, "fact": f.fact}
                                                       for f in envelope.facts]}, ensure_ascii=False))
     if hasattr(client, "complete") and urlsplit(getattr(client, "base_url", "")).hostname == "api.deepseek.com":
-        raw = client.complete(prompt, reasoning_effort="low")
+        raw = client.complete(prompt, reasoning_effort="none")
     else:
         raw = client(prompt)
     payload = json.loads(raw)
@@ -187,13 +209,13 @@ def extract_memory(envelope: ExtractionInput, client: LLMClient) -> tuple[Memory
         raise ValueError("invalid extraction proposal count")
     result = []
     for row in rows:
-        fields = set(MemoryProposal.__dataclass_fields__) - {"event"}
-        if not isinstance(row, dict) or set(row) not in (fields, fields | {"event"}):
+        fields = set(MemoryProposal.__dataclass_fields__) - {"event", "fact"}
+        if not isinstance(row, dict) or not fields <= set(row) <= fields | {"event", "fact"}:
             raise ValueError("invalid extraction proposal fields")
         targets = row["target_ids"]
         if not isinstance(targets, list) or len(targets) > 12 or any(not isinstance(i, str) for i in targets):
             raise ValueError("invalid extraction targets")
-        if any(not isinstance(v, str) or len(v) > 500 for k, v in row.items() if k not in {"target_ids", "event"}):
+        if any(not isinstance(v, str) or len(v) > 500 for k, v in row.items() if k not in {"target_ids", "event", "fact"}):
             raise ValueError("invalid extraction value")
         result.append(MemoryProposal(**(row | {"target_ids": tuple(targets)})))
     return tuple(result)
@@ -223,13 +245,16 @@ class ChatMemoryExtraction:
                          or (m.user_confirmed and m.source in {"explicit_user_request", "user_correction"}))]
         # 先让当前原话中明确出现的事件对象进入有界上下文，不能固定只看旧档案前十二项。
         candidates.sort(key=lambda m: (
+            bool(m.metadata.get("attribute_subject") and m.metadata["attribute_subject"] in text),
             bool(m.metadata.get("event_anchor") and m.metadata["event_anchor"] in text),
             bool(m.metadata.get("event_activity") and m.metadata["event_activity"] in text),
         ), reverse=True)
         facts = tuple(ExtractionFact(m.memory_id, m.summary, m.evidence_fingerprint(),
                           {"anchor": m.metadata["event_anchor"], "activity": m.metadata.get("event_activity", m.metadata["event_anchor"]),
                            "status": m.metadata.get("event_status"), "participants": m.metadata.get("participant_names", [])}
-                          if "event_anchor" in m.metadata else None)
+                          if "event_anchor" in m.metadata else None,
+                          {"subject": m.metadata["attribute_subject"], "field": m.metadata["attribute_field"]}
+                          if "attribute_subject" in m.metadata else None)
                       for m in candidates[:12])
         envelope = ExtractionInput(uuid4().hex, text, self.memory.owner_id, self.memory.character_id,
                                    "companion", self.memory.store.context_epoch, generation, mode, facts)
@@ -261,7 +286,7 @@ class ChatMemoryExtraction:
             if p.action == "ignore":
                 normalized.append(p)
                 continue
-            if p.predicate != "event" and p.action == "remember" and _TEMPORARY.search(p.quote):
+            if p.predicate not in {"event", "attribute"} and p.action == "remember" and _TEMPORARY.search(p.quote):
                 continue
             if (p.action not in {"remember", "correct", "forget"} or p.predicate not in _DOMAINS
                     or p.domain != _DOMAINS[p.predicate] or not p.quote or p.quote not in envelope.text
@@ -270,13 +295,58 @@ class ChatMemoryExtraction:
                 raise ValueError("ungrounded extraction proposal")
             if ((p.predicate == "allergy" and re.search(r"不过敏|没有.*过敏", p.quote))
                     or (p.predicate == "like" and re.search(r"不.*喜欢|讨厌", p.quote))
-                    or (p.action in {"remember", "correct"} and p.predicate != "event" and "我" not in p.quote)):
+                    or (p.action in {"remember", "correct"} and p.predicate != "event" and "我" not in p.quote
+                        and not (p.predicate == "attribute" and p.action == "correct"))):
                 raise ValueError("proposal contradicts the user statement")
             for target in p.target_ids:
                 if (target not in facts or target not in current
                         or stored[target].evidence_fingerprint() != facts[target].fingerprint):
                     raise ValueError("stale or unknown extraction target")
+            scoped = preference_scope(p.quote)
+            if (not scoped and p.action == "correct" and p.predicate in {"attribute", "like", "avoid"}
+                    and len(p.target_ids) == 1):
+                old = current[p.target_ids[0]]
+                actor = old.metadata.get("preference_actor")
+                context = old.metadata.get("preference_context")
+                old_value = old.metadata.get("fact_value")
+                old_matches = [m for m in current.values() if m.metadata.get("fact_value") == old_value]
+                actor_prefix = (r"(?:最近|现在)?我(?:现在|最近|已经)?" if actor == "user:self"
+                                else r"我的" + re.escape(str(actor).removeprefix("relation:")))
+                if (context and isinstance(old_value, str) and old_value in envelope.text and len(old_matches) == 1
+                        and re.match(actor_prefix + r"(?:换成|改成|改为)", p.quote)):
+                    scoped = {"subject": actor, "field": context}
+            if p.action != "forget" and scoped and p.predicate in {"attribute", "like", "avoid"}:
+                p = replace(p, predicate="avoid" if p.predicate == "avoid" else "like", domain="个人偏好", fact=scoped)
+                if p.action == "correct":
+                    same_slot = [m for m in current.values() if _self_fact_slot(m) == preference_slot(scoped, p.predicate)]
+                    if (len(same_slot) != 1 or same_slot[0].memory_id not in facts
+                            or stored[same_slot[0].memory_id].evidence_fingerprint() != facts[same_slot[0].memory_id].fingerprint):
+                        return ChatMemoryResult("clarify", "请明确同一主体和范围中的哪条偏好。")
+                    p = replace(p, target_ids=(same_slot[0].memory_id,))
+            elif p.action != "forget" and p.predicate in {"like", "avoid"} and p.fact is not None:
+                raise ValueError("preference binding must come from the original claim")
+            if (p.action != "forget" and p.predicate in {"like", "avoid"} and not scoped
+                    and not re.match(r"^我(?:(?:一直|平时|更|最|比较|现在|很|特别|也|还|已经|不太|不再))*"
+                                     r"(?:喜欢|不喜欢|偏爱|偏好|讨厌|改喝|改吃|改用)", p.quote)):
+                return ChatMemoryResult("clarify", "请明确这条偏好属于谁和哪类事情。")
+            if p.predicate == "attribute" and p.action != "forget":
+                if re.match(r"我的[^，。]{1,16}(?:做|买|选|用|听).*(?:喜欢|偏爱)", p.quote):
+                    return ChatMemoryResult("clarify", "请明确这条偏好属于谁。")
+                if p.event is not None or not validate_attribute(p, current, envelope.text):
+                    return ChatMemoryResult("clarify", "请说明同一对象要更新的具体属性。")
+                slot = attribute_slot(p.fact)
+                related = [entry for entry in current.values() if entry.metadata.get("fact_slot") == slot]
+                if any(entry.metadata.get("fact_value") == p.value for entry in related):
+                    already_known.append(p)
+                elif p.action == "remember" and related:
+                    p = replace(p, target_ids=tuple(entry.memory_id for entry in related))
+                normalized.append(p)
+                continue
+            if p.predicate not in {"attribute", "like", "avoid"} and p.fact is not None:
+                raise ValueError("only object attributes can carry fact binding")
             if p.predicate == "event" and p.action != "forget":
+                # 上面的字面校验已证明 value 来源；事件存储统一使用完整原子 claim，消除冗余字段分歧。
+                p = replace(p, value=p.quote)
                 if not validate_event(p, current, envelope.text):
                     return ChatMemoryResult("clarify", "还不能确定要更新的是哪一件事。")
                 if any(entry.summary == p.quote and entry.metadata.get("event_status") == p.event["status"]
@@ -391,7 +461,16 @@ class ChatMemoryExtraction:
             metadata.update(source_span_metadata(envelope.text, p.quote))
             refs = (f"chat-extraction:{envelope.request_id}:{index}",)
             bound = _proposal_relation(p, p.quote) if p.predicate in RELATION_DOMAINS else None
-            summary = event_summary(p) if p.predicate == "event" else bound.summary if bound else _TEMPLATES[p.predicate].format(p.value)
+            summary = (f"用户的{p.fact['subject']}，{p.fact['field']}：{p.value}" if p.predicate == "attribute" else event_summary(p) if p.predicate == "event"
+                       else bound.summary if bound else _TEMPLATES[p.predicate].format(p.value))
+            if p.predicate == "attribute":
+                metadata.update(attribute_metadata(p.fact))
+            elif p.predicate in {"like", "avoid"} and p.fact:
+                metadata.update(preference_metadata(p.fact, p.predicate))
+                summary = p.quote
+                if p.fact["field"] not in p.quote:
+                    actor = "用户" if p.fact["subject"] == "user:self" else "用户的" + p.fact["subject"].removeprefix("relation:")
+                    summary = actor + p.fact["field"] + "的偏好：" + p.value
             if p.predicate == "event":
                 metadata.update(event_metadata(p, envelope.text))
             if bound:
@@ -425,7 +504,7 @@ class ChatMemoryExtraction:
                     expected_epoch=self.memory.store.context_epoch)
             written.append(entry.memory_id)
             self.memory.promote_sourced_alias(entry, now=now)
-            if p.predicate in {"like", "avoid"}:
+            if p.predicate in {"like", "avoid"} and not (p.fact and p.fact["subject"] != "user:self"):
                 self.memory.update_bond_profile(new_preference=summary, source_memory_ids=(entry.memory_id,),
                                                now=now, expected_epoch=self.memory.store.context_epoch)
         return ChatMemoryResult("pending" if pending else "saved" if written else "ignored",

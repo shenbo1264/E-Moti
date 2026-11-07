@@ -7,6 +7,7 @@ _CONDITIONAL = re.compile(r"假如|假设|如果|也许|可能|据说|他说|她
 _NEGATED = re.compile(r"尚未|还没有|还没|从未|未曾|没有")
 _PLAN = re.compile(r"约好|约定|预约|打算|准备|计划|将会|将要|要去|要在|要和|要把|明天|后天|下周|下星期|下个月")
 _COMPLETE = re.compile(r"已经|已|完成|过|了")
+_PAST_TIME = re.compile(r"昨(?:天|晚|夜)|前天|大前天|上(?:周|星期|个月|个星期)|去年|前年|(?:\d+|[一二三四五六七八九十两]+)(?:天|周|个月|年)前")
 _CANCEL = re.compile(r"取消|作废|撤销|不再")
 
 
@@ -36,7 +37,7 @@ def validate_event(proposal, current, text):
     state = event["status"]
     if (state == "planned" and (not (_PLAN.search(proposal.quote) or event["time_text"])
                 or (_COMPLETE.search(proposal.quote) and not _PLAN.search(proposal.quote)))
-            or state == "completed" and (not _COMPLETE.search(proposal.quote)
+            or state == "completed" and (not (_COMPLETE.search(proposal.quote) or _PAST_TIME.match(event["time_text"]))
                 or _NEGATED.search(proposal.quote) or _CANCEL.search(proposal.quote) or _PLAN.search(proposal.quote))
             or state == "not_occurred" and (not _NEGATED.search(proposal.quote)
                 or re.search(r"不是|不确定|不知|未确认", proposal.quote))

@@ -40,11 +40,12 @@ class CompanionStoryRuntime:
         *,
         user_data_root: Path | str,
         character_id: str,
+        character_name: str = "",
         focus_settings: FocusCompanionSettings | None = None,
     ) -> "CompanionStoryRuntime":
         root = Path(user_data_root)
         return cls(
-            memory=EmotionalMemoryService(root=root, character_id=character_id),
+            memory=EmotionalMemoryService(root=root, character_id=character_id, character_name=character_name),
             focus=FocusCompanionCoordinator(
                 focus_settings,
                 state_store=FocusCompanionStateStore(

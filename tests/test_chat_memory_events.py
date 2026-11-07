@@ -35,6 +35,30 @@ def test_ordinary_commitment_persists_with_source_and_no_profile_mutation(tmp_pa
     assert entry.valid_until == 0
 
 
+@pytest.mark.parametrize("text,anchor,past", [
+    ("昨天我和小禾整理展柜。", "展柜", "昨天"),
+    ("上个月我参加社区读书会。", "读书会", "上个月"),
+    ("前天我从邻居家取回折叠梯。", "折叠梯", "前天"),
+])
+def test_explicit_past_event_does_not_require_aspect_particle(tmp_path, text, anchor, past):
+    memory = EmotionalMemoryService(root=tmp_path, character_id="xingxi_pixel_pet")
+    result = apply(memory, text, (proposal(text, anchor=anchor, status="completed",
+        participants=("我",), time_text=past),))
+    assert result.status == "saved"
+    assert memory.store.load_memories()[0].metadata["event_status"] == "completed"
+    memory.close()
+
+
+@pytest.mark.parametrize("text", ["昨天我计划整理展柜。", "昨天我没有整理展柜。", "昨天我取消整理展柜。"])
+def test_past_time_does_not_turn_plan_or_negative_into_completed_event(tmp_path, text):
+    memory = EmotionalMemoryService(root=tmp_path, character_id="xingxi_pixel_pet")
+    with pytest.raises(ValueError, match="event state"):
+        apply(memory, text, (proposal(text, anchor="展柜", status="completed",
+            participants=("我",), time_text="昨天"),))
+    assert not memory.store.load_memories()
+    memory.close()
+
+
 def test_reschedule_cancel_forget_preserve_unrelated_event(tmp_path):
     memory = EmotionalMemoryService(root=tmp_path, character_id="xingxi_pixel_pet")
     original = "我和阿岑的还书约定是周五下午。"

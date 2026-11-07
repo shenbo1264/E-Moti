@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from urllib.parse import urlsplit
 import sys
 from threading import Event
 from time import monotonic
@@ -311,7 +312,9 @@ class ShinsekaiAIExpressor:
         except ValueError as exc:
             raise _ExpressionPayloadError("refinement_context_too_large") from exc
         # 同一个 future、deadline 和不可变请求；草稿从不进入事件、历史或 TTS。
-        reviewed = client.complete(refinement, system_prompt=review_rules(), timeout_seconds=remaining())
+        review_effort = "none" if urlsplit(client.base_url).hostname == "api.deepseek.com" else None
+        reviewed = client.complete(refinement, system_prompt=review_rules(), timeout_seconds=remaining(),
+            reasoning_effort=review_effort)
         remaining()
         try:
             result = json.loads(_json_candidate_from_llm_text(_validated_llm_response_text(reviewed)))

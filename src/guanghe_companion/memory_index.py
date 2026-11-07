@@ -628,7 +628,11 @@ def finalize(store, selected: Iterable[EmotionalMemoryEntry], *, expected_epoch,
             eligible, reason = _eligibility(row, now=now, scopes=allowed_scopes)
             if reason == "future" and valid_at_by_id and key in valid_at_by_id:
                 # 查询日期只用于该来源有效区间；存档到期与撤销始终使用宿主 now。
-                eligible = (source.metadata.get("time_basis") == "unix"
+                basis = source.metadata.get("time_basis")
+                if basis is None:
+                    basis = connection.execute(
+                        "SELECT json_extract(payload, '$.time_basis') FROM memory_state WHERE id=1").fetchone()[0]
+                eligible = (basis == "unix"
                     and _eligibility(row, now=valid_at_by_id[key], scopes=allowed_scopes)[0])
             if not (eligible or (allow_history and reason == "expired")) or row["fingerprint"] != source.evidence_fingerprint():
                 return None

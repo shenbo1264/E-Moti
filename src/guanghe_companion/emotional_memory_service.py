@@ -29,6 +29,7 @@ class EmotionalMemoryService:
         *,
         root: Path | str,
         character_id: str,
+        character_name: str = "",
         owner_id: str = "local_user",
         policy: EmotionalMemoryPolicy | None = None,
         reflection: MemoryReflectionService | None = None,
@@ -41,6 +42,7 @@ class EmotionalMemoryService:
     ) -> None:
         self.store = EmotionalMemoryStore(root=root, character_id=character_id, owner_id=owner_id)
         self.character_id = character_id
+        self.character_name = character_name
         self.owner_id = owner_id
         self.policy = policy or EmotionalMemoryPolicy()
         self.reflection = reflection or MemoryReflectionService()

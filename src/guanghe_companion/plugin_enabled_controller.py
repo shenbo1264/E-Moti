@@ -63,6 +63,7 @@ class PluginEnabledCompanionController(_BaseController):
         self.story_runtime = CompanionStoryRuntime.create(
             user_data_root=data_root,
             character_id=character_id,
+            character_name=self.character_pack.name,
             focus_settings=_load_focus_settings(self._focus_settings_path),
         )
         self._focus_activity_reader = WindowsForegroundActivityReader()
@@ -662,6 +663,7 @@ class PluginEnabledCompanionController(_BaseController):
         self.story_runtime = CompanionStoryRuntime.create(
             user_data_root=data_root,
             character_id=character_id,
+            character_name=self.character_pack.name,
             focus_settings=_load_focus_settings(self._focus_settings_path),
         )
         self.memory_album_controller = MemoryAlbumController(self.story_runtime, clock=lambda: int(self.now))

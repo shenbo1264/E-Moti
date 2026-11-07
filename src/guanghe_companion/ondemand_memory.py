@@ -392,6 +392,7 @@ def retrieve(service, query: str, *, now: int, history: Sequence[object] = (), s
                         and entry.evidence_fingerprint() == judgment.fingerprints.get(entry.memory_id)
                         and hard_eligibility(entry, intent, now=now, owner_id=service.owner_id,
                             character_id=service.character_id,
+                            character_name=service.character_name,
                             archive_time_basis=service.time_basis, archive_timezone=service.timezone_name,
                             source_claim=(judgment.source_claims[intent_index].get(entry.memory_id)
                                 if intent_index < len(judgment.source_claims) else None),

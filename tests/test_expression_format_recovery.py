@@ -17,6 +17,26 @@ RECORDED_DRAFTS = (
 RECORDED_REVIEW = '{"edits":[],"speech":"[joy] 18号字，段落左对齐，每页不排双栏。"}'
 
 
+@pytest.mark.parametrize("url,effort", [("https://api.deepseek.com/v1", "none"), ("https://example.com/v1", None)])
+def test_review_uses_available_output_budget_without_changing_draft_mode(url, effort):
+    captured = []
+
+    def transport(request, timeout):
+        captured.append(json.loads(request.data))
+        if len(captured) == 2:
+            raise LLMProviderError("protocol stop before review; actual model comparison saved separately")
+        return json.dumps({"choices": [{"message": {"content": RECORDED_DRAFTS[0]}}]}).encode()
+
+    client = OpenAICompatibleChatClient(api_key="protocol", base_url=url, json_response=True, transport=transport)
+    with ShinsekaiAIExpressor(llm_client=client, timeout_seconds=10) as expressor:
+        request = ExpressionRequest.from_snapshot({"character_name": "星汐", "focus": 50, "charge": 50,
+            "stability": 50, "mood": 50, "trust": 50}, context={"player_message": "文字材料怎么排？"})
+        expressor.express(request)
+    assert len(captured) == 2
+    assert "reasoning_effort" not in captured[0]
+    assert captured[1].get("reasoning_effort") == effort
+
+
 @pytest.mark.parametrize("draft", RECORDED_DRAFTS)
 @pytest.mark.parametrize("cancel_after_draft", [False, True])
 def test_recorded_format_failure_reaches_only_existing_review(draft, cancel_after_draft):
