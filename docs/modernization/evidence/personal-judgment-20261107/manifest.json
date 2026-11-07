@@ -1,0 +1,26 @@
+{
+  "files": [
+    {
+      "name": "results.json",
+      "bytes": 61994,
+      "sha256": "8f90690c61b455fcd204c077582b0e5ba1b53a77f003ade82e2046a9fb17457f"
+    },
+    {
+      "name": "provider-calls.json",
+      "bytes": 113349,
+      "sha256": "66bdcef222561bf74780e5fc4ded9d18bf9f43193912e736bddb679fe24005b3"
+    },
+    {
+      "name": "prompt-delivery.json",
+      "bytes": 612,
+      "sha256": "202c2c2c638ad5c42a8dc9a7d541cbb8357fc15ff423facaf2c3e2a17e9fadd1"
+    },
+    {
+      "name": "full-pytest.log",
+      "bytes": 27560,
+      "sha256": "2db7c2bb296e8adaadd8ad05976e7833bffa9050d22459014badf01bda0f3407"
+    }
+  ],
+  "archive_bytes": 31876,
+  "privacy": "不含账户余额绝对值、凭据、存档与模型缓存；本机原始结果不变。"
+}
