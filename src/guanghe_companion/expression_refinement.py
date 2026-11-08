@@ -5,12 +5,13 @@ import json
 
 from .expression_clients import MAX_OPENAI_PROMPT_LENGTH
 from .expression_request import ExpressionRequest
-from .companion_dialogue_policy import PERSONAL_JUDGMENT_GUIDANCE
+from .companion_dialogue_policy import PERSONAL_JUDGMENT_GUIDANCE, TEMPORAL_PRESUPPOSITION_GUIDANCE
 
 
 _REVIEW = (
     "检查 draft 的每句具体主张是否符合 evidence。此处是台词编辑任务，不能代入草稿为自己的经历。先用 edits 指出有问题的原文短语，再给出修订的 speech。",
     PERSONAL_JUDGMENT_GUIDANCE,
+    TEMPORAL_PRESUPPOSITION_GUIDANCE,
     "事实：原因、时间、环境、感受、期限、个人亲历与后果必须有原话或有效记忆支持；问句里的预设也要检查。没有依据就删去，不用‘吧/大概/是不是’保留推断。记忆或历史为空只能表示现在不知道，不能推断用户从未说过、忘了告诉角色或双方从未经历过。明显比喻、拟人和条件式回应可以保留。",
     "归因：承认记错/听错/想错/搞混、道歉或保证不再犯之前，必须在 recent_dialogue 中找到 assistant 具体错句及其违背的当时有效信息；找不到就删除这些自责。用户改字、补充或改变现实安排只需承接新版本，不能把用户的‘我写错了’转移到角色身上；空历史没有自责依据。也不叮嘱谁别再记错。",
     "称呼：检查草稿和修订是否突兀加入用户名字。已知姓名不等于需要呼名；普通分享、纠正、吐槽中的开头点名和句末独立名字删去，直接接话。用户明确要求叫名字、询问姓名或需要区分人物时保留。正在讨论的老师、宠物等名字是内容，不能误删。不要在修订时新增姓名来表达亲近。",
