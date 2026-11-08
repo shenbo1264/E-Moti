@@ -1,0 +1,115 @@
+# 开发交接：后续工作要做什么
+
+## Windows 后端增量接入
+
+先读 [本次实现与接口](backend-increment-20261101.md)；以下旧 B1—B4 与第二批分工仅作为历史编号。当前 `plugin_enabled_controller.py`、`emotional_memory_service.py`、`desktop_dialogue_service.py`、`host_service.py` 及共享请求链由 Codex 单写；Claude 接入现有界面时复用接口，不同时改这些文件。`app.py` 未由本次修改。
+
+判据模型由 `controller.enable_memory_evidence_judgment(True)` 显式开启，随后仍走异步 prepare/retrieve，不在 Qt 主线程请求模型。默认关闭；首次独立结果改善了证据交付和未知误注入，但仍有误拒与不必要调用。展示来源使用 `source_spans`，不得退回整段原话。Host 以 `request_id/input_version/committed_version/context_epoch` 区分自身提交与外部撤销。新增 change/purge 为核心 API，尚无新的网络端点。真实设备、在途网络恢复与人工角色体验验收仍待进行。
+
+## 当前增量优先级：按需 RAG 已进入生产路径
+
+以下 B1—B4 是第一批交接的工作分解，仍可用于定位编号；其中 B3a/B3b 和部分 B2/B4 已在第二批实际实现，不能按旧文字再造一套检索/数据库。先读 [差距矩阵](ondemand-gap-matrix.md)、[架构](memory-architecture.md)、[检索契约](retrieval-contract.md)、[存储](storage-index-v1.md) 和 [本轮评测](ondemand-evaluation.md)。
+
+后端边界：Codex 维护 `emotional_memory_service.py`、索引/生命周期、`retrieval_*`、`ondemand_memory.py`、`semantic_memory.py`、`memory_hierarchy.py`、维护入口及评测。Claude 维护既有桌面回忆册、人格设置与交互反馈；本轮没有新建手机 UI。双方用独立工作树，`plugin_enabled_controller.py`、`companion_story_runtime.py`、ExpressionRequest 相关文件属于共享边界，修改前确定单写者。
+
+对接：`prepare_retrieval` 异步准备，`retrieve` 返回 bundle/plan/trace；`build_context` 已默认按需。前端展示 not_needed、unknown、insufficient、external_unavailable、unavailable 的真实区别；L1 claim 与 L2 card 都有来源，别名绑定的 resolution_evidence 是辅助依据。纠正/遗忘成功后清理旧展开和旧 pending response，不修改人格配置。
+
+下一轮先做真实模型与桌面体验验收、处理留出集真实 bad case，再评估现实变化/双时间、全文片段、行式权威写入迁移及多端共享编排。手机、Relay 和 Body 不抢占这些核心质量缺口。不要把 sufficient 这个本地策略结果包装成模型已经可靠回答。
+
+补丁应用：远端基线 `238f361...`；先决本地提交 `299a0aa...` 是上一批完整33文件修改。交付同时提供从远端开始的合并补丁和从先决提交开始的增量补丁。根据实际分支选择其中一种；先 `git apply --check`，若已包含相关修改则跳过并逐文件比较，不重复应用。不自动 push、PR、merge 或 Release。
+
+---
+
+下面保留第一批编号与长期工作分解；状态由上面的当前矩阵覆盖。
+
+## 1. 当前工作边界
+
+本轮聚焦MEM-01至MEM-07与PER-01，并提供真实检索开发诊断。
+其余编号见requirements.md；本轮交付状态见delivery.md。
+不要将“已经写出架构文档”视为该能力已实现。
+旧PR #6的真实模型记录仍保留，不能替代新修改的模型验证。
+
+所有新工作先检查最新main/开放PR和当前工作树。不要覆盖Claude/Codex的并行修改。
+手机已有源码和构建记录应保留。外部Relay、Game Companion和Body固件独立。
+
+## 2. 下一批核心后端
+
+### B1 统一入口编排与跨端提交语义
+
+依赖本次记忆一致性修复。桌面/Host共用完整管线：语义准备、规则、模型提取、宿主验证、上下文、表达、发布。
+保留Qt线程所有权，不另建controller。
+协议返回input_version、committed_version、request_id；分清本请求提交与第三方失效。
+验收：同一数据集从桌面/Host进入，最终存储、候选、epoch和证据ID一致。
+
+### B2 实体、时间与提取覆盖
+
+实现subject ID/alias、predicate单值/多值、valid-time/recorded-time；
+区分纠错、现实变化和遗忘。规则提供consumed spans，模型补未覆盖片段。
+同批冲突、同名/换人、否定/转述/假设、旧事实不在最近12条均有gold。
+禁止用仅扩词表替代实体和来源语义。
+
+### B3 规模存储与检索
+
+拆为B3a质量与B3b存储两个可独立验收的子包。B3a应紧接B1推进，依赖B2提供主体/字段/时间的最小契约，
+不用等完整数据库规范化。当前50题诊断中无证据问题的误注入较高，因此不能把“启用向量”视为完成质量升级。
+
+B3a：无答案/不需个性化路由、独立词法和向量候选、实体/字段/时间过滤、候选去重、来源解释和必要时重排。
+先冻结新留出集与阈值选择方法，比较precision-recall/拒答/成本，避免只把阈值改到开发题全部通过。
+
+B3b：
+在同一SQLite迁移必要表，保留API与已撤销来源。
+用本轮诊断脚本建立基线，再对FTS5/BM25、实体时间过滤、向量矩阵/ANN、MMR/reranker做必要消融。
+迁移包含pending、tombstones、修订、画像/章节依赖和epoch；失败恢复可验证。
+先测真实瓶颈再选索引，不为框架名称添加第二套事实权威。
+
+### B4 共同经历与人格/情绪
+
+真实完成receipt进入episode，再生成claim-source绑定的阶段回忆。
+Persona核心身份稳定；互动偏好有来源、小幅适应且可恢复。
+Clock拆分游戏逻辑、monotonic、UTC、IANA时区；真实返回与闲置区分。
+对单次/双调用/风险触发/小模型审阅/结构计划进行质量与成本对照。
+
+## 3. Claude 产品和前端
+
+- 把核心人格写成行为契约与中文正反例：好奇、聪明、自然、有适度主见与幽默。
+- 回忆册支持结构字段、来源、当前/历史、纠错/变化/遗忘/删除，语义与后端一致。
+- 手机来源弹窗/编辑草稿绑定epoch；unpair与晚到响应必须清除旧会话状态。
+- 恢复有效历史，区分同步中/离线/已撤权/协议不兼容，不把所有情况显示为普通错误。
+- 安静/主动/拒绝/延期体现实际时钟；关闭工作能力后陪伴完整。
+- 不自行增加另一套移动端人格/提取规则，接口交由Codex统一。
+
+## 4. 手机与任务后续顺序
+
+M0：B1与MOB-01/02；修已有跨端一致性。
+M1：QR/TLS/设备管理、历史/事件同步、语音分享、HyperOS日常体验。
+M2：Android执行器，选择性复用Mika，接入TaskExecutor与真实业务后置条件。
+M3：Relay适配、durable outbox、阶段成果、取消/恢复、1/8/24小时。
+M4：观察来源、应用范围、TTL、短期缓冲与长期候选；撤权覆盖所有派生出口。
+M5：SwiftUI/ArkUI客户端与各平台实际可用能力，签名真机验收。
+
+这些是完整工作包；每包都包含正常/异常/恢复/用户接管与实际验收。
+不以一个App成功或一段录屏代表手机能力完成。
+
+## 5. 验收记录格式
+
+每个工作包提交：
+- 基线与修改commit/tree；如dirty，提供完整patch hash。
+- 修改了哪些用户行为、接口和存储语义。
+- 先前失败与修复后结果；保留原始日志。
+- 本地合约/真实embedding/真实生成/真机四类证据。
+- 迁移、重启、撤销、取消、跨端和控制事实保持。
+- 质量、延迟、tokens/成本；没有实测的字段填not_run。
+- 下一包依赖与仍未完成的需求编号。
+
+默认交付本地分支/可应用补丁。推送、发PR、合并或Release另按用户明确授权。
+
+完整可执行提示词见[agent-prompts.md](agent-prompts.md)。完整评测规格已放入本目录，后续开发不依赖找回旧聊天或旧附件。
+
+
+## 6. 可用于产品经理展示的成果表述
+
+围绕独立个人AI伙伴的长期连续性，建立“人格配置、用户事实、共同经历、任务经验与外部实时状态”的职责划分；基于最新PR源码和实际运行发现更正结构残留、来源容量、批量冲突与人格预算等缺口，并交付向后兼容的增量补丁和来源指纹迁移。
+
+以同一冻结用例证明18项记忆一致性回归从15项失败变为全部通过；用真实CPU embedding揭示语义召回提升与无关注入增加的取舍；将稳定上下文读取由10–11次完整事务优化到2次，在300/3000短记忆合成基准中实现中位耗时约81%的下降。
+
+形成32项可验收需求、13套评测/28项指标、Claude/Codex分工和完整手机后续路线。说明哪些能力已有代码、经过合同测试、跑过真实embedding，以及哪些仍需生成模型或真机验证。评测规格的设计完成不能写成已跑完整套件，开发集Recall不能写成总体记忆准确率。

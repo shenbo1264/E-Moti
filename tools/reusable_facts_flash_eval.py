@@ -17,6 +17,8 @@ def main():
     parser.add_argument("--dataset", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--case", action="append", default=[])
+    parser.add_argument("--model-cache", type=Path, default=ROOT / "artifacts/codex_handoff/embedding-models")
+    parser.add_argument("--evidence-judge", action="store_true")
     args = parser.parse_args()
     # 基线工具和生产模块都从同一工作目录导入，避免混入当前实现。
     sys.path[:0] = [str(args.repo / "tools"), str(args.repo / "src")]
@@ -63,7 +65,9 @@ def main():
 
         def open_session():
             controller = open_controller(root, new_client)
-            future = controller.enable_semantic_memory(cache_dir=ROOT / "artifacts/codex_handoff/embedding-models", local_files_only=True)
+            if args.evidence_judge:
+                controller.enable_memory_evidence_judgment()
+            future = controller.enable_semantic_memory(cache_dir=args.model_cache, local_files_only=True)
             pump(app, future, 120)
             future.result()
             controller.now = 10000

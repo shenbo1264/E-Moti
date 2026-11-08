@@ -1,0 +1,122 @@
+{
+  "schema": "emoti.memory.storage.final_run.v1",
+  "created_at_utc": "2026-11-01T18:46:49.747718+00:00",
+  "baseline_commit": "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb",
+  "upgraded_source_commit": "f7a4e23a0f7b207fc68c1719c2217ac740416344",
+  "benchmark_script_sha256": "f6e7868b4a9b75a270b875c9bf841ae86f209d68d67df449c18fbeb09ae68f13",
+  "execution_order": [
+    "index",
+    "document"
+  ],
+  "independent_processes": true,
+  "resource_window": "Team coordinated: no embedding, retrieval quality or full pytest ran during these two sequential benchmarks; shared Linux host is not hardware-isolated.",
+  "runs": [
+    {
+      "backend": "index",
+      "cwd": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+      "environment_override": {
+        "PYTHONPATH": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/src"
+      },
+      "argv": [
+        "/tmp/emoti-pr6-review-venv/bin/python",
+        "tools/benchmark_memory_index.py",
+        "--backend",
+        "index",
+        "--sizes",
+        "300,3000,10000",
+        "--repeats",
+        "9",
+        "--writes",
+        "3",
+        "--output",
+        "docs/modernization/evidence/ondemand-memory-20261101/storage/storage-index-final-performance.json"
+      ],
+      "started_at_utc": "2026-11-01T18:42:45Z",
+      "last_result_written_at_utc": "2026-11-01T18:43:45.006410+00:00",
+      "storage_source_unchanged": true,
+      "output": "storage-index-final-performance.json"
+    },
+    {
+      "backend": "document",
+      "cwd": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+      "environment_override": {
+        "PYTHONPATH": "/workspace/scratch/ac4f72a6307d/development/E-Moti-memory-integrity/src"
+      },
+      "argv": [
+        "/tmp/emoti-pr6-review-venv/bin/python",
+        "tools/benchmark_memory_index.py",
+        "--backend",
+        "document",
+        "--sizes",
+        "300,3000,10000",
+        "--repeats",
+        "9",
+        "--writes",
+        "3",
+        "--output",
+        "docs/modernization/evidence/ondemand-memory-20261101/storage/storage-document-final-baseline-performance.json"
+      ],
+      "started_at_utc": "2026-11-01T18:43:48Z",
+      "last_result_written_at_utc": "2026-11-01T18:45:37.165934+00:00",
+      "storage_source_unchanged": true,
+      "output": "storage-document-final-baseline-performance.json"
+    }
+  ],
+  "baseline_source_commit_verification": {
+    "emotional_memory.py": {
+      "sha256": "2a506af00d1f29e754b0cfb7b80e2b9ab1d23141854bee6da672faca970942bb",
+      "matches_commit": true
+    },
+    "memory_document.py": {
+      "sha256": "dc556a3c5d46dff9dcca9fb047807a300f3366e006ec39c01dbc85dc743e45ee",
+      "matches_commit": true
+    },
+    "chat_memory.py": {
+      "sha256": "a02a831a55c9b4a38842ee235b1bfe60f70b9c741d7f361b3db77d9de0702ac4",
+      "matches_commit": true
+    },
+    "grounded_facts.py": {
+      "sha256": "3084835d82df8c23eadbe27feca6ddd5a402cc58a68e722d54ba6e4f0fcd0b77",
+      "matches_commit": true
+    },
+    "memory_correction.py": {
+      "sha256": "d017e4ee2d11a3e03222d1f4ee9c3d0a1b3b98a6e8afae2424b9aeffd785f619",
+      "matches_commit": true
+    }
+  },
+  "upgraded_source_commit_verification": {
+    "emotional_memory.py": {
+      "sha256": "75a95ca6485d97577bd2fd77eeeffc362ae8d2caef84dcfb8cc2387a9f21f862",
+      "matches_commit": true
+    },
+    "memory_document.py": {
+      "sha256": "d5f41b6303f11deede918328c00eb977e2328f207a5d6d96bf02639e7dff3276",
+      "matches_commit": true
+    },
+    "memory_index.py": {
+      "sha256": "2ed020bf1133d21e6d50c2b996420b3af8a188478850e987f5049c409f81974a",
+      "matches_commit": true
+    },
+    "memory_index_schema.py": {
+      "sha256": "5a701a9dad08b707ff3fa2161e58821dc11759db7000ee89f24f0e92f7ef8334",
+      "matches_commit": true
+    },
+    "retrieval_fact_schema.py": {
+      "sha256": "ca84e0a4232b250169e55f6fb76f715e5c3db30dff5f444bf1eb3d4a087ec00c",
+      "matches_commit": true
+    },
+    "chat_memory.py": {
+      "sha256": "29a1d18bb30266190f5e12e3d4571affab6361c2c38458343ad2a51c64f4b108",
+      "matches_commit": true
+    },
+    "grounded_facts.py": {
+      "sha256": "3084835d82df8c23eadbe27feca6ddd5a402cc58a68e722d54ba6e4f0fcd0b77",
+      "matches_commit": true
+    },
+    "memory_correction.py": {
+      "sha256": "d017e4ee2d11a3e03222d1f4ee9c3d0a1b3b98a6e8afae2424b9aeffd785f619",
+      "matches_commit": true
+    }
+  },
+  "scope": "Storage only: real temporary SQLite, synthetic corpus; excludes LLM, embedding, GUI and vector-cache initialization."
+}

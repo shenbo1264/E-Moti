@@ -1,0 +1,49 @@
+{
+  "status": "measured",
+  "completed_at_utc": "2026-11-01T19:39:40.350025+00:00",
+  "source_commit": "1eef5cbb6f85703f0350f8708cc86bf84a7e071f",
+  "command": [
+    "env",
+    "PYTHONPATH=src",
+    "OPENBLAS_NUM_THREADS=1",
+    "OMP_NUM_THREADS=2",
+    "/tmp/emoti-retrieval-venv/bin/python",
+    "tools/profile_persistent_embeddings.py",
+    "--source-root",
+    "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+    "--model-cache",
+    "/tmp/emoti-bge-model-cache",
+    "--size",
+    "10000",
+    "--output",
+    "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/incremental-embedding/round2-10000/persistent-embedding-performance.json"
+  ],
+  "cwd": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+  "exit_code": 0,
+  "source_sha256_before_and_after_equal": true,
+  "all_production_python_files_verified": 135,
+  "distinct_child_pids": [
+    5,
+    28,
+    41
+  ],
+  "same_query_top4_ids_equal_across_all_processes": true,
+  "core_algorithm_version": "\"typed-literal-v2:structured-value-v1:cn-grams-v1:fts-rowid-v1:structured-pk-v1:raw-diff-v1\"",
+  "sqlite_version": "3.53.1",
+  "cpu_model": "AMD EPYC 9V74 80-Core Processor",
+  "cpu_quota": "800000 100000",
+  "memory_limit_bytes": "8589934592",
+  "artifact_sha256": {
+    "persistent-embedding-performance-10000-cold.json": "a31adc0751197652933e82b1de8f2c98bfc14b0d5c3b9e655b108a63620738fb",
+    "persistent-embedding-performance-10000-cold.log": "09f5944f0e89d84360078f10a00382203a081752f2722d9f1960d25b87e0f806",
+    "persistent-embedding-performance-10000-reopen_mutate.json": "6807707e3ce31f91ada697a1e74647937cb7cc76f771d6e5ee56a5928d9ec145",
+    "persistent-embedding-performance-10000-reopen_mutate.log": "12123c6b96792f3b60fbbb0979136d43a9e8530c30514be477d01837c6311693",
+    "persistent-embedding-performance-10000-reopen_verify.json": "b18d9aa0c76f9a75bd84cdbd3c9b2e9ea9dbc4dfe8e917f31de8e2d09b6e9d4a",
+    "persistent-embedding-performance-10000-reopen_verify.log": "b5537c7d16e96fb6e53c04fb70802148e1e764d98a8e3dda97c56342c6ce0eb2",
+    "persistent-embedding-performance.json": "63cd8c5bf99a32ad74e8d58536e3e2120e461e19766ff61dcdba5aaff6c178ec",
+    "run-plan.json": "028bb9a394e392455233a1f91309043eb7e2e2e1ecbbc1655cdc54af1801f91d"
+  },
+  "scheduling": "storage benchmark completed before launch; root and quality agents notified before and after; no other heavy project benchmark scheduled during this run, not exclusive host CPU",
+  "scope": "one 10000-row scale, synthetic six-template Chinese text; one correction and one forget; three warm questions per phase; independent processes with locally cached pinned BGE; no live LLM or actual user interaction",
+  "older_scales": "300 and 3000 measurements remain first-round historical evidence; not rerun on 1eef5cb"
+}

@@ -1,0 +1,7 @@
+[0;93m2026-11-02 03:13:50.869297341 [W:onnxruntime:Default, telemetry_1ds.cc:600 operator()] Failed to persist telemetry device ID; using an in-memory identifier[m
+{"size": 300, "cold_ms": 4274.121702997945, "warm_p50_ms": 6.449151995184366, "corrected_encodes": 1, "forget_encodes": 0, "rss_mib": 392.75390625}
+[0;93m2026-11-02 03:13:57.884347835 [W:onnxruntime:Default, telemetry_1ds.cc:600 operator()] Failed to persist telemetry device ID; using an in-memory identifier[m
+{"size": 3000, "cold_ms": 42444.777848999365, "warm_p50_ms": 13.026829001319129, "corrected_encodes": 1, "forget_encodes": 0, "rss_mib": 482.2109375}
+[0;93m2026-11-02 03:14:47.740853449 [W:onnxruntime:Default, telemetry_1ds.cc:600 operator()] Failed to persist telemetry device ID; using an in-memory identifier[m
+{"size": 10000, "cold_ms": 152989.18590800167, "warm_p50_ms": 30.446750999544747, "corrected_encodes": 1, "forget_encodes": 0, "rss_mib": 552.140625}
+{"output": "/workspace/scratch/ac4f72a6307d/ondemand-20261101/incremental-embedding-performance-batch64.json", "runs": 3}

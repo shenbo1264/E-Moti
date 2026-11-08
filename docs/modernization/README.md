@@ -1,8 +1,10 @@
 # E-Moti Personal Companion 第一批升级交付
 
+当前增量入口：[2026-11-01 记忆一致性、人格预算与真实检索评测](20261101-memory-upgrade/README.md)。该包基于已合并的PR #6，包含可应用代码、旧SQLite指纹迁移、后续需求和完整评测规格。下文保留2026-10-25这一批的历史结果。
+
 研究与实施日期：2026-10-25。基线：`b9f200955123790a5c66abcaf4e2567b3659a90e`。本批实际修改 Python/PySide6 本体，完成记忆生命周期与稳定人格入口；Relay、游戏 Agent、硬件固件不在改动范围。
 
-最新入口：[2026-10-29 Claude/Codex交接](../handoff/20261029/README.md)，汇总完整需求、角色分工与提示词；手机范围更正为Android/HyperOS、iOS、华为手机原生鸿蒙。此前macOS研究保留历史，不再安排Mac桌面任务。
+历史交接：[2026-10-29 Claude/Codex交接](../handoff/20261029/README.md)，汇总当时的需求、角色分工与提示词；手机范围更正为Android/HyperOS、iOS、华为手机原生鸿蒙。此前macOS研究保留历史，不再安排Mac桌面任务。
 
 后续增量：见 [2026-10-28 多端 Personal Agent 研究与实现](mobile/README.md)，包含持久任务监督和短时观测。下表保留第一批记忆/人格文档。
 

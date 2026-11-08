@@ -63,10 +63,11 @@ class PluginEnabledCompanionController(_BaseController):
         self.story_runtime = CompanionStoryRuntime.create(
             user_data_root=data_root,
             character_id=character_id,
+            character_name=self.character_pack.name,
             focus_settings=_load_focus_settings(self._focus_settings_path),
         )
         self._focus_activity_reader = WindowsForegroundActivityReader()
-        self.memory_album_controller = MemoryAlbumController(self.story_runtime)
+        self.memory_album_controller = MemoryAlbumController(self.story_runtime, clock=lambda: int(self.now))
         self.plugin_subsystem = PluginSubsystem(application_root=plugins_root().parent, user_data_root=data_root)
         self.plugin_boot_report = self.plugin_subsystem.start()
         self.plugin_story_bridge = PluginStoryBridge(
@@ -94,10 +95,12 @@ class PluginEnabledCompanionController(_BaseController):
             self._last_proactive_at = {key: int(value) for key, value in schedule["last_proactive_at"].items()}
             self._proactive_daily_counts = {key: int(value) for key, value in schedule["daily_counts"].items()}
             self._last_dialogue_at = schedule.get("last_dialogue_at")
+            self._last_dialogue_wall = schedule.get("last_dialogue_wall")
         else:
             self._last_proactive_at = {}
             self._proactive_daily_counts = {}
             self._last_dialogue_at = None
+            self._last_dialogue_wall = None
         self.last_chat_memory_result = ChatMemoryResult()
         if not memory.store.migration_done("long_term_v1"):
             migrate_legacy_entries(memory, (entry.to_dict() for entry in self.long_term_memory_service.entries),
@@ -188,14 +191,26 @@ class PluginEnabledCompanionController(_BaseController):
                          if not entry.deleted and entry.metadata.get("legacy_key") == key), None)
         kind, tags = _kind_and_tags(key, category)
         tags = tuple(tag for tag in tags if tag != "用户确认")
+        metadata = {"legacy_key": key, "legacy_category": category}
+        # A typed legacy key is an explicit host field, even when the literal
+        # value has no drink keyword (e.g. a named blend). Reparse the new text
+        # on every upsert so the old value cannot survive in fact metadata.
+        if key == "preference:drink":
+            from .chat_memory import _parse_fact, _UNSUPPORTED
+            text = summary.replace("用户", "我", 1) if summary.startswith("用户") else summary
+            parsed = None if _UNSUPPORTED.search(text) else _parse_fact(text.rstrip("。！!"))
+            if parsed is not None and parsed[2].startswith("preference:"):
+                polarity = parsed[2].rsplit(":", 1)[-1]
+                metadata.update(fact_subject="user:self", fact_value=parsed[0], fact_domain="饮料偏好",
+                                fact_slot=f"preference:饮料偏好:{polarity}")
         if existing is not None:
             memory.store.upsert_memory(replace(existing, kind=kind, title=_legacy_title(kind, summary),
                 summary=summary, source=source, tags=tags, user_confirmed=False, updated_at=int(self.now),
-                metadata={**existing.metadata, "legacy_category": category}), expected_epoch=epoch)
+                metadata=metadata), expected_epoch=epoch)
         else:
             result = memory.remember(kind=kind, title=_legacy_title(kind, summary), summary=summary,
                 source=source, now=int(self.now), importance=0.78, tags=tags, user_confirmed=False,
-                metadata={"legacy_key": key, "legacy_category": category},
+                metadata=metadata,
                 source_ids=(f"legacy_key:{make_memory_id(key)}",), expected_epoch=epoch)
             if result.deleted:
                 raise ValueError("retired legacy memory source cannot be replayed")
@@ -205,7 +220,7 @@ class PluginEnabledCompanionController(_BaseController):
 
     def _dialogue_context_epoch(self) -> int:
         story = getattr(self, "story_runtime", None)
-        return story.memory.store.context_epoch if story is not None else 0
+        return story.memory.store.current_context_epoch(now=int(self.now)) if story is not None else 0
 
     def _on_memory_invalidated(self) -> None:
         self._invalidate_host_dialogue()
@@ -213,7 +228,7 @@ class PluginEnabledCompanionController(_BaseController):
         if retriever is not None and hasattr(retriever, "invalidate"):
             retriever.invalidate()
         self._memory_epoch_seen = self._dialogue_context_epoch()
-        self.story_runtime.memory.consolidate(now=int(self.now), shared_only=True)
+        self.story_runtime.memory.schedule_maintenance(now=int(self.now))
         self._perception_summary = ""
         self._tool_results = []
         self._perception_epoch = -1
@@ -255,9 +270,13 @@ class PluginEnabledCompanionController(_BaseController):
     def _commit_dialogue_exchange(self, request, dialogue_epoch: int) -> None:
         if request.normalized_text():
             self._last_dialogue_at = int(self.now)
-        corrected = any(m.memory_id in self.last_chat_memory_result.memory_ids
-                        and m.metadata.get("corrected_by_user")
-                        for m in self.story_runtime.memory.store.load_memories())
+            self._last_dialogue_wall = int(time.time())
+        from .memory_index import IndexedMemoryQuery
+        ids = self.last_chat_memory_result.memory_ids
+        corrected = bool(ids) and any(m.metadata.get("corrected_by_user")
+            for m in self.story_runtime.memory.store.read_indexed_snapshot(
+                IndexedMemoryQuery(memory_ids=ids), now=int(self.now), include_chapters=False,
+                include_profile_sources=False).entries)
         if self.last_chat_memory_result.status == "forgotten" or corrected:
             # 撤回和纠正原话可能包含旧事实；保留可读记录，但禁止本轮再次进入后续 prompt。
             dialogue_epoch = max(0, dialogue_epoch - 1)
@@ -272,6 +291,7 @@ class PluginEnabledCompanionController(_BaseController):
         retriever = self.story_runtime.memory.semantic_retriever
         return {"mode": self.chat_memory.mode, "last_result": asdict(self.last_chat_memory_result),
                 "pending_count": len(self.story_runtime.memory.pending_candidates),
+                "maintenance": self.story_runtime.memory.maintenance_status(),
                 "semantic": retriever.status if retriever is not None else {"enabled": False}}
 
     def enable_semantic_memory(self, *, cache_dir: Path, local_files_only: bool = False):
@@ -288,11 +308,29 @@ class PluginEnabledCompanionController(_BaseController):
     def prepare_semantic_recall(self, request):
         self._require_host_thread()
         memory = self.story_runtime.memory
-        memory.store.expire_memories(now=int(self.now))
-        retriever = memory.semantic_retriever
-        if retriever is None:
-            return None
-        return retriever.prepare(request.normalized_text(), memory.store.load_memories(), now=int(self.now))
+        if getattr(self, "_memory_evidence_judgment_enabled", False):
+            self._sync_memory_evidence_judge()
+        epoch = memory.store.current_context_epoch(now=int(self.now))
+        history = tuple(entry for entry in self.dialogue_history if entry.context_epoch == epoch)
+        return memory.prepare_retrieval(request.normalized_text(), now=int(self.now), history=history)
+
+    def enable_memory_evidence_judgment(self, enabled=True):
+        """显式选择候选证据判断路径，复用当前表达模型与角色存档。"""
+        self._require_host_thread()
+        self._memory_evidence_judgment_enabled = bool(enabled)
+        self._invalidate_host_dialogue()
+        self._sync_memory_evidence_judge()
+
+    def _sync_memory_evidence_judge(self):
+        from .memory_evidence_judgment import MemoryEvidenceJudge
+        memory = self.story_runtime.memory
+        client = getattr(self.ai_expressor, "llm_client", None) if self._memory_evidence_judgment_enabled else None
+        judge = memory.evidence_judge
+        if judge is not None and judge.client is client:
+            return
+        if judge is not None:
+            judge.close()
+        memory.evidence_judge = MemoryEvidenceJudge(client) if client is not None else None
 
     def disable_semantic_memory(self):
         self._require_host_thread()
@@ -317,7 +355,8 @@ class PluginEnabledCompanionController(_BaseController):
             pending = path.with_suffix(".pending")
             pending.write_text(json.dumps({"logical_time": int(self.now),
                 "last_proactive_at": self._last_proactive_at, "daily_counts": self._proactive_daily_counts,
-                "last_dialogue_at": self._last_dialogue_at}),
+                "last_dialogue_at": self._last_dialogue_at,
+                "last_dialogue_wall": self._last_dialogue_wall}),
                 encoding="utf-8")
             pending.replace(path)
 
@@ -325,6 +364,19 @@ class PluginEnabledCompanionController(_BaseController):
         snapshot = super().reject_proactive_request()
         self._persist()
         return snapshot
+
+    def defer_proactive_request(self, seconds: int = 3600):
+        snapshot = super().defer_proactive_request(seconds)
+        self._persist()
+        return snapshot
+
+    def _proactive_focus_active(self) -> bool:
+        return self.story_runtime.focus.settings.enabled and self.story_runtime.focus.observation.is_focus_work
+
+    def _proactive_away_seconds(self) -> int | None:
+        if self._last_dialogue_wall is None:
+            return None
+        return max(0, int(time.time()) - int(self._last_dialogue_wall))
 
     def _process_chat_memory(self, request) -> ChatMemoryResult:
         epoch = self._dialogue_context_epoch()
@@ -349,8 +401,19 @@ class PluginEnabledCompanionController(_BaseController):
         story = getattr(self, "story_runtime", None)
         if story is None:
             return True
-        return (request.persona.get("character_id") == self.state.character_id
-                and request.emotional_memory.get("context_epoch") == story.memory.store.context_epoch)
+        now = int(self.now)
+        if (request.persona.get("character_id") != self.state.character_id
+                or request.emotional_memory.get("context_epoch") != story.memory.store.current_context_epoch(now=now)):
+            return False
+        # A live adapter's TTL can expire without changing any local memory.
+        # The final delivery guard uses the same logical clock as retrieval.
+        from .retrieval_contract import ExternalStateEvidence
+        try:
+            return all(ExternalStateEvidence(**row).valid_for(authority=row["authority"],
+                character_id=self.state.character_id, owner_id=story.memory.owner_id, now=now)
+                for row in request.emotional_memory.get("external_state", ()))
+        except (TypeError, ValueError, KeyError):
+            return False
 
 
     def bind_plugin_capabilities(
@@ -546,7 +609,7 @@ class PluginEnabledCompanionController(_BaseController):
         bridge = getattr(self, "plugin_story_bridge", None)
         if bridge is None:
             return base
-        self.story_runtime.memory.store.expire_memories(now=int(self.now))
+        self.story_runtime.memory.store.expire_memories_indexed(now=int(self.now))
         epoch = self._dialogue_context_epoch()
         if epoch != getattr(self, "_memory_epoch_seen", epoch):
             self._on_memory_invalidated()
@@ -593,15 +656,17 @@ class PluginEnabledCompanionController(_BaseController):
         retriever = self.story_runtime.memory.semantic_retriever
         if retriever is not None and hasattr(retriever, "close"):
             retriever.close()
+        self.story_runtime.memory.close()
         snapshot = super().switch_character(character_id, include_ai_expression=False, **kwargs)  # type: ignore[misc]
         data_root = Path(getattr(self, "user_data_root", None) or user_data_dir())
         self._focus_settings_path = _focus_preferences_path(data_root, character_id)
         self.story_runtime = CompanionStoryRuntime.create(
             user_data_root=data_root,
             character_id=character_id,
+            character_name=self.character_pack.name,
             focus_settings=_load_focus_settings(self._focus_settings_path),
         )
-        self.memory_album_controller = MemoryAlbumController(self.story_runtime)
+        self.memory_album_controller = MemoryAlbumController(self.story_runtime, clock=lambda: int(self.now))
         self.plugin_story_bridge = PluginStoryBridge(self.story_runtime, self.plugin_subsystem.runtime, character_id)
         self._initialize_personal_context()
         if include_ai:
@@ -613,6 +678,8 @@ class PluginEnabledCompanionController(_BaseController):
             story = getattr(self, "story_runtime", None)
             if story is not None and hasattr(story.memory.semantic_retriever, "close"):
                 story.memory.semantic_retriever.close()
+            if story is not None:
+                story.memory.close()
             subsystem = getattr(self, "plugin_subsystem", None)
             if subsystem is not None:
                 subsystem.shutdown()

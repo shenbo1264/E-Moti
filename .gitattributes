@@ -1,0 +1,2 @@
+tests/fixtures/ondemand_memory*.json text eol=lf
+tests/fixtures/ondemand_memory*/**/*.json text eol=lf

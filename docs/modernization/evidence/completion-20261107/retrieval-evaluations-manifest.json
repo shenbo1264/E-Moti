@@ -1,0 +1,857 @@
+{
+  "files": [
+    {
+      "path": "chat-memory-benchmark-upstream/LICENSE",
+      "bytes": 1062,
+      "sha256": "d94df12f9b8e6e0be9f9f3d779561a6816e456bd09d898f95199032f6c61a829"
+    },
+    {
+      "path": "memory-sealed-eleventh/lifecycle_holdout.json",
+      "bytes": 8399,
+      "sha256": "b815d870aecfc7e3c32434d123cf838a00c272ac8dda19063e2c42caa61edca5"
+    },
+    {
+      "path": "memory-sealed-eleventh/ondemand_memory_holdout.json",
+      "bytes": 30760,
+      "sha256": "b0a94fa0eafef23f26be6470144cd5322306364c1cf13a1250402b3f10544deb"
+    },
+    {
+      "path": "memory-sealed-eleventh/sources.json",
+      "bytes": 4059,
+      "sha256": "8b84a1034ce63d88137a99aa2d63ed0b3527d5353c35f3ea03ea061800265d45"
+    },
+    {
+      "path": "memory-sealed-thirteenth/lifecycle_holdout.json",
+      "bytes": 5396,
+      "sha256": "7a30caf799c008d0ae5cf685b45c36472372bf676d789d4660c68c649b69fd2b"
+    },
+    {
+      "path": "memory-sealed-thirteenth/ondemand_memory_holdout.json",
+      "bytes": 10352,
+      "sha256": "71ac9261b66a6b57f8a6c871b58d5148e2f51b98f892a6d8c14ca11503a09706"
+    },
+    {
+      "path": "memory-sealed-thirteenth-schemafixed/ondemand_memory_holdout.json",
+      "bytes": 15344,
+      "sha256": "0f1c5da71480a56e8783fdc9ffde8492e6130f5a7724abdc9eea17756a935b76"
+    },
+    {
+      "path": "memory-sealed-thirteenth-schemafixed/schema-correction.json",
+      "bytes": 2801,
+      "sha256": "cfed2bc404ac8633d23ff341961e4342a73e0d6baad8a4f725aafa34f1e84f66"
+    },
+    {
+      "path": "memory-sealed-twelfth/lifecycle_holdout.json",
+      "bytes": 6568,
+      "sha256": "e08b1b72adec05a0138fcd6ef3df9772ee09ec7246cebecd4bab7d86d5b5f05a"
+    },
+    {
+      "path": "memory-sealed-twelfth/ondemand_memory_holdout.json",
+      "bytes": 13567,
+      "sha256": "027428e4bad0cbf7fcba76fdf872f34f88d11353622d9260fff8a8ffba9af464"
+    },
+    {
+      "path": "memory-sealed-twelfth-clockfixed/clock-correction.json",
+      "bytes": 663,
+      "sha256": "190580aa551382cd20c04a856ddd571bfbbf5b427d4c3eb11edf36be9c4f6c6c"
+    },
+    {
+      "path": "memory-sealed-twelfth-clockfixed/ondemand_memory_holdout.json",
+      "bytes": 19909,
+      "sha256": "cae1e180fc4ca5a4219c2bd3f83f2c47ba0866bf71d2fa639e4bc34cb848d451"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/development-contracts-d3c55d2.json",
+      "bytes": 772266,
+      "sha256": "715c6363974588af4cb1be04ad6843176e0d5cc6819f8bbabe6dba3efe7c9f6f"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/development-contracts.json",
+      "bytes": 772032,
+      "sha256": "b23aed3bf0a58f10b09e84b42ee3af234b7e6bf1dc77eb22a4b0e708d1ad4fd1"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/candidate-generation.json",
+      "bytes": 1617032,
+      "sha256": "7ca89c386cc7a1b2421be845743f88245a65f819e597e40aa4eef7c559c88660"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/informed-review.json",
+      "bytes": 46260,
+      "sha256": "2a1f953e97ce81bd4e763d24f89da574c80026b15d077a60f0a7ccb243d0e931"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/legacy-generation.json",
+      "bytes": 2393503,
+      "sha256": "0de5d2c021f512f48ae28c34ad55e95914cb1804f9a8e078cedb25d06229dd42"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/presentation/bge_rrf-300.json",
+      "bytes": 487110,
+      "sha256": "f3977dce7fddbbd1d373f9921ddda05dbaf2d9cec6b0535048145e3790119952"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/presentation/layered-300.json",
+      "bytes": 676393,
+      "sha256": "935343573595eb0595ec9602de6284d0a566cf3232d5c9a9b1156dda93fcc62a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/presentation/lexical-300.json",
+      "bytes": 450095,
+      "sha256": "6beff62e3f5e90775299d344755be200389a98ecc99339fe11d64fd24faf3d7a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/presentation/none-300.json",
+      "bytes": 370039,
+      "sha256": "004b12b43120c87493ca18cb226fc505c24404ee6c537d55d9059aa21ede5b20"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/presentation/routed-300.json",
+      "bytes": 685102,
+      "sha256": "e9dc57bcc03d9727f4c5d137c6f2e20ea77b5e2a6b7b886aafee3963aea584f3"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/bge_rrf-300.json",
+      "bytes": 315197,
+      "sha256": "a3ea29b66f3fb17a317dd4301ffe19b58c91594e3349af2fc7244a9ac9c10422"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/bge_rrf-300.log",
+      "bytes": 220,
+      "sha256": "2965d441ad32e4abba83be40cddc6336c43b63e5f8757ee0ae7630b08d3c4c0c"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/layered-300.json",
+      "bytes": 500939,
+      "sha256": "549fa62242da0b100e3dd2416b3f88c7f8ea5f437d0d8c7b6574bb383bedc46e"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/layered-300.log",
+      "bytes": 220,
+      "sha256": "2c0a1edb6e367fb772cd7f8bf39eb8f00cd3cca2429b35b42732fd3c7effa781"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/lexical-300.json",
+      "bytes": 281681,
+      "sha256": "92450f58837da50ee880139dc20a248c7dc93778ac0131466c126951391baf3a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/lexical-300.log",
+      "bytes": 220,
+      "sha256": "5c45f3463e365bef18095a1dee09184b184b4b5551ba74908114d6f7d4511f43"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/none-300.json",
+      "bytes": 211441,
+      "sha256": "31ae2350e5bb1da2e71da1758e823f1df87d2c2297eecfde5c9f77c3146b04d4"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/none-300.log",
+      "bytes": 214,
+      "sha256": "42ac09cf41299d02602cec542d56204a932a676088ffe2acc5b354900cb9bdae"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/routed-300.json",
+      "bytes": 509621,
+      "sha256": "5398d8ff489575ba95f6326fbddcc48547a549b0fe14860ac7f9c210916869ec"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/routed-300.log",
+      "bytes": 218,
+      "sha256": "ca18734749ad96c9a77d80df7e0882fd554c47acadc42b778a51d5acb2af3e55"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/retrieval/run-manifest.json",
+      "bytes": 70497,
+      "sha256": "b992c73cd527d21dbb282640bd2decf900a03c264ee84bb39ab684bcfdd6ecd0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/eleventh/REVIEW.md",
+      "bytes": 3134,
+      "sha256": "8f9d2227338c06d2045a40ff3a855215fe5faa99fdaa1253601989ea6573929d"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/candidate-generation.json",
+      "bytes": 1699186,
+      "sha256": "20ca93e20177e9365b59c1d51941cd909965a7233e62fe8606f9d264847d7e91"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/informed-review.json",
+      "bytes": 13426,
+      "sha256": "7b231074612ec87b4ddcb1ebb22d0ceccdc453738e60a3779b363d9f505736b1"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/presentation/layered-300.json",
+      "bytes": 918297,
+      "sha256": "d77a382e2acc89d5eef37057b5fe3b77c0286e6deb790b0a2d81fa3c52e08820"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/presentation/routed-300.json",
+      "bytes": 911129,
+      "sha256": "993a809dd10d2323c0ff5b4f425381ae21e85bdd73fae4b5a96fbfeb4c31ff01"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/retrieval/layered-300.json",
+      "bytes": 655038,
+      "sha256": "bfda802b92d16bf766fa730d370db08389c52496e04658052a46094fd69f6f04"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/retrieval/layered-300.log",
+      "bytes": 223,
+      "sha256": "cb82f0c215cf5a49148dd320ed33c6329003ac8f45f0b34eb9f5dd653c55a4a6"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/retrieval/routed-300.json",
+      "bytes": 647062,
+      "sha256": "fd5c288669901e293fea664d5e7d02a924ba1e4ac4a296569cf898d8742418ea"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/retrieval/routed-300.log",
+      "bytes": 221,
+      "sha256": "906feba6072a334f1aff5ad3def7c997a389cc1cb45d73b749b599b1b8303f62"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-ninth/retrieval/run-manifest.json",
+      "bytes": 41244,
+      "sha256": "abbedb9c45b65a298c9f023e2f1814f5be4d1ee251b0ec34b31485f437549eaf"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/candidate-generation.json",
+      "bytes": 1619396,
+      "sha256": "c9fa5f6cb8ae3f3d8dd03892f74cea8613e1ceab0ea5a23b4b429ee973a34357"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/informed-review.json",
+      "bytes": 12911,
+      "sha256": "b11b6f76357876cad9b8a4479fc45a1d1f8586e66c1d4263f1c943919652fe29"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/presentation/layered-300.json",
+      "bytes": 713642,
+      "sha256": "5458afa8a753cda1fef3fb350d51c96128f0b9247e65da70f982339a6123fdf5"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/presentation/routed-300.json",
+      "bytes": 725065,
+      "sha256": "4e6223e9d550f55672861ca84d79154f9e5c136932ba7be1fd7961b268fb1c8d"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/retrieval/layered-300.json",
+      "bytes": 536252,
+      "sha256": "dfb9ad3b2176a2cce7357cd51e284c2446c73301a642d485f0787272b51543b9"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/retrieval/layered-300.log",
+      "bytes": 223,
+      "sha256": "399ad521eab1f94e74dd7c1f2cfcd164e13624d0052788a5f71d6bc45fdfb270"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/retrieval/routed-300.json",
+      "bytes": 547703,
+      "sha256": "8aa738d01fddd8dbd1bffc2eb57a1dcefea52038652cebd8c3eb30f6aed0bb97"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/retrieval/routed-300.log",
+      "bytes": 221,
+      "sha256": "e936ea7f6b790284e9898d614b2bfa963b8dd78d9698a29a52b89d457d5c8b8b"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-tenth/retrieval/run-manifest.json",
+      "bytes": 41264,
+      "sha256": "9f911b73f2d89eca8893f39f7cd7d6acaf567a4aa99ece76b302c3da735e7ce4"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-twelfth/retrieval/layered-300.json",
+      "bytes": 475192,
+      "sha256": "9b8e12863d3c676ae023a13ba89fef16cd9b2884d62fd8aec63164bc722b0da9"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-twelfth/retrieval/layered-300.log",
+      "bytes": 225,
+      "sha256": "7754e01d920eb0f0d84623f8a1647962dc3e5fd9a767e067613ac6f67534b857"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-twelfth/retrieval/routed-300.json",
+      "bytes": 475176,
+      "sha256": "0d5bb4832885c7dbb5ab5836511b62cb20414188031235fdfb5f5f1c22f1dbc7"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-twelfth/retrieval/routed-300.log",
+      "bytes": 223,
+      "sha256": "25f8b39e200bd5e845a132582b6807e584e0f6f50a9947e4a0e88cc798af449d"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-twelfth/retrieval/run-manifest.json",
+      "bytes": 41502,
+      "sha256": "484ee007f1b9c25a5295a5fcecef386672a056768e2b521520f44c0849487cd0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/final-twelfth/STATUS.md",
+      "bytes": 883,
+      "sha256": "db8ef7d37803c9dd45c836ce5df95b47f9e3ba3657c889563d8d0ab3ca3e2d37"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/ninth-presentation/layered-300.json",
+      "bytes": 901496,
+      "sha256": "0e9bb2149189a06620d2c3d214479163399d0eb137324efebc7635c8ba16c7f8"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/ninth-presentation/routed-300.json",
+      "bytes": 860511,
+      "sha256": "abc3cbccc192989c74a2bd1feae55bbfd3b85506cc87d8f5ebddbb2857d49e50"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/ninth-regression/layered-300.json",
+      "bytes": 640451,
+      "sha256": "7aec13094eb0f242b658827eaae5ebc7733fa83f9119bbade4fa9e89b0ecc05b"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/ninth-regression/layered-300.log",
+      "bytes": 217,
+      "sha256": "9041d038c74ef8955682b2c10dd5cbf396ca5c44c8b1703a2427528ea64f3d29"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/ninth-regression/routed-300.json",
+      "bytes": 601660,
+      "sha256": "a9b325e3379ed26c37482f4614f3a4bb1921babf9c5ff8f2db5c4c6035a61bd1"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/ninth-regression/routed-300.log",
+      "bytes": 215,
+      "sha256": "52ddedf35909c658b7e9323800b59afe181cbce334c7e572587583e8e7f47011"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/ninth-regression/run-manifest.json",
+      "bytes": 41012,
+      "sha256": "d6f43638473caaa7d834102a889876f37079890d3dc282da108227f6e0c9384e"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/overlap-after.log",
+      "bytes": 3638,
+      "sha256": "155e1b21a5a3c0fa7673feea447156464fa8945b54b3b6bc377cb66bd3fa89dd"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/overlap-before.log",
+      "bytes": 4383,
+      "sha256": "7e49e428f329cc29d4aa6fa9de74c5dd5c3906b88a039daa8a8f8253b1527a70"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/overlap-final.log",
+      "bytes": 101,
+      "sha256": "83f095c1ae7df470710d12b079e59c0506b7ed02b6ae88fc8afe97948d6acb02"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/exam-archive/characters/xingxi_pixel_pet/companion_save.json",
+      "bytes": 739,
+      "sha256": "cd39c62045a931bc8412a9ad2befaf7e1f7fbdff98407ba8b8ba72164608d38a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/exam-archive/characters/xingxi_pixel_pet/dialogue_history.json",
+      "bytes": 463,
+      "sha256": "732e0d56cd30ef3d2c36059ad5382ea3dd09bdaeb853db5961975490a24d75f7"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/exam-archive/characters/xingxi_pixel_pet/pack_metadata.json",
+      "bytes": 264,
+      "sha256": "0f933de032c4d7430a48de73db81188f0815614f19ad3335d988c92758706daf"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/exam-archive/characters/xingxi_pixel_pet/proactive_state.json",
+      "bytes": 139,
+      "sha256": "520f9676d22feda6086b138361c1542d029e145429e9f5256cd6563393200d0b"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/exam-archive/plugins/health.json",
+      "bytes": 644,
+      "sha256": "0c67c4f0d7b04ecfffec790804269e2edd3db15b36ba7fc4666a234247d59813"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/provider-calls.json",
+      "bytes": 54023,
+      "sha256": "8d4a99c8c3962952493c8300fb7a1f9a0cd08f798889d4757a99a5e7749ef889"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/replay-archive/characters/xingxi_pixel_pet/companion_save.json",
+      "bytes": 739,
+      "sha256": "cd39c62045a931bc8412a9ad2befaf7e1f7fbdff98407ba8b8ba72164608d38a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/replay-archive/characters/xingxi_pixel_pet/dialogue_history.json",
+      "bytes": 2216,
+      "sha256": "88ed4d8e76bc3148038a96ce4fccea6ae1c5601f882f6c089703da6023f987a5"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/replay-archive/characters/xingxi_pixel_pet/pack_metadata.json",
+      "bytes": 264,
+      "sha256": "0f933de032c4d7430a48de73db81188f0815614f19ad3335d988c92758706daf"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/replay-archive/characters/xingxi_pixel_pet/proactive_state.json",
+      "bytes": 139,
+      "sha256": "b937b2ca08750342357c69814a9fa5037299f68f7fca7f698c24de6399891c98"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/replay-archive/plugins/health.json",
+      "bytes": 644,
+      "sha256": "04da7069223ad63cc06d318efd6b3022875739821e6980e9d1799bd98568778c"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-after/result.json",
+      "bytes": 4888,
+      "sha256": "a64225aa53c1136aba18a0decc8aee1abb765fc588309a35793cf55ea4a8dff0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/exam-archive/characters/xingxi_pixel_pet/companion_save.json",
+      "bytes": 739,
+      "sha256": "cd39c62045a931bc8412a9ad2befaf7e1f7fbdff98407ba8b8ba72164608d38a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/exam-archive/characters/xingxi_pixel_pet/dialogue_history.json",
+      "bytes": 460,
+      "sha256": "71a4e66888acc354f93f85ebe57cd01a3a2b80711563ba3085bc81d2170ea9ae"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/exam-archive/characters/xingxi_pixel_pet/pack_metadata.json",
+      "bytes": 264,
+      "sha256": "bcb3139d6673c9a19e25263a064036d291db9c78e363cffaba8f55229554e950"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/exam-archive/characters/xingxi_pixel_pet/proactive_state.json",
+      "bytes": 139,
+      "sha256": "7ca5dc6feb8d99b0e09e6818ebf61474f9de415626bff33d0fe1224e22c20ba7"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/exam-archive/plugins/health.json",
+      "bytes": 644,
+      "sha256": "d2c38636d1a2b486df1fe9b35aa854c4d46fa4a7b4af6a5c21ab5460e7b33c70"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/provider-calls.json",
+      "bytes": 43309,
+      "sha256": "443c6ea5a56e85277df72cffcc0fbb3be458675b7b65288043b4ae499e6382d5"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/replay-archive/characters/xingxi_pixel_pet/companion_save.json",
+      "bytes": 739,
+      "sha256": "cd39c62045a931bc8412a9ad2befaf7e1f7fbdff98407ba8b8ba72164608d38a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/replay-archive/characters/xingxi_pixel_pet/dialogue_history.json",
+      "bytes": 2216,
+      "sha256": "88ed4d8e76bc3148038a96ce4fccea6ae1c5601f882f6c089703da6023f987a5"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/replay-archive/characters/xingxi_pixel_pet/pack_metadata.json",
+      "bytes": 264,
+      "sha256": "bcb3139d6673c9a19e25263a064036d291db9c78e363cffaba8f55229554e950"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/replay-archive/characters/xingxi_pixel_pet/proactive_state.json",
+      "bytes": 139,
+      "sha256": "86abead5e9de2b003ebfadf4792a908b035329328e1c2ff014f84015c64b8cef"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/replay-archive/plugins/health.json",
+      "bytes": 644,
+      "sha256": "10335e50eef4dc5841147d38b1d9f06cd5eb3f9618c28748e9ce0980a2b8e3e0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-nonthinking/result.json",
+      "bytes": 4888,
+      "sha256": "5515e7e16af1518bf25d577bc1b4d459a54cac45b47c23bc66a3bba172704a52"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/exam-archive/characters/xingxi_pixel_pet/companion_save.json",
+      "bytes": 739,
+      "sha256": "cd39c62045a931bc8412a9ad2befaf7e1f7fbdff98407ba8b8ba72164608d38a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/exam-archive/characters/xingxi_pixel_pet/dialogue_history.json",
+      "bytes": 478,
+      "sha256": "acf95e1964db81776486fd579ce5f3296b86441ff10e5e53050b1c72a9f3ad5d"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/exam-archive/characters/xingxi_pixel_pet/pack_metadata.json",
+      "bytes": 264,
+      "sha256": "bcb3139d6673c9a19e25263a064036d291db9c78e363cffaba8f55229554e950"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/exam-archive/characters/xingxi_pixel_pet/proactive_state.json",
+      "bytes": 139,
+      "sha256": "b0350fd1b6dd60a4f5a15525426cdec0a2e0374cf78286062a2ac3c141f85068"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/exam-archive/plugins/health.json",
+      "bytes": 644,
+      "sha256": "cde0f75502cc11b424a0e9218ab8b0f2dc003adc7809df9834737bda5e142150"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/provider-calls.json",
+      "bytes": 81579,
+      "sha256": "a583912583ba038976f9fab09cbb915b25bbffcce39425d43c5aeba00d85c836"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/replay-archive/characters/xingxi_pixel_pet/companion_save.json",
+      "bytes": 739,
+      "sha256": "cd39c62045a931bc8412a9ad2befaf7e1f7fbdff98407ba8b8ba72164608d38a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/replay-archive/characters/xingxi_pixel_pet/dialogue_history.json",
+      "bytes": 2216,
+      "sha256": "88ed4d8e76bc3148038a96ce4fccea6ae1c5601f882f6c089703da6023f987a5"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/replay-archive/characters/xingxi_pixel_pet/pack_metadata.json",
+      "bytes": 264,
+      "sha256": "bcb3139d6673c9a19e25263a064036d291db9c78e363cffaba8f55229554e950"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/replay-archive/characters/xingxi_pixel_pet/proactive_state.json",
+      "bytes": 139,
+      "sha256": "c94715e09837024649e7c4cdebdfc221c5f9d93e9f40cc65d92450ca344aad43"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/replay-archive/plugins/health.json",
+      "bytes": 644,
+      "sha256": "c2152f48be2b7bf089b156e6cc1778d5eec6b86a3c90f952af8e16141d0a8170"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/public-demo-timefix/result.json",
+      "bytes": 10325,
+      "sha256": "fc25c3597973e0d4dc57a4dea165772a93d2158715c3e0882616cceb2d280212"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/query-clock-after.log",
+      "bytes": 101,
+      "sha256": "1fb610db9376508fb7a19973f1617cd8df21f5c70c6e71b765bc158d481395bd"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/query-clock-before.log",
+      "bytes": 3674,
+      "sha256": "b3ef6125c7cafdfae03726f7129af7c04107f24c2b76f8e24db6c625ba91b1c3"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/regression-evidence-diagnosis.md",
+      "bytes": 3300,
+      "sha256": "a30350e57dbf099fcc556789e61f110e3621ef53be46d02a530c0ac13f9a8a67"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/regression-generation-unified.json",
+      "bytes": 3362879,
+      "sha256": "9572b1139fb4343455de938d74e728a58739e3e9b72644f3bd7183a3b52607c4"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/regression-generation-unified.log",
+      "bytes": 184,
+      "sha256": "6de2246d582b68f4eb840f2a52473656a4eeba407c252f2ce24f4c668e2013b5"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/regression-generation.json",
+      "bytes": 127187,
+      "sha256": "3caa5db8da4b7eda5a5eeb5f15ceacc4cf3bfb6ab245a38fa5742ca7c3cb5088"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/regression-generation.log",
+      "bytes": 171,
+      "sha256": "292340801063fea591ccab2da607718b3a97cc22395f8a8ca25bee32f3e9d45e"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/tenth-presentation/layered-300.json",
+      "bytes": 691762,
+      "sha256": "1a70d23ee4baf959489fe45265f416be89cd40e4c4f584a379a4e1958cceaa44"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/tenth-presentation/routed-300.json",
+      "bytes": 690074,
+      "sha256": "c5d2a710cc63824e0ef503b94b21b92e2e3bacd2881d8b5d86d365a5837413f0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/tenth-regression/layered-300.json",
+      "bytes": 515674,
+      "sha256": "d5fd7c3cd6f4b38db99582baf3f4bfee99370f9bc9e91dc91d12f3659c0d0513"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/tenth-regression/layered-300.log",
+      "bytes": 217,
+      "sha256": "cc43cf3c257f7372c407617b70433ff00e620dc1792bbfa44fb35100a12a7c26"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/tenth-regression/routed-300.json",
+      "bytes": 514291,
+      "sha256": "927c23fbdafec753765b4d3857b2331d81b91bb2ed12fa45bc0f3450a457de36"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/tenth-regression/routed-300.log",
+      "bytes": 215,
+      "sha256": "b3e65de2aaa1114c74f727fcef7b24af793dec57270190e0a4b31944d7562e20"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/tenth-regression/run-manifest.json",
+      "bytes": 41001,
+      "sha256": "4ecc71b9a4b2db0b55338609d1dcfe2eb1f86d37ba9aff5413a46faad34d539d"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth/retrieval/bge_rrf-300.log",
+      "bytes": 862,
+      "sha256": "4349f4349357835ad2ab793cd3741eb929cd9cf728152bdadbcad2e86e5349f0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth/retrieval/layered-300.log",
+      "bytes": 862,
+      "sha256": "4349f4349357835ad2ab793cd3741eb929cd9cf728152bdadbcad2e86e5349f0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth/retrieval/lexical-300.log",
+      "bytes": 862,
+      "sha256": "4349f4349357835ad2ab793cd3741eb929cd9cf728152bdadbcad2e86e5349f0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth/retrieval/none-300.log",
+      "bytes": 862,
+      "sha256": "4349f4349357835ad2ab793cd3741eb929cd9cf728152bdadbcad2e86e5349f0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth/retrieval/routed-300.log",
+      "bytes": 862,
+      "sha256": "4349f4349357835ad2ab793cd3741eb929cd9cf728152bdadbcad2e86e5349f0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth/retrieval/run-manifest.json",
+      "bytes": 26600,
+      "sha256": "f656bea9d51b50dbbe74a003a5449292e40f95bf35a733ce005529d07250ff0c"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/retrieval/bge_rrf-300.json",
+      "bytes": 377751,
+      "sha256": "3243019baf56c57574f6742b14077f729e9233b241d41e309432010fbf61c65b"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/retrieval/bge_rrf-300.log",
+      "bytes": 234,
+      "sha256": "30f7411792c598fdbecc662beb66d3a3038ac9ad4621e7833ed0203e658762dc"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/retrieval/lexical-300.json",
+      "bytes": 354503,
+      "sha256": "639be22da4cae45162641e58373e4ecd6f7e34516ee286b82d0797fdaa4407bc"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/retrieval/lexical-300.log",
+      "bytes": 234,
+      "sha256": "198c69269ff5c3a578a0f3f586d44c5544fdf4d8f896ab219259cce524f8b143"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/retrieval/none-300.json",
+      "bytes": 269038,
+      "sha256": "d1e3cb1a850ee1dee88c55564d6852d66cf035e1d424401e2211de9df2901318"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/retrieval/none-300.log",
+      "bytes": 228,
+      "sha256": "e45f4cb73c40d15a09385e9f05d0ff9a220b9f12f747b5cce92eb77efa389369"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/retrieval/routed-300.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/retrieval/run-manifest.json",
+      "bytes": 46009,
+      "sha256": "27f492de64d91eba66ff60f59296985fb87dc0c5771ada8de0ad82125ad759e7"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/thirteenth-schemafixed/STATUS.md",
+      "bytes": 1369,
+      "sha256": "a9d0fd0a784801362aba8c06d0cf077bbcd7b6349f643202d1bddec6fab05b8c"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/candidate-generation.json",
+      "bytes": 1600515,
+      "sha256": "0281a558dabcf4c1a58ecd96557af2ba74e9ca68cfef97f806f820ea1cd54d7d"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/legacy-generation.json",
+      "bytes": 2301334,
+      "sha256": "3bb2293c2d5c53bf61ce57d358eaa065881b559af4f8dd08e650dc93f4db07c2"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/presentation/bge_rrf-300.json",
+      "bytes": 482608,
+      "sha256": "c013cca748660c29655bd685d40e07789aa0e753a93211ba10db6a9f5ffa290c"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/presentation/layered-300.json",
+      "bytes": 705065,
+      "sha256": "07d92e6499f414232ff56a28daee56cd461d80065ba81aabb1afa4f7688a69ba"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/presentation/lexical-300.json",
+      "bytes": 461940,
+      "sha256": "f599a0f89d57c0e1415438e3e0bd0f86d394d460323849f9385e38c2e2691978"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/presentation/none-300.json",
+      "bytes": 441866,
+      "sha256": "ab7dcb6666d957e29955a1986eafc66d91898bb0dcf126372f7032a78092995a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/presentation/routed-300.json",
+      "bytes": 702879,
+      "sha256": "a2304f3619f9c3d26c9f7ec9c3863bf6f229b290b55ffcf396f9af9ddc32de9a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/bge_rrf-300.json",
+      "bytes": 272484,
+      "sha256": "4ecf2adfc8383f5d4963f92a9bccffe75d7ee63557d65bd34933700fdfcbe8fc"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/bge_rrf-300.log",
+      "bytes": 219,
+      "sha256": "433478fae22d3e0956ccb532355672e7f869bd88921b69e28e47f89fe71ed5a1"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/layered-300.json",
+      "bytes": 489744,
+      "sha256": "dc33d6c84f646a3a7589f47c210bd590a0ad7c19aa67383fa53019d9dff187ef"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/layered-300.log",
+      "bytes": 219,
+      "sha256": "6bff94c594bbaf5879346a101c980f3541b3977e7e3d8fe711b2d8dd64253841"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/lexical-300.json",
+      "bytes": 256636,
+      "sha256": "91e93888f4de27ca676dc10c0d009568719091e471353e1321905674f92b1000"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/lexical-300.log",
+      "bytes": 219,
+      "sha256": "92eb3047c768a405782079345c5e5e27d3992f8bd3cd5edc3a3d7bcb6eab61cd"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/none-300.json",
+      "bytes": 246069,
+      "sha256": "074e339f8ea48dcb8fb496254371fb92e900166705e4d0ce675e08f9a36ddba3"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/none-300.log",
+      "bytes": 213,
+      "sha256": "308d3c7e547949829b805a772a3fc833401cda714e597a1a66e6cfde9ced8982"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/routed-300.json",
+      "bytes": 487526,
+      "sha256": "a8742035e530da971e5c37485fff25fbfe364876ee049221335c724143366add"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/routed-300.log",
+      "bytes": 217,
+      "sha256": "6b347b1b5544e4cab66018910c2811d6b721db87c49e4351475359c7f662cdf0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth/retrieval/run-manifest.json",
+      "bytes": 68857,
+      "sha256": "ff219098365d6d7623d59e4fb4afdd19c7554ed3e90cdfe0c9b5704e53d960f7"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/generation.json",
+      "bytes": 3972354,
+      "sha256": "406f0fadcab1e735d95665c17642b9775bcad5566388937ffaf1519f39da9e12"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/informed-review.json",
+      "bytes": 30089,
+      "sha256": "635ee1b498217e753c96af7118c04465b73171b9c6fa8d1ba9e3cdfbf40d290e"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/presentation/bge_rrf-300.json",
+      "bytes": 546739,
+      "sha256": "c8f957f09901d4fe74c4c5c11d382d16577b8c0d27081c20f711e9d552fbbad3"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/presentation/layered-300.json",
+      "bytes": 728823,
+      "sha256": "c1bbf8cfee9fa0ee58b40b796c74d945fd1bd350e41ef90bed196c206393718a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/presentation/lexical-300.json",
+      "bytes": 524097,
+      "sha256": "07f260d63d01a00ccd21068b16418a38e02bdb2dc512bfe8977daddda2903443"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/presentation/none-300.json",
+      "bytes": 441318,
+      "sha256": "9de57e4ac5a32141e022408f7760dd72550f8bceb2a9b689af10cc79f89cb152"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/presentation/routed-300.json",
+      "bytes": 740723,
+      "sha256": "ffd0bf3876172e60ec415fe87962229446b04a5a0c0e9eeacfcf96871843cb9a"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/bge_rrf-300.json",
+      "bytes": 332548,
+      "sha256": "162e8dc583005069f49914ffe7b9cbbe0737d874e4845c397739d1cc9a433374"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/bge_rrf-300.log",
+      "bytes": 230,
+      "sha256": "6e0e198ed7e5e22912d986f7a91e8323e684e35ed9ed712672e23335d897a87f"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/layered-300.json",
+      "bytes": 501695,
+      "sha256": "efb2f0a8b6466ba6bf6a639768a7269e849d640dc239a801107792e519afc3f1"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/layered-300.log",
+      "bytes": 230,
+      "sha256": "dc9d5f34da6bbd7575d63b866f42e3f5d9df81049790a3868c379de39e7e3e16"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/lexical-300.json",
+      "bytes": 315052,
+      "sha256": "5a1711e1aefbfe32a25b0c9b6e895e825c2de25baac03c665ce8f42adb039ec2"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/lexical-300.log",
+      "bytes": 230,
+      "sha256": "d3755b3cbb71121ce51010a2b9f2f8ff8031ec7071656a69e480a581637c060f"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/none-300.json",
+      "bytes": 245797,
+      "sha256": "4393067a63abcede47c507b7b965264dca3d907bd2f098146c447423cad7e048"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/none-300.log",
+      "bytes": 224,
+      "sha256": "6f05ce7107232d3f40d5f2203ab0dde1924faed62266531f265642f35bdfbd03"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/routed-300.json",
+      "bytes": 513562,
+      "sha256": "2209b25daebaecf331fbc11a1eda8f4ffdf5e1f4e5614a143f49ffa465d3a140"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/routed-300.log",
+      "bytes": 228,
+      "sha256": "dcf3e7ee2e93fe3a6d84dcbe32a32b5bf86b1720aecf5aebdbfad4c14b36afd0"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/retrieval/run-manifest.json",
+      "bytes": 71071,
+      "sha256": "f6521b713f027bc691e8aa6c9bb6bd8b4e290468c0cf036218c7f79da8aa1195"
+    },
+    {
+      "path": "memory-upgrade/completion-20261107/twelfth-clockfixed/REVIEW.md",
+      "bytes": 2863,
+      "sha256": "b084430771b0a6f379fefacee39f5f0b911bd1faff2d0be116859e50b731ca22"
+    }
+  ],
+  "archive_bytes": 7569598,
+  "sha256": "2b3956f1a25ba8f35de7f2c6572729c3c199f0e3d290cc5bb1cd16a380f9fc09",
+  "note": "仅隔离合成评测；保留原始失败、模型请求输出与评分。排除存档和模型缓存。"
+}

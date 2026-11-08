@@ -1,0 +1,106 @@
+{
+  "files": [
+    {
+      "name": "voice/provider-calls.json",
+      "bytes": 106387,
+      "sha256": "51d3865fab8bafaf803159fe33274255eb7ae26b7b80db4efcb2d5465c9f5ced"
+    },
+    {
+      "name": "voice/results.json",
+      "bytes": 56680,
+      "sha256": "176d5f367e270c3c8026a34c95144e887626995dddeebac6ed4afbab5cf3f94b"
+    },
+    {
+      "name": "voice-repair/provider-calls.json",
+      "bytes": 57477,
+      "sha256": "ac22f33f7fb0503b38229858d751efd85ea71126ac6ded12b6fab965e8113fe1"
+    },
+    {
+      "name": "voice-repair/results.json",
+      "bytes": 47837,
+      "sha256": "14ea14bb13e7ddf980d8ee165c639311a96659e1ea2fb483bc70b1fa06d326bf"
+    },
+    {
+      "name": "restart/budget.json",
+      "bytes": 98,
+      "sha256": "cb9d1038f1a15c6e9e64c89d0c50934329143e6f7d5bbed17892b028bc2037fc"
+    },
+    {
+      "name": "restart/provider-calls.json",
+      "bytes": 85368,
+      "sha256": "32d52c70beac020d8eab13e811312c26ea29260ac139ab63e1d91c66258b43ef"
+    },
+    {
+      "name": "restart/recall_forget.json",
+      "bytes": 21294,
+      "sha256": "d7045b836b53e928c65c065daaf893a1e5f3bb84c7c83111b6c6e47d8c0dc9f9"
+    },
+    {
+      "name": "restart/recall_forget.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "restart/results.json",
+      "bytes": 48704,
+      "sha256": "9dc3b698bae038684a9b733e3f633c3cadf3be8a1187523d9db064beab25b8d5"
+    },
+    {
+      "name": "restart/save.json",
+      "bytes": 7430,
+      "sha256": "b1768ecddad9a9732b1cd96355282a0dccaf99e1c099a371a250c331984de092"
+    },
+    {
+      "name": "restart/save.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "restart/scenario.json",
+      "bytes": 393,
+      "sha256": "7067f80a7ef0dafcf290cdcfb8b16def009572d9f0c060bddd61861df275a90b"
+    },
+    {
+      "name": "restart/verify.json",
+      "bytes": 14967,
+      "sha256": "50ced9cb4d88cc6fc237419955208577751dc74c571628955341f5f6ee937d65"
+    },
+    {
+      "name": "restart/verify.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "prompt-delivery.json",
+      "bytes": 601,
+      "sha256": "21ac4d4af08ef4055908ccbc47611f4207c62b7c36dda1dc4c0b0d904ec47c30"
+    },
+    {
+      "name": "usage-and-prompt-checks.json",
+      "bytes": 1421,
+      "sha256": "b34b00e727670aa2f8eb798f29b849301feae3b356ff7b76633a5c39fb09c879"
+    },
+    {
+      "name": "scenario.json",
+      "bytes": 346,
+      "sha256": "42237bfc081a8084dac763651df8d25d626c8452dbce20b59b62cd088d363f8f"
+    },
+    {
+      "name": "review.json",
+      "bytes": 2194,
+      "sha256": "71bd4b5dfd6a8cea586a3e4ea4fa5005e733af2a908c226731ebd4ca678b0ebf"
+    },
+    {
+      "name": "full-pytest-final.log",
+      "bytes": 27641,
+      "sha256": "4ee0ff4f078a0cba7e7e28842ee55e9bc778c341a04322f375d7ea26e10db939"
+    },
+    {
+      "name": "interrupted-before-final-fix-pytest.log",
+      "bytes": 10712,
+      "sha256": "76152b5abc22574c4e91390c30d17deecb6470c9c8d560bf44a314a86875ac0f"
+    }
+  ],
+  "archive_bytes": 93973,
+  "privacy": "不含绝对账户余额、凭据、SQLite档案和模型缓存；本机原始数据保持不变。"
+}

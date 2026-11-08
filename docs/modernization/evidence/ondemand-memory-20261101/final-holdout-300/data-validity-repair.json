@@ -1,0 +1,64 @@
+{
+  "revision": "holdout-v2",
+  "old_sha256": "f7468d5534a493b5d7a1f073d445edea98debe509e84b30578c530d02420fcb6",
+  "new_sha256": "c9c5c37f5c839f3c259f9a038563d24f1ee1ffbc01b54584ae3575cd3265695e",
+  "changes": [
+    {
+      "memory_id": "choir_m4",
+      "field": "valid_until",
+      "before": 1780304400,
+      "after": 0,
+      "reason": "0 is the production API no-end sentinel; deleted source remains irrevocably ineligible at all times"
+    },
+    {
+      "memory_id": "pottery_m4",
+      "field": "valid_until",
+      "before": 1781164800,
+      "after": 0,
+      "reason": "0 is the production API no-end sentinel; deleted source remains irrevocably ineligible at all times"
+    }
+  ],
+  "questions_gold_forbidden_routes_unchanged": true,
+  "production_unchanged": true,
+  "first_attempt_scored_queries": 0,
+  "old_dataset_directory": "docs/modernization/evidence/ondemand-memory-20261101/final-holdout-300/dataset-v1",
+  "preflight": "32/32 normalized EmotionalMemoryEntry.validate passed",
+  "failed_workers": [
+    {
+      "method": "none",
+      "returncode": 1,
+      "scored_queries": 0,
+      "error": "invalid zero-duration validity interval before first query",
+      "log": "none-300.log"
+    },
+    {
+      "method": "lexical",
+      "returncode": 1,
+      "scored_queries": 0,
+      "error": "invalid zero-duration validity interval before first query",
+      "log": "lexical-300.log"
+    },
+    {
+      "method": "bge_rrf",
+      "returncode": 1,
+      "scored_queries": 0,
+      "error": "invalid zero-duration validity interval before first query",
+      "log": "bge_rrf-300.log"
+    },
+    {
+      "method": "routed",
+      "returncode": 1,
+      "scored_queries": 0,
+      "error": "invalid zero-duration validity interval before first query",
+      "log": "routed-300.log"
+    },
+    {
+      "method": "layered",
+      "returncode": 1,
+      "scored_queries": 0,
+      "error": "invalid zero-duration validity interval before first query",
+      "log": "layered-300.log"
+    }
+  ],
+  "note": "No production rule, query, expected route/status, gold/forbidden label, or source text changed. Original input and all failed logs retained. The API uses 0, not JSON null, for no validity end."
+}

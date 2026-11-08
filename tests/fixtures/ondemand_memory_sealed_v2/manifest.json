@@ -1,0 +1,762 @@
+{
+  "manifest_schema_version": 1,
+  "name": "E-Moti independently authored sealed generalization v2",
+  "status": "independently_authored_frozen",
+  "data_file": "/workspace/scratch/ac4f72a6307d/ondemand-20261101/sealed-generalization-v2/ondemand_memory_holdout.json",
+  "data_sha256": "304f1697230304797857dc9fe5f7171aed7fe7457068076194cc1a9c48cba61b",
+  "counts": {
+    "stories": 8,
+    "memories": 48,
+    "queries": 48,
+    "memories_per_story": {
+      "sgv2_s01": 6,
+      "sgv2_s02": 6,
+      "sgv2_s03": 6,
+      "sgv2_s04": 6,
+      "sgv2_s05": 6,
+      "sgv2_s06": 6,
+      "sgv2_s07": 6,
+      "sgv2_s08": 6
+    },
+    "queries_per_story": {
+      "sgv2_s01": 6,
+      "sgv2_s02": 6,
+      "sgv2_s03": 6,
+      "sgv2_s04": 6,
+      "sgv2_s05": 6,
+      "sgv2_s06": 6,
+      "sgv2_s07": 6,
+      "sgv2_s08": 6
+    },
+    "status_denominators": {
+      "not_needed": 5,
+      "partial": 2,
+      "sufficient": 31,
+      "unknown": 10
+    },
+    "primary_stratum_denominators": {
+      "completed_episode": 4,
+      "current_fact": 9,
+      "historical_fact": 2,
+      "multi_source": 4,
+      "multi_turn_fact": 5,
+      "ordinary_chat": 5,
+      "partial_multi_intent": 2,
+      "task_failure": 3,
+      "task_success": 4,
+      "unknown_deleted_source": 1,
+      "unknown_planned_event": 3,
+      "unknown_wrong_field": 1,
+      "unknown_wrong_subject": 5
+    },
+    "overlapping_tag_denominators": {
+      "completed_shared_event": 5,
+      "deleted_source": 1,
+      "entity_collision": 2,
+      "entity_reference": 2,
+      "explicit_no_answer": 7,
+      "false_presupposition": 3,
+      "historical_current_boundary": 9,
+      "history_resolution": 6,
+      "mixed_intent": 7,
+      "multi_source": 4,
+      "nearby_field_collision": 8,
+      "ordinary_chat": 5,
+      "partial_answer": 2,
+      "plan_completion_boundary": 6,
+      "subject_collision": 19,
+      "task_experience": 7,
+      "task_outcome_boundary": 6,
+      "unlisted_fact_slot": 12
+    },
+    "route_membership_denominators": {
+      "chat": 7,
+      "episode": 8,
+      "fact": 29,
+      "task": 7
+    },
+    "retrieval_required": 43,
+    "no_retrieval_required": 5,
+    "with_gold_evidence": 33,
+    "with_forbidden_sources": 41,
+    "multiple_gold_sources": 4,
+    "with_history": 6,
+    "memory_scopes": {
+      "companion": 41,
+      "task_experience": 7
+    },
+    "memory_kinds": {
+      "任务经验": 7,
+      "共同经历": 7,
+      "用户事实": 34
+    },
+    "memory_sources": {
+      "synthetic_execution_log": 11,
+      "synthetic_user_statement": 37
+    },
+    "deleted_memories": 1,
+    "expired_memories": 5,
+    "completed_shared_events": 4,
+    "planned_shared_events": 3,
+    "task_outcomes": {
+      "completed": 1,
+      "failed": 3,
+      "succeeded": 3
+    },
+    "distinct_fact_predicates": 22,
+    "distinct_fact_subjects": 11
+  },
+  "independence": {
+    "authoring_basis": "Only the public JSON interface contract in the assigned task.",
+    "application_source_read": false,
+    "existing_fixtures_read": false,
+    "quality_results_read": false,
+    "other_agents_files_read": false,
+    "implementation_inspected": false,
+    "evaluation_run": false,
+    "synthetic_only": true,
+    "post_freeze_implementation_adaptation_allowed": false
+  },
+  "strata_policy": {
+    "primary_stratum_denominators": "Mutually exclusive; sums to total query count.",
+    "overlapping_tag_denominators": "Tags may overlap; each denominator is the count of queries carrying the tag.",
+    "route_membership_denominators": "Routes may overlap; route scoring is secondary to source-context correctness."
+  },
+  "evidence_review": {
+    "literal_support_spans_checked": true,
+    "gold_sources_reviewed_for_direct_support": true,
+    "unknown_cases_reviewed_for_absence_of_valid_correct_subject_and_field_evidence": true,
+    "partial_cases_have_one_supported_and_one_unsupported_request": true,
+    "planned_records_not_used_as_completed_event_evidence": true,
+    "deleted_record_body_retained_but_never_gold": true,
+    "historical_cases_have_explicit_as_of_dates": true,
+    "no_model_or_network_answers_generated": true
+  },
+  "query_audit": {
+    "sgv2_s01_q01": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s01_m01": [
+          "针距设为2.8毫米"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s01_q02": {
+      "primary_stratum": "historical_fact",
+      "tags": [
+        "historical_current_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s01_m03": [
+          "缝份留10毫米"
+        ]
+      },
+      "historical_as_of": 1777896000
+    },
+    "sgv2_s01_q03": {
+      "primary_stratum": "multi_turn_fact",
+      "tags": [
+        "historical_current_boundary",
+        "history_resolution"
+      ],
+      "support_spans": {
+        "sgv2_s01_m04": [
+          "边缘缝份改留12毫米"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s01_q04": {
+      "primary_stratum": "completed_episode",
+      "tags": [
+        "completed_shared_event",
+        "mixed_intent",
+        "plan_completion_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s01_m05": [
+          "最后采用方框加斜叉的线迹",
+          "这次核对已经完成"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s01_q05": {
+      "primary_stratum": "unknown_planned_event",
+      "tags": [
+        "false_presupposition",
+        "plan_completion_boundary"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s01_q06": {
+      "primary_stratum": "ordinary_chat",
+      "tags": [
+        "ordinary_chat"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s02_q01": {
+      "primary_stratum": "multi_turn_fact",
+      "tags": [
+        "history_resolution",
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s02_m01": [
+          "每杯称18克咖啡豆"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s02_q02": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "nearby_field_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s02_m04": [
+          "最后接到260克咖啡液"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s02_q03": {
+      "primary_stratum": "task_failure",
+      "tags": [
+        "task_experience",
+        "task_outcome_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s02_m05": [
+          "配方名称为空",
+          "没有生成文件"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s02_q04": {
+      "primary_stratum": "task_success",
+      "tags": [
+        "task_experience",
+        "task_outcome_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s02_m06": [
+          "先把配方名称填成“早班手冲”",
+          "选择“导出JSON”",
+          "文件已经生成"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s02_q05": {
+      "primary_stratum": "unknown_wrong_subject",
+      "tags": [
+        "explicit_no_answer",
+        "nearby_field_collision",
+        "subject_collision"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s02_q06": {
+      "primary_stratum": "ordinary_chat",
+      "tags": [
+        "ordinary_chat"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s03_q01": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s03_m01": [
+          "焦距是9毫米"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s03_q02": {
+      "primary_stratum": "multi_turn_fact",
+      "tags": [
+        "history_resolution",
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s03_m04": [
+          "蓝色B盒"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s03_q03": {
+      "primary_stratum": "completed_episode",
+      "tags": [
+        "completed_shared_event",
+        "plan_completion_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s03_m05": [
+          "最后选第二张做封面",
+          "这次整理已完成"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s03_q04": {
+      "primary_stratum": "multi_source",
+      "tags": [
+        "completed_shared_event",
+        "mixed_intent",
+        "multi_source",
+        "subject_collision"
+      ],
+      "support_spans": {
+        "sgv2_s03_m01": [
+          "焦距是9毫米"
+        ],
+        "sgv2_s03_m05": [
+          "最后选第二张做封面",
+          "确认已经保存定稿"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s03_q05": {
+      "primary_stratum": "unknown_wrong_subject",
+      "tags": [
+        "explicit_no_answer",
+        "nearby_field_collision",
+        "subject_collision"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s03_q06": {
+      "primary_stratum": "unknown_planned_event",
+      "tags": [
+        "false_presupposition",
+        "plan_completion_boundary"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s04_q01": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "entity_collision",
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s04_m01": [
+          "豆包—先扣左侧蓝扣"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s04_q02": {
+      "primary_stratum": "multi_turn_fact",
+      "tags": [
+        "entity_reference",
+        "historical_current_boundary",
+        "history_resolution"
+      ],
+      "support_spans": {
+        "sgv2_s04_m04": [
+          "豆包的零食改放厨房上柜第二层"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s04_q03": {
+      "primary_stratum": "historical_fact",
+      "tags": [
+        "entity_reference",
+        "historical_current_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s04_m03": [
+          "豆包的零食放在门边白色抽屉"
+        ]
+      },
+      "historical_as_of": 1778414400
+    },
+    "sgv2_s04_q04": {
+      "primary_stratum": "multi_source",
+      "tags": [
+        "entity_collision",
+        "mixed_intent",
+        "multi_source",
+        "subject_collision"
+      ],
+      "support_spans": {
+        "sgv2_s04_m01": [
+          "豆包—先扣左侧蓝扣"
+        ],
+        "sgv2_s04_m05": [
+          "晚上八点后发文字"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s04_q05": {
+      "primary_stratum": "unknown_deleted_source",
+      "tags": [
+        "deleted_source",
+        "explicit_no_answer"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s04_q06": {
+      "primary_stratum": "ordinary_chat",
+      "tags": [
+        "ordinary_chat"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s05_q01": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "nearby_field_collision",
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s05_m01": [
+          "输出响度目标是-16 LUFS"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s05_q02": {
+      "primary_stratum": "multi_turn_fact",
+      "tags": [
+        "historical_current_boundary",
+        "history_resolution"
+      ],
+      "support_spans": {
+        "sgv2_s05_m04": [
+          "片头改为5秒"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s05_q03": {
+      "primary_stratum": "task_failure",
+      "tags": [
+        "task_experience",
+        "task_outcome_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s05_m05": [
+          "只读的共享目录",
+          "失败原因是目标文件夹只读"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s05_q04": {
+      "primary_stratum": "task_success",
+      "tags": [
+        "task_experience",
+        "task_outcome_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s05_m06": [
+          "本机可写文件夹",
+          "WAV格式",
+          "24位PCM、采样率48 kHz",
+          "文件生成且能播放"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s05_q05": {
+      "primary_stratum": "unknown_wrong_subject",
+      "tags": [
+        "explicit_no_answer",
+        "nearby_field_collision",
+        "subject_collision"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s05_q06": {
+      "primary_stratum": "partial_multi_intent",
+      "tags": [
+        "historical_current_boundary",
+        "mixed_intent",
+        "partial_answer"
+      ],
+      "support_spans": {
+        "sgv2_s05_m04": [
+          "片头改为5秒"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s06_q01": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s06_m01": [
+          "先走子，再结算，再目标卡"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s06_q02": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "historical_current_boundary",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s06_m04": [
+          "客厅右侧高柜中层"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s06_q03": {
+      "primary_stratum": "completed_episode",
+      "tags": [
+        "completed_shared_event",
+        "plan_completion_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s06_m05": [
+          "南区确定叫沙港",
+          "命名已经完成"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s06_q04": {
+      "primary_stratum": "multi_source",
+      "tags": [
+        "historical_current_boundary",
+        "mixed_intent",
+        "multi_source",
+        "subject_collision"
+      ],
+      "support_spans": {
+        "sgv2_s06_m01": [
+          "先走子，再结算，再目标卡"
+        ],
+        "sgv2_s06_m04": [
+          "客厅右侧高柜中层"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s06_q05": {
+      "primary_stratum": "unknown_planned_event",
+      "tags": [
+        "false_presupposition",
+        "plan_completion_boundary"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s06_q06": {
+      "primary_stratum": "ordinary_chat",
+      "tags": [
+        "ordinary_chat"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s07_q01": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s07_m01": [
+          "橙色拉链包"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s07_q02": {
+      "primary_stratum": "current_fact",
+      "tags": [
+        "historical_current_boundary",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s07_m04": [
+          "现在这只空箱重量是2.3公斤"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s07_q03": {
+      "primary_stratum": "completed_episode",
+      "tags": [
+        "completed_shared_event"
+      ],
+      "support_spans": {
+        "sgv2_s07_m05": [
+          "删掉备用吹风机",
+          "新增折叠衣架",
+          "清单已经定稿"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s07_q04": {
+      "primary_stratum": "task_success",
+      "tags": [
+        "task_experience"
+      ],
+      "support_spans": {
+        "sgv2_s07_m06": [
+          "选择“导出图片”",
+          "分页方式切成“单张长图”",
+          "保存到相册",
+          "操作成功"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s07_q05": {
+      "primary_stratum": "unknown_wrong_subject",
+      "tags": [
+        "explicit_no_answer",
+        "nearby_field_collision",
+        "subject_collision"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s07_q06": {
+      "primary_stratum": "partial_multi_intent",
+      "tags": [
+        "mixed_intent",
+        "partial_answer",
+        "subject_collision"
+      ],
+      "support_spans": {
+        "sgv2_s07_m01": [
+          "橙色拉链包"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s08_q01": {
+      "primary_stratum": "multi_source",
+      "tags": [
+        "mixed_intent",
+        "multi_source",
+        "subject_collision",
+        "unlisted_fact_slot"
+      ],
+      "support_spans": {
+        "sgv2_s08_m01": [
+          "开口宽度是22毫米"
+        ],
+        "sgv2_s08_m03": [
+          "工具箱侧袋里标着水件的小盒"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s08_q02": {
+      "primary_stratum": "unknown_wrong_field",
+      "tags": [
+        "explicit_no_answer",
+        "nearby_field_collision",
+        "subject_collision"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s08_q03": {
+      "primary_stratum": "task_failure",
+      "tags": [
+        "task_experience",
+        "task_outcome_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s08_m05": [
+          "勾选了“适应纸张”",
+          "页面缩放把图缩小了"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s08_q04": {
+      "primary_stratum": "task_success",
+      "tags": [
+        "history_resolution",
+        "task_experience",
+        "task_outcome_boundary"
+      ],
+      "support_spans": {
+        "sgv2_s08_m06": [
+          "取消“适应纸张”",
+          "选择“实际大小”",
+          "缩放设为100%",
+          "一比一打印成功"
+        ]
+      },
+      "historical_as_of": null
+    },
+    "sgv2_s08_q05": {
+      "primary_stratum": "unknown_wrong_subject",
+      "tags": [
+        "explicit_no_answer",
+        "nearby_field_collision",
+        "subject_collision"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    },
+    "sgv2_s08_q06": {
+      "primary_stratum": "ordinary_chat",
+      "tags": [
+        "ordinary_chat"
+      ],
+      "support_spans": {},
+      "historical_as_of": null
+    }
+  },
+  "files": {
+    "data": {
+      "path": "/workspace/scratch/ac4f72a6307d/ondemand-20261101/sealed-generalization-v2/ondemand_memory_holdout.json",
+      "sha256": "304f1697230304797857dc9fe5f7171aed7fe7457068076194cc1a9c48cba61b"
+    },
+    "authoring_script": {
+      "path": "/workspace/scratch/ac4f72a6307d/ondemand-20261101/sealed-generalization-v2/build_holdout.py",
+      "sha256": "0123438c4d983826245a8f8ce79820c1895e51b3228dcfb825b0916ed2923204"
+    },
+    "validator": {
+      "path": "/workspace/scratch/ac4f72a6307d/ondemand-20261101/sealed-generalization-v2/validate_holdout.py",
+      "sha256": "6ec7ce770ad2e890a5409f42c230f0d5624c30fc91ede3d38288ba7d009c9fee"
+    }
+  }
+}

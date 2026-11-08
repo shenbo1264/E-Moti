@@ -1,0 +1,22 @@
+{
+  "command": [
+    "/tmp/emoti-pr6-review-venv/bin/python",
+    "tools/eval_ondemand_memory.py",
+    "--worker",
+    "routed",
+    "--size",
+    "300",
+    "--worker-output",
+    "/tmp/emoti-vnext-routed-complete-v3.json",
+    "--splits",
+    "development",
+    "validation",
+    "holdout",
+    "--no-semantic"
+  ],
+  "returncode": 0,
+  "status": "measured_synthetic_retrieval",
+  "sha256": "36c9c539b4a2af93c9af651e8cc9c181344a00324d8f7637deb14aa5bfc21890",
+  "query_count": 192,
+  "role": "seen development/regression lexical diagnostic; not sealed; no BGE"
+}

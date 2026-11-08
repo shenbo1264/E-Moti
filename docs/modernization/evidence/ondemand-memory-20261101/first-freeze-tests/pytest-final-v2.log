@@ -1,0 +1,78 @@
+........................................................................ [  3%]
+........................................................................ [  7%]
+........................................................................ [ 10%]
+........................................................................ [ 14%]
+........................................................................ [ 17%]
+........................................................................ [ 21%]
+................................ssss.................................... [ 25%]
+........................................................................ [ 28%]
+........................................................................ [ 32%]
+........................................................................ [ 35%]
+........................................................................ [ 39%]
+........................................................................ [ 42%]
+........................................................................ [ 46%]
+........................................................................ [ 50%]
+........................................................................ [ 53%]
+........................................................................ [ 57%]
+........................................................................ [ 60%]
+........................................................................ [ 64%]
+........................................................................ [ 67%]
+........................................................................ [ 71%]
+........................................................................ [ 75%]
+........................................................................ [ 78%]
+........................................................................ [ 82%]
+........................................................................ [ 85%]
+........................................................................ [ 89%]
+........................................................................ [ 92%]
+........................................................................ [ 96%]
+.....................................................................    [100%]
+=============================== warnings summary ===============================
+tests/test_mobile_link_qt.py::test_panel_reports_port_in_use
+  /tmp/emoti-pr6-review-venv/lib/python3.12/site-packages/_pytest/threadexception.py:54: PytestUnhandledThreadExceptionWarning: Exception in thread companion-http
+  
+  Traceback (most recent call last):
+    File "/tmp/emoti-pr6-review-venv/lib/python3.12/site-packages/uvicorn/server.py", line 172, in startup
+      server = await loop.create_server(
+               ^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 1584, in create_server
+      raise OSError(err.errno, msg) from None
+  OSError: [Errno 98] error while attempting to bind on address ('127.0.0.1', 58011): [errno 98] address already in use
+  
+  During handling of the above exception, another exception occurred:
+  
+  Traceback (most recent call last):
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1075, in _bootstrap_inner
+      self.run()
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/threading.py", line 1012, in run
+      self._target(*self._args, **self._kwargs)
+    File "/tmp/emoti-pr6-review-venv/lib/python3.12/site-packages/uvicorn/server.py", line 75, in run
+      return asyncio_run(self.serve(sockets=sockets), loop_factory=self.config.get_loop_factory())
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py", line 195, in run
+      return runner.run(main)
+             ^^^^^^^^^^^^^^^^
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/runners.py", line 118, in run
+      return self._loop.run_until_complete(task)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 678, in run_until_complete
+      self.run_forever()
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 645, in run_forever
+      self._run_once()
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/base_events.py", line 1999, in _run_once
+      handle._run()
+    File "/opt/codex/runtimes/codex-primary-runtime/dependencies/python/lib/python3.12/asyncio/events.py", line 88, in _run
+      self._context.run(self._callback, *self._args)
+    File "/tmp/emoti-pr6-review-venv/lib/python3.12/site-packages/uvicorn/server.py", line 79, in serve
+      await self._serve(sockets)
+    File "/tmp/emoti-pr6-review-venv/lib/python3.12/site-packages/uvicorn/server.py", line 94, in _serve
+      await self.startup(sockets=sockets)
+    File "/tmp/emoti-pr6-review-venv/lib/python3.12/site-packages/uvicorn/server.py", line 182, in startup
+      sys.exit(1)
+  SystemExit: 1
+  
+  Enable tracemalloc to get traceback where the object was allocated.
+  See https://docs.pytest.org/en/stable/how-to/capture-warnings.html#resource-warnings for more info.
+    warnings.warn(pytest.PytestUnhandledThreadExceptionWarning(msg))
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+2009 passed, 4 skipped, 1 warning in 546.51s (0:09:06)

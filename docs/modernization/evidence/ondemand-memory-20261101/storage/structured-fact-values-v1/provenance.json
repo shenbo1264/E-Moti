@@ -1,0 +1,174 @@
+{
+  "scope": "bounded structured fact_value storage and derived text projection",
+  "red_code_baseline": "f7a4e23a0f7b207fc68c1719c2217ac740416344",
+  "results": {
+    "red-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "20",
+        "skipped": "0",
+        "tests": "27",
+        "time": "0.350",
+        "timestamp": "2026-11-02T04:14:44.936886+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "green-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "27",
+        "time": "0.329",
+        "timestamp": "2026-11-02T04:17:36.905313+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "store-green-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "2",
+        "tests": "69",
+        "time": "2.229",
+        "timestamp": "2026-11-02T04:19:54.676322+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "lifecycle-green-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "59",
+        "time": "1.593",
+        "timestamp": "2026-11-02T04:20:37.801456+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "correction-red-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "14",
+        "skipped": "0",
+        "tests": "21",
+        "time": "0.431",
+        "timestamp": "2026-11-02T04:23:42.078141+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "correction-green-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "48",
+        "time": "0.584",
+        "timestamp": "2026-11-02T04:24:27.134799+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "correction-regression-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "103",
+        "time": "10.548",
+        "timestamp": "2026-11-02T04:24:35.965438+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "semantic-protocol-green-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "50",
+        "time": "1.139",
+        "timestamp": "2026-11-02T04:24:35.971610+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "escaped-literal-red-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "1",
+        "skipped": "0",
+        "tests": "8",
+        "time": "0.254",
+        "timestamp": "2026-11-02T04:25:16.013717+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ],
+    "correction-final-green-junit.xml": [
+      {
+        "name": "pytest",
+        "errors": "0",
+        "failures": "0",
+        "skipped": "0",
+        "tests": "49",
+        "time": "0.665",
+        "timestamp": "2026-11-02T04:25:20.426086+09:00",
+        "hostname": "a7863bbaa94f"
+      }
+    ]
+  },
+  "source_sha256": {
+    "src/guanghe_companion/emotional_memory.py": "3f5b0e077fad7d4752410e23bfe7d16a7423baa67c07650e196478fa2a0aa560",
+    "src/guanghe_companion/memory_index.py": "767fe33ccddbebbc81bc65694c2da9058291f44301aacad084f0601cda3e9617",
+    "src/guanghe_companion/memory_index_schema.py": "6595958bc917a27689966655be005a590d90039c0dab5cdff627397244afb1db",
+    "tests/test_structured_fact_values.py": "3403838d8e2aacb6710f325aa1e828779c5d5194a836af502fdb21126f3f5824"
+  },
+  "commands": {
+    "red": "PYTHONPATH=/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/src /tmp/emoti-pr6-review-venv/bin/python -m pytest -c /dev/null /workspace/scratch/ac4f72a6307d/ondemand-20261101/structured-fact-values-v1/test_structured_fact_values.py -q --tb=short --junitxml=red-junit.xml",
+    "green": "PYTHONPATH=src /tmp/emoti-pr6-review-venv/bin/python -m pytest tests/test_structured_fact_values.py -q --tb=short --junitxml=green-junit.xml",
+    "store-green": "PYTHONPATH=src /tmp/emoti-pr6-review-venv/bin/python -m pytest tests/test_structured_fact_values.py tests/test_indexed_memory_store.py tests/test_emotional_memory.py tests/test_incremental_semantic_memory.py tests/test_persistent_semantic_memory.py -q --tb=short --junitxml=store-green-junit.xml",
+    "lifecycle-green": "PYTHONPATH=src LD_LIBRARY_PATH=/tmp/emoti-pr6-libs/root/usr/lib/x86_64-linux-gnu QT_QPA_PLATFORM=offscreen /tmp/emoti-pr6-review-venv/bin/python -m pytest tests/test_raw_writer_revocation.py tests/test_emotional_memory_service.py tests/test_memory_lifecycle.py -q --tb=short --junitxml=lifecycle-green-junit.xml",
+    "correction-red": "PYTHONPATH=src /tmp/emoti-pr6-review-venv/bin/python -m pytest tests/test_structured_fact_corrections.py -q --tb=short --junitxml=correction-red-junit.xml",
+    "correction-green": "PYTHONPATH=src /tmp/emoti-pr6-review-venv/bin/python -m pytest tests/test_structured_fact_corrections.py tests/test_structured_fact_values.py -q --tb=short --junitxml=correction-final-green-junit.xml",
+    "correction-regression": "PYTHONPATH=src LD_LIBRARY_PATH=/tmp/emoti-pr6-libs/root/usr/lib/x86_64-linux-gnu QT_QPA_PLATFORM=offscreen /tmp/emoti-pr6-review-venv/bin/python -m pytest tests/test_memory_integrity_regressions.py tests/test_memory_album_lifecycle.py tests/test_natural_chat_memory_adversarial.py tests/test_chat_memory_common_facts.py tests/test_chat_memory_plans.py tests/test_chat_memory_alias_promotion.py -k \"not many_corrections\" -q --tb=short --junitxml=correction-regression-junit.xml",
+    "semantic-protocol": "PYTHONPATH=src:/tmp/emoti-pr6-review-venv/lib/python3.12/site-packages LD_LIBRARY_PATH=/tmp/emoti-pr6-libs/root/usr/lib/x86_64-linux-gnu QT_QPA_PLATFORM=offscreen /tmp/emoti-retrieval-venv/bin/python -m pytest tests/test_incremental_semantic_memory.py tests/test_persistent_semantic_memory.py -k \"not real_bge\" -q --tb=short --junitxml=semantic-protocol-green-junit.xml"
+  },
+  "not_run": [
+    "real LLM structured-fact answer quality",
+    "desktop user interaction with structured values"
+  ],
+  "notes": [
+    "store-green has two collection skips: numpy is not installed in review venv; not semantic validation.",
+    "An earlier mixed-suite run during simultaneous router API edits produced 172 passes, 10 interface-transition failures, 2 collection skips. The affected raw-writer/service/lifecycle files were rerun after API readiness and all 59 passed; this mixed snapshot is not a frozen production result.",
+    "The two semantic files were actually rerun in the numpy-enabled retrieval interpreter: 50 deterministic protocol tests passed; two optional real BGE tests were deliberately deselected.",
+    "The 103 existing correction/chat/album tests preceded the final escaped-string literal support fix. The final 49 structured-value/correction tests include that fix; broader final suite is coordinated by the root agent.",
+    "Correction RED has 14 failures and 7 passes. Escaped JSON-string RED adds one failure before the final 49-pass GREEN. Counts overlap and must not be summed as unique tests."
+  ],
+  "source_sha256_at_freeze": {
+    "src/guanghe_companion/emotional_memory.py": "3f5b0e077fad7d4752410e23bfe7d16a7423baa67c07650e196478fa2a0aa560",
+    "src/guanghe_companion/memory_index.py": "767fe33ccddbebbc81bc65694c2da9058291f44301aacad084f0601cda3e9617",
+    "src/guanghe_companion/memory_index_schema.py": "6595958bc917a27689966655be005a590d90039c0dab5cdff627397244afb1db",
+    "src/guanghe_companion/chat_memory.py": "93421776778c342b02e90f328d71584866f91d0fee9c9547c93e54b795f5ec51",
+    "src/guanghe_companion/memory_correction.py": "efce5bd37ccf2413fb7e9ac98a235d3b44e4866931cac7cebb8ea05126d9cf41",
+    "tests/test_structured_fact_values.py": "3403838d8e2aacb6710f325aa1e828779c5d5194a836af502fdb21126f3f5824",
+    "tests/test_structured_fact_corrections.py": "f34aef976f7ca981372b9eba482c97678c696644ffbd1d7dd47ea6f10c0c2ee5"
+  },
+  "stage_boundaries": {
+    "red-junit.xml": "Storage/type RED against unmodified f7 production sources.",
+    "correction-red-junit.xml": "After structured-value storage/index support; chat_memory and memory_correction still their f7 contracts.",
+    "escaped-literal-red-junit.xml": "After typed public correction/forget support, before accepting escaped JSON strings as literal proof.",
+    "correction-final-green-junit.xml": "Final owned sources in source_sha256_at_freeze; 49 tests, including JSON escapes.",
+    "f7_performance": "storage-index-final-performance.json predates all second-round structured-value edits; retained separately, not overwritten."
+  },
+  "performance_after_freeze": {
+    "source_commit": "1eef5cbb6f85703f0350f8708cc86bf84a7e071f",
+    "report": "../storage-index-round2-performance.json",
+    "provenance": "../storage-round2-run-provenance.json"
+  }
+}

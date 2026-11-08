@@ -16,6 +16,9 @@ from .emotional_memory import (
 from .emotional_memory_policy import EmotionalMemoryPolicy, MemoryCandidate
 from .emotional_memory_reflection import MemoryReflectionService
 from .emotional_memory_retrieval import rank_memories
+from .memory_correction import correction_metadata
+from .retrieval_contract import RetrievalBudget
+from .retrieval_router import MemoryRetrievalRouter
 
 
 class EmotionalMemoryService:
@@ -26,17 +29,38 @@ class EmotionalMemoryService:
         *,
         root: Path | str,
         character_id: str,
+        character_name: str = "",
         owner_id: str = "local_user",
         policy: EmotionalMemoryPolicy | None = None,
         reflection: MemoryReflectionService | None = None,
         semantic_retriever: Callable[[str, tuple[EmotionalMemoryEntry, ...]], Mapping[str, float]] | None = None,
+        retrieval_budget: RetrievalBudget | None = None,
+        external_state_readers: Mapping[str, Callable] | None = None,
+        time_basis: str | None = None,
+        timezone_name: str | None = None,
+        evidence_judge=None,
     ) -> None:
         self.store = EmotionalMemoryStore(root=root, character_id=character_id, owner_id=owner_id)
         self.character_id = character_id
+        self.character_name = character_name
         self.owner_id = owner_id
         self.policy = policy or EmotionalMemoryPolicy()
         self.reflection = reflection or MemoryReflectionService()
         self.semantic_retriever = semantic_retriever
+        self.evidence_judge = evidence_judge
+        self.retrieval_budget = retrieval_budget or RetrievalBudget()
+        # Existing desktop saves use pet logical seconds, not Unix dates.
+        # Calendar lookup is opt-in only for archives whose caller guarantees
+        # a uniform Unix valid-time basis; legacy timestamps are never guessed.
+        from .memory_time import bind_archive_time
+        self.time_basis, self.timezone_name = bind_archive_time(self.store,
+            time_basis=time_basis, timezone_name=timezone_name)
+        self.retrieval_router = MemoryRetrievalRouter(self.retrieval_budget, time_basis=self.time_basis,
+            timezone_name=self.timezone_name)
+        self.external_state_readers = dict(external_state_readers or {})
+        self.last_retrieval_trace = None
+        self._maintenance_scheduler = None
+        self._maintenance_closed = False
 
     @property
     def pending_candidates(self) -> dict[str, MemoryCandidate]:
@@ -167,9 +191,13 @@ class EmotionalMemoryService:
         valid_until: int = 0,
         expected_epoch: int | None = None,
         preserve_occurred_at: bool = True,
+        occurred_at: int | None = None,
     ) -> EmotionalMemoryEntry:
         if source in {"model", "assistant", "llm", "llm_generated", "assistant_generated", "model_generated"} and not user_confirmed:
             raise ValueError("model output is not evidence of a user fact or completed event")
+        from .memory_time import temporal_metadata
+        temporal = temporal_metadata(time_basis=self.time_basis, timezone_name=self.timezone_name,
+            now=now, occurred_at=occurred_at, valid_from=valid_from, valid_until=valid_until)
         candidate = MemoryCandidate(
             character_id=self.character_id,
             owner_id=self.owner_id,
@@ -177,11 +205,11 @@ class EmotionalMemoryService:
             title=title,
             summary=summary,
             source=source,
-            occurred_at=now,
+            occurred_at=temporal["occurred_time"],
             tags=tags,
             importance=importance,
             pinned=pinned,
-            metadata=dict(metadata or {}),
+            metadata={**dict(metadata or {}), **temporal},
             source_ids=source_ids,
         )
         memory = replace(candidate.to_memory(now=now, user_confirmed=user_confirmed),
@@ -194,20 +222,40 @@ class EmotionalMemoryService:
     def correct(self, memory_id: str, *, title: str, summary: str, now: int,
                 expected_epoch: int | None = None, source_ids: tuple[str, ...] = (),
                 metadata: Mapping[str, object] | None = None) -> EmotionalMemoryEntry:
-        epoch = self.store.context_epoch if expected_epoch is None else expected_epoch
-        previous = next((entry for entry in self.store.load_memories()
-                         if entry.memory_id == memory_id and not entry.deleted), None)
+        from .memory_index import read_edit_target
+        previous, read_epoch = read_edit_target(self.store, memory_id)
+        epoch = read_epoch if expected_epoch is None else expected_epoch
         if previous is None:
             raise KeyError(f"active memory not found: {memory_id}")
-        combined_sources = tuple(dict.fromkeys((*previous.source_ids, *source_ids)))
-        if len(combined_sources) > MAX_SOURCE_IDS:
+        direct_sources = tuple(dict.fromkeys(source_ids)) or (f"user-correction:{uuid4().hex}",)
+        if len(direct_sources) > MAX_SOURCE_IDS:
             raise ValueError("correction source references exceed the supported limit")
+        corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
         return self.remember(kind=previous.kind, title=title, summary=summary,
             source="user_correction", now=now, importance=previous.importance,
             tags=previous.tags, pinned=previous.pinned, user_confirmed=True,
-            supersedes=memory_id, metadata={**previous.metadata, **dict(metadata or {}), "corrected_by_user": True},
-            source_ids=combined_sources, scope=previous.scope, confidence=1.0,
+            supersedes=memory_id, metadata=corrected_metadata,
+            source_ids=direct_sources, scope=previous.scope, confidence=1.0,
             valid_from=previous.valid_from, valid_until=previous.valid_until, expected_epoch=epoch)
+
+    def change(self, memory_id: str, *, title: str, summary: str, now: int, effective_at: int,
+               metadata: Mapping[str, object] | None = None, source_ids: tuple[str, ...] = (),
+               expected_epoch: int | None = None) -> EmotionalMemoryEntry:
+        from .memory_index import read_edit_target
+        from .memory_lifecycle import change_memory
+        previous, epoch = read_edit_target(self.store, memory_id)
+        if previous is None:
+            raise KeyError(f"active memory not found: {memory_id}")
+        sources = tuple(dict.fromkeys(source_ids)) or (f"user-change:{uuid4().hex}",)
+        changed = replace(previous, memory_id=uuid4().hex, title=title, summary=summary,
+            source="user_change", source_ids=sources, user_confirmed=True, valid_until=0,
+            metadata=correction_metadata(previous, summary, metadata, source_id=sources[0]))
+        return change_memory(self.store, memory_id, changed, now=now, effective_at=effective_at,
+            expected_epoch=epoch if expected_epoch is None else expected_epoch)
+
+    def purge(self, memory_id: str, *, now: int, expected_epoch: int | None = None) -> tuple[str, ...]:
+        from .memory_lifecycle import purge_memory
+        return purge_memory(self.store, memory_id, now=now, expected_epoch=expected_epoch)
 
     def recall(
         self,
@@ -218,11 +266,25 @@ class EmotionalMemoryService:
         top_k: int = 4,
         scope: str = "companion",
     ) -> tuple[EmotionalMemoryEntry, ...]:
-        self.store.expire_memories(now=now)
-        profile = self.store.load_profile()
-        stage = relationship_stage or profile.relationship_stage
-        existing = tuple(memory for memory in self.store.load_memories()
-                         if memory.is_active(now=now, scope=scope))
+        for _attempt in range(3):
+            snapshot = self.store.read_context_snapshot(now=now)
+            active = _active_memory_index(snapshot.entries, now=now, scope=scope)
+            selected = self._rank_active_memories(
+                query, tuple(active.values()), now=now, top_k=top_k, scope=scope,
+                relationship_stage=relationship_stage or snapshot.profile.relationship_stage,
+            )
+            memories = self.store.finalize_recall(selected, expected_epoch=snapshot.context_epoch,
+                                                   now=now, scope=scope)
+            if memories is not None:
+                return memories
+        return ()
+
+    def _rank_active_memories(
+        self, query: str, existing: tuple[EmotionalMemoryEntry, ...], *, now: int,
+        relationship_stage: str, top_k: int, scope: str = "companion",
+    ) -> tuple[EmotionalMemoryEntry, ...]:
+        # All optional provider work happens after the snapshot transaction has
+        # closed, so network/model latency cannot hold the SQLite write lock.
         semantic_scores = {}
         if self.semantic_retriever is not None:
             try:
@@ -236,16 +298,44 @@ class EmotionalMemoryService:
             existing,
             query,
             now=now,
-            relationship_stage=stage,
+            relationship_stage=relationship_stage,
             top_k=top_k,
             semantic_scores=semantic_scores,
             scope=scope,
         )
-        if not ranked:
-            return ()
-        return self.store.touch_memories((memory.memory_id for memory, _ in ranked), now=now)
+        return tuple(memory for memory, _ in ranked)
 
     def build_context(
+        self, query: str, *, now: int, relationship_stage: str | None = None,
+        top_k: int = 4, history=(), layered: bool = True,
+    ) -> MemoryContextBundle:
+        """Default desktop path: on-demand, indexed and source-authenticated."""
+        return self.retrieve(query, now=now, relationship_stage=relationship_stage,
+                             top_k=top_k, history=history, layered=layered).bundle
+
+    def prepare_retrieval(self, query: str, *, now: int, history=(), scope="companion"):
+        """Prepare optional embeddings on their worker only when needed."""
+        from .ondemand_memory import prepare_retrieval
+        return prepare_retrieval(self, query, now=now, history=history, scope=scope)
+
+    def retrieve(self, query: str, *, now: int, history=(), scope="companion", top_k=4,
+                 relationship_stage: str | None = None, layered: bool = True, record_access: bool = True):
+        from .ondemand_memory import retrieve
+        result = retrieve(self, query, now=now, history=history, scope=scope, top_k=top_k,
+                          relationship_stage=relationship_stage, layered=layered, record_access=record_access)
+        self.last_retrieval_trace = result.trace
+        return result
+
+    def expand_sources(self, source_fingerprints: Mapping[str, str], *, expected_epoch: int,
+                       now: int, scope: str = "companion", record_access: bool = True):
+        """Expand an authenticated overview, never a stale client's cached text."""
+        from .ondemand_memory import expand_sources
+        result = expand_sources(self, source_fingerprints, expected_epoch=expected_epoch, now=now, scope=scope,
+                                record_access=record_access)
+        self.last_retrieval_trace = result.trace
+        return result
+
+    def build_legacy_context(
         self,
         query: str,
         *,
@@ -253,44 +343,41 @@ class EmotionalMemoryService:
         relationship_stage: str | None = None,
         top_k: int = 4,
     ) -> MemoryContextBundle:
-        self.store.expire_memories(now=now)
         # A writer may revoke a source while retrieval is running. Never emit
         # a bundle assembled across two different revocation generations.
         for _attempt in range(3):
-            epoch = self.store.context_epoch
-            profile = self.valid_profile(now=now)
+            snapshot = self.store.read_context_snapshot(now=now)
+            active = _active_memory_index(snapshot.entries, now=now)
+            profile = _valid_profile(snapshot.profile, active)
             if relationship_stage is not None:
                 profile = replace(profile, relationship_stage=relationship_stage)
-            memories = self.recall(query, now=now, relationship_stage=profile.relationship_stage, top_k=top_k)
-            chapter = self.latest_chapter(now=now)
-            if chapter is not None and not set(chapter.source_memory_ids).intersection(m.memory_id for m in memories):
+            selected = self._rank_active_memories(
+                query, tuple(active.values()), now=now, top_k=top_k,
+                relationship_stage=profile.relationship_stage or snapshot.profile.relationship_stage,
+            )
+            chapter = max(_valid_chapters(snapshot.chapters, active),
+                          key=lambda item: item.created_at, default=None)
+            if chapter is not None and not set(chapter.source_memory_ids).intersection(m.memory_id for m in selected):
                 chapter = None
-            if epoch == self.store.context_epoch:
-                return MemoryContextBundle(profile, memories, chapter, context_epoch=epoch)
+            memories = self.store.finalize_recall(selected, expected_epoch=snapshot.context_epoch, now=now)
+            if memories is not None:
+                return MemoryContextBundle(profile, memories, chapter, context_epoch=snapshot.context_epoch)
         return MemoryContextBundle(CoreBondProfile(self.character_id, self.owner_id),
                                    context_epoch=self.store.context_epoch)
 
     def valid_profile(self, *, now: int) -> CoreBondProfile:
         profile = self.store.load_profile()
-        entries = {entry.memory_id: entry for entry in self.store.load_memories()
-                   if entry.is_active(now=now)}
-        def valid(field: str, value: str) -> bool:
-            refs = profile.evidence.get(f"{field}:{value}", {})
-            return bool(refs) and all(key in entries and entries[key].evidence_fingerprint() == fingerprint
-                                      for key, fingerprint in refs.items())
-        fields = {name: tuple(value for value in getattr(profile, name) if valid(name, value))
-                  for name in ("stable_preferences", "boundaries", "shared_rituals", "active_story_threads")}
-        alias = profile.player_alias if valid("player_alias", profile.player_alias) else ""
-        # The model needs only the active view. Keep lineage in the store and source inspector.
-        return replace(profile, player_alias=alias, evidence={}, **fields)
+        entries = _active_memory_index(self.store.load_memories(), now=now)
+        return _valid_profile(profile, entries)
 
     def valid_chapters(self, *, now: int) -> tuple[MemoryChapter, ...]:
-        entries = {entry.memory_id: entry for entry in self.store.load_memories() if entry.is_active(now=now)}
-        return tuple(chapter for chapter in self.store.load_chapters() if chapter.source_memory_ids and all(
-            key in entries and chapter.source_fingerprints.get(key) == entries[key].evidence_fingerprint()
-            for key in chapter.source_memory_ids))
+        entries = _active_memory_index(self.store.load_memories(), now=now)
+        return _valid_chapters(self.store.load_chapters(), entries)
 
     def consolidate(self, *, now: int, shared_only: bool = False) -> MemoryChapter | None:
+        if shared_only:
+            result = self.maintain(now=now)
+            return result.created_chapter or result.existing_chapter
         epoch = self.store.context_epoch
         memories = tuple(entry for entry in self.store.load_memories() if entry.is_active(now=now))
         if shared_only:
@@ -315,6 +402,37 @@ class EmotionalMemoryService:
         if existing is not None:
             return existing
         return self.store.upsert_chapter(chapter, expected_epoch=epoch)
+
+    def maintain(self, *, now: int, budget=None):
+        """Explicit synchronous bounded maintenance, useful for CLI/evaluation."""
+        from .memory_maintenance import run_memory_maintenance
+        return run_memory_maintenance(self.store, now=now, reflection=self.reflection, budget=budget)
+
+    def schedule_maintenance(self, *, now: int, budget=None) -> bool:
+        """Coalesce background work; desktop callers never wait for the worker."""
+        if self._maintenance_closed:
+            return False
+        if self._maintenance_scheduler is None:
+            from .memory_maintenance import MemoryMaintenanceScheduler
+            self._maintenance_scheduler = MemoryMaintenanceScheduler(self.store, reflection=self.reflection)
+        return self._maintenance_scheduler.request(now=now, budget=budget)
+
+    def maintenance_status(self) -> dict[str, object]:
+        if self._maintenance_scheduler is None:
+            return {"running": False, "pending": False, "closed": self._maintenance_closed,
+                    "completed_runs": 0, "last_result": None, "last_error": ""}
+        return self._maintenance_scheduler.snapshot().to_dict()
+
+    def wait_for_maintenance(self, *, timeout: float = 5.0) -> bool:
+        """CLI/test coordination only; GUI callers must not block on this."""
+        return self._maintenance_scheduler is None or self._maintenance_scheduler.wait_idle(timeout=timeout)
+
+    def close(self, *, wait: bool = False) -> None:
+        self._maintenance_closed = True
+        if self.evidence_judge is not None:
+            self.evidence_judge.close()
+        if self._maintenance_scheduler is not None:
+            self._maintenance_scheduler.close(wait=wait)
 
     def latest_chapter(self, *, now: int | None = None) -> MemoryChapter | None:
         if now is None:
@@ -391,7 +509,8 @@ class EmotionalMemoryService:
         return updated
 
     def forget(self, memory_id: str, *, now: int, expected_epoch: int | None = None) -> EmotionalMemoryEntry | None:
-        return self.store.forget_memory(memory_id, now=now, expected_epoch=expected_epoch)
+        from .memory_lifecycle import forget_fact_memory
+        return forget_fact_memory(self.store, memory_id, now=now, expected_epoch=expected_epoch)
 
     def album(self) -> dict[str, tuple[EmotionalMemoryEntry, ...]]:
         visible = [memory for memory in self.store.load_memories() if not memory.deleted]
@@ -462,6 +581,30 @@ class EmotionalMemoryService:
                     for memory in self.store.load_memories()
                 )
         return {**row, "payload": payload}
+
+
+def _active_memory_index(entries: Iterable[EmotionalMemoryEntry], *, now: int,
+                         scope: str = "companion") -> dict[str, EmotionalMemoryEntry]:
+    current = {entry.memory_id: entry for entry in entries}
+    return {key: entry for key, entry in current.items() if entry.is_active(now=now, scope=scope)}
+
+
+def _valid_profile(profile: CoreBondProfile, entries: Mapping[str, EmotionalMemoryEntry]) -> CoreBondProfile:
+    def valid(field: str, value: str) -> bool:
+        refs = profile.evidence.get(f"{field}:{value}", {})
+        return bool(refs) and all(key in entries and entries[key].evidence_fingerprint() == fingerprint
+                                  for key, fingerprint in refs.items())
+    fields = {name: tuple(value for value in getattr(profile, name) if valid(name, value))
+              for name in ("stable_preferences", "boundaries", "shared_rituals", "active_story_threads")}
+    alias = profile.player_alias if valid("player_alias", profile.player_alias) else ""
+    # The model needs only the active view. Keep lineage in the store and source inspector.
+    return replace(profile, player_alias=alias, evidence={}, **fields)
+
+
+def _valid_chapters(chapters: Iterable[MemoryChapter], entries: Mapping[str, EmotionalMemoryEntry]) -> tuple[MemoryChapter, ...]:
+    return tuple(chapter for chapter in chapters if chapter.source_memory_ids and all(
+        key in entries and chapter.source_fingerprints.get(key) == entries[key].evidence_fingerprint()
+        for key in chapter.source_memory_ids))
 
 
 def _event_to_mapping(event: object) -> dict[str, object]:

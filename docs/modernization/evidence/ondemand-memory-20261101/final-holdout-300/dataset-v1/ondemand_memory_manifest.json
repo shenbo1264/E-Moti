@@ -1,0 +1,29 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-11-01",
+  "policy": "Freeze before candidate run; do not tune production on holdout; after inspection any targeted repair promotes affected cases to regression.",
+  "files": {
+    "ondemand_memory_development.json": "c1f9358406a399ec24e863b48d3027c66348db8f9b53abba587f9b125ad40a01",
+    "ondemand_memory_validation.json": "408625996eeb69ff22e81c0ece92e3dcc1479853034d54d4a1e2eae61294bd97",
+    "ondemand_memory_holdout.json": "f7468d5534a493b5d7a1f073d445edea98debe509e84b30578c530d02420fcb6"
+  },
+  "predeclared_scale_subset": {
+    "sizes": [
+      3000,
+      10000
+    ],
+    "split": "development",
+    "story_ids": [
+      "d02",
+      "d06",
+      "d08"
+    ],
+    "queries": 18,
+    "selection_reason": "Structured relation fields, genuine shared episodes, and task experience; selected before final candidate scores; no population or full-holdout scaling claim."
+  },
+  "split_usage": {
+    "development": "development_seen_during_tuning",
+    "validation": "development-validation_seen_during_diagnostics_and_tuning",
+    "holdout": "independently_authored_frozen_not_yet_run"
+  }
+}

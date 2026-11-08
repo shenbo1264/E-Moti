@@ -1,0 +1,274 @@
+{
+  "size": 300,
+  "source_sha256": {
+    "semantic_memory.py": "00bc9379b999af0d5cb1648dd11841e951efa98e1bf877cbd3fa0560a127e9aa",
+    "memory_index.py": "b952ee112ec57a97762e542710a809c7ef25c29ba56c53a329b907acaff2a4ec",
+    "memory_index_schema.py": "033eaf12241654f16a6c2a96f602e8693846eef6e5b877b40f53b5f99690380f",
+    "memory_document.py": "be2f49c803f3d016a6cf3416bc02090b1cab9777f86aec88daef75b06b6e0802",
+    "emotional_memory.py": "325897312781efbbbc4981ee832b4dcfbf728cb34b03450bca32101f2169336b"
+  },
+  "source_unchanged_during_run": true,
+  "model": {
+    "name": "BAAI/bge-small-zh-v1.5",
+    "revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+    "provider": "CPUExecutionProvider",
+    "threads": 2
+  },
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+    "logical_cpus": 9,
+    "openblas_threads": "1",
+    "packages": {
+      "fastembed": "0.9.1",
+      "numpy": "2.5.4",
+      "onnxruntime": "1.31.1",
+      "huggingface-hub": "1.33.0"
+    }
+  },
+  "corpus": {
+    "source": "synthetic six-template Chinese text, not private data",
+    "min_chars": 6,
+    "median_chars": 62.0,
+    "max_chars": 65,
+    "normalization": "exact float32 cosine; normalized cached passage matrix",
+    "all_current_companion": true
+  },
+  "seed_sqlite_ms": 183.60807099816157,
+  "model_load_ms": 391.0617520014057,
+  "cold": {
+    "wall_ms": 5361.80941999919,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 300,
+      "prepared_entries": 300,
+      "error": null,
+      "encoded_entries_total": 300,
+      "query_embed_count": 1,
+      "manifest_revision": 1,
+      "index_generation": "6bb049d33e6a4d4080ead435b58f1ad0",
+      "generation": 0,
+      "watched_scopes": [
+        "companion"
+      ],
+      "last_encoded_entries": 300,
+      "manifest_ms": 5.195393998292275,
+      "payload_read_ms": 42.36191800009692,
+      "passage_encoding_ms": 5304.32678800571,
+      "query_embedding_ms": 6.73871100298129,
+      "search_ms": 0.7968549980432726,
+      "index_prepare_ms": 5351.884100004099,
+      "prepare_ms": 5361.241770995548,
+      "manifest_pages": 2,
+      "payload_rows_loaded": 300,
+      "prepare_retries": 0
+    },
+    "top_ids": [
+      "synthetic-000233",
+      "synthetic-000161",
+      "synthetic-000215",
+      "synthetic-000005"
+    ]
+  },
+  "warm": [
+    {
+      "wall_ms": 7.770401003654115,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 2,
+        "manifest_revision": 1,
+        "index_generation": "6bb049d33e6a4d4080ead435b58f1ad0",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "last_encoded_entries": 0,
+        "manifest_ms": 2.1255440078675747,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 4.475989000638947,
+        "search_ms": 0.1560160017106682,
+        "index_prepare_ms": 2.1255440078675747,
+        "prepare_ms": 7.287540000106674,
+        "manifest_pages": 2,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0
+      },
+      "top_ids": [
+        "synthetic-000246",
+        "synthetic-000276",
+        "synthetic-000006",
+        "synthetic-000042"
+      ]
+    },
+    {
+      "wall_ms": 9.141389004071243,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 3,
+        "manifest_revision": 1,
+        "index_generation": "6bb049d33e6a4d4080ead435b58f1ad0",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "last_encoded_entries": 0,
+        "manifest_ms": 1.9749569983105175,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 6.189861000166275,
+        "search_ms": 0.23104000138118863,
+        "index_prepare_ms": 1.9749569983105175,
+        "prepare_ms": 8.824174001347274,
+        "manifest_pages": 2,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0
+      },
+      "top_ids": [
+        "synthetic-000015",
+        "synthetic-000009",
+        "synthetic-000003",
+        "synthetic-000243"
+      ]
+    },
+    {
+      "wall_ms": 7.0414180008810945,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 4,
+        "manifest_revision": 1,
+        "index_generation": "6bb049d33e6a4d4080ead435b58f1ad0",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "last_encoded_entries": 0,
+        "manifest_ms": 1.8825959923560731,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 4.242735005391296,
+        "search_ms": 0.17000700609060004,
+        "index_prepare_ms": 1.8825959923560731,
+        "prepare_ms": 6.690827998681925,
+        "manifest_pages": 2,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0
+      },
+      "top_ids": [
+        "synthetic-000014",
+        "synthetic-000026",
+        "synthetic-000020",
+        "synthetic-000080"
+      ]
+    }
+  ],
+  "warm_wall_p50_ms": 7.770401003654115,
+  "correction_write_ms": 207.84037599514704,
+  "correction": {
+    "wall_ms": 14.253465000365395,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 300,
+      "prepared_entries": 300,
+      "error": null,
+      "encoded_entries_total": 301,
+      "query_embed_count": 5,
+      "manifest_revision": 2,
+      "index_generation": "6bb049d33e6a4d4080ead435b58f1ad0",
+      "generation": 1,
+      "watched_scopes": [
+        "companion"
+      ],
+      "last_encoded_entries": 1,
+      "manifest_ms": 3.2029739959398285,
+      "payload_read_ms": 1.1886479987879284,
+      "passage_encoding_ms": 4.855783001403324,
+      "query_embedding_ms": 3.579142998205498,
+      "search_ms": 0.5668070007232018,
+      "index_prepare_ms": 9.247404996131081,
+      "prepare_ms": 13.886820001062006,
+      "manifest_pages": 2,
+      "payload_rows_loaded": 1,
+      "prepare_retries": 0
+    },
+    "top_ids": [
+      "e972e5e8172cffb98ae7",
+      "synthetic-000284",
+      "synthetic-000290",
+      "synthetic-000020"
+    ]
+  },
+  "forget_write_ms": 125.9300070014433,
+  "forget": {
+    "wall_ms": 7.5628969934768975,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 299,
+      "prepared_entries": 299,
+      "error": null,
+      "encoded_entries_total": 301,
+      "query_embed_count": 6,
+      "manifest_revision": 3,
+      "index_generation": "6bb049d33e6a4d4080ead435b58f1ad0",
+      "generation": 2,
+      "watched_scopes": [
+        "companion"
+      ],
+      "last_encoded_entries": 0,
+      "manifest_ms": 2.444376004859805,
+      "payload_read_ms": 0.0,
+      "passage_encoding_ms": 0.0,
+      "query_embedding_ms": 3.859341006318573,
+      "search_ms": 0.5428010044852272,
+      "index_prepare_ms": 2.444376004859805,
+      "prepare_ms": 7.247515000926796,
+      "manifest_pages": 2,
+      "payload_rows_loaded": 0,
+      "prepare_retries": 0
+    },
+    "top_ids": [
+      "synthetic-000284",
+      "synthetic-000290",
+      "synthetic-000020",
+      "synthetic-000278"
+    ]
+  },
+  "peak_rss_mib": 850.58984375,
+  "assertions": "cold N, warm 0, corrected 1, forgotten 0 passage encodes; revoked IDs absent"
+}

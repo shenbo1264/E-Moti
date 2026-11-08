@@ -1,0 +1,33 @@
+{
+  "initial_full_suite": {
+    "source_commit": "53cb836dc8558fc1498db4c673207db4e7868f14",
+    "production_commit": "1eef5cbb6f85703f0350f8708cc86bf84a7e071f",
+    "preserved_artifacts": {
+      "pytest.xml": "df757cf46a0f788c94d529f1a76afda675a7688b085ec144fa71051963c69121",
+      "run.json": "7fa1c6428447419d8db3626b6f9975e247aa2dba5798f75c4e51ce4adcb6a928"
+    },
+    "console_log_status": "overwritten_by_final_rerun_before_archive; do not reconstruct or claim original full console log retained",
+    "available_failure_evidence": "Full original JUnit XML and completed run.json preserved before the final run writes its results; 8 failures also independently reproduced in round2-tests/subject-precedence-red.xml and .log."
+  },
+  "final_full_suite": {
+    "production_commit": "b5b43e2a83a392b56d11cd2c24f01a89bdf22364",
+    "status": "completed_and_archived",
+    "actual_working_output_directory": "round2-tests",
+    "planned_archive_directory": "final-tests",
+    "note": "Wrapper path replacement missed the path suffix; final three files will be copied byte-for-byte after process completion, with relocation hashes recorded. This does not affect source/test execution or the independent quality artifacts.",
+    "completed_artifact_sha256": {
+      "pytest.log": "6c365066cb97d7dd307e303db32734c1a61e87695c0ce6fc0afc2d8d2349b99d",
+      "pytest.xml": "c2fa785747111fc8c15a1e6025008bf8240dec01e9f3d4ca719628c8853af945",
+      "run.json": "951a67ae45fa85a12b69557ff6d675abb41cb86a5fbada24828a89601e637980"
+    },
+    "summary": {
+      "tests": 2154,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 4
+    },
+    "source_unchanged": true,
+    "elapsed_seconds": 604.7330827279948,
+    "original_junit_destination_restored_to_first_run": true
+  }
+}

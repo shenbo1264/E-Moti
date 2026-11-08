@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 import re
 from uuid import uuid4
 
-from .emotional_memory import MAX_SOURCE_IDS
 from .emotional_memory_policy import MemoryCandidate
+from .memory_source_spans import source_span_metadata
 
 
 # 这是活跃使用时钟上的记忆新鲜度上限，不是计划的日历截止日。
@@ -20,6 +20,68 @@ _TIME = re.compile(
     r"|下(?:个)?(?:月|周|星期)(?:[一二三四五六日天])?|明天|后天|周末|今年|明年|后年")
 _INTENTION = re.compile(r"^我(?:现在|最近|正在)?(?:计划|打算|准备|在备考|正备考|备考|在筹备|正在筹备)")
 _FUTURE = re.compile(r"^我(?:现在|已经)?(?:下|明|后|今年|\d|[一二三四五六七八九十]).{0,18}?(?:要|将|会)")
+_WEEKLY_TIME = re.compile(r"每(?:周|星期)([一二三四五六日天])(早上|上午|中午|下午|晚上|夜间)?")
+
+
+def weekly_activity(entry):
+    slot = str(entry.metadata.get("fact_slot", ""))
+    if not slot.startswith("weekly:"):
+        return ""
+    return re.sub(r"^(?:早上|上午|中午|下午|晚上|夜间)?(?:去)?(?:参加)?", "", slot[7:])
+
+
+def matches_weekly_forget(target, entry):
+    activity = weekly_activity(entry)
+    return bool(activity and activity in target and re.fullmatch(
+        r"(?:我|自己)?(?:去|参加)?" + re.escape(activity) + r"(?:的)?(?:时间|安排|日程)", target))
+
+
+def update_weekly(memory, text, *, now, mode):
+    from .chat_memory import ChatMemoryResult
+    if (mode == "off" or _UNSUPPORTED.search(text) or "我" not in text
+            or not re.search(r"改到|改成|改为", text)
+            or not (re.match(r"^我(?:现在|以后|也)?(?:把|改)", text)
+                    or re.search(r"[，,]我(?:也)?改", text))):
+        return None
+    times = list(_WEEKLY_TIME.finditer(text))
+    if len(times) != 1:
+        return None
+    matches = [entry for entry in memory.store.load_memories() if entry.is_active(now=now)
+        and weekly_activity(entry) and weekly_activity(entry) in text]
+    if not matches:
+        return None
+    if len(matches) != 1:
+        return ChatMemoryResult("clarify", "请明确要修改哪项每周安排。")
+    old = matches[0]
+    previous = str(old.metadata.get("fact_value", ""))
+    old_time = _WEEKLY_TIME.match(previous)
+    if old_time is None:
+        return ChatMemoryResult("clarify", "原安排的时间还不明确。")
+    period = times[0][2] or old_time[2] or ""
+    value = "每周" + times[0][1].replace("天", "日") + period + previous[old_time.end():]
+    reference = "chat-weekly:" + uuid4().hex
+    claim = next((part for part in re.split(r"[，,。；;]", text)
+                  if weekly_activity(old) in part and _WEEKLY_TIME.search(part)), "")
+    if not claim:
+        return ChatMemoryResult("clarify", "请把活动和修改后的时间放在同一条说明里。")
+    metadata = {"speaker": "user", "scene": "companion_chat", "original_quote": text,
+        "evidence_quote": claim, "message_id": reference, "fact_slot": old.metadata["fact_slot"],
+        "fact_domain": "每周安排", "fact_value": value, "corrected_by_user": True}
+    metadata.update(source_span_metadata(text, claim))
+    if "我" not in claim:
+        if text.count("我") != 1:
+            return ChatMemoryResult("clarify", "请明确这项安排属于谁。")
+        metadata["source_support_spans"] = [[text.index("我"), text.index("我") + 1]]
+    if mode == "review":
+        metadata.update(source_memory_ids=[old.memory_id], supersedes_memory_id=old.memory_id)
+        candidate = MemoryCandidate(character_id=memory.character_id, owner_id=memory.owner_id,
+            kind=old.kind, title="每周安排", summary="用户" + value, source="user_correction",
+            occurred_at=now, source_ids=(reference,), metadata=metadata, requires_user_confirmation=True)
+        memory.propose_candidate(candidate, pending_id=reference, expected_epoch=memory.store.context_epoch)
+        return ChatMemoryResult("pending", "时间修改已放入待确认。")
+    entry = memory.correct(old.memory_id, title="每周安排", summary="用户" + value, now=now,
+        source_ids=(reference,), metadata=metadata, expected_epoch=memory.store.context_epoch)
+    return ChatMemoryResult("saved", memory_ids=(entry.memory_id,))
 
 
 @dataclass(frozen=True, slots=True)
@@ -79,9 +141,8 @@ def correct_plan(memory, entry, *, summary: str, value: str, text: str, now: int
     if deadline <= now:
         return ChatMemoryResult("clarify", "这项计划已超过记忆有效期，请重新说明当前计划。")
     reference = f"chat-plan-correction:{uuid4().hex}"
-    sources = tuple(dict.fromkeys((*old.source_ids, reference)))
-    if len(sources) > MAX_SOURCE_IDS:
-        raise ValueError("plan correction source references exceed the supported limit")
+    # A revision cites its own statement; the supersedes chain retains history.
+    sources = (reference,)
     # 只把新的字面目标与原时间交给 prompt，旧目标留在已退役事实和来源审计中。
     topic = "迁居地点" if "搬" in plan.quote or "迁居" in plan.quote else "计划内容"
     revised_summary = f"用户计划（未确认完成）：{topic}改为{value}"
@@ -93,6 +154,8 @@ def correct_plan(memory, entry, *, summary: str, value: str, text: str, now: int
                 "fact_domain": "计划", "fact_slot": "plan", "fact_value": value, "corrected_by_user": True,
                 "confidence_reason": "明确纠正计划目标；保留原时间表述，尚未确认完成",
                 "expiry_basis": "logical_memory_freshness", "expiry_note": "有效期仅用于记忆新鲜度，不代表计划日期"}
+    metadata.pop("source_memory_ids", None)
+    metadata.pop("supersedes_memory_id", None)
     epoch = memory.store.context_epoch
     valid_from = old.valid_from or old.occurred_at
     if mode == "review":

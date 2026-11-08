@@ -8,12 +8,15 @@ from dataclasses import dataclass, field, replace
 from pathlib import Path
 from typing import Iterable, Mapping
 
+from .memory_lifecycle import origin_revoked, revision_ids
+
 CURRENT_EMOTIONAL_MEMORY_SCHEMA_VERSION = 2
 MAX_EMOTIONAL_MEMORY_ENTRIES = 300
 MAX_MEMORY_TEXT_LENGTH = 240
 MAX_MEMORY_TITLE_LENGTH = 60
 MAX_MEMORY_TAGS = 8
 MAX_SOURCE_IDS = 8
+_CONTROL_SPACES = str.maketrans({code: " " for code in (*range(32), 127)})
 
 
 def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
@@ -23,7 +26,7 @@ def _clamp(value: float, minimum: float = 0.0, maximum: float = 1.0) -> float:
 def _clean_text(value: object, max_length: int) -> str:
     if not isinstance(value, str):
         return ""
-    normalized = "".join(" " if ord(char) < 32 or ord(char) == 127 else char for char in value)
+    normalized = value.translate(_CONTROL_SPACES)
     return " ".join(normalized.strip().split())[:max_length]
 
 
@@ -189,12 +192,28 @@ class EmotionalMemoryEntry:
                 and self.valid_from <= now and (not self.valid_until or now < self.valid_until))
 
     def evidence_fingerprint(self) -> str:
-        """Content revision, independent of access counters and retrieval touches."""
+        """Content revision, including metadata consumed by memory/expressions.
+
+        Audit timestamps and extraction diagnostics are not semantic changes.
+        Canonical key ordering keeps metadata insertion order irrelevant.
+        """
+        fields = self._evidence_fields()
+        metadata = {key: value for key, value in _sanitize_metadata(self.metadata).items()
+                    if key not in {"recorded_at", "confidence_reason", "extraction"}}
+        if metadata:
+            fields += (metadata,)
+        return hashlib.sha256(json.dumps(fields, ensure_ascii=False, sort_keys=True).encode("utf-8")).hexdigest()
+
+    def _evidence_fields(self) -> tuple:
         fields = (self.memory_id, self.character_id, self.owner_id, self.kind,
                   self.title, self.summary, self.source, self.source_ids, self.tags,
                   self.occurred_at, self.scope, self.confidence, self.valid_from,
                   self.valid_until, self.version)
-        return hashlib.sha256(json.dumps(fields, ensure_ascii=False).encode("utf-8")).hexdigest()
+        return fields
+
+    def _legacy_evidence_fingerprint(self) -> str:
+        """Only used to authenticate existing references during the upgrade."""
+        return hashlib.sha256(json.dumps(self._evidence_fields(), ensure_ascii=False).encode("utf-8")).hexdigest()
 
     def touch(self, now: int) -> "EmotionalMemoryEntry":
         timestamp = _clean_timestamp(now)
@@ -416,6 +435,16 @@ class MemoryContextBundle:
 
 
 @dataclass(frozen=True, slots=True)
+class MemoryContextSnapshot:
+    """Detached inputs from one store transaction, never a cross-turn cache."""
+
+    entries: tuple[EmotionalMemoryEntry, ...]
+    profile: CoreBondProfile
+    chapters: tuple[MemoryChapter, ...]
+    context_epoch: int
+
+
+@dataclass(frozen=True, slots=True)
 class EmotionalMemoryStore:
     """Existing public API backed by a single transactional lifecycle document.
 
@@ -425,6 +454,8 @@ class EmotionalMemoryStore:
     root: Path | str
     character_id: str
     owner_id: str = "local_user"
+    # Retained for constructor compatibility. Authority is never truncated by
+    # this former display/cache limit; callers bound retrieval and UI results.
     max_entries: int = MAX_EMOTIONAL_MEMORY_ENTRIES
 
     @property
@@ -459,6 +490,58 @@ class EmotionalMemoryStore:
     def _document(self):
         from .memory_document import memory_document
         return memory_document(self.state_path, self._migrate_v1)
+
+    def read_indexed_snapshot(self, query=None, *, now: int, include_chapters: bool = True,
+                              chapter_limit: int = 8, include_profile_sources: bool = True):
+        """Read bounded candidates and derived sources without decoding all facts."""
+        from .memory_index import read_snapshot
+        return read_snapshot(self, query, now=now, include_chapters=include_chapters,
+                             chapter_limit=chapter_limit, include_profile_sources=include_profile_sources)
+
+    def resolve_subjects(self, subjects: Iterable[str], *, now: int,
+                         scopes: tuple[str, ...] = ("companion",)) -> dict[str, tuple[str, ...]]:
+        """Resolve only explicit, currently valid bindings; preserve ambiguity."""
+        from .memory_index import resolve_subjects
+        return resolve_subjects(self, subjects, now=now, scopes=scopes)
+
+    def resolve_subject_bindings(self, subjects: Iterable[str], *, now: int,
+                                 scopes: tuple[str, ...] = ("companion",)):
+        """Return explicit subject bindings and their revocable source evidence."""
+        from .memory_index import resolve_subject_bindings
+        return resolve_subject_bindings(self, subjects, now=now, scopes=scopes)
+
+    def finalize_indexed_recall(self, selected: Iterable[EmotionalMemoryEntry], *,
+                               expected_epoch: int, now: int, scope: str = "companion",
+                               scopes: tuple[str, ...] | None = None, allow_history: bool = False,
+                               dependency_entries: Iterable[EmotionalMemoryEntry] = (), record_access: bool = True,
+                               valid_at_by_id: Mapping[str, int] | None = None):
+        """Authenticate selected revisions, then update access within one commit."""
+        from .memory_index import finalize
+        return finalize(self, selected, expected_epoch=expected_epoch, now=now,
+                        scope=scope, scopes=scopes, allow_history=allow_history,
+                        dependency_entries=dependency_entries, record_access=record_access,
+                        valid_at_by_id=valid_at_by_id)
+
+    def current_context_epoch(self, *, now: int | None = None) -> int:
+        """Cheap generation barrier; optional now also applies due TTL fences."""
+        from .memory_index import read_epoch
+        return read_epoch(self, now=now)
+
+    def current_index_state(self, *, now: int | None = None) -> tuple[str, int, int]:
+        """Read only generation/revision/epoch for a cheap cache publication fence."""
+        from .memory_index import read_index_state
+        return read_index_state(self, now=now)
+
+    def expire_memories_indexed(self, *, now: int) -> None:
+        """Check the indexed next expiry; full lifecycle work only when due."""
+        self.current_context_epoch(now=now)
+
+    def index_manifest(self, *, now: int, scopes: tuple[str, ...] = ("companion",),
+                       after_revision: int | None = None, limit: int = 2048, after_id: str = ""):
+        """Read revision metadata and revocation tombstones, never fact bodies."""
+        from .memory_index import manifest
+        return manifest(self, now=now, scopes=scopes, after_revision=after_revision,
+                        limit=limit, after_id=after_id)
 
     def _migrate_v1(self) -> dict:
         from .memory_document import read_legacy_json, MemoryStorageError
@@ -516,7 +599,9 @@ class EmotionalMemoryStore:
             if (chapter.character_id == self.character_id
                     and all(key in active_sources for key in chapter.source_memory_ids)
                     and (not chapter.source_fingerprints or all(
-                        chapter.source_fingerprints.get(key) == active_sources[key].evidence_fingerprint()
+                        chapter.source_fingerprints.get(key) in {
+                            active_sources[key].evidence_fingerprint(),
+                            active_sources[key]._legacy_evidence_fingerprint()}
                         for key in chapter.source_memory_ids
                     ))):
                 clean_chapters.append(chapter)
@@ -534,6 +619,73 @@ class EmotionalMemoryStore:
         from .memory_document import MemoryStorageError
         if document.get("character_id") != self.character_id or document.get("owner_id") != self.owner_id:
             raise MemoryStorageError("Memory document belongs to a different character or owner")
+        self._upgrade_semantic_fingerprints(document)
+
+    def _upgrade_semantic_fingerprints(self, document: dict) -> None:
+        """Upgrade in the same SQLite transaction without certifying bad atoms.
+
+        Unchanged legacy references are carried forward only when their stored
+        old fingerprint matches. Corrected rows with contradictory metadata
+        are repaired first and their derived values are revoked instead.
+        """
+        from .memory_correction import repair_legacy_correction
+        from .memory_document import MemoryStorageError
+
+        migrations = document.setdefault("migrations", {})
+        if not isinstance(migrations, dict):
+            raise MemoryStorageError("Invalid memory migration metadata")
+        if migrations.get("semantic_metadata_fingerprint_v1"):
+            return
+        before = {entry.memory_id: entry for row in document.get("entries", [])
+                  if (entry := EmotionalMemoryEntry.from_dict(row)) is not None
+                  and entry.character_id == self.character_id and entry.owner_id == self.owner_id}
+        retired = set(document.get("retired_ids", []))
+        after = {key: (entry if entry.deleted or key in retired else repair_legacy_correction(entry))
+                 for key, entry in before.items()}
+        repaired = {key for key in before if before[key] != after[key]}
+        changed = {key for key in before if before[key]._legacy_evidence_fingerprint()
+                   != after[key].evidence_fingerprint()}
+        if repaired:
+            document["entries"] = [after[row["memory_id"]].to_dict()
+                                   if isinstance(row, dict) and row.get("memory_id") in repaired else row
+                                   for row in document.get("entries", [])]
+            self._invalidate_derived(document, repaired)
+
+        def rebase(refs):
+            if not isinstance(refs, dict):
+                return False
+            valid = True
+            for key, fingerprint in tuple(refs.items()):
+                if key not in before or key in repaired or key in retired or before[key].deleted:
+                    valid = False
+                elif fingerprint == before[key]._legacy_evidence_fingerprint():
+                    refs[key] = after[key].evidence_fingerprint()
+                elif fingerprint != after[key].evidence_fingerprint():
+                    valid = False
+            return valid
+
+        profile = document.get("profile", {})
+        if isinstance(profile, dict) and isinstance(profile.get("evidence"), dict):
+            for refs in profile["evidence"].values():
+                rebase(refs)
+        for chapter in document.get("chapters", []):
+            if isinstance(chapter, dict):
+                rebase(chapter.get("source_fingerprints"))
+        epoch = int(document.get("context_epoch", 0))
+        next_epoch = epoch + bool(changed)
+        pending = document.get("pending_candidates", {})
+        if isinstance(pending, dict):
+            for row in pending.values():
+                if (isinstance(row, dict) and rebase(row.get("source_fingerprints"))
+                        and row.get("expected_epoch") == epoch):
+                    row["expected_epoch"] = next_epoch
+        revision_map = {entry._legacy_evidence_fingerprint(): after[key].evidence_fingerprint()
+                        for key, entry in before.items()}
+        document["expired_revisions"] = [revision_map.get(value, value)
+                                         for value in document.get("expired_revisions", [])]
+        document["context_epoch"] = next_epoch
+        migrations["semantic_metadata_fingerprint_v1"] = True
+        migrations["semantic_metadata_repaired_entries"] = len(repaired)
 
     def _entries(self, document: dict) -> list[EmotionalMemoryEntry]:
         self._check_document(document)
@@ -580,14 +732,22 @@ class EmotionalMemoryStore:
         document["profile"] = profile
 
     def _retire(self, document: dict, entries: list[EmotionalMemoryEntry], *, now: int) -> None:
+        from .memory_source_spans import overlapping_claims
+        if any(entry.metadata.get("message_id") for entry in entries):
+            entries = overlapping_claims(self._entries(document), entries)
         ids = {entry.memory_id for entry in entries}
         if not ids:
             return
         document["retired_ids"] = sorted(set(document.get("retired_ids", [])) | ids)
         document["retired_origins"] = sorted(set(document.get("retired_origins", [])) |
                                             {origin for entry in entries for origin in self._origins(entry)})
-        document["entries"] = [replace(entry, deleted=True, updated_at=now).to_dict()
-                               if entry.memory_id in ids else entry.to_dict() for entry in self._entries(document)]
+        # 撤销只更新命中的原始行；其他记录及未来扩展字段不应被全库规范化改写。
+        for index, row in enumerate(document.get("entries", [])):
+            if not isinstance(row, Mapping) or _clean_text(row.get("memory_id"), 80) not in ids:
+                continue
+            entry = EmotionalMemoryEntry.from_dict(row)
+            if entry is not None and entry.character_id == self.character_id and entry.owner_id == self.owner_id:
+                document["entries"][index] = {**row, "deleted": True, "updated_at": now}
         self._invalidate_derived(document, ids)
         document["context_epoch"] = int(document.get("context_epoch", 0)) + 1
 
@@ -604,20 +764,90 @@ class EmotionalMemoryStore:
         still needs a generation barrier so old dialogue cannot bypass TTL.
         """
         with self._document() as document:
-            expired = [entry for entry in self._entries(document)
-                       if not entry.deleted and entry.valid_until and now >= entry.valid_until]
-            seen = set(document.get("expired_revisions", []))
-            changed = [entry for entry in expired if entry.evidence_fingerprint() not in seen]
-            if changed:
-                self._invalidate_derived(document, {entry.memory_id for entry in changed})
-                document["context_epoch"] += 1
-                document["expired_revisions"] = sorted(seen | {entry.evidence_fingerprint() for entry in changed})
+            self._expire_document(document, self._entries(document), now=now)
+
+    def _expire_document(self, document: dict, entries: Iterable[EmotionalMemoryEntry], *, now: int) -> None:
+        expired = [entry for entry in entries
+                   if not entry.deleted and entry.valid_until and now >= entry.valid_until]
+        seen = set(document.get("expired_revisions", []))
+        changed = [entry for entry in expired if entry.evidence_fingerprint() not in seen]
+        if changed:
+            self._invalidate_derived(document, {entry.memory_id for entry in changed})
+            document["context_epoch"] += 1
+            document["expired_revisions"] = sorted(seen | {entry.evidence_fingerprint() for entry in changed})
+
+    def read_context_snapshot(self, *, now: int) -> MemoryContextSnapshot:
+        """Read facts and their derived views together, applying TTL once.
+
+        Legacy/imported duplicate IDs follow the same last-valid-owned-row
+        rule as store writes. Resolve that rule before active/scope filtering
+        so an older active copy cannot revive an inactive current revision.
+        """
+        with self._document() as document:
+            entries = self._entries(document)
+            self._expire_document(document, entries, now=now)
+            current = {entry.memory_id: entry for entry in entries}
+            return MemoryContextSnapshot(
+                entries=tuple(current.values()),
+                profile=CoreBondProfile.from_dict(document.get("profile"), fallback_character_id=self.character_id),
+                chapters=tuple(chapter for row in document.get("chapters", [])
+                               if (chapter := MemoryChapter.from_dict(row)) is not None
+                               and chapter.character_id == self.character_id),
+                context_epoch=int(document.get("context_epoch", 0)),
+            )
+
+    def finalize_recall(self, selected: Iterable[EmotionalMemoryEntry], *, expected_epoch: int,
+                        now: int, scope: str = "companion") -> tuple[EmotionalMemoryEntry, ...] | None:
+        """Validate the snapshot and touch only current selected revisions.
+
+        None means stale/retry; an empty tuple is a valid zero-hit read. No
+        access counts are written until every selected source is validated.
+        The final transaction is the recall's revocation linearization point.
+        """
+        expected: dict[str, EmotionalMemoryEntry] = {}
+        for entry in selected:
+            previous = expected.get(entry.memory_id)
+            if previous is not None and previous.evidence_fingerprint() != entry.evidence_fingerprint():
+                return None
+            expected[entry.memory_id] = entry
+        with self._document() as document:
+            self._check_document(document)
+            if expected_epoch != int(document.get("context_epoch", 0)):
+                return None
+            if not expected:
+                return ()
+            retired = set(document.get("retired_ids", []))
+            current: dict[str, tuple[int, EmotionalMemoryEntry]] = {}
+            # Scan cheap raw IDs; normalize only the K selected rows (or their
+            # duplicate candidates). Other rows are preserved byte-for-value.
+            for index, row in enumerate(document.get("entries", [])):
+                if not isinstance(row, Mapping) or _clean_text(row.get("memory_id"), 80) not in expected:
+                    continue
+                entry = EmotionalMemoryEntry.from_dict(row)
+                if entry is not None and entry.character_id == self.character_id and entry.owner_id == self.owner_id:
+                    current[entry.memory_id] = (index, entry)
+            for key, source in expected.items():
+                if key not in current or key in retired:
+                    return None
+                entry = current[key][1]
+                if (not entry.is_active(now=now, scope=scope)
+                        or entry.evidence_fingerprint() != source.evidence_fingerprint()):
+                    return None
+            rows = list(document["entries"])
+            touched = []
+            for key in expected:
+                index, entry = current[key]
+                updated = entry.touch(now)
+                rows[index] = updated.to_dict()
+                touched.append(updated)
+            document["entries"] = rows
+            return tuple(touched)
 
     def is_retired_origin(self, *, legacy_key: str = "", entry: EmotionalMemoryEntry | None = None) -> bool:
         with self._document() as document:
             self._check_document(document)
             origins = self._origins(entry) if entry is not None else {"legacy_key:" + legacy_key}
-            return bool(origins.intersection(document.get("retired_origins", [])))
+            return origin_revoked(document, origins)
 
     def load_memories(self) -> tuple[EmotionalMemoryEntry, ...]:
         with self._document() as document:
@@ -677,7 +907,7 @@ class EmotionalMemoryStore:
                 raise ValueError("memory candidate id conflict")
             if source_key in receipts:
                 raise ValueError("memory candidate source already resolved")
-            if set(origins).intersection(document.get("retired_origins", [])):
+            if origin_revoked(document, origins):
                 raise ValueError("stale memory proposal source")
             for key, row in rows.items():
                 if row["source_key"] == source_key:
@@ -722,11 +952,8 @@ class EmotionalMemoryStore:
                         failure = "stale memory correction source binding"
                     else:
                         old = entries[supersedes]
-                        sources = tuple(dict.fromkeys((*old.source_ids, *memory.source_ids)))
-                        if len(sources) > MAX_SOURCE_IDS:
-                            raise ValueError("correction source references exceed the supported limit")
-                        memory = replace(memory, source_ids=sources,
-                            metadata={**old.metadata, **memory.metadata, "corrected_by_user": True})
+                        from .memory_correction import correction_metadata
+                        memory = replace(memory, metadata=correction_metadata(old, memory.summary, memory.metadata))
                         result = self._replace_memory_document(document, supersedes, self._validate(memory), now=now)
                 else:
                     result = self._write_memory(document, entries, self._validate(memory))
@@ -734,7 +961,7 @@ class EmotionalMemoryStore:
                         failure = "stale memory proposal source"
                     else:
                         document["entries"] = [result.to_dict(), *(item.to_dict() for key, item in entries.items()
-                                                                   if key != result.memory_id)][:self.max_entries]
+                                                                   if key != result.memory_id)]
             document["pending_candidates"] = rows
             receipts[row["source_key"]] = "stale" if failure else "confirmed"
             document["candidate_receipts"] = receipts
@@ -765,7 +992,7 @@ class EmotionalMemoryStore:
             # Deletions take precedence over replayed copies within one batch.
             for entry in sorted(incoming, key=lambda entry: not entry.deleted):
                 self._write_memory(document, current, entry)
-            document["entries"] = [entry.to_dict() for entry in list(current.values())[:self.max_entries]]
+            document["entries"] = [entry.to_dict() for entry in current.values()]
 
     def _write_memory(self, document: dict, current: dict[str, EmotionalMemoryEntry],
                       memory: EmotionalMemoryEntry) -> EmotionalMemoryEntry:
@@ -787,8 +1014,8 @@ class EmotionalMemoryStore:
 
         # Corrections can legitimately retain their original event's source id.
         # Only already-held origins of an active row are exempt from the fence.
-        new_origins = self._origins(memory) - (self._origins(old) if old is not None else set())
-        if new_origins.intersection(document.get("retired_origins", [])):
+        if origin_revoked(document, self._origins(memory),
+                          retained_origins=self._origins(old) if old is not None else ()):
             return old if old is not None else replace(memory, deleted=True)
         if old is not None:
             if old.version > memory.version:
@@ -810,7 +1037,7 @@ class EmotionalMemoryStore:
             rows = list(current.values())
             if result.memory_id in current and not result.deleted:
                 rows = [current[result.memory_id], *(entry for entry in rows if entry.memory_id != result.memory_id)]
-            document["entries"] = [entry.to_dict() for entry in rows[:self.max_entries]]
+            document["entries"] = [entry.to_dict() for entry in rows]
             return result
 
     def update_memory(self, entry: EmotionalMemoryEntry) -> EmotionalMemoryEntry:
@@ -839,11 +1066,15 @@ class EmotionalMemoryStore:
             raise ValueError("correction must have an unused memory id")
         if memory.deleted:
             raise ValueError("correction must supply an active replacement")
+        if origin_revoked(document, self._origins(memory), retained_origins=self._origins(old)):
+            raise ValueError("correction source has been revoked")
         memory = replace(memory, version=old.version + 1, supersedes=old.memory_id,
                          occurred_at=old.occurred_at if preserve_occurred_at else memory.occurred_at,
                          created_at=now, updated_at=now)
+        if "occurred_time" in memory.metadata:
+            memory = replace(memory, metadata={**memory.metadata, "occurred_time": memory.occurred_at})
         self._retire(document, [old], now=now)
-        document["entries"] = [memory.to_dict(), *document["entries"]][:self.max_entries]
+        document["entries"] = [memory.to_dict(), *document["entries"]]
         return memory
 
     def forget_memory(self, memory_id: str, *, now: int,
@@ -855,13 +1086,8 @@ class EmotionalMemoryStore:
             target = next((entry for entry in entries if entry.memory_id == memory_id), None)
             if target is None:
                 return None
-            # Forgetting a superseded card must also revoke its current descendants.
-            ids = {memory_id}
-            while True:
-                descendants = {entry.memory_id for entry in entries if entry.supersedes in ids}
-                if descendants <= ids:
-                    break
-                ids.update(descendants)
+            # 遗忘当前事实时一并撤销历史版本，避免历史查询重新交付。
+            ids = revision_ids(entries, memory_id)
             affected = [entry for entry in entries if entry.memory_id in ids]
             if any(not entry.deleted for entry in affected):
                 self._retire(document, affected, now=_clean_timestamp(now))
@@ -950,6 +1176,58 @@ def _clean_evidence(value: object) -> dict[str, dict[str, str]]:
             for key, refs in list(value.items())[:64] if isinstance(key, str)}
 
 
+def _structured_fact_value(value: object) -> object:
+    """Copy a bounded JSON literal without silently changing its meaning.
+
+    Only the explicit ``fact_value`` field supports nested data. Existing
+    scalar/flat-list metadata keeps its historical normalization contract;
+    new structured values reject the whole write if any part is unsupported.
+    Four container levels, 32 members per container, 128 total nodes and 16
+    KiB of UTF-8 JSON keep a fact from becoming an unbounded document store.
+    """
+    nodes = 0
+
+    def visit(item: object, depth: int) -> object:
+        nonlocal nodes
+        nodes += 1
+        if nodes > 128:
+            raise ValueError("fact_value exceeds 128 structured nodes")
+        if isinstance(item, str):
+            if len(item) > 1024:
+                raise ValueError("fact_value string exceeds 1024 characters")
+            return item
+        if item is None or isinstance(item, (bool, int)):
+            return item
+        if isinstance(item, float):
+            if not math.isfinite(item):
+                raise ValueError("fact_value numbers must be finite")
+            return item
+        if not isinstance(item, (Mapping, list, tuple)):
+            raise ValueError("fact_value must contain only JSON literal values")
+        if depth >= 4:
+            raise ValueError("fact_value exceeds four container levels")
+        if len(item) > 32:
+            raise ValueError("fact_value container exceeds 32 members")
+        if isinstance(item, Mapping):
+            result = {}
+            for key, child in item.items():
+                if not isinstance(key, str) or not key or len(key) > 80:
+                    raise ValueError("fact_value object keys must be 1 to 80 characters")
+                result[key] = visit(child, depth + 1)
+            return result
+        return [visit(child, depth + 1) for child in item]
+
+    result = visit(value, 0)
+    try:
+        encoded = json.dumps(result, ensure_ascii=False, sort_keys=True,
+                             separators=(",", ":"), allow_nan=False).encode("utf-8")
+    except (ValueError, UnicodeError) as exc:
+        raise ValueError("fact_value must be a UTF-8 JSON literal") from exc
+    if len(encoded) > 16384:
+        raise ValueError("fact_value exceeds 16 KiB of structured JSON")
+    return result
+
+
 def _sanitize_metadata(value: object) -> dict[str, object]:
     if not isinstance(value, Mapping):
         return {}
@@ -958,7 +1236,22 @@ def _sanitize_metadata(value: object) -> dict[str, object]:
         key = _clean_text(raw_key, 40)
         if not key:
             continue
-        if isinstance(raw_value, (str, int, float, bool)) or raw_value is None:
+        if key == "source_support_spans":
+            text = value.get("original_quote")
+            if (not isinstance(text, str) or not isinstance(raw_value, (list, tuple)) or len(raw_value) > 8
+                    or any(not isinstance(part, (list, tuple)) or len(part) != 2
+                        or any(type(position) is not int for position in part)
+                        or not 0 <= part[0] < part[1] <= len(text) for part in raw_value)):
+                raise ValueError("source support spans must be bounded original text ranges")
+            result[key] = [list(part) for part in raw_value]
+        elif key == "fact_value" and (
+            isinstance(raw_value, Mapping)
+            or (isinstance(raw_value, (list, tuple))
+                and any(not (isinstance(item, (str, int, float, bool)) or item is None)
+                        for item in raw_value))
+        ):
+            result[key] = _structured_fact_value(raw_value)
+        elif isinstance(raw_value, (str, int, float, bool)) or raw_value is None:
             result[key] = raw_value
         elif isinstance(raw_value, (list, tuple)):
             result[key] = [

@@ -714,6 +714,7 @@ class CompanionWindow(QMainWindow):
             self.desktop_dialogue = DesktopDialogueService(self.controller, parent=self)
             self.desktop_dialogue.snapshot_changed.connect(self._handle_dialogue_finished)
             self.desktop_dialogue.failed.connect(self._handle_dialogue_failed)
+            self.desktop_dialogue.memory_committed.connect(self._capture_turn_evidence)
 
         configure_application_style(QApplication.instance())
         self.setWindowTitle("星汐 E-Moti 桌面伴侣")
@@ -761,6 +762,9 @@ class CompanionWindow(QMainWindow):
         self.tick_timer.stop()
         self.countdown_timer.stop()
         self.screen_observation_timer.stop()
+        close_memory_query = getattr(self.memory_album_page, "close_memory_query", None)
+        if callable(close_memory_query):
+            close_memory_query()
         try:
             if self.desktop_dialogue is not None:
                 self.desktop_dialogue.close()
@@ -1408,8 +1412,8 @@ class CompanionWindow(QMainWindow):
         )
         self.desktop_feedback_label.hide()
         layout.addWidget(self.desktop_feedback_label)
-        self.proactive_reject_button = QPushButton("稍后")
-        self.proactive_reject_button.setToolTip("暂停这次主动提醒，并延长下一次主动提醒的冷却时间")
+        self.proactive_reject_button = QPushButton("不用了")
+        self.proactive_reject_button.setToolTip("这次不用。连续拒绝时，它会自己退得更远")
         self.proactive_reject_button.setMinimumHeight(28)
         self.proactive_reject_button.setStyleSheet(
             "QPushButton { border: 1px solid rgba(80, 112, 126, 150); border-radius: 8px; "
@@ -1419,6 +1423,13 @@ class CompanionWindow(QMainWindow):
         self.proactive_reject_button.clicked.connect(self._handle_proactive_reject)
         self.proactive_reject_button.hide()
         layout.addWidget(self.proactive_reject_button, alignment=Qt.AlignmentFlag.AlignHCenter)
+        self.proactive_defer_button = QPushButton("晚点再说")
+        self.proactive_defer_button.setToolTip("这一小时先不打扰。不算拒绝，不会降低之后的主动频率")
+        self.proactive_defer_button.setMinimumHeight(28)
+        self.proactive_defer_button.setStyleSheet(self.proactive_reject_button.styleSheet())
+        self.proactive_defer_button.clicked.connect(self._handle_proactive_defer)
+        self.proactive_defer_button.hide()
+        layout.addWidget(self.proactive_defer_button, alignment=Qt.AlignmentFlag.AlignHCenter)
         self.dialogue_bar = QFrame()
         self.dialogue_bar.setObjectName("DesktopDialogueBar")
         self.dialogue_bar.setStyleSheet(
@@ -1468,6 +1479,20 @@ class CompanionWindow(QMainWindow):
         self.memory_receipt_button.clicked.connect(self._open_pending_memories)
         self.memory_receipt_button.hide()
         layout.addWidget(self.memory_receipt_button)
+        self.memory_undo_button = QPushButton("撤销这次记忆")
+        self.memory_undo_button.setMinimumHeight(30)
+        self.memory_undo_button.setStyleSheet(self.memory_receipt_button.styleSheet())
+        self.memory_undo_button.setToolTip("刚记下的内容不再使用")
+        self.memory_undo_button.clicked.connect(self._undo_last_memory)
+        self.memory_undo_button.hide()
+        layout.addWidget(self.memory_undo_button)
+        self.memory_evidence_button = QPushButton()
+        self.memory_evidence_button.setObjectName("MemoryEvidenceButton")
+        self.memory_evidence_button.setMinimumHeight(30)
+        self.memory_evidence_button.setStyleSheet(self.memory_receipt_button.styleSheet())
+        self.memory_evidence_button.clicked.connect(self._open_turn_evidence)
+        self.memory_evidence_button.hide()
+        layout.addWidget(self.memory_evidence_button)
         layout.addWidget(self.memory_pending_button)
         self.item_feedback_label = QLabel()
         self.item_feedback_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -1787,10 +1812,12 @@ class CompanionWindow(QMainWindow):
         self.hero_layout.setAlignment(self.spirit_surface, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.desktop_feedback_label, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.proactive_reject_button, Qt.AlignmentFlag.AlignHCenter)
+        self.hero_layout.setAlignment(self.proactive_defer_button, Qt.AlignmentFlag.AlignHCenter)
         self.hero_layout.setAlignment(self.dialogue_bar, Qt.AlignmentFlag.AlignHCenter)
         self.character_label.hide()
         self.desktop_feedback_label.hide()
         self.proactive_reject_button.hide()
+        self.proactive_defer_button.hide()
         self.dialogue_bar.show()
         self.item_feedback_label.hide()
         self.sprite_label.setStyleSheet(DESKTOP_SPRITE_STYLE)
@@ -2068,7 +2095,10 @@ class CompanionWindow(QMainWindow):
         self._submit_dialogue(DialogueRequest(text=text))
 
     def _submit_dialogue(self, request: DialogueRequest) -> None:
-        self.memory_receipt_button.hide()
+        self._hide_memory_receipts()
+        album = getattr(self.controller, "memory_album_controller", None)
+        if album is not None:
+            album.clear_turn_evidence()
         if self.desktop_dialogue is None:
             snapshot = self.controller.submit_dialogue_request(
                 request,
@@ -2106,7 +2136,70 @@ class CompanionWindow(QMainWindow):
         self.memory_receipt_button.setText(labels.get(result.get("status"), receipt))
         self.memory_receipt_button.setToolTip(receipt + "\n打开回忆册查看或修改")
         self.memory_receipt_button.setVisible(bool(receipt))
+        self.memory_undo_button.setVisible(result.get("status") == "saved" and bool(result.get("memory_ids")))
+        self._last_saved_memory_ids = tuple(result.get("memory_ids") or ())
+        self._show_turn_evidence()
         self._fit_desktop_content()
+
+    def _hide_memory_receipts(self) -> None:
+        for button in (self.memory_receipt_button, self.memory_undo_button, self.memory_evidence_button):
+            button.hide()
+            button.setToolTip("")
+        self.memory_receipt_button.setText("")
+        self.memory_evidence_button.setText("")
+        self._last_saved_memory_ids = ()
+
+    def _sync_memory_presentation(self) -> None:
+        album = getattr(self.controller, "memory_album_controller", None)
+        if album is None:
+            return
+        key = (id(album), album.story.memory.store.context_epoch)
+        previous = getattr(self, "_memory_ui_context_key", None)
+        self._memory_ui_context_key = key
+        if previous is not None and previous != key:
+            self._hide_memory_receipts()
+            page = getattr(self, "memory_album_page", None)
+            if page is not None and callable(getattr(page, "refresh_memory_album", None)):
+                page.refresh_memory_album()
+
+    def _capture_turn_evidence(self, _result: object = None) -> None:
+        album = getattr(self.controller, "memory_album_controller", None)
+        if album is not None:
+            album.capture_turn_evidence()
+
+    def _show_turn_evidence(self) -> None:
+        album = getattr(self.controller, "memory_album_controller", None)
+        evidence = album.turn_evidence() if album is not None else None
+        view = evidence.get("presentation") if evidence else None
+        self.memory_evidence_button.setVisible(view is not None)
+        if view is not None:
+            self.memory_evidence_button.setText(f"{view['label']} · 看看")
+            self.memory_evidence_button.setToolTip(view["detail"])
+
+    def _open_turn_evidence(self) -> None:
+        self._open_pending_memories()
+        target = self._return_target_window or self
+        show = getattr(target.memory_album_page, "show_turn_evidence", None)
+        if callable(show):
+            show()
+
+    def _undo_last_memory(self) -> None:
+        album = getattr(self.controller, "memory_album_controller", None)
+        if album is None:
+            return
+        try:
+            for memory_id in self._last_saved_memory_ids:
+                album.forget(memory_id, expected_epoch=album.story.memory.store.context_epoch)
+        except (KeyError, ValueError) as exc:
+            self.memory_receipt_button.setText("没能撤销，去回忆册看看")
+            self.memory_receipt_button.setToolTip(str(exc))
+            return
+        self._last_saved_memory_ids = ()
+        self._hide_memory_receipts()
+        refresh = getattr(getattr(self, "memory_album_page", None), "refresh_memory_album", None)
+        if callable(refresh):
+            refresh()
+        self._apply_snapshot(self.controller.get_snapshot())
 
     def _handle_dialogue_failed(self, reason: str) -> None:
         self._set_dialogue_busy(False)
@@ -2133,6 +2226,9 @@ class CompanionWindow(QMainWindow):
 
     def _handle_proactive_reject(self) -> None:
         self._apply_snapshot(self.controller.reject_proactive_request())
+
+    def _handle_proactive_defer(self) -> None:
+        self._apply_snapshot(self.controller.defer_proactive_request())
         self.desktop_feedback_label.show()
 
     def _handle_demo_reset(self) -> None:
@@ -2400,6 +2496,7 @@ class CompanionWindow(QMainWindow):
 
     def _apply_snapshot(self, snapshot: dict[str, object]) -> None:
         self._invalidate_tts_context(snapshot)
+        self._sync_memory_presentation()
         pending_count = self._pending_memory_count()
         self.memory_pending_button.setText(f"待确认回忆 {pending_count}")
         self.memory_pending_button.setVisible(pending_count > 0)
@@ -2463,10 +2560,9 @@ class CompanionWindow(QMainWindow):
         self.memory_label.setText(self.snapshot_renderer.format_memory_log(snapshot["memory_log"]))
         desktop_speech = self.snapshot_renderer.snapshot_tts_speech(snapshot) or str(snapshot["feedback"])
         self.desktop_feedback_label.setText(str(snapshot["character_name"]) + ": " + desktop_speech)
-        if isinstance(snapshot.get("proactive_feedback"), dict) and snapshot.get("proactive_feedback"):
-            self.proactive_reject_button.show()
-        else:
-            self.proactive_reject_button.hide()
+        proactive_visible = isinstance(snapshot.get("proactive_feedback"), dict) and bool(snapshot.get("proactive_feedback"))
+        self.proactive_reject_button.setVisible(proactive_visible)
+        self.proactive_defer_button.setVisible(proactive_visible)
 
         self._sync_action_buttons(snapshot["actions"])
 

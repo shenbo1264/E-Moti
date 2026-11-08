@@ -1,0 +1,7 @@
+{
+  "purpose": "First executable independent holdout after explicit data-validity repair; 48 queries, five methods",
+  "production_commit": "f7a4e23a0f7b207fc68c1719c2217ac740416344",
+  "runtime_conditions": "May overlap final-scale BGE and root full pytest. All quality timings are observed concurrent validation measurements, not independent latency SLOs.",
+  "holdout_opened": true,
+  "data_validity_repair": "../final-holdout-300/data-validity-repair.json"
+}

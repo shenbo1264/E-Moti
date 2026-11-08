@@ -1,4 +1,5 @@
 from dataclasses import replace
+import os
 from pathlib import Path
 
 import pytest
@@ -7,7 +8,8 @@ from guanghe_companion.emotional_memory_service import EmotionalMemoryService
 from guanghe_companion.semantic_memory import SemanticMemoryRetriever
 
 
-CACHE = Path(__file__).resolve().parents[1] / "artifacts/codex_handoff/embedding-models"
+CACHE = Path(os.environ.get("EMOTI_BGE_TEST_CACHE",
+    str(Path(__file__).resolve().parents[1] / "artifacts/codex_handoff/embedding-models")))
 
 
 def test_callback_never_loads_model_and_empty_scope_is_empty(tmp_path):

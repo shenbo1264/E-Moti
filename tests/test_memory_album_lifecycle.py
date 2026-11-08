@@ -34,7 +34,7 @@ def _cards(snapshot):
     return [card for section in snapshot["sections"] for card in section["cards"]]
 
 
-def test_album_correction_preserves_event_time_sources_and_increments_version(tmp_path):
+def test_album_correction_preserves_event_time_source_lineage_and_increments_version(tmp_path):
     service, album = _album(tmp_path)
     old = _remember(service, source_ids=("message-user-1",), confidence=0.7, valid_until=100)
 
@@ -43,7 +43,10 @@ def test_album_correction_preserves_event_time_sources_and_increments_version(tm
     active = [row for row in service.store.load_memories() if not row.deleted]
     assert len(active) == 1
     assert active[0].occurred_at == 10
-    assert active[0].source_ids == ("message-user-1",)
+    assert len(active[0].source_ids) == 1
+    assert active[0].source_ids[0].startswith("user-correction:")
+    predecessor = next(row for row in service.store.load_memories() if row.memory_id == active[0].supersedes)
+    assert predecessor.source_ids == ("message-user-1",) and predecessor.deleted
     assert active[0].version == old.version + 1
     assert active[0].supersedes == old.memory_id
     assert active[0].valid_until == 100
@@ -245,25 +248,19 @@ def _select_id(widget, identity):
     raise AssertionError(f"card not displayed: {identity}")
 
 
-def test_qt_correction_starts_from_complete_summary_not_card_preview(qapp, tmp_path, monkeypatch):
-    from PySide6.QtWidgets import QInputDialog
-
+def test_qt_correction_starts_from_complete_summary_not_card_preview(qapp, tmp_path):
     service, album = _album(tmp_path)
     full = "完整事实不会因为保存纠正而被截断。" * 10
     entry = _remember(service, full)
     widget = create_memory_album_widget(album)
-    seen = []
-    monkeypatch.setattr(QInputDialog, "getText", lambda *args, **kwargs: ("更新标题", True))
-
-    def edit(*args, **kwargs):
-        seen.append(args[3])
-        return args[3], True
-
-    monkeypatch.setattr(QInputDialog, "getMultiLineText", edit)
     _select_id(widget, entry.memory_id)
     widget.memory_action_buttons[1].click()
+    dialog = widget.memory_edit_dialog
 
-    assert seen == [full]
+    assert dialog.summary_input.toPlainText() == full
+    dialog.title_input.setText("更新标题")
+    dialog.save()
+
     assert next(row for row in service.store.load_memories() if not row.deleted).summary == full
     widget.close()
 
@@ -291,24 +288,120 @@ def test_qt_manual_remember_and_pending_confirm_reject_are_real_actions(qapp, tm
 
 
 def test_qt_edit_open_before_forget_does_not_write_back_late_result(qapp, tmp_path, monkeypatch):
-    from PySide6.QtWidgets import QInputDialog, QMessageBox
+    from PySide6.QtWidgets import QMessageBox
 
     service, album = _album(tmp_path)
     entry = _remember(service)
     widget = create_memory_album_widget(album)
     notices = []
-    monkeypatch.setattr(QInputDialog, "getText", lambda *args, **kwargs: ("新标题", True))
     monkeypatch.setattr(QMessageBox, "information", lambda *args: notices.append(args[2]))
-
-    def forget_during_edit(*args, **kwargs):
-        service.forget(entry.memory_id, now=20)
-        return "旧事实不应该回来", True
-
-    monkeypatch.setattr(QInputDialog, "getMultiLineText", forget_during_edit)
     widget.memory_action_buttons[1].click()
+    dialog = widget.memory_edit_dialog
+    dialog.summary_input.setPlainText("旧事实不应该回来")
 
-    assert notices and "刷新" in notices[0]
+    service.forget(entry.memory_id, now=20)
+    dialog.save()
+
+    assert notices and "已关闭" in notices[0]
+    assert dialog.summary_input.toPlainText() == "" and widget.memory_edit_dialog is None
     assert not [row for row in service.store.load_memories() if not row.deleted]
+    widget.close()
+
+
+def test_qt_failed_save_keeps_draft_and_shows_the_real_reason(qapp, tmp_path):
+    service, album = _album(tmp_path)
+    entry = _remember(service)
+    widget = create_memory_album_widget(album)
+    _select_id(widget, entry.memory_id)
+    widget.memory_action_buttons[1].click()
+    dialog = widget.memory_edit_dialog
+    long_text = "太长" * 200
+
+    dialog.summary_input.setPlainText(long_text)
+    dialog.save()
+
+    assert dialog.summary_input.toPlainText() == long_text
+    assert "没有保存" in dialog.notice.text() and "240" in dialog.notice.text()
+    assert widget.memory_edit_dialog is dialog
+    dialog.reject()
+    widget.close()
+
+
+def test_qt_unrelated_update_keeps_draft_and_needs_a_second_save(qapp, tmp_path):
+    service, album = _album(tmp_path)
+    entry = _remember(service)
+    widget = create_memory_album_widget(album)
+    _select_id(widget, entry.memory_id)
+    widget.memory_action_buttons[1].click()
+    dialog = widget.memory_edit_dialog
+    dialog.summary_input.setPlainText("我现在喜欢红茶")
+
+    other = _remember(service, "另一条无关事实")
+    service.forget(other.memory_id, now=30)
+    dialog.save()
+
+    assert widget.memory_edit_dialog is dialog
+    assert dialog.summary_input.toPlainText() == "我现在喜欢红茶"
+    assert "检查后再保存" in dialog.notice.text()
+    dialog.save()
+    assert widget.memory_edit_dialog is None
+    assert [row.summary for row in service.store.load_memories() if not row.deleted] == ["我现在喜欢红茶"]
+    widget.close()
+
+
+def test_qt_reality_change_path_keeps_history(qapp, tmp_path):
+    service, album = _album(tmp_path)
+    entry = _remember(service, "我住在杭州")
+    album.clock = lambda: 100
+    widget = create_memory_album_widget(album)
+    _select_id(widget, entry.memory_id)
+    widget.memory_action_buttons[1].click()
+    dialog = widget.memory_edit_dialog
+    dialog.intents["change"].setChecked(True)
+    dialog.summary_input.setPlainText("我搬到南京了")
+    dialog.save()
+
+    texts = [widget.memory_list.item(i).text() for i in range(widget.memory_list.count())]
+    assert any("我搬到南京了" in t for t in texts)
+    assert any("历史事实" in t for t in texts) and any("我住在杭州" in t for t in texts)
+    widget.close()
+
+
+def test_qt_overview_expands_sources_and_clears_after_forget(qapp, tmp_path, monkeypatch):
+    service, album = _album(tmp_path)
+    album.clock = lambda: 100
+    album.remember_explicit("我喜欢喝乌龙茶")
+    widget = create_memory_album_widget(album)
+    widget.memory_ask_input.setText("我喜欢喝什么")
+    widget.memory_ask_button.click()
+    qapp.processEvents()
+
+    assert widget.memory_claim_list.count() == 1
+    assert "有依据" in widget.memory_evidence_label.text()
+    item = widget.memory_claim_list.item(0)
+    widget.memory_claim_list.itemClicked.emit(item)
+    assert "不是完整聊天原文" in widget.memory_source_view.toPlainText()
+    assert "乌龙茶" in widget.memory_source_view.toPlainText()
+
+    memory_id = service.store.load_memories()[0].memory_id
+    service.forget(memory_id, now=110)
+    widget.memory_claim_list.itemClicked.emit(item)
+
+    assert widget.memory_claim_list.count() == 0
+    assert "乌龙茶" not in widget.memory_source_view.toPlainText()
+    widget.close()
+
+
+def test_qt_unknown_answer_is_calm_and_says_not_never_said(qapp, tmp_path):
+    service, album = _album(tmp_path)
+    album.clock = lambda: 100
+    widget = create_memory_album_widget(album)
+    widget.memory_ask_input.setText("我的牙医叫什么名字")
+    widget.memory_ask_button.click()
+    qapp.processEvents()
+
+    assert "不代表你没说过" in widget.memory_evidence_label.text()
+    assert widget.memory_claim_list.count() == 0
     widget.close()
 
 

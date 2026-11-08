@@ -1,0 +1,9 @@
+{"event": "queries", "method": "lexical", "size": 300, "done": 24, "errors": 0}
+{"event": "queries", "method": "lexical", "size": 300, "done": 48, "errors": 0}
+{"event": "queries", "method": "lexical", "size": 300, "done": 72, "errors": 0}
+{"event": "queries", "method": "lexical", "size": 300, "done": 96, "errors": 0}
+{"event": "queries", "method": "lexical", "size": 300, "done": 120, "errors": 0}
+{"event": "queries", "method": "lexical", "size": 300, "done": 144, "errors": 0}
+{"event": "queries", "method": "lexical", "size": 300, "done": 168, "errors": 0}
+{"event": "queries", "method": "lexical", "size": 300, "done": 192, "errors": 0}
+{"event": "worker_complete", "method": "lexical", "size": 300, "status": "measured_synthetic_retrieval", "output": "/tmp/emoti-final-round2-quality/final-round2-regression-300/lexical/lexical-300.json"}

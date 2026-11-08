@@ -1,0 +1,441 @@
+{
+  "status": "measured_development_diagnostic_not_release_benchmark",
+  "date": "2026-11-01",
+  "baseline_commit": "238f361c856584c7f93cc15dca5cbf5a387393e8",
+  "candidate_branch": "codex/memory-integrity-20261101",
+  "dataset_sha256": "59f1ffad507f5b24c99919b5ccb5ba2b8892259cfa85b97bf7213ed64d6c9be4",
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+    "cpu": "AMD EPYC 9V74 80-Core Processor",
+    "logical_cpu_count": 9,
+    "dependencies": {
+      "fastembed": "0.9.1",
+      "numpy": "2.5.4",
+      "onnxruntime": "1.31.1",
+      "tokenizers": "0.23.3",
+      "huggingface-hub": "1.33.0"
+    }
+  },
+  "quality_samples": {
+    "queries": 50,
+    "with_gold": 36,
+    "without_personal_evidence": 14,
+    "synthetic_development": true,
+    "sealed": false
+  },
+  "definitions": {
+    "macro_recall_at_4": "Mean per-query relevant retrieved IDs / all required IDs; answerable queries only.",
+    "macro_precision_at_4": "Legacy field name; denominator is actual returned count (up to 4), not fixed 4.",
+    "all_gold_delivered_rate": "All required evidence IDs present in constructed ExpressionRequest; no generation was called.",
+    "no_answer_injection": "Computed over retrieval; all retrieved_ids were checked equal to delivered_ids in this run.",
+    "semantic_only": "Diagnostic comparator using production embeddings; not a third product switch.",
+    "store_timing": "Real public service path, eight synthetic queries per scale, excludes embedding prepare, generative model and Qt event loop."
+  },
+  "retrieval_quality": [
+    {
+      "size": 300,
+      "routes": {
+        "lexical": {
+          "queries": 50,
+          "answerable_queries": 36,
+          "no_personal_evidence_queries": 14,
+          "macro_recall_at_4": 0.7777777777777778,
+          "macro_precision_at_4": 0.6087962962962963,
+          "mrr": 0.8055555555555556,
+          "all_gold_delivered_rate": 0.75,
+          "no_answer_injection_count": 6,
+          "no_answer_injection_rate": 0.42857142857142855,
+          "ineligible_result_count": 0,
+          "warm_prepare_ms": {
+            "n": 50,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "rank_ms": {
+            "n": 50,
+            "p50": 11.818730500000001,
+            "p95": 14.810523799999999,
+            "p99": 16.378171499999993,
+            "min": 0.074092,
+            "max": 17.575021
+          },
+          "warm_retrieval_and_context_ms": {
+            "n": 50,
+            "p50": 12.0461445,
+            "p95": 15.08310345,
+            "p99": 16.713355649999997,
+            "min": 0.1922,
+            "max": 17.992802
+          },
+          "context_chars": {
+            "n": 50,
+            "p50": 894.5,
+            "p95": 1840.55,
+            "p99": 1857.57,
+            "min": 569.0,
+            "max": 1861.0
+          }
+        },
+        "rrf": {
+          "queries": 50,
+          "answerable_queries": 36,
+          "no_personal_evidence_queries": 14,
+          "macro_recall_at_4": 0.9722222222222222,
+          "macro_precision_at_4": 0.5393518518518519,
+          "mrr": 0.9722222222222222,
+          "all_gold_delivered_rate": 0.9722222222222222,
+          "no_answer_injection_count": 13,
+          "no_answer_injection_rate": 0.9285714285714286,
+          "ineligible_result_count": 0,
+          "warm_prepare_ms": {
+            "n": 49,
+            "p50": 6.530653,
+            "p95": 8.6371436,
+            "p99": 11.748251919999998,
+            "min": 4.360021,
+            "max": 12.018178
+          },
+          "rank_ms": {
+            "n": 50,
+            "p50": 13.961218500000001,
+            "p95": 17.140690299999996,
+            "p99": 19.59059613999999,
+            "min": 0.321226,
+            "max": 21.412325
+          },
+          "warm_retrieval_and_context_ms": {
+            "n": 49,
+            "p50": 21.005678,
+            "p95": 25.831482599999994,
+            "p99": 30.677921679999976,
+            "min": 14.643331,
+            "max": 33.242265999999994
+          },
+          "context_chars": {
+            "n": 50,
+            "p50": 1474.5,
+            "p95": 1856.55,
+            "p99": 1863.04,
+            "min": 570.0,
+            "max": 1865.0
+          }
+        },
+        "semantic": {
+          "queries": 50,
+          "answerable_queries": 36,
+          "no_personal_evidence_queries": 14,
+          "macro_recall_at_4": 0.9722222222222222,
+          "macro_precision_at_4": 0.6319444444444444,
+          "mrr": 0.9722222222222222,
+          "all_gold_delivered_rate": 0.9722222222222222,
+          "no_answer_injection_count": 12,
+          "no_answer_injection_rate": 0.8571428571428571,
+          "ineligible_result_count": 0,
+          "warm_prepare_ms": {
+            "n": 49,
+            "p50": 6.530653,
+            "p95": 8.6371436,
+            "p99": 11.748251919999998,
+            "min": 4.360021,
+            "max": 12.018178
+          },
+          "rank_ms": {
+            "n": 50,
+            "p50": 0.0062900000000000005,
+            "p95": 0.012692699999999994,
+            "p99": 0.13271871999999968,
+            "min": 0.003165,
+            "max": 0.210811
+          },
+          "warm_retrieval_and_context_ms": {
+            "n": 49,
+            "p50": 6.996321,
+            "p95": 9.040356599999999,
+            "p99": 12.230903559999998,
+            "min": 4.630703,
+            "max": 12.373609
+          },
+          "context_chars": {
+            "n": 50,
+            "p50": 1209.5,
+            "p95": 1854.1,
+            "p99": 1863.12,
+            "min": 568.0,
+            "max": 1869.0
+          }
+        }
+      }
+    },
+    {
+      "size": 3000,
+      "routes": {
+        "lexical": {
+          "queries": 50,
+          "answerable_queries": 36,
+          "no_personal_evidence_queries": 14,
+          "macro_recall_at_4": 0.7777777777777778,
+          "macro_precision_at_4": 0.6087962962962963,
+          "mrr": 0.8055555555555556,
+          "all_gold_delivered_rate": 0.75,
+          "no_answer_injection_count": 6,
+          "no_answer_injection_rate": 0.42857142857142855,
+          "ineligible_result_count": 0,
+          "warm_prepare_ms": {
+            "n": 50,
+            "p50": 0.0,
+            "p95": 0.0,
+            "p99": 0.0,
+            "min": 0.0,
+            "max": 0.0
+          },
+          "rank_ms": {
+            "n": 50,
+            "p50": 123.960977,
+            "p95": 144.92586085,
+            "p99": 161.81423427999997,
+            "min": 0.080502,
+            "max": 173.335471
+          },
+          "warm_retrieval_and_context_ms": {
+            "n": 50,
+            "p50": 124.19787,
+            "p95": 145.14666265,
+            "p99": 162.17211138999994,
+            "min": 0.203659,
+            "max": 173.687253
+          },
+          "context_chars": {
+            "n": 50,
+            "p50": 894.5,
+            "p95": 1849.8,
+            "p99": 1864.51,
+            "min": 569.0,
+            "max": 1865.0
+          }
+        },
+        "rrf": {
+          "queries": 50,
+          "answerable_queries": 36,
+          "no_personal_evidence_queries": 14,
+          "macro_recall_at_4": 0.9722222222222222,
+          "macro_precision_at_4": 0.5277777777777778,
+          "mrr": 0.9722222222222222,
+          "all_gold_delivered_rate": 0.9722222222222222,
+          "no_answer_injection_count": 13,
+          "no_answer_injection_rate": 0.9285714285714286,
+          "ineligible_result_count": 0,
+          "warm_prepare_ms": {
+            "n": 49,
+            "p50": 24.307704,
+            "p95": 32.81165279999999,
+            "p99": 42.98460423999996,
+            "min": 19.451053,
+            "max": 47.923042
+          },
+          "rank_ms": {
+            "n": 50,
+            "p50": 128.241478,
+            "p95": 151.64106714999997,
+            "p99": 177.50227240999996,
+            "min": 0.171939,
+            "max": 185.162634
+          },
+          "warm_retrieval_and_context_ms": {
+            "n": 49,
+            "p50": 154.489542,
+            "p95": 191.2015747999999,
+            "p99": 207.92935568,
+            "min": 130.26159,
+            "max": 210.704804
+          },
+          "context_chars": {
+            "n": 50,
+            "p50": 1512.5,
+            "p95": 1867.0,
+            "p99": 1871.06,
+            "min": 570.0,
+            "max": 1874.0
+          }
+        },
+        "semantic": {
+          "queries": 50,
+          "answerable_queries": 36,
+          "no_personal_evidence_queries": 14,
+          "macro_recall_at_4": 0.9722222222222222,
+          "macro_precision_at_4": 0.5879629629629629,
+          "mrr": 0.9722222222222222,
+          "all_gold_delivered_rate": 0.9722222222222222,
+          "no_answer_injection_count": 12,
+          "no_answer_injection_rate": 0.8571428571428571,
+          "ineligible_result_count": 0,
+          "warm_prepare_ms": {
+            "n": 49,
+            "p50": 24.307704,
+            "p95": 32.81165279999999,
+            "p99": 42.98460423999996,
+            "min": 19.451053,
+            "max": 47.923042
+          },
+          "rank_ms": {
+            "n": 50,
+            "p50": 0.009209,
+            "p95": 0.032718499999999984,
+            "p99": 0.14722355999999964,
+            "min": 0.005418,
+            "max": 0.236578
+          },
+          "warm_retrieval_and_context_ms": {
+            "n": 49,
+            "p50": 24.624703999999998,
+            "p95": 33.19755459999999,
+            "p99": 43.317108879999964,
+            "min": 19.813789,
+            "max": 48.300562000000006
+          },
+          "context_chars": {
+            "n": 50,
+            "p50": 1245.0,
+            "p95": 1868.1,
+            "p99": 1876.57,
+            "min": 568.0,
+            "max": 1880.0
+          }
+        }
+      }
+    }
+  ],
+  "storage_comparison": [
+    {
+      "input_size": 300,
+      "owned_rows": 298,
+      "baseline_max_entries_explicitly_set_to_scale": true,
+      "before": {
+        "seed_ms": 41.718598,
+        "owned_seed_rows": 298,
+        "stored_rows": 298,
+        "load_memories_ms": {
+          "n": 8,
+          "p50": 27.129339,
+          "p95": 36.0820833,
+          "p99": 37.71866706,
+          "min": 23.291637,
+          "max": 38.127813
+        },
+        "build_context_ms": {
+          "n": 8,
+          "p50": 224.279102,
+          "p95": 278.51710975,
+          "p99": 286.54800115,
+          "min": 208.881669,
+          "max": 288.555724
+        },
+        "single_correct_ms": 105.056598,
+        "single_forget_ms": 101.893375,
+        "mutation_samples": 1,
+        "forget_verified": true
+      },
+      "after": {
+        "seed_ms": 45.945919,
+        "owned_seed_rows": 298,
+        "stored_rows": 298,
+        "load_memories_ms": {
+          "n": 8,
+          "p50": 24.969482499999998,
+          "p95": 31.922189849999995,
+          "p99": 33.387180369999996,
+          "min": 23.345246,
+          "max": 33.753428
+        },
+        "build_context_ms": {
+          "n": 8,
+          "p50": 43.339609499999995,
+          "p95": 52.55776184999999,
+          "p99": 55.84168836999999,
+          "min": 41.048052,
+          "max": 56.66267
+        },
+        "single_correct_ms": 101.225061,
+        "single_forget_ms": 65.048732,
+        "mutation_samples": 1,
+        "forget_verified": true
+      },
+      "median_context_speedup": 5.174922076766752,
+      "context_median_reduction": 0.8067603752934591,
+      "delivered_ids_equal_for_all_eight_queries": true
+    },
+    {
+      "input_size": 3000,
+      "owned_rows": 2998,
+      "baseline_max_entries_explicitly_set_to_scale": true,
+      "before": {
+        "seed_ms": 390.057588,
+        "owned_seed_rows": 2998,
+        "stored_rows": 2998,
+        "load_memories_ms": {
+          "n": 8,
+          "p50": 289.657284,
+          "p95": 375.07136495,
+          "p99": 391.18167538999995,
+          "min": 249.461384,
+          "max": 395.209253
+        },
+        "build_context_ms": {
+          "n": 8,
+          "p50": 2187.6268275,
+          "p95": 2395.35455565,
+          "p99": 2407.4135455299997,
+          "min": 2099.0812,
+          "max": 2410.428293
+        },
+        "single_correct_ms": 1000.734648,
+        "single_forget_ms": 639.184063,
+        "mutation_samples": 1,
+        "forget_verified": true
+      },
+      "after": {
+        "seed_ms": 313.88842,
+        "owned_seed_rows": 2998,
+        "stored_rows": 2998,
+        "load_memories_ms": {
+          "n": 8,
+          "p50": 243.584305,
+          "p95": 261.3294065,
+          "p99": 261.8496885,
+          "min": 235.28601,
+          "max": 261.979759
+        },
+        "build_context_ms": {
+          "n": 8,
+          "p50": 425.3256725,
+          "p95": 456.1870528,
+          "p99": 456.98147776,
+          "min": 406.91287,
+          "max": 457.180084
+        },
+        "single_correct_ms": 932.225555,
+        "single_forget_ms": 624.037375,
+        "mutation_samples": 1,
+        "forget_verified": true
+      },
+      "median_context_speedup": 5.143415902081482,
+      "context_median_reduction": 0.8055766791879865,
+      "delivered_ids_equal_for_all_eight_queries": true
+    }
+  ],
+  "raw_evidence": {
+    "current-retrieval-300-3000.json": "a548242d8afd8ddce60289952fcd0d57db61aff132955548039b74e373beaf33",
+    "baseline-store-profile.json": "19841c61b21eb31fe5bfd6695c9b0e0a8054aef821d643f64638dfb93a4b6693",
+    "candidate-store-profile.json": "972a4fd8de3ab4e1d442994338e1d3a1d71331089bbf049f1efee241ab2101a4"
+  },
+  "source_unchanged_during_runs": {
+    "baseline": true,
+    "candidate": true
+  },
+  "live_generation_status": "not_run_this_increment",
+  "windows_device_status": "not_run_this_increment",
+  "mobile_device_status": "not_run_this_increment"
+}

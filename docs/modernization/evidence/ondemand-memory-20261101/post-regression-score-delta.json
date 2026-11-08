@@ -1,0 +1,690 @@
+{
+  "schema_version": 1,
+  "status": "seen_replay_delta_not_new_blind_test",
+  "prior_production_commit": "1eef5cb",
+  "new_production_commit": "b5b43e2a83a392b56d11cd2c24f01a89bdf22364",
+  "query_and_gold_unchanged": true,
+  "methods_compared": [
+    "routed",
+    "layered"
+  ],
+  "compared_new_rows": 552,
+  "changed_rows": 2,
+  "unique_changed_queries": 1,
+  "groups": [
+    {
+      "group": "final-post-regression-sealed-300",
+      "method": "routed",
+      "size": 300,
+      "queries_compared": 48,
+      "changed_query_count": 0,
+      "summary_before": {
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 14,
+          "denominator": 48,
+          "rate": 0.2916666666666667
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "summary_after": {
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 14,
+          "denominator": 48,
+          "rate": 0.2916666666666667
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      }
+    },
+    {
+      "group": "final-post-regression-sealed-300",
+      "method": "layered",
+      "size": 300,
+      "queries_compared": 48,
+      "changed_query_count": 0,
+      "summary_before": {
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 14,
+          "denominator": 48,
+          "rate": 0.2916666666666667
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      },
+      "summary_after": {
+        "supported_delivery": {
+          "numerator": 7,
+          "denominator": 33,
+          "rate": 0.21212121212121213
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 10,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 14,
+          "denominator": 48,
+          "rate": 0.2916666666666667
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 48,
+          "rate": 0.0
+        }
+      }
+    },
+    {
+      "group": "final-post-regression-regression-300",
+      "method": "routed",
+      "size": 300,
+      "queries_compared": 192,
+      "changed_query_count": 1,
+      "summary_before": {
+        "supported_delivery": {
+          "numerator": 85,
+          "denominator": 104,
+          "rate": 0.8173076923076923
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 189,
+          "denominator": 192,
+          "rate": 0.984375
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      },
+      "summary_after": {
+        "supported_delivery": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 189,
+          "denominator": 192,
+          "rate": 0.984375
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      }
+    },
+    {
+      "group": "final-post-regression-regression-300",
+      "method": "layered",
+      "size": 300,
+      "queries_compared": 192,
+      "changed_query_count": 1,
+      "summary_before": {
+        "supported_delivery": {
+          "numerator": 85,
+          "denominator": 104,
+          "rate": 0.8173076923076923
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 189,
+          "denominator": 192,
+          "rate": 0.984375
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      },
+      "summary_after": {
+        "supported_delivery": {
+          "numerator": 84,
+          "denominator": 104,
+          "rate": 0.8076923076923077
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 49,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 189,
+          "denominator": 192,
+          "rate": 0.984375
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 192,
+          "rate": 0.0
+        }
+      }
+    },
+    {
+      "group": "final-post-regression-scale",
+      "method": "routed",
+      "size": 3000,
+      "queries_compared": 18,
+      "changed_query_count": 0,
+      "summary_before": {
+        "supported_delivery": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 3,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 18,
+          "denominator": 18,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        }
+      },
+      "summary_after": {
+        "supported_delivery": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 3,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 18,
+          "denominator": 18,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        }
+      }
+    },
+    {
+      "group": "final-post-regression-scale",
+      "method": "layered",
+      "size": 3000,
+      "queries_compared": 18,
+      "changed_query_count": 0,
+      "summary_before": {
+        "supported_delivery": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 3,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 18,
+          "denominator": 18,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        }
+      },
+      "summary_after": {
+        "supported_delivery": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 3,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 18,
+          "denominator": 18,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        }
+      }
+    },
+    {
+      "group": "final-post-regression-scale",
+      "method": "routed",
+      "size": 10000,
+      "queries_compared": 18,
+      "changed_query_count": 0,
+      "summary_before": {
+        "supported_delivery": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 3,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 18,
+          "denominator": 18,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        }
+      },
+      "summary_after": {
+        "supported_delivery": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 3,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 18,
+          "denominator": 18,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        }
+      }
+    },
+    {
+      "group": "final-post-regression-scale",
+      "method": "layered",
+      "size": 10000,
+      "queries_compared": 18,
+      "changed_query_count": 0,
+      "summary_before": {
+        "supported_delivery": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 3,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 18,
+          "denominator": 18,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        }
+      },
+      "summary_after": {
+        "supported_delivery": {
+          "numerator": 13,
+          "denominator": 13,
+          "rate": 1.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 3,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 18,
+          "denominator": 18,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 18,
+          "rate": 0.0
+        }
+      }
+    }
+  ],
+  "changes": [
+    {
+      "method": "routed",
+      "size": 300,
+      "group": "final-post-regression-regression-300",
+      "query_id": "fireflies_q5",
+      "query": "我姐姐夜间散步去的地方叫什么？",
+      "gold_ids": [
+        "fireflies_m4"
+      ],
+      "changes": {
+        "retrieved_ids": {
+          "before": [
+            "fireflies_m4"
+          ],
+          "after": []
+        },
+        "delivered_ids": {
+          "before": [
+            "fireflies_m4"
+          ],
+          "after": []
+        },
+        "verified_delivered_ids": {
+          "before": [
+            "fireflies_m4"
+          ],
+          "after": []
+        },
+        "supported_gold_delivered": {
+          "before": true,
+          "after": false
+        },
+        "status_exact": {
+          "before": true,
+          "after": false
+        }
+      },
+      "before_artifact": "docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/routed-300.json",
+      "after_artifact": "docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/routed-300.json",
+      "gold_decisions_before": [
+        {
+          "memory_id": "fireflies_m4",
+          "accepted": true,
+          "reason": "structured_subject_field_time_match",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions_after": [
+        {
+          "memory_id": "fireflies_m4",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    },
+    {
+      "method": "layered",
+      "size": 300,
+      "group": "final-post-regression-regression-300",
+      "query_id": "fireflies_q5",
+      "query": "我姐姐夜间散步去的地方叫什么？",
+      "gold_ids": [
+        "fireflies_m4"
+      ],
+      "changes": {
+        "retrieved_ids": {
+          "before": [
+            "fireflies_m4"
+          ],
+          "after": []
+        },
+        "delivered_ids": {
+          "before": [
+            "fireflies_m4"
+          ],
+          "after": []
+        },
+        "verified_delivered_ids": {
+          "before": [
+            "fireflies_m4"
+          ],
+          "after": []
+        },
+        "supported_gold_delivered": {
+          "before": true,
+          "after": false
+        },
+        "status_exact": {
+          "before": true,
+          "after": false
+        }
+      },
+      "before_artifact": "docs/modernization/evidence/ondemand-memory-20261101/final-round2-regression-300/layered-300.json",
+      "after_artifact": "docs/modernization/evidence/ondemand-memory-20261101/final-post-regression-regression-300/layered-300.json",
+      "gold_decisions_before": [
+        {
+          "memory_id": "fireflies_m4",
+          "accepted": true,
+          "reason": "structured_subject_field_time_match",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "gold_decisions_after": [
+        {
+          "memory_id": "fireflies_m4",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ]
+    }
+  ],
+  "regressed_query_plan_diagnostic": {
+    "query": "我姐姐夜间散步去的地方叫什么？",
+    "method": "read-only exact git-show router module versus frozen b5 current router; same retrieval_contract",
+    "before": {
+      "intents": [
+        {
+          "route": "fact",
+          "query": "我姐姐夜间散步去的地方叫什么",
+          "subjects": [
+            "relation:姐姐夜间散步去"
+          ],
+          "predicates": [
+            "name"
+          ],
+          "scopes": [
+            "companion"
+          ],
+          "temporal_mode": "current",
+          "as_of": null,
+          "as_of_end": null,
+          "detail": false,
+          "requires_shared_event": false,
+          "authority": "",
+          "app": "",
+          "version": "",
+          "reason": "explicit_subject_field",
+          "details": []
+        }
+      ],
+      "inherited_context": false,
+      "unresolved_reference": false,
+      "reason": "deterministic_local_router"
+    },
+    "after": {
+      "intents": [
+        {
+          "route": "fact",
+          "query": "我姐姐夜间散步去的地方叫什么",
+          "subjects": [
+            "relation:姐姐夜间散步去的地方"
+          ],
+          "predicates": [
+            "name"
+          ],
+          "scopes": [
+            "companion"
+          ],
+          "temporal_mode": "current",
+          "as_of": null,
+          "as_of_end": null,
+          "detail": false,
+          "requires_shared_event": false,
+          "authority": "",
+          "app": "",
+          "version": "",
+          "reason": "explicit_subject_field",
+          "details": []
+        }
+      ],
+      "inherited_context": false,
+      "unresolved_reference": false,
+      "reason": "deterministic_local_router"
+    }
+  }
+}

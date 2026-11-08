@@ -26,6 +26,7 @@ from .memory_integration_bridge import (
     enrich_ai_context_with_memory,
     record_companion_events,
 )
+from .retrieval_evidence import grounded_shared_event
 
 
 @dataclass(slots=True)
@@ -39,11 +40,12 @@ class CompanionStoryRuntime:
         *,
         user_data_root: Path | str,
         character_id: str,
+        character_name: str = "",
         focus_settings: FocusCompanionSettings | None = None,
     ) -> "CompanionStoryRuntime":
         root = Path(user_data_root)
         return cls(
-            memory=EmotionalMemoryService(root=root, character_id=character_id),
+            memory=EmotionalMemoryService(root=root, character_id=character_id, character_name=character_name),
             focus=FocusCompanionCoordinator(
                 focus_settings,
                 state_store=FocusCompanionStateStore(
@@ -55,7 +57,7 @@ class CompanionStoryRuntime:
     def record_settled_events(self, events: Iterable[object], *, now: int) -> list[str]:
         recorded = record_companion_events(self.memory, events, now=now)
         if recorded:
-            self.memory.consolidate(now=now, shared_only=True)
+            self.memory.schedule_maintenance(now=now)
         return recorded
 
     def record_focus_completion(
@@ -70,22 +72,26 @@ class CompanionStoryRuntime:
             return None
         memory = self.memory.record_event(domain_event, now=now)
         if memory is not None:
-            self.memory.consolidate(now=now, shared_only=True)
+            self.memory.schedule_maintenance(now=now)
         return memory
 
     def _shared_memories(self, *, now: int) -> tuple[EmotionalMemoryEntry, ...]:
-        return tuple(memory for memory in self.memory.store.load_memories()
-                     if memory.is_active(now=now) and is_shared_experience(memory))
+        from .memory_index import IndexedMemoryQuery
+        snapshot = self.memory.store.read_indexed_snapshot(IndexedMemoryQuery(
+            kinds=("赠礼", "投喂", "互动", "共同学习", "玩耍", "安抚", "休息", "主动陪伴", "关系里程碑",
+                   "共同经历", "共同日常", "shared_experience"),
+            limit=64), now=now, include_chapters=False, include_profile_sources=False)
+        return tuple(memory for memory in snapshot.entries if grounded_shared_event(memory))
 
     def relationship_development(self, *, now: int) -> dict[str, object]:
-        epoch = self.memory.store.context_epoch
+        epoch = self.memory.store.current_context_epoch(now=now)
         memories = sorted(self._shared_memories(now=now), key=lambda entry: entry.occurred_at, reverse=True)[:6]
-        if epoch != self.memory.store.context_epoch:
+        if epoch != self.memory.store.current_context_epoch(now=now):
             memories = []
-            epoch = self.memory.store.context_epoch
+            epoch = self.memory.store.current_context_epoch(now=now)
         # 一个宿主事件可能形成多种记忆，不能把同一事件累计成多次共同经历。
-        sources = {source for memory in memories for source in memory.source_ids}
-        count = len(sources)
+        from .memory_hierarchy import distinct_event_count, event_sources
+        count = min(6, distinct_event_count(event_sources(memory) for memory in memories))
         return {
             "shared_moment_count": count,
             "expression_stage": "familiar_shared_moments" if count >= 3 else "first_shared_moments" if count else "getting_acquainted",
@@ -100,11 +106,15 @@ class CompanionStoryRuntime:
     def memory_recollection(self, *, now: int,
                            last_proactive_at: Mapping[str, int] | None = None) -> MemoryRecollection | None:
         emitted = last_proactive_at or {}
-        epoch = self.memory.store.context_epoch
-        memories = sorted((memory for memory in self.memory.store.load_memories()
+        from .memory_index import IndexedMemoryQuery
+        epoch = self.memory.store.current_context_epoch(now=now)
+        interests = self.memory.store.read_indexed_snapshot(IndexedMemoryQuery(
+            predicates=("preference:饮料偏好:like", "preference:个人偏好:like"), limit=32),
+            now=now, include_chapters=False, include_profile_sources=False).entries
+        memories = sorted((memory for memory in (*self._shared_memories(now=now), *interests)
                            if memory.is_active(now=now) and (is_shared_experience(memory) or is_chat_interest(memory))),
                           key=lambda row: (is_chat_interest(row), row.occurred_at, row.importance), reverse=True)
-        if epoch != self.memory.store.context_epoch:
+        if epoch != self.memory.store.current_context_epoch(now=now):
             return None
         for memory in memories:
             key = f"memory_recollection:{memory.memory_id}"
@@ -116,11 +126,14 @@ class CompanionStoryRuntime:
         return None
 
     def is_recollection_current(self, candidate: MemoryRecollection, *, now: int) -> bool:
+        from .memory_index import IndexedMemoryQuery
         return (candidate.character_id == self.memory.character_id
-                and candidate.context_epoch == self.memory.store.context_epoch
+                and candidate.context_epoch == self.memory.store.current_context_epoch(now=now)
                 and any(memory.memory_id == candidate.memory_id and memory.evidence_fingerprint() == candidate.fingerprint
-                        for memory in self.memory.store.load_memories() if memory.is_active(now=now)
-                        and (is_shared_experience(memory) or is_chat_interest(memory))))
+                        for memory in self.memory.store.read_indexed_snapshot(
+                            IndexedMemoryQuery(memory_ids=(candidate.memory_id,)), now=now,
+                            include_chapters=False, include_profile_sources=False).entries if memory.is_active(now=now)
+                        and (grounded_shared_event(memory) or is_chat_interest(memory))))
 
     def build_expression_context(
         self,
@@ -135,6 +148,7 @@ class CompanionStoryRuntime:
             now=now,
             relationship_stage=relationship_stage,
             top_k=4,
+            history=base_context.get("recent_dialogue", ()),
         )
         return enrich_ai_context_with_memory(base_context, bundle), bundle
     def build_memory_album(self, *, now: int | None = None) -> tuple[MemoryAlbumSection, ...]:

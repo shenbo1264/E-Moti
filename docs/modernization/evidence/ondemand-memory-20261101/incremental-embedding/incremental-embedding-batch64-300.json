@@ -1,0 +1,280 @@
+{
+  "size": 300,
+  "source_sha256": {
+    "semantic_memory.py": "00bc9379b999af0d5cb1648dd11841e951efa98e1bf877cbd3fa0560a127e9aa",
+    "memory_index.py": "b952ee112ec57a97762e542710a809c7ef25c29ba56c53a329b907acaff2a4ec",
+    "memory_index_schema.py": "033eaf12241654f16a6c2a96f602e8693846eef6e5b877b40f53b5f99690380f",
+    "memory_document.py": "be2f49c803f3d016a6cf3416bc02090b1cab9777f86aec88daef75b06b6e0802",
+    "emotional_memory.py": "325897312781efbbbc4981ee832b4dcfbf728cb34b03450bca32101f2169336b"
+  },
+  "source_unchanged_during_run": true,
+  "model": {
+    "name": "BAAI/bge-small-zh-v1.5",
+    "revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+    "provider": "CPUExecutionProvider",
+    "threads": 2
+  },
+  "environment": {
+    "python": "3.12.14",
+    "platform": "Linux-6.18.57-x86_64-with-glibc2.39",
+    "logical_cpus": 9,
+    "openblas_threads": "1",
+    "packages": {
+      "fastembed": "0.9.1",
+      "numpy": "2.5.4",
+      "onnxruntime": "1.31.1",
+      "huggingface-hub": "1.33.0"
+    }
+  },
+  "corpus": {
+    "source": "synthetic six-template Chinese text, not private data",
+    "min_chars": 6,
+    "median_chars": 62.0,
+    "max_chars": 65,
+    "normalization": "exact float32 cosine; normalized cached passage matrix",
+    "all_current_companion": true
+  },
+  "seed_sqlite_ms": 159.0645010001026,
+  "model_load_ms": 133.4269770013634,
+  "cold": {
+    "wall_ms": 4612.728195003001,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 300,
+      "prepared_entries": 300,
+      "error": null,
+      "encoded_entries_total": 300,
+      "query_embed_count": 1,
+      "manifest_revision": 1,
+      "index_generation": "43b9a7acec904cc989323c5c07a7716d",
+      "generation": 0,
+      "watched_scopes": [
+        "companion"
+      ],
+      "last_encoded_entries": 300,
+      "manifest_ms": 3.558474993042182,
+      "payload_read_ms": 54.311342995788436,
+      "passage_encoding_ms": 4545.972578001965,
+      "query_embedding_ms": 4.703535996668506,
+      "search_ms": 0.8763950027059764,
+      "index_prepare_ms": 4603.842395990796,
+      "prepare_ms": 4612.077196004975,
+      "manifest_pages": 2,
+      "payload_rows_loaded": 300,
+      "prepare_retries": 0
+    },
+    "top_ids": [
+      "synthetic-000233",
+      "synthetic-000161",
+      "synthetic-000215",
+      "synthetic-000005"
+    ]
+  },
+  "warm": [
+    {
+      "wall_ms": 7.169547003286425,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 2,
+        "manifest_revision": 1,
+        "index_generation": "43b9a7acec904cc989323c5c07a7716d",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "last_encoded_entries": 0,
+        "manifest_ms": 2.2614110057475045,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 3.770734998397529,
+        "search_ms": 0.17336299788439646,
+        "index_prepare_ms": 2.2614110057475045,
+        "prepare_ms": 6.74021799932234,
+        "manifest_pages": 2,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0
+      },
+      "top_ids": [
+        "synthetic-000246",
+        "synthetic-000276",
+        "synthetic-000006",
+        "synthetic-000042"
+      ]
+    },
+    {
+      "wall_ms": 7.654792003449984,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 3,
+        "manifest_revision": 1,
+        "index_generation": "43b9a7acec904cc989323c5c07a7716d",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "last_encoded_entries": 0,
+        "manifest_ms": 2.0271360044716857,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 4.535371997917537,
+        "search_ms": 0.26562200218904763,
+        "index_prepare_ms": 2.0271360044716857,
+        "prepare_ms": 7.292032998520881,
+        "manifest_pages": 2,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0
+      },
+      "top_ids": [
+        "synthetic-000015",
+        "synthetic-000009",
+        "synthetic-000003",
+        "synthetic-000243"
+      ]
+    },
+    {
+      "wall_ms": 6.037674997060094,
+      "status": {
+        "model": "BAAI/bge-small-zh-v1.5",
+        "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+        "model_loaded": true,
+        "pending": 0,
+        "closed": false,
+        "indexed_entries": 300,
+        "prepared_entries": 300,
+        "error": null,
+        "encoded_entries_total": 300,
+        "query_embed_count": 4,
+        "manifest_revision": 1,
+        "index_generation": "43b9a7acec904cc989323c5c07a7716d",
+        "generation": 0,
+        "watched_scopes": [
+          "companion"
+        ],
+        "last_encoded_entries": 0,
+        "manifest_ms": 1.7069919995265082,
+        "payload_read_ms": 0.0,
+        "passage_encoding_ms": 0.0,
+        "query_embedding_ms": 3.4547970062703826,
+        "search_ms": 0.15211000572890043,
+        "index_prepare_ms": 1.7069919995265082,
+        "prepare_ms": 5.680353999196086,
+        "manifest_pages": 2,
+        "payload_rows_loaded": 0,
+        "prepare_retries": 0
+      },
+      "top_ids": [
+        "synthetic-000014",
+        "synthetic-000026",
+        "synthetic-000020",
+        "synthetic-000080"
+      ]
+    }
+  ],
+  "warm_wall_p50_ms": 7.169547003286425,
+  "correction_write_ms": 275.7679010028369,
+  "correction": {
+    "wall_ms": 15.908527995634358,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 300,
+      "prepared_entries": 300,
+      "error": null,
+      "encoded_entries_total": 301,
+      "query_embed_count": 5,
+      "manifest_revision": 2,
+      "index_generation": "43b9a7acec904cc989323c5c07a7716d",
+      "generation": 1,
+      "watched_scopes": [
+        "companion"
+      ],
+      "last_encoded_entries": 1,
+      "manifest_ms": 2.5718220058479346,
+      "payload_read_ms": 1.2248929997440428,
+      "passage_encoding_ms": 6.582166999578476,
+      "query_embedding_ms": 3.8197589965420775,
+      "search_ms": 0.6679809957859106,
+      "index_prepare_ms": 10.378882005170453,
+      "prepare_ms": 15.440069000760559,
+      "manifest_pages": 2,
+      "payload_rows_loaded": 1,
+      "prepare_retries": 0
+    },
+    "top_ids": [
+      "35979218056e90a9c260",
+      "synthetic-000284",
+      "synthetic-000290",
+      "synthetic-000020"
+    ]
+  },
+  "forget_write_ms": 184.55445099971257,
+  "forget": {
+    "wall_ms": 9.110913997574244,
+    "status": {
+      "model": "BAAI/bge-small-zh-v1.5",
+      "model_revision": "46fbe35fd4374a00fee7de77dfddaeb6dd6a2c59",
+      "model_loaded": true,
+      "pending": 0,
+      "closed": false,
+      "indexed_entries": 299,
+      "prepared_entries": 299,
+      "error": null,
+      "encoded_entries_total": 301,
+      "query_embed_count": 6,
+      "manifest_revision": 3,
+      "index_generation": "43b9a7acec904cc989323c5c07a7716d",
+      "generation": 2,
+      "watched_scopes": [
+        "companion"
+      ],
+      "last_encoded_entries": 0,
+      "manifest_ms": 2.1415399969555438,
+      "payload_read_ms": 0.0,
+      "passage_encoding_ms": 0.0,
+      "query_embedding_ms": 5.556016003538389,
+      "search_ms": 0.5936979941907339,
+      "index_prepare_ms": 2.1415399969555438,
+      "prepare_ms": 8.736577998206485,
+      "manifest_pages": 2,
+      "payload_rows_loaded": 0,
+      "prepare_retries": 0
+    },
+    "top_ids": [
+      "synthetic-000284",
+      "synthetic-000290",
+      "synthetic-000020",
+      "synthetic-000278"
+    ]
+  },
+  "peak_rss_mib": 395.22265625,
+  "assertions": "cold N, warm 0, corrected 1, forgotten 0 passage encodes; revoked IDs absent",
+  "experiment": {
+    "type": "real_FastEmbed_batch_parameter_override",
+    "batch_size": 64,
+    "production_source_changed": false,
+    "not_a_quality_comparison": true
+  }
+}

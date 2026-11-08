@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-11-01T19:37:16.659260+00:00",
+  "files": {
+    "ondemand_memory_holdout.json": "304f1697230304797857dc9fe5f7171aed7fe7457068076194cc1a9c48cba61b"
+  },
+  "split_usage": {
+    "holdout": "second_independent_sealed_holdout_first_run_after_1eef5cb"
+  },
+  "production_frozen_commit": "1eef5cbb6f85703f0350f8708cc86bf84a7e071f",
+  "author_manifest": "manifest.json",
+  "author_had_implementation_or_previous_fixture_access": false,
+  "questions_viewed_by_implementer_before_production_freeze": false,
+  "policy": "First frozen scoring retained. Any later tuning promotes this public set to regression."
+}

@@ -1,0 +1,60 @@
+{
+  "files": [
+    {
+      "name": "sealed-input.json",
+      "bytes": 5012,
+      "sha256": "cdd9ef86a6d8553245e870f4ec1f0ba8c0bd06089dbd79811182fca0f1319de0"
+    },
+    {
+      "name": "scenario.json",
+      "bytes": 680,
+      "sha256": "870ff37bbc6126fd74e5ee2c81f3b8c38559dc163bae672fc220d73d7817f0c6"
+    },
+    {
+      "name": "voice/budget.json",
+      "bytes": 98,
+      "sha256": "c473db5ba8486973b2a15455ecf3b8d02b00b5a2032b28508e59d9ad66f2ddfe"
+    },
+    {
+      "name": "voice/provider-calls.json",
+      "bytes": 100524,
+      "sha256": "2a8deeb9ddaaac130b29f275c72a2ebdedc95a4ef6991819c251828749f8a986"
+    },
+    {
+      "name": "voice/results.json",
+      "bytes": 40013,
+      "sha256": "70d2f314c2d04fddb20414c3433e2ba1aa9d8873bcbac4f5d52107e93300b52e"
+    },
+    {
+      "name": "memory/budget.json",
+      "bytes": 97,
+      "sha256": "537c29f36a823d70c8ae1e7b049353427bb8ad9e1c109205df9bb20fe8f0493f"
+    },
+    {
+      "name": "memory/provider-calls.json",
+      "bytes": 7609,
+      "sha256": "e32eefa8e6ab6530bf22cb585edf0d831d15b76cd2901cbdbfed61deec392200"
+    },
+    {
+      "name": "memory/results.json",
+      "bytes": 1603,
+      "sha256": "55d50468ab5bf8da9883c233417c0d8b7164d68e68d11e5cbb82dea5c489712d"
+    },
+    {
+      "name": "memory/save.json",
+      "bytes": 501,
+      "sha256": "ed516e8a7f78c1429fb7389866509dc4a53bb508b0ba10a6c5023a4c3f5cc9b0"
+    },
+    {
+      "name": "memory/save.log",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "memory/scenario.json",
+      "bytes": 680,
+      "sha256": "870ff37bbc6126fd74e5ee2c81f3b8c38559dc163bae672fc220d73d7817f0c6"
+    }
+  ],
+  "privacy": "排除绝对余额、实际凭据、SQLite档案和模型缓存。"
+}

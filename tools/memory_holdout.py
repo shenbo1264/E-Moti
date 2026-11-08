@@ -67,9 +67,12 @@ def build_case(case: dict, root: Path, semantic_cache: Path | None = None) -> di
                 controller.submit_dialogue_request(DialogueRequest(text=step["text"], source="holdout"), include_ai_expression=False)
             elif operation == "reopen":
                 character_id = controller.state.character_id
+                controller.story_runtime.memory.close(wait=True)
                 controller.close()
                 controller = open_controller(root, character_id)
             elif operation == "switch":
+                if step["character_id"] != controller.character_pack.character_id:
+                    controller.story_runtime.memory.close(wait=True)
                 controller.switch_character(step["character_id"], include_ai_expression=False)
             else:
                 raise ValueError(f"unknown holdout operation: {operation}")
@@ -125,6 +128,8 @@ def build_case(case: dict, root: Path, semantic_cache: Path | None = None) -> di
                 semantic.close()
         return result
     finally:
+        # 评测拥有临时档案；删除目录前等待本评测启动的维护事务释放连接。
+        controller.story_runtime.memory.close(wait=True)
         controller.close()
 
 

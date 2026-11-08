@@ -1,0 +1,2348 @@
+{
+  "schema_version": 1,
+  "name": "emoti-ondemand-memory-v1-holdout",
+  "split": "holdout",
+  "status": "independently_authored_synthetic_holdout_frozen_before_candidate_run",
+  "character_id": "eval_companion",
+  "owner_id": "eval_user",
+  "now": 1781496000,
+  "stories": [
+    {
+      "id": "h_library",
+      "template_family": "heldout_library",
+      "description": "图书馆借阅：证号、有效期与不同家庭成员"
+    },
+    {
+      "id": "h_choir",
+      "template_family": "heldout_choir",
+      "description": "合唱排练：地点、亲属指代与撤回信息"
+    },
+    {
+      "id": "h_fireflies",
+      "template_family": "heldout_fireflies",
+      "description": "湿地夜行：共同聊天经历与尚未发生的行程"
+    },
+    {
+      "id": "h_scanning",
+      "template_family": "heldout_scanning",
+      "description": "票据扫描：版本及设备前提"
+    },
+    {
+      "id": "h_garden",
+      "template_family": "heldout_garden",
+      "description": "阳台菜箱：品种、共同命名与补播计划"
+    },
+    {
+      "id": "h_cycling",
+      "template_family": "heldout_cycling",
+      "description": "骑行设备：同应用不同设备与历史版本"
+    },
+    {
+      "id": "h_volunteering",
+      "template_family": "heldout_volunteering",
+      "description": "社区修补日：搭档分工与完成记录"
+    },
+    {
+      "id": "h_pottery",
+      "template_family": "heldout_pottery",
+      "description": "陶艺小碗：当前与历史釉色、朋友指代及遗忘"
+    }
+  ],
+  "memories": [
+    {
+      "id": "library_m1",
+      "story_id": "h_library",
+      "title": "我的借书证号",
+      "summary": "用户在南城图书馆的借书证号是 NC-4821。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "library_m1_source"
+      ],
+      "valid_from": 1780362000,
+      "valid_until": 0,
+      "occurred_at": 1780362000,
+      "created_at": 1780362000,
+      "updated_at": 1780362000,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "library_card_number",
+        "fact_value": "NC-4821",
+        "subject_aliases": [
+          "我",
+          "我的南城图书馆借书证"
+        ],
+        "fact_domain": "library_card_number",
+        "fact_slot": "user:self:library_card_number",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "library_m2",
+      "story_id": "h_library",
+      "title": "我的借书证有效期",
+      "summary": "用户的南城图书馆借书证有效至 2026-12-31。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "library_m2_source"
+      ],
+      "valid_from": 1780362060,
+      "valid_until": 0,
+      "occurred_at": 1780362060,
+      "created_at": 1780362060,
+      "updated_at": 1780362060,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "library_card_expiry",
+        "fact_value": "2026-12-31",
+        "subject_aliases": [],
+        "fact_domain": "library_card_expiry",
+        "fact_slot": "user:self:library_card_expiry",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "library_m3",
+      "story_id": "h_library",
+      "title": "《河岸地图》归还日",
+      "summary": "用户借阅的《河岸地图》应在 2026-06-22 归还。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "library_m3_source"
+      ],
+      "valid_from": 1781056800,
+      "valid_until": 0,
+      "occurred_at": 1781056800,
+      "created_at": 1781056800,
+      "updated_at": 1781056800,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "borrowed_book_due_date",
+        "fact_value": {
+          "book": "河岸地图",
+          "due_date": "2026-06-22"
+        },
+        "subject_aliases": [],
+        "fact_domain": "borrowed_book_due_date",
+        "fact_slot": "user:self:borrowed_book_due_date",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "library_m4",
+      "story_id": "h_library",
+      "title": "妈妈的借书证号",
+      "summary": "妈妈的南城图书馆借书证号是 NC-7390。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "library_m4_source"
+      ],
+      "valid_from": 1781056920,
+      "valid_until": 0,
+      "occurred_at": 1781056920,
+      "created_at": 1781056920,
+      "updated_at": 1781056920,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "relation:妈妈",
+        "fact_predicate": "library_card_number",
+        "fact_value": "NC-7390",
+        "subject_aliases": [
+          "妈妈",
+          "我妈妈"
+        ],
+        "fact_domain": "library_card_number",
+        "fact_slot": "relation:妈妈:library_card_number",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "choir_m1",
+      "story_id": "h_choir",
+      "title": "我的合唱排练日",
+      "summary": "用户所在合唱团每周二排练。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "choir_m1_source"
+      ],
+      "valid_from": 1778580000,
+      "valid_until": 0,
+      "occurred_at": 1778580000,
+      "created_at": 1778580000,
+      "updated_at": 1778580000,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "choir_rehearsal_weekday",
+        "fact_value": "周二",
+        "subject_aliases": [],
+        "fact_domain": "choir_rehearsal_weekday",
+        "fact_slot": "user:self:choir_rehearsal_weekday",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "choir_m2",
+      "story_id": "h_choir",
+      "title": "我的合唱排练室",
+      "summary": "用户的合唱团在榆树文化馆二楼204室排练。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "choir_m2_source"
+      ],
+      "valid_from": 1778580060,
+      "valid_until": 0,
+      "occurred_at": 1778580060,
+      "created_at": 1778580060,
+      "updated_at": 1778580060,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "choir_rehearsal_room",
+        "fact_value": "榆树文化馆二楼204室",
+        "subject_aliases": [],
+        "fact_domain": "choir_rehearsal_room",
+        "fact_slot": "user:self:choir_rehearsal_room",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "choir_m3",
+      "story_id": "h_choir",
+      "title": "哥哥的合唱排练室",
+      "summary": "哥哥的合唱团在云杉活动站107室排练。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "choir_m3_source"
+      ],
+      "valid_from": 1778630400,
+      "valid_until": 0,
+      "occurred_at": 1778630400,
+      "created_at": 1778630400,
+      "updated_at": 1778630400,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "relation:哥哥",
+        "fact_predicate": "choir_rehearsal_room",
+        "fact_value": "云杉活动站107室",
+        "subject_aliases": [
+          "哥哥",
+          "我哥哥"
+        ],
+        "fact_domain": "choir_rehearsal_room",
+        "fact_slot": "relation:哥哥:choir_rehearsal_room",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "choir_m4",
+      "story_id": "h_choir",
+      "title": "已撤回的排练楼门禁码",
+      "summary": "用户明确要求忘记此前记录的排练楼门禁码。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "choir_m4_source"
+      ],
+      "valid_from": 1780304400,
+      "valid_until": 0,
+      "occurred_at": 1780304400,
+      "created_at": 1780304400,
+      "updated_at": 1780304400,
+      "state": "forgotten",
+      "scope": "companion",
+      "deleted": true,
+      "metadata": {
+        "forgotten_at": "2026-06-01T17:00:00+08:00",
+        "fact_subject": "user:self",
+        "fact_predicate": "choir_building_access_code",
+        "fact_value": "4628",
+        "subject_aliases": [],
+        "fact_domain": "choir_building_access_code",
+        "fact_slot": "user:self:choir_building_access_code",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "fireflies_m1",
+      "story_id": "h_fireflies",
+      "title": "夜行地点",
+      "summary": "2026-06-03 用户在云岚湿地木栈道夜行时与助手聊天。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fireflies_m1_source"
+      ],
+      "valid_from": 1780488600,
+      "valid_until": 0,
+      "occurred_at": 1780488600,
+      "created_at": 1780488600,
+      "updated_at": 1780488600,
+      "state": "active",
+      "scope": "shared",
+      "deleted": false,
+      "metadata": {
+        "event_date": "2026-06-03",
+        "fact_subject": "shared:萤火虫夜行",
+        "fact_predicate": "episode_location",
+        "fact_value": "云岚湿地木栈道",
+        "subject_aliases": [],
+        "fact_domain": "episode_location",
+        "fact_slot": "shared:萤火虫夜行:episode_location",
+        "speaker": "user",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "event_status": "completed"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "fireflies_m2",
+      "story_id": "h_fireflies",
+      "title": "萤火虫照片昵称",
+      "summary": "2026-06-03 用户与助手聊天时把那张萤火虫照片命名为点点灯。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fireflies_m2_source"
+      ],
+      "valid_from": 1780489200,
+      "valid_until": 0,
+      "occurred_at": 1780489200,
+      "created_at": 1780489200,
+      "updated_at": 1780489200,
+      "state": "active",
+      "scope": "shared",
+      "deleted": false,
+      "metadata": {
+        "event_date": "2026-06-03",
+        "fact_subject": "shared:萤火虫夜行",
+        "fact_predicate": "photo_nickname",
+        "fact_value": "点点灯",
+        "subject_aliases": [],
+        "fact_domain": "photo_nickname",
+        "fact_slot": "shared:萤火虫夜行:photo_nickname",
+        "speaker": "user",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "event_status": "completed"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "fireflies_m3",
+      "story_id": "h_fireflies",
+      "title": "尚未开始的看潮计划",
+      "summary": "用户计划2026-06-20去青石港看潮，届时再与助手聊天。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fireflies_m3_source"
+      ],
+      "valid_from": 1781262000,
+      "valid_until": 0,
+      "occurred_at": 1781262000,
+      "created_at": 1781262000,
+      "updated_at": 1781262000,
+      "state": "planned",
+      "scope": "shared",
+      "deleted": false,
+      "metadata": {
+        "planned_event_date": "2026-06-20",
+        "fact_subject": "shared:青石港看潮计划",
+        "fact_predicate": "planned_event",
+        "fact_value": {
+          "date": "2026-06-20",
+          "place": "青石港",
+          "activity": "看潮时聊天"
+        },
+        "subject_aliases": [],
+        "fact_domain": "planned_event",
+        "fact_slot": "shared:青石港看潮计划:planned_event",
+        "speaker": "user",
+        "event_status": "planned",
+        "participants": [
+          "user:self",
+          "character:self"
+        ]
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "fireflies_m4",
+      "story_id": "h_fireflies",
+      "title": "姐姐的夜行地点",
+      "summary": "姐姐在松桥公园参加夜间散步。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "fireflies_m4_source"
+      ],
+      "valid_from": 1780531200,
+      "valid_until": 0,
+      "occurred_at": 1780531200,
+      "created_at": 1780531200,
+      "updated_at": 1780531200,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "relation:姐姐",
+        "fact_predicate": "night_walk_location",
+        "fact_value": "松桥公园",
+        "subject_aliases": [
+          "姐姐",
+          "我姐姐"
+        ],
+        "fact_domain": "night_walk_location",
+        "fact_slot": "relation:姐姐:night_walk_location",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "scanning_m1",
+      "story_id": "h_scanning",
+      "title": "双面票据交错排序成功经验",
+      "summary": "纸页夹4.2的安卓平板上，在关闭自动裁边、正面先拍及背面反序拍摄的条件下，使用正反交错并勾选第二组倒序，页序正确。",
+      "kind": "任务经验",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "scanning_m1_source"
+      ],
+      "valid_from": 1779955200,
+      "valid_until": 0,
+      "occurred_at": 1779955200,
+      "created_at": 1779955200,
+      "updated_at": 1779955200,
+      "state": "active",
+      "scope": "task_experience",
+      "deleted": false,
+      "metadata": {
+        "app": "纸页夹（虚构应用）",
+        "version": "4.2",
+        "preconditions": [
+          "安卓平板",
+          "自动裁边关闭",
+          "全部正面先拍",
+          "背面按反序拍摄"
+        ],
+        "outcome": "导出的正反页顺序正确",
+        "fact_subject": "user:self",
+        "fact_predicate": "duplex_scan_ordering_method",
+        "fact_value": "在排序页选“正反交错”，第二组勾选“倒序”。",
+        "subject_aliases": [],
+        "fact_domain": "duplex_scan_ordering_method",
+        "fact_slot": "user:self:duplex_scan_ordering_method",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "scanning_m2",
+      "story_id": "h_scanning",
+      "title": "旧版相册导入识别经验",
+      "summary": "纸页夹4.1在相册导入已旋转图片时，保留原方向后文字识别成功。",
+      "kind": "任务经验",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "scanning_m2_source"
+      ],
+      "valid_from": 1777777200,
+      "valid_until": 0,
+      "occurred_at": 1777777200,
+      "created_at": 1777777200,
+      "updated_at": 1777777200,
+      "state": "active",
+      "scope": "task_experience",
+      "deleted": false,
+      "metadata": {
+        "app": "纸页夹（虚构应用）",
+        "version": "4.1",
+        "preconditions": [
+          "从相册导入",
+          "图片此前已旋转"
+        ],
+        "outcome": "文字识别成功",
+        "fact_subject": "user:self",
+        "fact_predicate": "import_ocr_method",
+        "fact_value": "导入相册图片时选择“保留原方向”。",
+        "subject_aliases": [],
+        "fact_domain": "import_ocr_method",
+        "fact_slot": "user:self:import_ocr_method",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "scanning_m3",
+      "story_id": "h_scanning",
+      "title": "票据归档目录",
+      "summary": "用户把2026年的票据存入 Documents/发票/2026。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "scanning_m3_source"
+      ],
+      "valid_from": 1780275600,
+      "valid_until": 0,
+      "occurred_at": 1780275600,
+      "created_at": 1780275600,
+      "updated_at": 1780275600,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "receipt_archive_folder",
+        "fact_value": "Documents/发票/2026",
+        "subject_aliases": [],
+        "fact_domain": "receipt_archive_folder",
+        "fact_slot": "user:self:receipt_archive_folder",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "scanning_m4",
+      "story_id": "h_scanning",
+      "title": "另一款应用的检索经验",
+      "summary": "票夹2.8在PDF已有文字层时，可以直接按文字搜索找到票据。",
+      "kind": "任务经验",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "scanning_m4_source"
+      ],
+      "valid_from": 1780383600,
+      "valid_until": 0,
+      "occurred_at": 1780383600,
+      "created_at": 1780383600,
+      "updated_at": 1780383600,
+      "state": "active",
+      "scope": "task_experience",
+      "deleted": false,
+      "metadata": {
+        "app": "票夹（虚构应用）",
+        "version": "2.8",
+        "preconditions": [
+          "PDF已有文字层"
+        ],
+        "outcome": "找到目标票据",
+        "fact_subject": "user:self",
+        "fact_predicate": "receipt_search_method",
+        "fact_value": "对已有文字层的PDF直接按文字搜索。",
+        "subject_aliases": [],
+        "fact_domain": "receipt_search_method",
+        "fact_slot": "user:self:receipt_search_method",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "garden_m1",
+      "story_id": "h_garden",
+      "title": "我的番茄品种",
+      "summary": "用户阳台种的樱桃番茄品种叫红珠。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "garden_m1_source"
+      ],
+      "valid_from": 1779238800,
+      "valid_until": 0,
+      "occurred_at": 1779238800,
+      "created_at": 1779238800,
+      "updated_at": 1779238800,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "tomato_variety",
+        "fact_value": "红珠",
+        "subject_aliases": [],
+        "fact_domain": "tomato_variety",
+        "fact_slot": "user:self:tomato_variety",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "garden_m2",
+      "story_id": "h_garden",
+      "title": "室友的番茄品种",
+      "summary": "室友种的樱桃番茄品种叫蜜黄。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "garden_m2_source"
+      ],
+      "valid_from": 1779238860,
+      "valid_until": 0,
+      "occurred_at": 1779238860,
+      "created_at": 1779238860,
+      "updated_at": 1779238860,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "relation:室友",
+        "fact_predicate": "tomato_variety",
+        "fact_value": "蜜黄",
+        "subject_aliases": [
+          "室友",
+          "我室友"
+        ],
+        "fact_domain": "tomato_variety",
+        "fact_slot": "relation:室友:tomato_variety",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "garden_m3",
+      "story_id": "h_garden",
+      "title": "一起给菜箱命名",
+      "summary": "2026-05-26 用户给助手看菜箱照片，并共同确定昵称小码头。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "garden_m3_source"
+      ],
+      "valid_from": 1779789600,
+      "valid_until": 0,
+      "occurred_at": 1779789600,
+      "created_at": 1779789600,
+      "updated_at": 1779789600,
+      "state": "active",
+      "scope": "shared",
+      "deleted": false,
+      "metadata": {
+        "event_date": "2026-05-26",
+        "fact_subject": "shared:菜箱命名",
+        "fact_predicate": "box_nickname",
+        "fact_value": "小码头",
+        "subject_aliases": [],
+        "fact_domain": "box_nickname",
+        "fact_slot": "shared:菜箱命名:box_nickname",
+        "speaker": "user",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "event_status": "completed"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "garden_m4",
+      "story_id": "h_garden",
+      "title": "补播计划日期",
+      "summary": "用户计划于2026-06-23补播一格番茄，目前还没补播。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "garden_m4_source"
+      ],
+      "valid_from": 1781312400,
+      "valid_until": 0,
+      "occurred_at": 1781312400,
+      "created_at": 1781312400,
+      "updated_at": 1781312400,
+      "state": "planned",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "planned_resowing_date",
+        "fact_value": "2026-06-23",
+        "subject_aliases": [],
+        "fact_domain": "planned_resowing_date",
+        "fact_slot": "user:self:planned_resowing_date",
+        "speaker": "user",
+        "event_status": "planned"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "cycling_m1",
+      "story_id": "h_cycling",
+      "title": "R20码表配对经验",
+      "summary": "环骑3.6在安卓手机上，R20未连接其他手机时，从应用设备页新增R20并在码表确认即可配对。",
+      "kind": "任务经验",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "cycling_m1_source"
+      ],
+      "valid_from": 1778220000,
+      "valid_until": 0,
+      "occurred_at": 1778220000,
+      "created_at": 1778220000,
+      "updated_at": 1778220000,
+      "state": "active",
+      "scope": "task_experience",
+      "deleted": false,
+      "metadata": {
+        "app": "环骑（虚构应用）",
+        "version": "3.6",
+        "preconditions": [
+          "安卓手机",
+          "设备是R20码表",
+          "R20未连接其他手机"
+        ],
+        "outcome": "R20配对成功",
+        "fact_subject": "user:self",
+        "fact_predicate": "r20_pairing_method",
+        "fact_value": "在环骑的设备页新增R20，然后在码表上按确认。",
+        "subject_aliases": [],
+        "fact_domain": "r20_pairing_method",
+        "fact_slot": "user:self:r20_pairing_method",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "cycling_m2",
+      "story_id": "h_cycling",
+      "title": "C2踏频器发现经验",
+      "summary": "环骑3.6中搜索C2踏频器前，转动曲柄唤醒设备，随后能够发现。",
+      "kind": "任务经验",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "cycling_m2_source"
+      ],
+      "valid_from": 1778306400,
+      "valid_until": 0,
+      "occurred_at": 1778306400,
+      "created_at": 1778306400,
+      "updated_at": 1778306400,
+      "state": "active",
+      "scope": "task_experience",
+      "deleted": false,
+      "metadata": {
+        "app": "环骑（虚构应用）",
+        "version": "3.6",
+        "preconditions": [
+          "设备是C2踏频器",
+          "踏频器此前处于静止休眠状态"
+        ],
+        "outcome": "成功发现C2",
+        "fact_subject": "user:self",
+        "fact_predicate": "c2_discovery_method",
+        "fact_value": "先转动曲柄唤醒C2，再在环骑中点击搜索。",
+        "subject_aliases": [],
+        "fact_domain": "c2_discovery_method",
+        "fact_slot": "user:self:c2_discovery_method",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "cycling_m3",
+      "story_id": "h_cycling",
+      "title": "我的R20序列号",
+      "summary": "用户R20码表的序列号是 RX204611。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "cycling_m3_source"
+      ],
+      "valid_from": 1778220300,
+      "valid_until": 0,
+      "occurred_at": 1778220300,
+      "created_at": 1778220300,
+      "updated_at": 1778220300,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "r20_serial_number",
+        "fact_value": "RX204611",
+        "subject_aliases": [],
+        "fact_domain": "r20_serial_number",
+        "fact_slot": "user:self:r20_serial_number",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "cycling_m4",
+      "story_id": "h_cycling",
+      "title": "四月使用的环骑版本",
+      "summary": "用户在2026年4月使用环骑3.4，5月1日起不再使用该版本。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "cycling_m4_source"
+      ],
+      "valid_from": 1774972800,
+      "valid_until": 1777564800,
+      "occurred_at": 1777597200,
+      "created_at": 1777597200,
+      "updated_at": 1777597200,
+      "state": "historical",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "source_statement_time": "2026-05-01T09:00:00+08:00",
+        "fact_subject": "user:self",
+        "fact_predicate": "cycling_app_version",
+        "fact_value": "3.4",
+        "subject_aliases": [],
+        "fact_domain": "cycling_app_version",
+        "fact_slot": "user:self:cycling_app_version",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "volunteering_m1",
+      "story_id": "h_volunteering",
+      "title": "我的志愿分工",
+      "summary": "用户在社区修补日负责缝补布袋。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "volunteering_m1_source"
+      ],
+      "valid_from": 1780632000,
+      "valid_until": 0,
+      "occurred_at": 1780632000,
+      "created_at": 1780632000,
+      "updated_at": 1780632000,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "volunteer_role",
+        "fact_value": "缝补布袋",
+        "subject_aliases": [],
+        "fact_domain": "volunteer_role",
+        "fact_slot": "user:self:volunteer_role",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "volunteering_m2",
+      "story_id": "h_volunteering",
+      "title": "搭档的志愿分工",
+      "summary": "用户的搭档负责登记物品。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "volunteering_m2_source"
+      ],
+      "valid_from": 1780632060,
+      "valid_until": 0,
+      "occurred_at": 1780632060,
+      "created_at": 1780632060,
+      "updated_at": 1780632060,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "relation:搭档",
+        "fact_predicate": "volunteer_role",
+        "fact_value": "登记物品",
+        "subject_aliases": [
+          "搭档",
+          "我的搭档"
+        ],
+        "fact_domain": "volunteer_role",
+        "fact_slot": "relation:搭档:volunteer_role",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "volunteering_m3",
+      "story_id": "h_volunteering",
+      "title": "共同整理过的修补总结",
+      "summary": "2026-06-07 用户与助手整理活动总结，用户确认当天累计修好7个布袋。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "volunteering_m3_source"
+      ],
+      "valid_from": 1780830000,
+      "valid_until": 0,
+      "occurred_at": 1780830000,
+      "created_at": 1780830000,
+      "updated_at": 1780830000,
+      "state": "active",
+      "scope": "shared",
+      "deleted": false,
+      "metadata": {
+        "event_date": "2026-06-07",
+        "fact_subject": "shared:六月七日修补总结",
+        "fact_predicate": "repaired_bag_count",
+        "fact_value": 7,
+        "subject_aliases": [],
+        "fact_domain": "repaired_bag_count",
+        "fact_slot": "shared:六月七日修补总结:repaired_bag_count",
+        "speaker": "user",
+        "participants": [
+          "user:self",
+          "character:self"
+        ],
+        "event_status": "completed"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "volunteering_m4",
+      "story_id": "h_volunteering",
+      "title": "下次开场白计划",
+      "summary": "用户计划在2026-06-28活动前请助手一起写开场白，目前还没开始写。",
+      "kind": "共同经历",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "volunteering_m4_source"
+      ],
+      "valid_from": 1781056800,
+      "valid_until": 0,
+      "occurred_at": 1781056800,
+      "created_at": 1781056800,
+      "updated_at": 1781056800,
+      "state": "planned",
+      "scope": "shared",
+      "deleted": false,
+      "metadata": {
+        "planned_event_date": "2026-06-28",
+        "fact_subject": "shared:六月二十八日开场白计划",
+        "fact_predicate": "planned_collaboration",
+        "fact_value": "2026-06-28活动前一起写开场白",
+        "subject_aliases": [],
+        "fact_domain": "planned_collaboration",
+        "fact_slot": "shared:六月二十八日开场白计划:planned_collaboration",
+        "speaker": "user",
+        "event_status": "planned",
+        "participants": [
+          "user:self",
+          "character:self"
+        ]
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "pottery_m1",
+      "story_id": "h_pottery",
+      "title": "我的小碗当前釉色",
+      "summary": "用户从2026-06-09起将小碗釉色改为雾蓝。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "pottery_m1_source"
+      ],
+      "valid_from": 1780974000,
+      "valid_until": 0,
+      "occurred_at": 1780974000,
+      "created_at": 1780974000,
+      "updated_at": 1780974000,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "bowl_glaze_color",
+        "fact_value": "雾蓝",
+        "subject_aliases": [],
+        "fact_domain": "bowl_glaze_color",
+        "fact_slot": "user:self:bowl_glaze_color",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "pottery_m2",
+      "story_id": "h_pottery",
+      "title": "我的小碗历史釉色",
+      "summary": "用户的小碗在2026-06-09改色前，釉色选的是米白。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "pottery_m2_source"
+      ],
+      "valid_from": 1780282800,
+      "valid_until": 1780974000,
+      "occurred_at": 1780282800,
+      "created_at": 1780282800,
+      "updated_at": 1780282800,
+      "state": "historical",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "user:self",
+        "fact_predicate": "bowl_glaze_color",
+        "fact_value": "米白",
+        "subject_aliases": [],
+        "fact_domain": "bowl_glaze_color",
+        "fact_slot": "user:self:bowl_glaze_color",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "pottery_m3",
+      "story_id": "h_pottery",
+      "title": "朋友宜青的浅盘釉色",
+      "summary": "朋友宜青的浅盘釉色是苔绿。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "pottery_m3_source"
+      ],
+      "valid_from": 1780898400,
+      "valid_until": 0,
+      "occurred_at": 1780898400,
+      "created_at": 1780898400,
+      "updated_at": 1780898400,
+      "state": "active",
+      "scope": "companion",
+      "deleted": false,
+      "metadata": {
+        "fact_subject": "relation:朋友宜青",
+        "fact_predicate": "plate_glaze_color",
+        "fact_value": "苔绿",
+        "subject_aliases": [
+          "宜青",
+          "朋友宜青",
+          "我的朋友宜青"
+        ],
+        "fact_domain": "plate_glaze_color",
+        "fact_slot": "relation:朋友宜青:plate_glaze_color",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    },
+    {
+      "id": "pottery_m4",
+      "story_id": "h_pottery",
+      "title": "已忘记的窑房储物柜密码",
+      "summary": "用户要求删除窑房储物柜密码且不再从历史回答。",
+      "kind": "用户事实",
+      "source": "synthetic_user_statement",
+      "source_ids": [
+        "pottery_m4_source"
+      ],
+      "valid_from": 1781164800,
+      "valid_until": 0,
+      "occurred_at": 1781164800,
+      "created_at": 1781164800,
+      "updated_at": 1781164800,
+      "state": "forgotten",
+      "scope": "companion",
+      "deleted": true,
+      "metadata": {
+        "forgotten_at": "2026-06-11T16:00:00+08:00",
+        "fact_subject": "user:self",
+        "fact_predicate": "kiln_locker_password",
+        "fact_value": "73-18",
+        "subject_aliases": [],
+        "fact_domain": "kiln_locker_password",
+        "fact_slot": "user:self:kiln_locker_password",
+        "speaker": "user"
+      },
+      "confidence": 1.0
+    }
+  ],
+  "queries": [
+    {
+      "id": "library_q1",
+      "story_id": "h_library",
+      "text": "今天有点无聊，陪我随便聊两句吧。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "library_m1",
+        "library_m2",
+        "library_m3",
+        "library_m4"
+      ],
+      "expected_status": "not_needed",
+      "family": "heldout_library",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "library_q2",
+      "story_id": "h_library",
+      "text": "我的南城图书馆借书证号是多少？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "library_m1"
+      ],
+      "forbidden_ids": [
+        "library_m2",
+        "library_m3",
+        "library_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_library",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "library_q3",
+      "story_id": "h_library",
+      "text": "我登录南城图书馆网站的密码是什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "library_m1",
+        "library_m2",
+        "library_m4"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_library",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "library_q4",
+      "story_id": "h_library",
+      "text": "我妈妈的南城图书馆借书证号呢？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "library_m4"
+      ],
+      "forbidden_ids": [
+        "library_m1",
+        "library_m2"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_library",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "library_q5",
+      "story_id": "h_library",
+      "text": "告诉我借书证哪天到期，再编一句关于忘带借书证的笑话。",
+      "history": [],
+      "expected_routes": [
+        "fact",
+        "chat"
+      ],
+      "gold_ids": [
+        "library_m2"
+      ],
+      "forbidden_ids": [
+        "library_m1",
+        "library_m3",
+        "library_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_library",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "library_q6",
+      "story_id": "h_library",
+      "text": "南城图书馆今天开到几点？顺便提醒我《河岸地图》哪天该还。",
+      "history": [],
+      "expected_routes": [
+        "live",
+        "fact"
+      ],
+      "gold_ids": [
+        "library_m3"
+      ],
+      "forbidden_ids": [
+        "library_m1",
+        "library_m2",
+        "library_m4"
+      ],
+      "expected_status": "external_unavailable",
+      "family": "heldout_library",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "choir_q1",
+      "story_id": "h_choir",
+      "text": "我每周哪天去合唱排练？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "choir_m1"
+      ],
+      "forbidden_ids": [
+        "choir_m2",
+        "choir_m3",
+        "choir_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_choir",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "choir_q2",
+      "story_id": "h_choir",
+      "text": "我的合唱排练在哪个房间？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "choir_m2"
+      ],
+      "forbidden_ids": [
+        "choir_m1",
+        "choir_m3",
+        "choir_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_choir",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "choir_q3",
+      "story_id": "h_choir",
+      "text": "我哥哥的合唱团在哪排练？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "choir_m3"
+      ],
+      "forbidden_ids": [
+        "choir_m2",
+        "choir_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_choir",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "choir_q4",
+      "story_id": "h_choir",
+      "text": "我的合唱团钢琴伴奏员手机号是多少？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "choir_m1",
+        "choir_m2",
+        "choir_m3",
+        "choir_m4"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_choir",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "choir_q5",
+      "story_id": "h_choir",
+      "text": "那我的呢？",
+      "history": [
+        {
+          "role": "user",
+          "content": "我哥哥的合唱团在哪排练？"
+        },
+        {
+          "role": "assistant",
+          "content": "在云杉活动站107室。"
+        }
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "choir_m2"
+      ],
+      "forbidden_ids": [
+        "choir_m1",
+        "choir_m3",
+        "choir_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_choir",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "choir_q6",
+      "story_id": "h_choir",
+      "text": "把我以前告诉过你的排练楼门禁码再报一遍。",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "choir_m4"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_choir",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "fireflies_q1",
+      "story_id": "h_fireflies",
+      "text": "那晚我边看萤火虫边和你聊天，是在哪儿？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "fireflies_m1"
+      ],
+      "forbidden_ids": [
+        "fireflies_m3",
+        "fireflies_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_fireflies",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "fireflies_q2",
+      "story_id": "h_fireflies",
+      "text": "我们给那张萤火虫照片起的名字是什么？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "fireflies_m2"
+      ],
+      "forbidden_ids": [
+        "fireflies_m1",
+        "fireflies_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_fireflies",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "fireflies_q3",
+      "story_id": "h_fireflies",
+      "text": "接下来那次看潮聊天，我们约在什么时候、哪里？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "fireflies_m3"
+      ],
+      "forbidden_ids": [
+        "fireflies_m1",
+        "fireflies_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_fireflies",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "fireflies_q4",
+      "story_id": "h_fireflies",
+      "text": "还记得我们已经在青石港看过的那场潮水有多高吗？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "fireflies_m1",
+        "fireflies_m3",
+        "fireflies_m4"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_fireflies",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "fireflies_q5",
+      "story_id": "h_fireflies",
+      "text": "我姐姐夜间散步去的地方叫什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "fireflies_m4"
+      ],
+      "forbidden_ids": [
+        "fireflies_m1",
+        "fireflies_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_fireflies",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "fireflies_q6",
+      "story_id": "h_fireflies",
+      "text": "给我写两句萤火虫主题的小诗，不需要回顾我们的经历。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "fireflies_m1",
+        "fireflies_m2",
+        "fireflies_m3",
+        "fireflies_m4"
+      ],
+      "expected_status": "not_needed",
+      "family": "heldout_fireflies",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "scanning_q1",
+      "story_id": "h_scanning",
+      "text": "还是安卓平板上的纸页夹4.2，自动裁边关了，正面拍完后反序拍背面。上次怎么排成正确的正反顺序？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "scanning_m1"
+      ],
+      "forbidden_ids": [
+        "scanning_m2",
+        "scanning_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_scanning",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "scanning_q2",
+      "story_id": "h_scanning",
+      "text": "我已升级到纸页夹5.0，能确认原来4.2的双面排序步骤现在仍然适用吗？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "scanning_m1",
+        "scanning_m2",
+        "scanning_m4"
+      ],
+      "expected_status": "insufficient",
+      "family": "heldout_scanning",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "scanning_q3",
+      "story_id": "h_scanning",
+      "text": "我现在用纸页夹4.2扫双面票据。只知道这些信息，能直接按上次办法排序吗？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "scanning_m1"
+      ],
+      "forbidden_ids": [
+        "scanning_m2",
+        "scanning_m4"
+      ],
+      "expected_status": "insufficient",
+      "family": "heldout_scanning",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "scanning_q4",
+      "story_id": "h_scanning",
+      "text": "我今年票据归档放在哪个目录？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "scanning_m3"
+      ],
+      "forbidden_ids": [
+        "scanning_m1",
+        "scanning_m2",
+        "scanning_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_scanning",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "scanning_q5",
+      "story_id": "h_scanning",
+      "text": "先给我一句鼓励，再提醒一下上次安卓平板纸页夹4.2双面排序成功时的步骤和条件。",
+      "history": [],
+      "expected_routes": [
+        "chat",
+        "task"
+      ],
+      "gold_ids": [
+        "scanning_m1"
+      ],
+      "forbidden_ids": [
+        "scanning_m2",
+        "scanning_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_scanning",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "scanning_q6",
+      "story_id": "h_scanning",
+      "text": "纸页夹今天发布的新版已经修好双面排序问题了吗？",
+      "history": [],
+      "expected_routes": [
+        "live"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "scanning_m1",
+        "scanning_m2",
+        "scanning_m4"
+      ],
+      "expected_status": "external_unavailable",
+      "family": "heldout_scanning",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "garden_q1",
+      "story_id": "h_garden",
+      "text": "我阳台那箱樱桃番茄是什么品种？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "garden_m1"
+      ],
+      "forbidden_ids": [
+        "garden_m2",
+        "garden_m3",
+        "garden_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_garden",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "garden_q2",
+      "story_id": "h_garden",
+      "text": "我室友种的番茄品种叫什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "garden_m2"
+      ],
+      "forbidden_ids": [
+        "garden_m1",
+        "garden_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_garden",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "garden_q3",
+      "story_id": "h_garden",
+      "text": "我给番茄用的肥料是什么牌子？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "garden_m1",
+        "garden_m2",
+        "garden_m3",
+        "garden_m4"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_garden",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "garden_q4",
+      "story_id": "h_garden",
+      "text": "那天看照片时，我们给菜箱取了什么名字？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "garden_m3"
+      ],
+      "forbidden_ids": [
+        "garden_m1",
+        "garden_m2"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_garden",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "garden_q5",
+      "story_id": "h_garden",
+      "text": "我原本计划哪天补播番茄？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "garden_m4"
+      ],
+      "forbidden_ids": [
+        "garden_m1",
+        "garden_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_garden",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "garden_q6",
+      "story_id": "h_garden",
+      "text": "我已经补播完那天，我们聊到每格撒了几粒种子？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "garden_m3",
+        "garden_m4"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_garden",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "cycling_q1",
+      "story_id": "h_cycling",
+      "text": "我用安卓手机和环骑3.6，R20没连别的手机。按上次成功经验，该怎么配对？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "cycling_m1"
+      ],
+      "forbidden_ids": [
+        "cycling_m2",
+        "cycling_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_cycling",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "cycling_q2",
+      "story_id": "h_cycling",
+      "text": "环骑3.6又搜不到静止的C2踏频器了，上次怎么让它出现的？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "cycling_m2"
+      ],
+      "forbidden_ids": [
+        "cycling_m1",
+        "cycling_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_cycling",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "cycling_q3",
+      "story_id": "h_cycling",
+      "text": "这次R20正连着另一部手机，上次那条配对经验能保证我直接照做就成功吗？",
+      "history": [],
+      "expected_routes": [
+        "task"
+      ],
+      "gold_ids": [
+        "cycling_m1"
+      ],
+      "forbidden_ids": [
+        "cycling_m2"
+      ],
+      "expected_status": "insufficient",
+      "family": "heldout_cycling",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "cycling_q4",
+      "story_id": "h_cycling",
+      "text": "我R20码表的解锁密码是多少？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "cycling_m3",
+        "cycling_m1"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_cycling",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "cycling_q5",
+      "story_id": "h_cycling",
+      "text": "今年4月我用的环骑版本是多少？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "cycling_m4"
+      ],
+      "forbidden_ids": [
+        "cycling_m1",
+        "cycling_m2"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_cycling",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "cycling_q6",
+      "story_id": "h_cycling",
+      "text": "环骑今天的轨迹同步服务恢复了吗？",
+      "history": [],
+      "expected_routes": [
+        "live"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "cycling_m1",
+        "cycling_m2",
+        "cycling_m4"
+      ],
+      "expected_status": "external_unavailable",
+      "family": "heldout_cycling",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "volunteering_q1",
+      "story_id": "h_volunteering",
+      "text": "社区修补日我负责什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "volunteering_m1"
+      ],
+      "forbidden_ids": [
+        "volunteering_m2",
+        "volunteering_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_volunteering",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "volunteering_q2",
+      "story_id": "h_volunteering",
+      "text": "我的搭档负责哪一块？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "volunteering_m2"
+      ],
+      "forbidden_ids": [
+        "volunteering_m1",
+        "volunteering_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_volunteering",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "volunteering_q3",
+      "story_id": "h_volunteering",
+      "text": "我们上次整理活动总结时，确认修好了几个布袋？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "volunteering_m3"
+      ],
+      "forbidden_ids": [
+        "volunteering_m1",
+        "volunteering_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_volunteering",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "volunteering_q4",
+      "story_id": "h_volunteering",
+      "text": "下次修补日之前，我们计划一起做什么文字工作？",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [
+        "volunteering_m4"
+      ],
+      "forbidden_ids": [
+        "volunteering_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_volunteering",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "volunteering_q5",
+      "story_id": "h_volunteering",
+      "text": "把你已经替我写好的6月28日修补日开场白原文找出来。",
+      "history": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "volunteering_m3",
+        "volunteering_m4"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_volunteering",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "volunteering_q6",
+      "story_id": "h_volunteering",
+      "text": "给我一句参加周末志愿活动的鼓励，不用回顾旧事。",
+      "history": [],
+      "expected_routes": [
+        "chat"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "volunteering_m1",
+        "volunteering_m2",
+        "volunteering_m3",
+        "volunteering_m4"
+      ],
+      "expected_status": "not_needed",
+      "family": "heldout_volunteering",
+      "scope": "companion",
+      "should_retrieve_long_term": false
+    },
+    {
+      "id": "pottery_q1",
+      "story_id": "h_pottery",
+      "text": "我那只小碗现在选的是什么釉色？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "pottery_m1"
+      ],
+      "forbidden_ids": [
+        "pottery_m2",
+        "pottery_m3",
+        "pottery_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_pottery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "pottery_q2",
+      "story_id": "h_pottery",
+      "text": "6月5日那会儿，我的小碗选的是什么釉色？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "pottery_m2"
+      ],
+      "forbidden_ids": [
+        "pottery_m1",
+        "pottery_m3"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_pottery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "pottery_q3",
+      "story_id": "h_pottery",
+      "text": "宜青的浅盘是什么釉色？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "pottery_m3"
+      ],
+      "forbidden_ids": [
+        "pottery_m1",
+        "pottery_m2"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_pottery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "pottery_q4",
+      "story_id": "h_pottery",
+      "text": "她用的釉是什么颜色？",
+      "history": [
+        {
+          "role": "user",
+          "content": "我朋友宜青做了一个浅盘。"
+        },
+        {
+          "role": "assistant",
+          "content": "你想问她那只浅盘的哪一项信息？"
+        }
+      ],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [
+        "pottery_m3"
+      ],
+      "forbidden_ids": [
+        "pottery_m1",
+        "pottery_m2",
+        "pottery_m4"
+      ],
+      "expected_status": "sufficient",
+      "family": "heldout_pottery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "pottery_q5",
+      "story_id": "h_pottery",
+      "text": "我的小碗现在是什么釉色？工作室今天已经出窑了吗？",
+      "history": [],
+      "expected_routes": [
+        "fact",
+        "live"
+      ],
+      "gold_ids": [
+        "pottery_m1"
+      ],
+      "forbidden_ids": [
+        "pottery_m2",
+        "pottery_m3",
+        "pottery_m4"
+      ],
+      "expected_status": "external_unavailable",
+      "family": "heldout_pottery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    },
+    {
+      "id": "pottery_q6",
+      "story_id": "h_pottery",
+      "text": "我6月初告诉过你的窑房储物柜旧密码是什么？",
+      "history": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "gold_ids": [],
+      "forbidden_ids": [
+        "pottery_m4"
+      ],
+      "expected_status": "unknown",
+      "family": "heldout_pottery",
+      "scope": "companion",
+      "should_retrieve_long_term": true
+    }
+  ],
+  "sources": [
+    {
+      "id": "library_m1_source",
+      "role": "user",
+      "timestamp": "2026-06-02T09:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "记一下，我在南城图书馆的借书证号是 NC-4821。"
+    },
+    {
+      "id": "library_m2_source",
+      "role": "user",
+      "timestamp": "2026-06-02T09:01:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我的南城图书馆借书证有效期到今年12月31日。"
+    },
+    {
+      "id": "library_m3_source",
+      "role": "user",
+      "timestamp": "2026-06-10T10:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我借了《河岸地图》，借阅单上应还日期是2026年6月22日。"
+    },
+    {
+      "id": "library_m4_source",
+      "role": "user",
+      "timestamp": "2026-06-10T10:02:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我妈妈也在南城图书馆办了证，她的证号是 NC-7390。"
+    },
+    {
+      "id": "choir_m1_source",
+      "role": "user",
+      "timestamp": "2026-05-12T18:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我们合唱团固定每周二排练，帮我记住。"
+    },
+    {
+      "id": "choir_m2_source",
+      "role": "user",
+      "timestamp": "2026-05-12T18:01:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我的合唱团排练地点是榆树文化馆二楼204室。"
+    },
+    {
+      "id": "choir_m3_source",
+      "role": "user",
+      "timestamp": "2026-05-13T08:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我哥哥在另一个合唱团，他们在云杉活动站107室排练。"
+    },
+    {
+      "id": "choir_m4_source",
+      "role": "user",
+      "timestamp": "2026-06-01T17:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "之前让你记的排练楼门禁码是4628。现在请把这个号码彻底忘掉，以后也不要从历史记录里告诉我。"
+    },
+    {
+      "id": "fireflies_m1_source",
+      "role": "user",
+      "timestamp": "2026-06-03T20:10:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "今晚是6月3日。我正在云岚湿地木栈道散步，一边看萤火虫一边跟你聊天。"
+    },
+    {
+      "id": "fireflies_m2_source",
+      "role": "user",
+      "timestamp": "2026-06-03T20:20:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "刚才一起商量的照片名字就定为“点点灯”吧，我已经把今晚这张萤火虫照片改名了。"
+    },
+    {
+      "id": "fireflies_m3_source",
+      "role": "user",
+      "timestamp": "2026-06-12T19:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我们先约好6月20日我去青石港看潮时再聊天。这只是计划，我还没有去过青石港。"
+    },
+    {
+      "id": "fireflies_m4_source",
+      "role": "user",
+      "timestamp": "2026-06-04T08:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我姐姐的夜间散步是在松桥公园，不是我那次去的湿地。"
+    },
+    {
+      "id": "scanning_m1_source",
+      "role": "user",
+      "timestamp": "2026-05-28T16:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "这次成功了：我用安卓平板上的纸页夹4.2，先关闭自动裁边，全部正面先拍，再按反序拍背面。在排序页选“正反交错”，第二组勾选“倒序”，导出后正反页顺序正确。"
+    },
+    {
+      "id": "scanning_m2_source",
+      "role": "user",
+      "timestamp": "2026-05-03T11:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "上个月用纸页夹4.1导入相册里旋转过的图片，识别一直失败；导入时选“保留原方向”后就识别成功了。这和双面页排序是两件事。"
+    },
+    {
+      "id": "scanning_m3_source",
+      "role": "user",
+      "timestamp": "2026-06-01T09:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我今年的票据统一放在 Documents/发票/2026 这个目录。"
+    },
+    {
+      "id": "scanning_m4_source",
+      "role": "user",
+      "timestamp": "2026-06-02T15:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我在票夹2.8里导入已经有文字层的PDF，直接按文字搜索就找到了目标票据。"
+    },
+    {
+      "id": "garden_m1_source",
+      "role": "user",
+      "timestamp": "2026-05-20T09:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我阳台这箱樱桃番茄的种子品种叫“红珠”。"
+    },
+    {
+      "id": "garden_m2_source",
+      "role": "user",
+      "timestamp": "2026-05-20T09:01:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我室友那盆樱桃番茄的品种是“蜜黄”，和我的不一样。"
+    },
+    {
+      "id": "garden_m3_source",
+      "role": "user",
+      "timestamp": "2026-05-26T18:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "今天5月26日给你看的菜箱照片，我们刚才一起选的名字“小码头”我很喜欢，就用它了。"
+    },
+    {
+      "id": "garden_m4_source",
+      "role": "user",
+      "timestamp": "2026-06-13T09:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "先记个计划：6月23日再补播一格番茄，目前还没补播。"
+    },
+    {
+      "id": "cycling_m1_source",
+      "role": "user",
+      "timestamp": "2026-05-08T14:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "上次配对成功的情况是：安卓手机，环骑3.6，R20没有连着别的手机。先在应用设备页新增R20，再在码表上按确认，配对就成功了。"
+    },
+    {
+      "id": "cycling_m2_source",
+      "role": "user",
+      "timestamp": "2026-05-09T14:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "今天用环骑3.6找C2踏频器，静止时搜不到；转动曲柄唤醒C2，再点搜索，就发现它了。"
+    },
+    {
+      "id": "cycling_m3_source",
+      "role": "user",
+      "timestamp": "2026-05-08T14:05:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我的R20码表序列号是 RX204611，记一下。"
+    },
+    {
+      "id": "cycling_m4_source",
+      "role": "user",
+      "timestamp": "2026-05-01T09:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "四月份我一直用环骑3.4；今天5月1日已经升级，3.4这条只算旧记录。"
+    },
+    {
+      "id": "volunteering_m1_source",
+      "role": "user",
+      "timestamp": "2026-06-05T12:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "社区修补日我负责缝补布袋。"
+    },
+    {
+      "id": "volunteering_m2_source",
+      "role": "user",
+      "timestamp": "2026-06-05T12:01:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我的搭档负责登记物品，不负责缝补。"
+    },
+    {
+      "id": "volunteering_m3_source",
+      "role": "user",
+      "timestamp": "2026-06-07T19:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "今天6月7日我们一起整理的活动总结里，完成数量请写准确：我当天累计修好了7个布袋。"
+    },
+    {
+      "id": "volunteering_m4_source",
+      "role": "user",
+      "timestamp": "2026-06-10T10:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "6月28日还有一次修补日，到那次活动前再请你和我一起写开场白，现在还没开始写。"
+    },
+    {
+      "id": "pottery_m1_source",
+      "role": "user",
+      "timestamp": "2026-06-09T11:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "今天6月9日，我把自己那只小碗的釉色从米白改成雾蓝，以后当前颜色按雾蓝记。"
+    },
+    {
+      "id": "pottery_m2_source",
+      "role": "user",
+      "timestamp": "2026-06-01T11:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "今天6月1日，我的小碗釉色先选米白。"
+    },
+    {
+      "id": "pottery_m3_source",
+      "role": "user",
+      "timestamp": "2026-06-08T14:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我的朋友宜青做的是浅盘，她选的釉色是苔绿。"
+    },
+    {
+      "id": "pottery_m4_source",
+      "role": "user",
+      "timestamp": "2026-06-11T16:00:00+08:00",
+      "provenance": "synthetic_dialogue",
+      "text": "我之前给你的窑房储物柜密码73-18，请彻底忘掉。以后即使我问旧密码，也别从历史记忆里恢复。"
+    }
+  ],
+  "authoring": {
+    "implementation_read": false,
+    "author": "independent_subagent_without_parent_history",
+    "original_sha256": "4e8137b94a94bcb18ae5f11176e26b77635bb2e8374e93954a2a1f576cfdb5b4",
+    "conversion": "Mechanical field/time/scope/kind normalization; question text, gold and forbidden IDs unchanged."
+  },
+  "original_metadata": {
+    "provenance": "独立创作的合成对话留出集；未读取生产代码或开发集；不代表现实用户泛化效果。",
+    "source_contract": "sources 是合成原始用户发言；每条记忆必须可由对应 source_id 的原文支持。并非真实用户日志。",
+    "split_unit": "story_id；同一故事的全部查询、改写和后续扩展必须置于同一分组，不可按单条查询随机划分。",
+    "isolation": "每个故事独立加载；不跨故事混合候选记忆。所有关系标签均相对于当前用户。",
+    "live_provider": "unavailable",
+    "kind_aliases": {
+      "任务经验": "task_experience"
+    },
+    "gold_ids_semantics": "可作为该问题有效证据的记忆；insufficient 时可仅支持说明缺失前提，不能据此保证任务可执行。",
+    "forbidden_ids_semantics": "不得作为该问题答案的有效证据；包括相似但错误字段、错误主体、错误时间、前提不匹配或显式遗忘记录。它们不是对模型内部候选扫描的观测。",
+    "history_semantics": "history 是当前故事的会话上下文，可用于指代消解；不取代事实来源。",
+    "forgotten_semantics": "forgotten 记录作为隔离的评测诱饵提供，任何历史日期也不可让其重新可读。",
+    "valid_time_semantics": "历史记录允许回答明确匹配其有效时间的历史问题；active 不自动覆盖其他谓词；planned 不能证明事件已经发生。",
+    "route_definitions": {
+      "chat": "无需个人记忆的聊天或通用创作",
+      "fact": "个人或关系主体的明确事实",
+      "episode": "共同对话中形成的经历及明确计划",
+      "task": "复用带应用、版本和前提的任务经验",
+      "live": "依赖当前外部状态"
+    },
+    "status_definitions": {
+      "not_needed": "无需检索个人记忆即可完成",
+      "sufficient": "有效记忆完整支持所问内容",
+      "insufficient": "存在相关经验但缺少必要前提，或已知前提不匹配，不能直接套用",
+      "unknown": "没有可用记忆支持所问事实或经历",
+      "external_unavailable": "请求需要实时外部来源，而本评测没有实时 provider；仍应回答已有证据支持的稳定部分"
+    },
+    "counts": {
+      "stories": 8,
+      "memories": 32,
+      "queries": 48,
+      "sources": 32
+    },
+    "design_notes": [
+      "正负成对：每个故事既有可回答问题，也有缺失字段、错误主体、未发生计划、前提缺失、实时不可得或遗忘边界。",
+      "近似字段对照包括证号与登录密码、借书证有效期与书籍归还日、码表序列号与解锁密码。",
+      "关系对照覆盖妈妈、哥哥、姐姐、室友、搭档及具名朋友；当前用户没有被赋予互相矛盾的姓名或住所。",
+      "共同经历全部来自用户与助手的对话、命名或总结；不暗示助手亲自到场。",
+      "任务应用及型号是合成设定，所有步骤都只来自所列用户发言，不表示外部产品事实或通用操作建议。",
+      "版本变化的适用性、设备已连接其他手机、缺少环境信息分别测试前提冲突与前提未确认。",
+      "多轮查询固定给定history，并保持其指代目标可由显式关系与原始来源确定。",
+      "实时混合题保留稳定事实的gold_ids，并统一标记external_unavailable，以避免把部分可回答误判为全部未知。",
+      "建议按故事聚合报告；可分别统计路由、有效证据命中、错误字段或主体污染、历史时间选择、遗忘泄漏和前提越界。",
+      "该集是独立创作的合成留出方案，不应据此宣称现实用户或真实分布上的泛化表现。"
+    ]
+  },
+  "not_claimed": [
+    "real user representativeness",
+    "externally sealed benchmark",
+    "real model generated answers"
+  ],
+  "schema_adaptation_note": "Shared-event metadata uses canonical participants user:self/character:self and annotated completed/planned state; question wording and gold evidence unchanged; performed before candidate evaluation."
+}

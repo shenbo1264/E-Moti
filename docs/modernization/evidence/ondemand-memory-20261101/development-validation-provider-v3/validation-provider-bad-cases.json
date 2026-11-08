@@ -1,0 +1,954 @@
+{
+  "method": "routed",
+  "status": "development_diagnostic_source_changed",
+  "source_artifact": "routed-300.json",
+  "query_denominator": 36,
+  "bad_cases": [
+    {
+      "query_id": "v01_name",
+      "query": "我家兔子叫什么？",
+      "history": [],
+      "gold_ids": [
+        "v_pet"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "forbidden_delivered": [],
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "status": "unknown",
+        "reason": "deterministic_local_router",
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_pet",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ]
+      }
+    },
+    {
+      "query_id": "v01_age",
+      "query": "我家兔子今年几岁？",
+      "history": [],
+      "gold_ids": [],
+      "delivered_ids": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "unknown",
+      "forbidden_delivered": [],
+      "trace": {
+        "route": [
+          "bounded"
+        ],
+        "status": "unknown",
+        "reason": "deterministic_local_router",
+        "intent_status": [
+          {
+            "route": "bounded",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_pet",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00277",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00276",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00275",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00272",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00227",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00222",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00203",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00202",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00155",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00146",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00145",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00142",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00136",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00132",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00087",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00086",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00085",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00083",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00082",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00052",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00038",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00037",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00036",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00035",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00034",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00033",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00032",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00031",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00027",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00026",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00022",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "bounded",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ]
+      }
+    },
+    {
+      "query_id": "v02_job",
+      "query": "我的图书馆搭档做哪一行？",
+      "history": [],
+      "gold_ids": [
+        "v_library"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "forbidden_delivered": [],
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "status": "unknown",
+        "reason": "deterministic_local_router",
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_library_city",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "v_library",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ]
+      }
+    },
+    {
+      "query_id": "v03_overview",
+      "query": "聊聊我们一起观测月球的两次经历。",
+      "history": [],
+      "gold_ids": [
+        "v_moon",
+        "v_scope"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "episode"
+      ],
+      "expected_status": "sufficient",
+      "forbidden_delivered": [],
+      "trace": {
+        "route": [
+          "episode"
+        ],
+        "status": "unknown",
+        "reason": "deterministic_local_router",
+        "intent_status": [
+          {
+            "route": "episode",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_moon",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "v_scope",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00289",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00288",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00286",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00284",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00282",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00281",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00278",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00268",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00259",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00258",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00248",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00228",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00188",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00168",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00162",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00160",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00158",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00148",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00109",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00108",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00104",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00068",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00049",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00048",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00044",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00042",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00041",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00038",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00029",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00028",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ]
+      }
+    },
+    {
+      "query_id": "v06_count",
+      "query": "我阳台上有几盆薄荷？",
+      "history": [],
+      "gold_ids": [
+        "v_legacy_plant"
+      ],
+      "delivered_ids": [],
+      "expected_routes": [
+        "fact"
+      ],
+      "expected_status": "sufficient",
+      "forbidden_delivered": [],
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "status": "unknown",
+        "reason": "deterministic_local_router",
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "v_legacy_plant",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "v_plant_event",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00147",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00146",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00140",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00027",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00026",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00020",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00267",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00266",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00260",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00149",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00148",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00145",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00143",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00142",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00029",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00028",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00025",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00023",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00022",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00269",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00268",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00265",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00263",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00262",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00144",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00141",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00024",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00021",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00264",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00261",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ]
+      }
+    }
+  ]
+}

@@ -1,0 +1,109 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="14" skipped="0" tests="21" time="0.431" timestamp="2026-11-02T04:23:42.078141+09:00" hostname="a7863bbaa94f"><testcase classname="tests.test_structured_fact_corrections" name="test_explicit_typed_correction_keeps_value_types_and_literal_body[value0]" time="0.011"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:34: in test_explicit_typed_correction_keeps_value_types_and_literal_body
+    new = memory.correct(old.memory_id, title="设备设置", summary=summary,
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_explicit_typed_correction_keeps_value_types_and_literal_body[value1]" time="0.008"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:34: in test_explicit_typed_correction_keeps_value_types_and_literal_body
+    new = memory.correct(old.memory_id, title="设备设置", summary=summary,
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_explicit_typed_correction_keeps_value_types_and_literal_body[value2]" time="0.008"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:34: in test_explicit_typed_correction_keeps_value_types_and_literal_body
+    new = memory.correct(old.memory_id, title="设备设置", summary=summary,
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_explicit_typed_correction_keeps_value_types_and_literal_body[0]" time="0.007"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:34: in test_explicit_typed_correction_keeps_value_types_and_literal_body
+    new = memory.correct(old.memory_id, title="设备设置", summary=summary,
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_explicit_typed_correction_keeps_value_types_and_literal_body[False]" time="0.008"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:34: in test_explicit_typed_correction_keeps_value_types_and_literal_body
+    new = memory.correct(old.memory_id, title="设备设置", summary=summary,
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_explicit_typed_correction_keeps_value_types_and_literal_body[7.5]" time="0.007"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:34: in test_explicit_typed_correction_keeps_value_types_and_literal_body
+    new = memory.correct(old.memory_id, title="设备设置", summary=summary,
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_explicit_typed_correction_keeps_value_types_and_literal_body[None]" time="0.008"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:34: in test_explicit_typed_correction_keeps_value_types_and_literal_body
+    new = memory.correct(old.memory_id, title="设备设置", summary=summary,
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_typed_correction_rejects_unproved_or_truncated_scalar_leaf_atomically[value0-\u7528\u6237\u5c06\u6a21\u5f0f\u6539\u4e3a\u9759\u97f3]" time="0.010" /><testcase classname="tests.test_structured_fact_corrections" name="test_typed_correction_rejects_unproved_or_truncated_scalar_leaf_atomically[value1-\u7528\u6237\u5c06\u6570\u91cf\u66f4\u6b63\u4e3a 17]" time="0.010" /><testcase classname="tests.test_structured_fact_corrections" name="test_typed_correction_rejects_unproved_or_truncated_scalar_leaf_atomically[value2-\u7528\u6237\u4f7f\u7528 M10 \u578b\u53f7]" time="0.009" /><testcase classname="tests.test_structured_fact_corrections" name="test_typed_correction_rejects_unproved_or_truncated_scalar_leaf_atomically[value3-\u7528\u6237\u8bf4 falsehood \u662f\u4e00\u4e2a\u82f1\u6587\u5355\u8bcd]" time="0.009" /><testcase classname="tests.test_structured_fact_corrections" name="test_typed_correction_rejects_unproved_or_truncated_scalar_leaf_atomically[value4-\u7528\u6237\u5c06\u5907\u7528\u8bbe\u7f6e\u4fdd\u6301\u539f\u6837]" time="0.009" /><testcase classname="tests.test_structured_fact_corrections" name="test_typed_correction_rejects_unproved_or_truncated_scalar_leaf_atomically[value5-summary5]" time="0.009" /><testcase classname="tests.test_structured_fact_corrections" name="test_typed_correction_rejects_unproved_or_truncated_scalar_leaf_atomically[value6-\u8fc7\u6df1]" time="0.010" /><testcase classname="tests.test_structured_fact_corrections" name="test_spoken_forget_does_not_crash_or_overdelete_non_string_values[value0]" time="0.010"><failure message="TypeError: 'in &lt;string&gt;' requires string as left operand, not dict">tests/test_structured_fact_corrections.py:69: in test_spoken_forget_does_not_crash_or_overdelete_non_string_values
+    result = chat.process("忘掉咖啡偏好", now=20)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:177: in process
+    return self._forget(text, active_facts(), now=now)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:289: in _forget
+    and m.metadata["fact_value"] in text
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'in &lt;string&gt;' requires string as left operand, not dict</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_spoken_forget_does_not_crash_or_overdelete_non_string_values[value1]" time="0.009"><failure message="TypeError: 'in &lt;string&gt;' requires string as left operand, not list">tests/test_structured_fact_corrections.py:69: in test_spoken_forget_does_not_crash_or_overdelete_non_string_values
+    result = chat.process("忘掉咖啡偏好", now=20)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:177: in process
+    return self._forget(text, active_facts(), now=now)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:289: in _forget
+    and m.metadata["fact_value"] in text
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'in &lt;string&gt;' requires string as left operand, not list</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_spoken_forget_does_not_crash_or_overdelete_non_string_values[7]" time="0.012"><failure message="TypeError: 'in &lt;string&gt;' requires string as left operand, not int">tests/test_structured_fact_corrections.py:69: in test_spoken_forget_does_not_crash_or_overdelete_non_string_values
+    result = chat.process("忘掉咖啡偏好", now=20)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:177: in process
+    return self._forget(text, active_facts(), now=now)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:289: in _forget
+    and m.metadata["fact_value"] in text
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'in &lt;string&gt;' requires string as left operand, not int</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_spoken_forget_does_not_crash_or_overdelete_non_string_values[7.5]" time="0.009"><failure message="TypeError: 'in &lt;string&gt;' requires string as left operand, not float">tests/test_structured_fact_corrections.py:69: in test_spoken_forget_does_not_crash_or_overdelete_non_string_values
+    result = chat.process("忘掉咖啡偏好", now=20)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:177: in process
+    return self._forget(text, active_facts(), now=now)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:289: in _forget
+    and m.metadata["fact_value"] in text
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'in &lt;string&gt;' requires string as left operand, not float</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_spoken_forget_does_not_crash_or_overdelete_non_string_values[True]" time="0.008"><failure message="TypeError: 'in &lt;string&gt;' requires string as left operand, not bool">tests/test_structured_fact_corrections.py:69: in test_spoken_forget_does_not_crash_or_overdelete_non_string_values
+    result = chat.process("忘掉咖啡偏好", now=20)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:177: in process
+    return self._forget(text, active_facts(), now=now)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/chat_memory.py:289: in _forget
+    and m.metadata["fact_value"] in text
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E   TypeError: 'in &lt;string&gt;' requires string as left operand, not bool</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_public_structured_correction_then_forget_revokes_old_and_derived_sources" time="0.013"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:87: in test_public_structured_correction_then_forget_revokes_old_and_derived_sources
+    new = memory.correct(old.memory_id, title="设备设置",
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase><testcase classname="tests.test_structured_fact_corrections" name="test_legacy_repair_preserves_new_proved_typed_correction_on_rebuild" time="0.009"><failure message="ValueError: correction fact metadata must match its current summary">tests/test_structured_fact_corrections.py:106: in test_legacy_repair_preserves_new_proved_typed_correction_on_rebuild
+    new = memory.correct(old.memory_id, title="设备设置", summary="用户的设备设置是静音，count=0",
+src/guanghe_companion/emotional_memory_service.py:216: in correct
+    corrected_metadata = correction_metadata(previous, summary, metadata, source_id=direct_sources[0])
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+src/guanghe_companion/memory_correction.py:37: in correction_metadata
+    raise ValueError("correction fact metadata must match its current summary")
+E   ValueError: correction fact metadata must match its current summary</failure></testcase></testsuite></testsuites>

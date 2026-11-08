@@ -1,0 +1,2321 @@
+{
+  "status": "source_changed_during_run_do_not_compare_as_frozen_revision",
+  "summary": {
+    "queries": 108,
+    "stories": 18,
+    "answerable_queries": 52,
+    "no_answer_queries": 29,
+    "macro_recall_at_4": 0.8365384615384616,
+    "delivered_recall": 0.8365384615384616,
+    "precision_returned": 0.8365384615384616,
+    "ndcg_at_4_binary": 0.8387143690916434,
+    "mrr": 0.8461538461538461,
+    "all_gold_delivered": {
+      "numerator": 43,
+      "denominator": 52,
+      "rate": 0.8269230769230769
+    },
+    "no_answer_injection": {
+      "numerator": 0,
+      "denominator": 29,
+      "rate": 0.0
+    },
+    "unnecessary_retrieval": {
+      "numerator": 0,
+      "denominator": 27,
+      "rate": 0.0
+    },
+    "route_exact": {
+      "numerator": 108,
+      "denominator": 108,
+      "rate": 1.0
+    },
+    "status_exact": {
+      "numerator": 98,
+      "denominator": 108,
+      "rate": 0.9074074074074074
+    },
+    "correct_unknown_with_no_injection": {
+      "numerator": 28,
+      "denominator": 29,
+      "rate": 0.9655172413793104
+    },
+    "answerable_zero_evidence": {
+      "numerator": 8,
+      "denominator": 52,
+      "rate": 0.15384615384615385
+    },
+    "forbidden_injection": {
+      "numerator": 0,
+      "denominator": 108,
+      "rate": 0.0
+    },
+    "structured_wrong_injection": {
+      "numerator": 0,
+      "denominator": 108,
+      "rate": 0.0
+    },
+    "historical_wrong_injection": {
+      "numerator": 0,
+      "denominator": 108,
+      "rate": 0.0
+    },
+    "planned_wrong_injection": {
+      "numerator": 0,
+      "denominator": 108,
+      "rate": 0.0
+    },
+    "forgotten_injection": {
+      "numerator": 0,
+      "denominator": 108,
+      "rate": 0.0
+    },
+    "overview_source_coverage": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null
+    },
+    "overview_extractive_entailment": {
+      "numerator": 0,
+      "denominator": 0,
+      "rate": null
+    },
+    "duplicate_evidence_queries": {
+      "numerator": 0,
+      "denominator": 108,
+      "rate": 0.0
+    },
+    "errors": {
+      "numerator": 0,
+      "denominator": 108,
+      "rate": 0.0
+    },
+    "stages_ms": {
+      "context_assembly": {
+        "n": 108,
+        "p50": 0.24651800000000001,
+        "p95": 0.38339,
+        "p99": 0.4766154099999998,
+        "min": 0.161545,
+        "max": 0.492716
+      },
+      "index_and_query_prepare": {
+        "n": 108,
+        "p50": 0.2428275,
+        "p95": 4602.057428349998,
+        "p99": 5346.163933239998,
+        "min": 0.02643,
+        "max": 5616.112151
+      },
+      "retrieval_context_assembly": {
+        "n": 108,
+        "p50": 0.09997649976867251,
+        "p95": 0.2830973509844625,
+        "p99": 1.0531580411770793,
+        "min": 0.05866900028195232,
+        "max": 3.181900996423792
+      },
+      "retrieval_database_read": {
+        "n": 108,
+        "p50": 3.2564894972892944,
+        "p95": 22.2563395516772,
+        "p99": 29.449612150856396,
+        "min": 0.44772699766326696,
+        "max": 93.28507900499972
+      },
+      "retrieval_eligibility_and_evidence": {
+        "n": 80,
+        "p50": 0.08529900151188485,
+        "p95": 0.6086622466682455,
+        "p99": 1.0880445476504947,
+        "min": 0.0003910026862286031,
+        "max": 1.4198089993442409
+      },
+      "retrieval_external_read": {
+        "n": 7,
+        "p50": 0.0004800021997652948,
+        "p95": 0.000547999661648646,
+        "p99": 0.0005504007276613265,
+        "min": 0.00039099541027098894,
+        "max": 0.0005510009941644967
+      },
+      "retrieval_finalize": {
+        "n": 108,
+        "p50": 0.4671165006584488,
+        "p95": 5.790527947101509,
+        "p99": 7.7972258871886835,
+        "min": 0.2880749962059781,
+        "max": 10.326791001716629
+      },
+      "retrieval_ranking": {
+        "n": 80,
+        "p50": 0.1348644946119748,
+        "p95": 0.7585551491501972,
+        "p99": 1.7677381020621366,
+        "min": 0.011146999895572662,
+        "max": 2.149078994989395
+      },
+      "retrieval_routing": {
+        "n": 108,
+        "p50": 0.05924500146647915,
+        "p95": 0.23881885099399358,
+        "p99": 0.32009899528929964,
+        "min": 0.005598005373030901,
+        "max": 0.4043520020786673
+      },
+      "retrieval_total": {
+        "n": 108,
+        "p50": 7.301417503185803,
+        "p95": 27.706636400034743,
+        "p99": 31.885048478652596,
+        "min": 0.8635770063847303,
+        "max": 100.41718800493982
+      },
+      "retrieve": {
+        "n": 108,
+        "p50": 7.378458999999999,
+        "p95": 27.798865849999974,
+        "p99": 31.99178368999999,
+        "min": 0.875264,
+        "max": 100.455366
+      },
+      "total": {
+        "n": 108,
+        "p50": 8.994935,
+        "p95": 4628.390474949998,
+        "p99": 5376.483147809999,
+        "min": 1.105783,
+        "max": 5632.307766
+      }
+    },
+    "warm_total_ms": {
+      "n": 98,
+      "p50": 8.4394985,
+      "p95": 33.05574349999999,
+      "p99": 42.905997820000074,
+      "min": 1.105783,
+      "max": 101.172922
+    },
+    "cold_query_total_ms": {
+      "n": 10,
+      "p50": 4801.6091145,
+      "p95": 5525.24602005,
+      "p99": 5610.89541681,
+      "min": 37.159767,
+      "max": 5632.307766
+    },
+    "embedding_query_calls": 35,
+    "passage_encoded_entries": 2102,
+    "rows_loaded": {
+      "n": 108,
+      "p50": 1.0,
+      "p95": 35.64999999999999,
+      "p99": 84.29999999999993,
+      "min": 0.0,
+      "max": 89.0
+    },
+    "context_chars": {
+      "n": 108,
+      "p50": 511.0,
+      "p95": 1143.1,
+      "p99": 1631.6899999999998,
+      "min": 498.0,
+      "max": 1719.0
+    },
+    "bge_tokenizer_prompt_tokens": {
+      "n": 108,
+      "p50": 850.0,
+      "p95": 1253.35,
+      "p99": 1537.86,
+      "min": 836.0,
+      "max": 1585.0
+    },
+    "provider_tokens": "not_run",
+    "actual_answer_accuracy": "not_run",
+    "persona_behavior": "not_run"
+  },
+  "cases": [
+    {
+      "query_id": "d01_mix",
+      "query": "先告诉我自己的名字，再说说我的邻居叫什么。",
+      "gold_ids": [
+        "d_name"
+      ],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "insufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "insufficient",
+        "retrieval_calls": 2,
+        "rows_loaded": 0,
+        "candidate_count": 0,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.18272599845658988,
+          "database_read": 4.401854996103793,
+          "eligibility_and_evidence": 0.00044099579099565744,
+          "ranking": 0.011146999895572662,
+          "finalize": 0.333344993123319,
+          "context_assembly": 0.07346200436586514,
+          "total": 5.690055004379246
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "insufficient",
+            "reason": "unresolved_or_ambiguous_entity",
+            "source_ids": []
+          },
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 611,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d02_follow",
+      "query": "那他叫什么？",
+      "gold_ids": [
+        "d_teacher_name"
+      ],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 0,
+        "candidate_count": 0,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.18706300033954903,
+          "database_read": 4.726355000457261,
+          "eligibility_and_evidence": 0.0006110058166086674,
+          "ranking": 0.015953999536577612,
+          "finalize": 0.3798749967245385,
+          "context_assembly": 0.11185900075361133,
+          "total": 5.466788003104739
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 538,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d04_mixed",
+      "query": "我早餐习惯吃什么，又有什么东西不能当成过敏？",
+      "gold_ids": [
+        "d_breakfast",
+        "d_food_avoid"
+      ],
+      "retrieved_ids": [
+        "d_breakfast"
+      ],
+      "delivered_ids": [
+        "d_breakfast"
+      ],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "insufficient",
+        "retrieval_calls": 3,
+        "rows_loaded": 2,
+        "candidate_count": 2,
+        "expansion_count": 1,
+        "selected_memory_ids": [
+          "d_breakfast"
+        ],
+        "stage_ms": {
+          "routing": 0.060762002249248326,
+          "database_read": 10.00847399700433,
+          "eligibility_and_evidence": 0.14466999709839,
+          "ranking": 0.08442800026386976,
+          "finalize": 3.884972997184377,
+          "context_assembly": 0.1497470002504997,
+          "total": 14.38668199989479
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "sufficient",
+            "source_ids": [
+              "d_breakfast"
+            ],
+            "missing_details": []
+          },
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_breakfast",
+            "accepted": true,
+            "reason": "structured_subject_field_time_match",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "d_food_avoid",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 1225,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d05_style",
+      "query": "我喜欢你怎么跟我开玩笑？",
+      "gold_ids": [
+        "d_humor"
+      ],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 2,
+        "candidate_count": 2,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.030055001843720675,
+          "database_read": 7.747832998575177,
+          "eligibility_and_evidence": 0.06191399734234437,
+          "ranking": 0.014300996554084122,
+          "finalize": 0.3422480003791861,
+          "context_assembly": 0.11080800322815776,
+          "total": 8.345365997229237
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_humor",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 538,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d06_partial",
+      "query": "我们那只陶艺杯是什么颜色，在哪家店烧的？",
+      "gold_ids": [
+        "d_clay_glaze"
+      ],
+      "retrieved_ids": [
+        "d_clay_glaze"
+      ],
+      "delivered_ids": [
+        "d_clay_glaze"
+      ],
+      "expected_status": "insufficient",
+      "trace": {
+        "route": [
+          "episode"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "sufficient",
+        "retrieval_calls": 2,
+        "rows_loaded": 89,
+        "candidate_count": 325,
+        "expansion_count": 0,
+        "selected_memory_ids": [
+          "d_clay_glaze"
+        ],
+        "stage_ms": {
+          "routing": 0.3182920045219362,
+          "database_read": 23.9660260049277,
+          "eligibility_and_evidence": 0.9998539972002618,
+          "ranking": 0.5403880059020594,
+          "finalize": 3.5999699975945987,
+          "context_assembly": 0.1685759998508729,
+          "total": 30.451874998107087
+        },
+        "intent_status": [
+          {
+            "route": "episode",
+            "status": "sufficient",
+            "source_ids": [
+              "d_clay_glaze"
+            ],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_clay_glaze",
+            "accepted": true,
+            "reason": "category_and_topic_supported",
+            "route": "episode",
+            "supported_details": [
+              "color"
+            ],
+            "missing_details": []
+          },
+          {
+            "memory_id": "d_clay_first",
+            "accepted": false,
+            "reason": "requested_detail_not_supported",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "d_clay_plan",
+            "accepted": false,
+            "reason": "plan_is_not_completed_event_or_current_fact",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00237",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00236",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00230",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00227",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00226",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00220",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00207",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00206",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00200",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00187",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00186",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00180",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00177",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00176",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00170",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00167",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00166",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00160",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00147",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00146",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00140",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00137",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00136",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00130",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00127",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00126",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00120",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00117",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00116",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00110",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00107",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00106",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00100",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00087",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00086",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00080",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00067",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00066",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00060",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00057",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00056",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00050",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00047",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00046",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00040",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00027",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00026",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00020",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00017",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00016",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00010",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00007",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00006",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00000",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00296",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00290",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00287",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00286",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00280",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00267",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00266",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00295",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00294",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00293",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00289",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00288",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00285",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00284",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00283",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00279",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00278",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00277",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00276",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00275",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00273",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00263",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00259",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00258",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00257",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00256",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00255",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00254",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00253",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00246",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00243",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          },
+          {
+            "memory_id": "noise_00143",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "color"
+            ]
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "prepared",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 1043,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d08_chain",
+      "query": "星图服务上次部署失败后我们怎样修好了它？",
+      "gold_ids": [
+        "d_deploy_fail",
+        "d_deploy_fix"
+      ],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "task"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 4,
+        "candidate_count": 4,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.1548850050312467,
+          "database_read": 4.481022995605599,
+          "eligibility_and_evidence": 0.10078200284624472,
+          "ranking": 0.5386550037655979,
+          "finalize": 0.411533001170028,
+          "context_assembly": 0.09852900257101282,
+          "total": 7.375375003903173
+        },
+        "intent_status": [
+          {
+            "route": "task",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": [
+              "procedure"
+            ]
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_deploy_fail",
+            "accepted": false,
+            "reason": "requested_detail_not_supported",
+            "route": "task",
+            "supported_details": [],
+            "missing_details": [
+              "procedure"
+            ]
+          },
+          {
+            "memory_id": "d_deploy_fix",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "task",
+            "supported_details": [
+              "procedure"
+            ],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "no_prepared_scores",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 549,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d12_model_detail",
+      "query": "我那台相机是什么品牌和型号？",
+      "gold_ids": [
+        "d_legacy_camera"
+      ],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 1,
+        "candidate_count": 1,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.04054199962411076,
+          "database_read": 7.700551999732852,
+          "eligibility_and_evidence": 0.0007010021363385022,
+          "ranking": 0.01783699553925544,
+          "finalize": 0.5336480026016943,
+          "context_assembly": 0.08440699457423761,
+          "total": 8.539691996702459
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_legacy_camera",
+            "accepted": false,
+            "reason": "field_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 538,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d13_city_follow",
+      "query": "那她住在哪里来着？",
+      "gold_ids": [
+        "d_cousin_city"
+      ],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 2,
+        "rows_loaded": 1,
+        "candidate_count": 1,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.11162900045746937,
+          "database_read": 5.919976989389397,
+          "eligibility_and_evidence": 0.0006409973138943315,
+          "ranking": 0.014621997252106667,
+          "finalize": 0.4167810038779862,
+          "context_assembly": 0.08388700371142477,
+          "total": 6.678204998024739
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_cousin_city",
+            "accepted": false,
+            "reason": "subject_mismatch_or_unproved",
+            "route": "fact",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 538,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d13_ambiguous",
+      "query": "她叫什么名字？",
+      "gold_ids": [],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "unknown",
+      "trace": {
+        "route": [
+          "fact"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "insufficient",
+        "retrieval_calls": 0,
+        "rows_loaded": 0,
+        "candidate_count": 0,
+        "expansion_count": 0,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.24314800248248503,
+          "database_read": 0.703915000485722,
+          "finalize": 0.45854399650124833,
+          "context_assembly": 0.08326600072905421,
+          "total": 1.5095540002221242
+        },
+        "intent_status": [
+          {
+            "route": "fact",
+            "status": "insufficient",
+            "reason": "unresolved_reference",
+            "source_ids": []
+          }
+        ],
+        "decisions": [],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "not_needed",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 548,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d14_event",
+      "query": "我们一起读过哪本书？",
+      "gold_ids": [
+        "d_read_together"
+      ],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "episode"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 3,
+        "rows_loaded": 32,
+        "candidate_count": 32,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.24498999846400693,
+          "database_read": 18.449319002684206,
+          "eligibility_and_evidence": 0.38207800389500335,
+          "ranking": 2.149078994989395,
+          "finalize": 0.3085670032305643,
+          "context_assembly": 0.2032269985647872,
+          "total": 22.5804040019284
+        },
+        "intent_status": [
+          {
+            "route": "episode",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": [
+              "title"
+            ]
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_novel",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "d_read_together",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "episode",
+            "supported_details": [
+              "title"
+            ],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00281",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00279",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00278",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00271",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00241",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00231",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00221",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00211",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00201",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00199",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00191",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00181",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00161",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00159",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00158",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00151",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00141",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00131",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00121",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00111",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00081",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00071",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00061",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00041",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00039",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00038",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00031",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00021",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00011",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          },
+          {
+            "memory_id": "noise_00001",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": [
+              "title"
+            ]
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "no_prepared_scores",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 551,
+        "router_evaluated": true
+      }
+    },
+    {
+      "query_id": "d16_overview",
+      "query": "回顾我们修计时器的验证过程。",
+      "gold_ids": [
+        "d_timer",
+        "d_timer_button"
+      ],
+      "retrieved_ids": [],
+      "delivered_ids": [],
+      "expected_status": "sufficient",
+      "trace": {
+        "route": [
+          "episode"
+        ],
+        "reason": "deterministic_local_router",
+        "status": "unknown",
+        "retrieval_calls": 3,
+        "rows_loaded": 34,
+        "candidate_count": 34,
+        "expansion_count": 1,
+        "selected_memory_ids": [],
+        "stage_ms": {
+          "routing": 0.12754300405504182,
+          "database_read": 16.89383100165287,
+          "eligibility_and_evidence": 0.4208860045764595,
+          "ranking": 0.36545199691317976,
+          "finalize": 0.3782920030062087,
+          "context_assembly": 0.07889900007285178,
+          "total": 18.995168000401463
+        },
+        "intent_status": [
+          {
+            "route": "episode",
+            "status": "unknown",
+            "source_ids": [],
+            "missing_details": []
+          }
+        ],
+        "decisions": [
+          {
+            "memory_id": "d_timer_button",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "d_timer",
+            "accepted": false,
+            "reason": "topic_not_supported",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00292",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00221",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00219",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00218",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00217",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00212",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00211",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00208",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00207",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00202",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00198",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00197",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00192",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00179",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00178",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00177",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00172",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00142",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00128",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00127",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00098",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00097",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00092",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00091",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00087",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00077",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00072",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00058",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00057",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          },
+          {
+            "memory_id": "noise_00052",
+            "accepted": false,
+            "reason": "missing_completed_shared_event_evidence",
+            "route": "episode",
+            "supported_details": [],
+            "missing_details": []
+          }
+        ],
+        "index_revision": 1,
+        "context_epoch": 0,
+        "semantic_status": "no_prepared_scores",
+        "retries": 0,
+        "evidence_level": "L2",
+        "context_chars": 544,
+        "router_evaluated": true
+      }
+    }
+  ]
+}

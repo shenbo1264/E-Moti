@@ -1,0 +1,97 @@
+{
+  "schema": "emoti.memory.storage.round2_run.v1",
+  "created_at_utc": "2026-11-01T19:36:45.354567+00:00",
+  "baseline_commit": "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb",
+  "upgraded_source_commit": "1eef5cbb6f85703f0350f8708cc86bf84a7e071f",
+  "benchmark_script_sha256": "f6e7868b4a9b75a270b875c9bf841ae86f209d68d67df449c18fbeb09ae68f13",
+  "script_identical_to_final_f7_window": true,
+  "baseline_reused_from_prior_run": true,
+  "baseline_execution_reference": "storage-final-run-provenance.json",
+  "baseline_report_sha256": "670d4bc0ace94861d56f6feb22c63721ac39ab7979ff794fa17df942b119b683",
+  "resource_window": "Root coordinated this index-only window: no team embedding, retrieval quality or full pytest overlapped. Shared host, not hardware isolated. The unchanged 299 baseline is reused from its earlier independent process; this is not a fresh paired simultaneous run.",
+  "run": {
+    "backend": "index",
+    "cwd": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+    "environment_override": {
+      "PYTHONPATH": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/src"
+    },
+    "argv": [
+      "/tmp/emoti-pr6-review-venv/bin/python",
+      "tools/benchmark_memory_index.py",
+      "--backend",
+      "index",
+      "--sizes",
+      "300,3000,10000",
+      "--repeats",
+      "9",
+      "--writes",
+      "3",
+      "--output",
+      "docs/modernization/evidence/ondemand-memory-20261101/storage/storage-index-round2-performance.json"
+    ],
+    "started_at_utc": "2026-11-01T19:34:53Z",
+    "last_result_written_at_utc": "2026-11-01T19:35:45.809906+00:00",
+    "storage_source_unchanged": true,
+    "output": "storage-index-round2-performance.json",
+    "output_sha256": "22e5fd49d2b57c159335b1d6491390850e53440ce032fb05969b7c13c2863683"
+  },
+  "baseline_source_commit_verification": {
+    "emotional_memory.py": {
+      "sha256": "2a506af00d1f29e754b0cfb7b80e2b9ab1d23141854bee6da672faca970942bb",
+      "matches_commit": true
+    },
+    "memory_document.py": {
+      "sha256": "dc556a3c5d46dff9dcca9fb047807a300f3366e006ec39c01dbc85dc743e45ee",
+      "matches_commit": true
+    },
+    "chat_memory.py": {
+      "sha256": "a02a831a55c9b4a38842ee235b1bfe60f70b9c741d7f361b3db77d9de0702ac4",
+      "matches_commit": true
+    },
+    "grounded_facts.py": {
+      "sha256": "3084835d82df8c23eadbe27feca6ddd5a402cc58a68e722d54ba6e4f0fcd0b77",
+      "matches_commit": true
+    },
+    "memory_correction.py": {
+      "sha256": "d017e4ee2d11a3e03222d1f4ee9c3d0a1b3b98a6e8afae2424b9aeffd785f619",
+      "matches_commit": true
+    }
+  },
+  "upgraded_source_commit_verification": {
+    "emotional_memory.py": {
+      "sha256": "3f5b0e077fad7d4752410e23bfe7d16a7423baa67c07650e196478fa2a0aa560",
+      "matches_commit": true
+    },
+    "memory_document.py": {
+      "sha256": "d5f41b6303f11deede918328c00eb977e2328f207a5d6d96bf02639e7dff3276",
+      "matches_commit": true
+    },
+    "memory_index.py": {
+      "sha256": "767fe33ccddbebbc81bc65694c2da9058291f44301aacad084f0601cda3e9617",
+      "matches_commit": true
+    },
+    "memory_index_schema.py": {
+      "sha256": "6595958bc917a27689966655be005a590d90039c0dab5cdff627397244afb1db",
+      "matches_commit": true
+    },
+    "retrieval_fact_schema.py": {
+      "sha256": "ca84e0a4232b250169e55f6fb76f715e5c3db30dff5f444bf1eb3d4a087ec00c",
+      "matches_commit": true
+    },
+    "chat_memory.py": {
+      "sha256": "93421776778c342b02e90f328d71584866f91d0fee9c9547c93e54b795f5ec51",
+      "matches_commit": true
+    },
+    "grounded_facts.py": {
+      "sha256": "3084835d82df8c23eadbe27feca6ddd5a402cc58a68e722d54ba6e4f0fcd0b77",
+      "matches_commit": true
+    },
+    "memory_correction.py": {
+      "sha256": "efce5bd37ccf2413fb7e9ac98a235d3b44e4866931cac7cebb8ea05126d9cf41",
+      "matches_commit": true
+    }
+  },
+  "all_three_corpora_identical": true,
+  "all_selected_evidence_counts": 4,
+  "scope": "Storage only: real temporary SQLite, identical scalar-fact synthetic corpus, 9 hot reads and 3 writes each; excludes LLM, embedding, GUI and vector-cache initialization. Does not measure maximal 16 KiB structured facts."
+}

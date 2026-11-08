@@ -1,0 +1,553 @@
+{
+  "role": "seen regression diagnostic; no semantic; not sealed",
+  "bad_case_count": 23,
+  "all_scored_queries": 192,
+  "answerable_queries": 104,
+  "rows": [
+    {
+      "query_id": "d10_history",
+      "split": "development",
+      "query": "上月照片备份的验证结果怎么样？",
+      "history": [],
+      "gold_ids": [
+        "d_backup_done"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "task"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "d_backup_done",
+          "accepted": false,
+          "reason": "outside_requested_valid_time",
+          "route": "task",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 4
+    },
+    {
+      "query_id": "d14_event",
+      "split": "development",
+      "query": "我们一起读过哪本书？",
+      "history": [],
+      "gold_ids": [
+        "d_read_together"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "episode"
+      ],
+      "gold_decisions": [],
+      "rows_loaded": 0
+    },
+    {
+      "query_id": "v01_name",
+      "split": "validation",
+      "query": "我家兔子叫什么？",
+      "history": [],
+      "gold_ids": [
+        "v_pet"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "fact"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "v_pet",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 2
+    },
+    {
+      "query_id": "v03_overview",
+      "split": "validation",
+      "query": "聊聊我们一起观测月球的两次经历。",
+      "history": [],
+      "gold_ids": [
+        "v_moon",
+        "v_scope"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "episode"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "v_moon",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "episode",
+          "supported_details": [],
+          "missing_details": []
+        },
+        {
+          "memory_id": "v_scope",
+          "accepted": false,
+          "reason": "topic_not_supported",
+          "route": "episode",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 4
+    },
+    {
+      "query_id": "v06_count",
+      "split": "validation",
+      "query": "我阳台上有几盆薄荷？",
+      "history": [],
+      "gold_ids": [
+        "v_legacy_plant"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "fact"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "v_legacy_plant",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 33
+    },
+    {
+      "query_id": "fireflies_q1",
+      "split": "holdout",
+      "query": "那晚我边看萤火虫边和你聊天，是在哪儿？",
+      "history": [],
+      "gold_ids": [
+        "fireflies_m1"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "episode"
+      ],
+      "gold_decisions": [],
+      "rows_loaded": 2
+    },
+    {
+      "query_id": "fireflies_q2",
+      "split": "holdout",
+      "query": "我们给那张萤火虫照片起的名字是什么？",
+      "history": [],
+      "gold_ids": [
+        "fireflies_m2"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "episode"
+      ],
+      "gold_decisions": [],
+      "rows_loaded": 0
+    },
+    {
+      "query_id": "fireflies_q3",
+      "split": "holdout",
+      "query": "接下来那次看潮聊天，我们约在什么时候、哪里？",
+      "history": [],
+      "gold_ids": [
+        "fireflies_m3"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "episode"
+      ],
+      "gold_decisions": [],
+      "rows_loaded": 0
+    },
+    {
+      "query_id": "fireflies_q5",
+      "split": "holdout",
+      "query": "我姐姐夜间散步去的地方叫什么？",
+      "history": [],
+      "gold_ids": [
+        "fireflies_m4"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "fact"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "fireflies_m4",
+          "accepted": false,
+          "reason": "subject_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 31
+    },
+    {
+      "query_id": "scanning_q1",
+      "split": "holdout",
+      "query": "还是安卓平板上的纸页夹4.2，自动裁边关了，正面拍完后反序拍背面。上次怎么排成正确的正反顺序？",
+      "history": [],
+      "gold_ids": [
+        "scanning_m1"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "task"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "scanning_m1",
+          "accepted": false,
+          "reason": "missing_execution_outcome",
+          "route": "task",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 4
+    },
+    {
+      "query_id": "scanning_q3",
+      "split": "holdout",
+      "query": "我现在用纸页夹4.2扫双面票据。只知道这些信息，能直接按上次办法排序吗？",
+      "history": [],
+      "gold_ids": [
+        "scanning_m1"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "task"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "scanning_m1",
+          "accepted": false,
+          "reason": "missing_execution_outcome",
+          "route": "task",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 6
+    },
+    {
+      "query_id": "scanning_q5",
+      "split": "holdout",
+      "query": "先给我一句鼓励，再提醒一下上次安卓平板纸页夹4.2双面排序成功时的步骤和条件。",
+      "history": [],
+      "gold_ids": [
+        "scanning_m1"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "chat",
+        "task"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "scanning_m1",
+          "accepted": false,
+          "reason": "missing_execution_outcome",
+          "route": "task",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 4
+    },
+    {
+      "query_id": "garden_q1",
+      "split": "holdout",
+      "query": "我阳台那箱樱桃番茄是什么品种？",
+      "history": [],
+      "gold_ids": [
+        "garden_m1"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "fact"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "garden_m1",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 33
+    },
+    {
+      "query_id": "garden_q2",
+      "split": "holdout",
+      "query": "我室友种的番茄品种叫什么？",
+      "history": [],
+      "gold_ids": [
+        "garden_m2"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "fact"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "garden_m2",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 2
+    },
+    {
+      "query_id": "garden_q4",
+      "split": "holdout",
+      "query": "那天看照片时，我们给菜箱取了什么名字？",
+      "history": [],
+      "gold_ids": [
+        "garden_m3"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "episode"
+      ],
+      "gold_decisions": [],
+      "rows_loaded": 0
+    },
+    {
+      "query_id": "garden_q5",
+      "split": "holdout",
+      "query": "我原本计划哪天补播番茄？",
+      "history": [],
+      "gold_ids": [
+        "garden_m4"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "fact"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "garden_m4",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 3
+    },
+    {
+      "query_id": "cycling_q1",
+      "split": "holdout",
+      "query": "我用安卓手机和环骑3.6，R20没连别的手机。按上次成功经验，该怎么配对？",
+      "history": [],
+      "gold_ids": [
+        "cycling_m1"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "task"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "cycling_m1",
+          "accepted": false,
+          "reason": "missing_execution_outcome",
+          "route": "task",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 4
+    },
+    {
+      "query_id": "cycling_q2",
+      "split": "holdout",
+      "query": "环骑3.6又搜不到静止的C2踏频器了，上次怎么让它出现的？",
+      "history": [],
+      "gold_ids": [
+        "cycling_m2"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "task"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "cycling_m2",
+          "accepted": false,
+          "reason": "missing_execution_outcome",
+          "route": "task",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 4
+    },
+    {
+      "query_id": "cycling_q3",
+      "split": "holdout",
+      "query": "这次R20正连着另一部手机，上次那条配对经验能保证我直接照做就成功吗？",
+      "history": [],
+      "gold_ids": [
+        "cycling_m1"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "task"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "cycling_m1",
+          "accepted": false,
+          "reason": "missing_execution_outcome",
+          "route": "task",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 2
+    },
+    {
+      "query_id": "volunteering_q2",
+      "split": "holdout",
+      "query": "我的搭档负责哪一块？",
+      "history": [],
+      "gold_ids": [
+        "volunteering_m2"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "fact"
+      ],
+      "gold_decisions": [
+        {
+          "memory_id": "volunteering_m2",
+          "accepted": false,
+          "reason": "field_mismatch_or_unproved",
+          "route": "fact",
+          "supported_details": [],
+          "missing_details": []
+        }
+      ],
+      "rows_loaded": 4
+    },
+    {
+      "query_id": "volunteering_q3",
+      "split": "holdout",
+      "query": "我们上次整理活动总结时，确认修好了几个布袋？",
+      "history": [],
+      "gold_ids": [
+        "volunteering_m3"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "episode"
+      ],
+      "gold_decisions": [],
+      "rows_loaded": 62
+    },
+    {
+      "query_id": "volunteering_q4",
+      "split": "holdout",
+      "query": "下次修补日之前，我们计划一起做什么文字工作？",
+      "history": [],
+      "gold_ids": [
+        "volunteering_m4"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "episode"
+      ],
+      "gold_decisions": [],
+      "rows_loaded": 42
+    },
+    {
+      "query_id": "pottery_q4",
+      "split": "holdout",
+      "query": "她用的釉是什么颜色？",
+      "history": [
+        {
+          "role": "user",
+          "content": "我朋友宜青做了一个浅盘。"
+        },
+        {
+          "role": "assistant",
+          "content": "你想问她那只浅盘的哪一项信息？"
+        }
+      ],
+      "gold_ids": [
+        "pottery_m3"
+      ],
+      "delivered_ids": [],
+      "forbidden_delivered": [],
+      "status": "unknown",
+      "route": [
+        "fact"
+      ],
+      "gold_decisions": [],
+      "rows_loaded": 65
+    }
+  ]
+}

@@ -1,0 +1,3 @@
+{"event": "worker_complete", "method": "none", "size": 3000, "status": "measured_synthetic_retrieval", "output": "/tmp/emoti-final-round2-quality/final-round2-scale/none/none-3000.json"}
+{"event": "worker_complete", "method": "none", "size": 10000, "status": "measured_synthetic_retrieval", "output": "/tmp/emoti-final-round2-quality/final-round2-scale/none/none-10000.json"}
+{"manifest": "/tmp/emoti-final-round2-quality/final-round2-scale/none/run-manifest.json", "status": "completed"}

@@ -1,0 +1,6 @@
+{
+  "purpose": "Frozen development and previously seen validation comparison, not independent holdout",
+  "production_commit": "f7a4e23a0f7b207fc68c1719c2217ac740416344",
+  "runtime_conditions": "Root full pytest may run concurrently; no other planned heavy embedding benchmark. Quality timing is observed under this validation workload, not an exclusive-CPU latency SLO. Separate storage and persistent-BGE runs provide coordinated performance evidence.",
+  "holdout_opened": false
+}

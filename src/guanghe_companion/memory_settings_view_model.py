@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
+GENERIC_MEMORY_TITLE = "你亲口交给她的一件事"
+
 CHAT_MEMORY_MODES = (
     ("auto", "自动记住明确的自述"),
     ("review", "先放进待确认，由我决定"),
@@ -37,6 +39,24 @@ def memory_receipt(result: Mapping[str, object] | None) -> str:
     if status in {"pending", "clarify", "forgotten"}:
         return str(result.get("message") or "这件事放进待确认了，去回忆册看看。")
     return ""
+
+
+def ledger_card_text(card: Mapping[str, object]) -> str:
+    """The list row: the content first, then what it is and where it came from."""
+    title = str(card.get("title", ""))
+    head = " · ".join(str(card[key]) for key in ("status_label", "subject", "field", "source_label") if card.get(key))
+    # 明确记忆的标题都是同一句套话，放在列表里只会挤掉正文。
+    lines = (str(card.get("body", "")), head) if title == GENERIC_MEMORY_TITLE else (title, str(card.get("body", "")), head)
+    return "\n".join(line for line in lines if line)
+
+
+def ledger_card_details(card: Mapping[str, object]) -> str:
+    """Time, version and scope, shown beside the source of the selected card."""
+    fields = (("发生", "occurred_label"), ("记录", "recorded_label"), ("有效", "valid_label"), ("范围", "scope_label"))
+    lines = [f"{label}：{card[key]}" for label, key in fields if card.get(key)]
+    if card.get("version"):
+        lines.append(f"版本：第 {card['version']} 版")
+    return "\n".join(lines)
 
 
 def semantic_status_text(status: Mapping[str, object] | None) -> str:

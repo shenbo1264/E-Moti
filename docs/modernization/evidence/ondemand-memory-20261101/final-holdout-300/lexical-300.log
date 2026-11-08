@@ -1,0 +1,13 @@
+Traceback (most recent call last):
+  File "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py", line 737, in <module>
+    main()
+  File "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py", line 654, in main
+    worker(args)
+  File "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py", line 494, in worker
+    entries = make_entries(data, story["id"], args.size, EmotionalMemoryEntry)
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/tools/eval_ondemand_memory.py", line 175, in make_entries
+    entry.validate()
+  File "/workspace/scratch/ac4f72a6307d/development/E-Moti-benchmark-baseline/src/guanghe_companion/emotional_memory.py", line 185, in validate
+    raise ValueError("memory validity interval must have positive duration")
+ValueError: memory validity interval must have positive duration

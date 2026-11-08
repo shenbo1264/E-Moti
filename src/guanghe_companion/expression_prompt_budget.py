@@ -3,6 +3,8 @@ from __future__ import annotations
 
 import json
 
+from .memory_prompt_budget import trim_memory_evidence, trim_memory_metadata, trim_profile
+
 
 def fit_prompt(lines: list[str], *, limit: int) -> str:
     """Drop optional/low-ranked context, never slice a fact or JSON document.
@@ -21,9 +23,6 @@ def fit_prompt(lines: list[str], *, limit: int) -> str:
     text = render()
     while len(text) > limit:
         memory, persona, plugin = (data[prefix] for prefix in prefixes)
-        profile = memory.get("bond_profile", {})
-        memories = memory.get("shared_memories", [])
-        optional_lists = [value for key, value in profile.items() if isinstance(value, list) and key != "boundaries"]
         persona_lists = [value for key, value in persona.items() if isinstance(value, list) and key != "boundaries"]
         if "relationship_development" in memory:
             memory.pop("relationship_development")
@@ -31,12 +30,12 @@ def fit_prompt(lines: list[str], *, limit: int) -> str:
             plugin.pop(next(reversed(plugin)))
         elif "relationship_chapter" in memory:
             memory.pop("relationship_chapter")
-        elif any(len(value) > 2 for value in optional_lists):
-            max(optional_lists, key=len).pop()
+        elif trim_profile(memory, keep_each=2):
+            pass
         elif any(persona_lists):
             max(persona_lists, key=lambda value: len(json.dumps(value, ensure_ascii=False))).pop()
-        elif len(memories) > 1:
-            memories.pop()
+        elif trim_memory_evidence(memory, preserve_one=True):
+            pass
         else:
             # Legacy or extremely verbose external/profile material is optional.
             candidates = [i for i, line in enumerate(lines) if line.startswith((
@@ -44,17 +43,16 @@ def fit_prompt(lines: list[str], *, limit: int) -> str:
                 and len(line) > 25]
             if candidates:
                 lines[max(candidates, key=lambda i: len(lines[i]))] = ""
-            elif any(optional_lists):
-                max(optional_lists, key=len).pop()
-            elif profile.get("boundaries"):
-                profile["boundaries"].pop()
-            elif persona.get("boundaries"):
-                persona["boundaries"].pop()
-            elif memories:
-                memories.pop()
+            elif trim_profile(memory, include_boundaries=True):
+                pass
+            elif trim_memory_evidence(memory):
+                pass
+            elif trim_memory_metadata(memory):
+                pass
             else:
-                # Fixed policy is bounded by source code. A future change must
-                # fail visibly instead of silently corrupting a fact or policy.
-                raise ValueError("fixed expression policy exceeds prompt budget")
+                # Authored persona boundaries and identity are required just
+                # like fixed policy. Never publish a prompt that silently drops
+                # them to make room; the caller reports the budget failure.
+                raise ValueError("fixed expression policy and required persona exceed prompt budget")
         text = render()
     return text

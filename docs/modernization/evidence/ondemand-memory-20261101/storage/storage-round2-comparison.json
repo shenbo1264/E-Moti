@@ -1,0 +1,244 @@
+{
+  "schema": "emoti.memory.storage.comparison.v1",
+  "baseline": "storage-document-final-baseline-performance.json",
+  "upgraded": "storage-index-round2-performance.json",
+  "baseline_commit": "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb",
+  "upgraded_source_commit": "1eef5cbb6f85703f0350f8708cc86bf84a7e071f",
+  "algorithm_version": "typed-literal-v2:structured-value-v1:cn-grams-v1:fts-rowid-v1:structured-pk-v1:raw-diff-v1",
+  "baseline_reused_from_prior_run": true,
+  "baseline_created_at_utc": "2026-11-01T18:43:48Z",
+  "upgraded_created_at_utc": "2026-11-01T19:34:53Z",
+  "results": [
+    {
+      "count": 300,
+      "corpus_sha256": "86977ee8668a4827b4cb76b28efaffbe08103a34de96a3d45a591e4c84ca3f71",
+      "summary_chars": {
+        "min": 77,
+        "median": 96.5,
+        "max": 116
+      },
+      "metrics": {
+        "warm_snapshot": {
+          "baseline_p50_ms": 44.57866,
+          "new_p50_ms": 1.174116,
+          "baseline_p95_ms": 62.247705,
+          "new_p95_ms": 1.736466,
+          "baseline_over_new": 37.967849854699196,
+          "new_change_percent": -97.36619270296595,
+          "n_each": 9
+        },
+        "warm_finalize_four": {
+          "baseline_p50_ms": 11.689162,
+          "new_p50_ms": 5.195006,
+          "baseline_p95_ms": 33.255478,
+          "new_p95_ms": 6.598144,
+          "baseline_over_new": 2.250076708284841,
+          "new_change_percent": -55.557070729278955,
+          "n_each": 9
+        },
+        "warm_snapshot_and_finalize": {
+          "baseline_p50_ms": 55.868466,
+          "new_p50_ms": 6.023419,
+          "baseline_p95_ms": 67.983678,
+          "new_p95_ms": 7.961741,
+          "baseline_over_new": 9.275208316074309,
+          "new_change_percent": -89.21857099137105,
+          "n_each": 9
+        },
+        "correction": {
+          "baseline_p50_ms": 105.949654,
+          "new_p50_ms": 121.673888,
+          "baseline_p95_ms": 107.842583,
+          "new_p95_ms": 126.807272,
+          "baseline_over_new": 0.87076739094587,
+          "new_change_percent": 14.841232044042352,
+          "n_each": 3
+        },
+        "forget": {
+          "baseline_p50_ms": 101.893529,
+          "new_p50_ms": 110.963171,
+          "baseline_p95_ms": 103.943604,
+          "new_p95_ms": 115.919791,
+          "baseline_over_new": 0.918264394228604,
+          "new_change_percent": 8.901097144255354,
+          "n_each": 3
+        },
+        "expiry_not_due": {
+          "baseline_p50_ms": 42.869577,
+          "new_p50_ms": 0.338342,
+          "baseline_p95_ms": 49.22186,
+          "new_p95_ms": 0.668861,
+          "baseline_over_new": 126.70486371777669,
+          "new_change_percent": -99.21076431428283,
+          "n_each": 9
+        }
+      },
+      "db_bytes": {
+        "baseline": 315392,
+        "new": 2646016
+      },
+      "final_db_bytes": {
+        "baseline": 630784,
+        "new": 2973696
+      },
+      "python_snapshot_peak_bytes": {
+        "baseline": 2488255,
+        "new": 52143
+      }
+    },
+    {
+      "count": 3000,
+      "corpus_sha256": "f6b762f7e5f91088333fbe096e3aa2f57c09d0a30ff298828a2c67be50dda7eb",
+      "summary_chars": {
+        "min": 77,
+        "median": 96.5,
+        "max": 116
+      },
+      "metrics": {
+        "warm_snapshot": {
+          "baseline_p50_ms": 413.164512,
+          "new_p50_ms": 1.321168,
+          "baseline_p95_ms": 441.823666,
+          "new_p95_ms": 1.640571,
+          "baseline_over_new": 312.7267024329987,
+          "new_change_percent": -99.68023197500564,
+          "n_each": 9
+        },
+        "warm_finalize_four": {
+          "baseline_p50_ms": 69.835935,
+          "new_p50_ms": 17.414436,
+          "baseline_p95_ms": 80.042932,
+          "new_p95_ms": 19.716667,
+          "baseline_over_new": 4.010232372728006,
+          "new_change_percent": -75.06378915095789,
+          "n_each": 9
+        },
+        "warm_snapshot_and_finalize": {
+          "baseline_p50_ms": 482.493187,
+          "new_p50_ms": 17.630563,
+          "baseline_p95_ms": 544.605929,
+          "new_p95_ms": 25.141132,
+          "baseline_over_new": 27.366862135939733,
+          "new_change_percent": -96.34594570969558,
+          "n_each": 9
+        },
+        "correction": {
+          "baseline_p50_ms": 997.329457,
+          "new_p50_ms": 1092.483576,
+          "baseline_p95_ms": 1113.766941,
+          "new_p95_ms": 1187.386811,
+          "baseline_over_new": 0.9129010988445285,
+          "new_change_percent": 9.540891260369143,
+          "n_each": 3
+        },
+        "forget": {
+          "baseline_p50_ms": 1169.776901,
+          "new_p50_ms": 1059.372442,
+          "baseline_p95_ms": 1273.064363,
+          "new_p95_ms": 1146.970063,
+          "baseline_over_new": 1.1042168501113416,
+          "new_change_percent": -9.438078227191793,
+          "n_each": 3
+        },
+        "expiry_not_due": {
+          "baseline_p50_ms": 397.769645,
+          "new_p50_ms": 0.296759,
+          "baseline_p95_ms": 440.236748,
+          "new_p95_ms": 0.733159,
+          "baseline_over_new": 1340.379381922705,
+          "new_change_percent": -99.92539425676888,
+          "n_each": 9
+        }
+      },
+      "db_bytes": {
+        "baseline": 3112960,
+        "new": 24997888
+      },
+      "final_db_bytes": {
+        "baseline": 6225920,
+        "new": 28119040
+      },
+      "python_snapshot_peak_bytes": {
+        "baseline": 24393390,
+        "new": 51757
+      }
+    },
+    {
+      "count": 10000,
+      "corpus_sha256": "55d82392c1ba5347a45f5f8aa2b1e71e369dfc01c6f41da40f09fe4a7e2502e1",
+      "summary_chars": {
+        "min": 77,
+        "median": 96.5,
+        "max": 116
+      },
+      "metrics": {
+        "warm_snapshot": {
+          "baseline_p50_ms": 1556.339044,
+          "new_p50_ms": 1.166073,
+          "baseline_p95_ms": 1744.656114,
+          "new_p95_ms": 1.77216,
+          "baseline_over_new": 1334.684058373704,
+          "new_change_percent": -99.92507590139209,
+          "n_each": 9
+        },
+        "warm_finalize_four": {
+          "baseline_p50_ms": 298.530144,
+          "new_p50_ms": 32.178435,
+          "baseline_p95_ms": 471.711753,
+          "new_p95_ms": 47.50647,
+          "baseline_over_new": 9.277335706351163,
+          "new_change_percent": -89.22104328600062,
+          "n_each": 9
+        },
+        "warm_snapshot_and_finalize": {
+          "baseline_p50_ms": 1812.808197,
+          "new_p50_ms": 31.550479,
+          "baseline_p95_ms": 2059.169584,
+          "new_p95_ms": 50.462917,
+          "baseline_over_new": 57.45739064690587,
+          "new_change_percent": -98.25957985780225,
+          "n_each": 9
+        },
+        "correction": {
+          "baseline_p50_ms": 3916.777308,
+          "new_p50_ms": 4311.920144,
+          "baseline_p95_ms": 4356.031819,
+          "new_p95_ms": 4399.186425,
+          "baseline_over_new": 0.9083603539017675,
+          "new_change_percent": 10.08846827193679,
+          "n_each": 3
+        },
+        "forget": {
+          "baseline_p50_ms": 3890.057022,
+          "new_p50_ms": 3609.637082,
+          "baseline_p95_ms": 4067.262446,
+          "new_p95_ms": 3817.776076,
+          "baseline_over_new": 1.077686463660947,
+          "new_change_percent": -7.208633148925592,
+          "n_each": 3
+        },
+        "expiry_not_due": {
+          "baseline_p50_ms": 1427.703709,
+          "new_p50_ms": 0.254685,
+          "baseline_p95_ms": 1668.477152,
+          "new_p95_ms": 0.740159,
+          "baseline_over_new": 5605.762840371439,
+          "new_change_percent": -99.98216121465578,
+          "n_each": 9
+        }
+      },
+      "db_bytes": {
+        "baseline": 10362880,
+        "new": 83476480
+      },
+      "final_db_bytes": {
+        "baseline": 20725760,
+        "new": 93286400
+      },
+      "python_snapshot_peak_bytes": {
+        "baseline": 79570672,
+        "new": 51317
+      }
+    }
+  ]
+}

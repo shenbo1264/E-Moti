@@ -1172,13 +1172,15 @@ def test_tick_surfaces_low_charge_proactive_companionship_once(tmp_path):
     assert [entry["kind"] for entry in repeated["memory_log"]].count("主动陪伴") == 1
 
 
-def test_tick_surfaces_mood_drop_after_long_quiet(tmp_path):
+def test_tick_surfaces_mood_drop_after_long_quiet(tmp_path, monkeypatch):
     from guanghe_companion.capability_settings import CapabilitySettings, ProactiveCompanionSettings
 
     controller = CompanionController(
         auto_load=False,
         capability_settings_path=tmp_path / "capability-settings.json",
     )
+    # 此例验证情绪触发，墙钟固定在非早安时段；逻辑 now 不代表日历时间。
+    monkeypatch.setattr(controller, "_proactive_wall_seconds", lambda: 12 * 3600)
     controller.update_capability_settings(
         CapabilitySettings(proactive_companion=ProactiveCompanionSettings(enabled=True))
     )

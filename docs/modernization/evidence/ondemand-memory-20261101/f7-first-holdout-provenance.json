@@ -1,0 +1,170 @@
+{
+  "status": "archived_first_frozen_candidate_failure; holdout permanently seen after first scoring",
+  "candidate_commit": "f7a4e23a0f7b207fc68c1719c2217ac740416344",
+  "summary": "docs/modernization/evidence/ondemand-memory-20261101/f7-first-holdout-final-summary.json",
+  "summary_sha256": "8cc6a8e752d36ea2ae6d8452e11e78acfa79d3d593a80b067f4cb875da044e16",
+  "artifact_count": 20,
+  "provider_prompt_rows": 1140,
+  "artifacts": [
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-development-300/none-300.json",
+      "sha256": "08f082e8d5e2d5577bf078e3070effc8a73b44020528a429c7557f09f2cda7d3",
+      "method": "none",
+      "size": 300,
+      "queries": 144,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-development-300/lexical-300.json",
+      "sha256": "a022bb5f06749f80269aa6367a1c1551796dabc2c8f5b564f29033ae85713960",
+      "method": "lexical",
+      "size": 300,
+      "queries": 144,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-development-300/bge_rrf-300.json",
+      "sha256": "0414378e39145a868bfb3612bbec9935e9809123ecd34801c73fe61450649e33",
+      "method": "bge_rrf",
+      "size": 300,
+      "queries": 144,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-development-300/routed-300.json",
+      "sha256": "0154b13139f44f140616adc40adc502d2241631947aacfddc8451b2e6ced7faa",
+      "method": "routed",
+      "size": 300,
+      "queries": 144,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-development-300/layered-300.json",
+      "sha256": "4974f4244a0ee5279f31e1254733d282bc401261ae47462ac4bf7ec26625bddf",
+      "method": "layered",
+      "size": 300,
+      "queries": 144,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-holdout-300-v2/none-300.json",
+      "sha256": "a3d1699d27e5f08a993322b256069099783946b20c932902308479577c3274b6",
+      "method": "none",
+      "size": 300,
+      "queries": 48,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-holdout-300-v2/lexical-300.json",
+      "sha256": "d69e108662e016327f386466e1e9085ca67d01327b0a5435542f2ac17f6b2692",
+      "method": "lexical",
+      "size": 300,
+      "queries": 48,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-holdout-300-v2/bge_rrf-300.json",
+      "sha256": "ea2a1270cefd8feaef4572164a2bbb08df56f45c4bf02d477ea6c30551cd4900",
+      "method": "bge_rrf",
+      "size": 300,
+      "queries": 48,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-holdout-300-v2/routed-300.json",
+      "sha256": "9d9b54c7ffb5dc577a11dd21d6e542d9ae3dc7d83f57897f9937091806c79419",
+      "method": "routed",
+      "size": 300,
+      "queries": 48,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-holdout-300-v2/layered-300.json",
+      "sha256": "05a0584739c19444328d161506ad089eda38dfbbabf497818c5c2438e083e7a0",
+      "method": "layered",
+      "size": 300,
+      "queries": 48,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/none-3000.json",
+      "sha256": "59f422c74b191714068f6bd250d3301e083b90140e6a0cedfab092af8faa209b",
+      "method": "none",
+      "size": 3000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/lexical-3000.json",
+      "sha256": "d2c7b07d3fb3f0d8640448352c6b58c0ac64a5037509dba713d80fada18182bf",
+      "method": "lexical",
+      "size": 3000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/bge_rrf-3000.json",
+      "sha256": "f21f09e07c3732d4bdfefce62dc7d7cb195e187b19989d1eb676776b679bba59",
+      "method": "bge_rrf",
+      "size": 3000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/routed-3000.json",
+      "sha256": "4292fb5c2ab1482e7b5185bac292e9c6151fc321847cd111954e819a5264c196",
+      "method": "routed",
+      "size": 3000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/layered-3000.json",
+      "sha256": "898af2dc446aba8deefb5c53fd90911c25975c11b71a596534eb2ff38cf12763",
+      "method": "layered",
+      "size": 3000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/none-10000.json",
+      "sha256": "3a1a8de7f301883651910428157a5533599e244d469c86a57308fd6435e1ce8f",
+      "method": "none",
+      "size": 10000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/lexical-10000.json",
+      "sha256": "ec0b9da3caca083c075aebc0a0d1adc977d2465d0cbf9ffbe6c07bd9c8111d11",
+      "method": "lexical",
+      "size": 10000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/bge_rrf-10000.json",
+      "sha256": "d787500209d457a7586a6df8353cb8763d1d5ec16f079b30e2519e153f9a0e40",
+      "method": "bge_rrf",
+      "size": 10000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/routed-10000.json",
+      "sha256": "17a16f447db4bdd56f60d476c180a2037fa87f626de478cd443939af8aa53d38",
+      "method": "routed",
+      "size": 10000,
+      "queries": 18,
+      "source_unchanged": true
+    },
+    {
+      "path": "docs/modernization/evidence/ondemand-memory-20261101/final-scale/layered-10000.json",
+      "sha256": "f4d79865d4ea8d8e9097c7138f7b482ccbd31f9130d8cb44dc77553b1d9760a3",
+      "method": "layered",
+      "size": 10000,
+      "queries": 18,
+      "source_unchanged": true
+    }
+  ]
+}

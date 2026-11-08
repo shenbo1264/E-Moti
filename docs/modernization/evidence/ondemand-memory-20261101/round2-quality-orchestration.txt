@@ -1,0 +1,99 @@
+from __future__ import annotations
+import concurrent.futures, hashlib, importlib.util, json, shutil, subprocess, sys, threading, time
+from datetime import datetime, timezone
+from pathlib import Path
+
+ROOT=Path('/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory')
+BASELINE=ROOT.parent/'E-Moti-benchmark-baseline'
+PYTHON=Path('/tmp/emoti-retrieval-venv/bin/python')
+CACHE=Path('/tmp/emoti-bge-model-cache')
+STAGE=Path('/tmp/emoti-final-round2-quality')
+EVIDENCE=ROOT/'docs/modernization/evidence/ondemand-memory-20261101'
+METHODS=('none','lexical','bge_rrf','routed','layered')
+GROUPS=(
+ {'name':'final-round2-sealed-300','dataset':ROOT/'tests/fixtures/ondemand_memory_sealed_v2','splits':['holdout'],'sizes':[300],'rows':48},
+ {'name':'final-round2-regression-300','dataset':ROOT/'tests/fixtures','splits':['development','validation','holdout'],'sizes':[300],'rows':192},
+ {'name':'final-round2-scale','dataset':ROOT/'tests/fixtures','splits':['development'],'sizes':[3000,10000],'rows':18,'stories':['d02','d06','d08']},
+)
+lock=threading.Lock(); completed={}; counter=0
+
+def emit(**message):
+ with lock: print(json.dumps({'utc':datetime.now(timezone.utc).isoformat(),**message},ensure_ascii=False),flush=True)
+
+def sha(path): return hashlib.sha256(path.read_bytes()).hexdigest()
+
+def run(group,method):
+ out=STAGE/group['name']/method;out.mkdir(parents=True,exist_ok=False)
+ command=[str(PYTHON),str(ROOT/'tools/eval_ondemand_memory.py'),'--source-root',str(ROOT),'--baseline-root',str(BASELINE),'--dataset-dir',str(group['dataset']),'--splits',*group['splits'],'--sizes',*[str(n) for n in group['sizes']],'--methods',method,'--model-cache',str(CACHE),'--local-files-only','--output-dir',str(out)]
+ if group.get('stories'): command += ['--story-ids',*group['stories']]
+ emit(event='start',campaign=group['name'],method=method)
+ start=time.perf_counter()
+ with (out/'orchestrator-console.log').open('w') as log:
+  result=subprocess.run(command,cwd=ROOT,stdout=log,stderr=subprocess.STDOUT)
+ if result.returncode: raise RuntimeError(f'{group["name"]}/{method}: process {result.returncode}; log={out}')
+ manifest=json.loads((out/'run-manifest.json').read_text())
+ if manifest['status']!='completed' or not manifest['new_source_unchanged_during_campaign']:
+  raise RuntimeError(f'{group["name"]}/{method}: campaign not frozen')
+ for size in group['sizes']:
+  path=out/f'{method}-{size}.json';data=json.loads(path.read_text())
+  if data['status']!='measured_synthetic_retrieval' or not data['source_unchanged_during_run'] or len(data['rows'])!=group['rows']:
+   raise RuntimeError(f'{path}: incomplete/frozen row check failed')
+  record=next(r for r in manifest['runs'] if r['size']==size)
+  if record['sha256']!=sha(path): raise RuntimeError(f'{path}: manifest artifact hash mismatch')
+ with lock: completed[(group['name'],method)]=out
+ emit(event='complete',campaign=group['name'],method=method,rows=group['rows']*len(group['sizes']),elapsed_seconds=round(time.perf_counter()-start,3))
+ return group,method,out
+
+def archive(group):
+ destination=EVIDENCE/group['name']
+ if destination.exists(): raise RuntimeError(f'Will not overwrite {destination}')
+ destination.mkdir()
+ manifests=[]
+ for method in METHODS:
+  source=completed[(group['name'],method)]
+  manifest=json.loads((source/'run-manifest.json').read_text());manifests.append(manifest)
+  (destination/'worker-manifests').mkdir(exist_ok=True)
+  shutil.copyfile(source/'run-manifest.json',destination/'worker-manifests'/f'{method}.json')
+  shutil.copyfile(source/'orchestrator-console.log',destination/f'{method}-orchestrator.log')
+  for size in group['sizes']:
+   for suffix in ('json','log'):
+    shutil.copyfile(source/f'{method}-{size}.{suffix}',destination/f'{method}-{size}.{suffix}')
+ combined=dict(manifests[0]);combined.update(methods=list(METHODS),runs=[],paired_comparisons={},status='completed',started_at_utc=min(m['started_at_utc'] for m in manifests),finished_at_utc=max(m['finished_at_utc'] for m in manifests))
+ for manifest in manifests:
+  for key in ('script_sha256','dataset_sha256','split_roles','new_source_start_sha256','baseline_actual_commit'):
+   if manifest.get(key)!=combined.get(key): raise RuntimeError(f'{group["name"]}: incompatible worker {key}')
+  for record in manifest['runs']:
+   original=dict(record)
+   original['staging_output']=record['output'];original['output']=str(destination/Path(record['output']).name)
+   original['staging_console_log']=record['console_log'];original['console_log']=str(destination/Path(record['console_log']).name)
+   if sha(Path(original['output']))!=record['sha256']: raise RuntimeError('Archive content changed')
+   combined['runs'].append(original)
+ spec=importlib.util.spec_from_file_location('evaluation',ROOT/'tools/eval_ondemand_memory.py');ev=importlib.util.module_from_spec(spec);spec.loader.exec_module(ev)
+ for size in group['sizes']:
+  data={m:json.loads((destination/f'{m}-{size}.json').read_text()) for m in METHODS}
+  for baseline in ('lexical','bge_rrf'):
+   for candidate in ('routed','layered'):
+    combined['paired_comparisons'][f'{candidate}_vs_{baseline}_{size}']=ev.paired_story_bootstrap(data[baseline]['rows'],data[candidate]['rows'])
+ policy={'measurement_class':'observed_concurrent_validation','maximum_heavy_embedding_workers':3,'maximum_light_workers':2,'embedding_threads_per_worker':2,'other_load':'root full pytest may overlap; no exclusive CPU claim','performance_evidence':'Use separately measured storage and persistent embedding reports for performance claims','source_freeze':'production 1eef5cb; evaluator/summary 53cb836','no_generation':True}
+ combined['execution_policy']=policy
+ (destination/'run-manifest.json').write_text(json.dumps(combined,ensure_ascii=False,indent=2)+'\n')
+ (destination/'execution-context.json').write_text(json.dumps(policy,ensure_ascii=False,indent=2)+'\n')
+ emit(event='archived',campaign=group['name'],directory=str(destination),rows=group['rows']*len(group['sizes'])*5)
+
+if STAGE.exists(): raise SystemExit(f'Staging path exists: {STAGE}; preserve it and select a new path')
+STAGE.mkdir()
+(EVIDENCE/'round2-quality-orchestration.txt').write_bytes(Path(__file__).read_bytes())
+with concurrent.futures.ThreadPoolExecutor(max_workers=3) as heavy, concurrent.futures.ThreadPoolExecutor(max_workers=2) as light:
+ futures=[]
+ for group in GROUPS:
+  for method in METHODS:
+   executor=heavy if method in {'bge_rrf','routed','layered'} else light
+   futures.append(executor.submit(run,group,method))
+ archived=set()
+ for future in concurrent.futures.as_completed(futures):
+  group,method,out=future.result()
+  if group['name'] not in archived and all((group['name'],m) in completed for m in METHODS):
+   archive(group); archived.add(group['name'])
+command=[str(PYTHON),str(ROOT/'tools/summarize_ondemand_memory.py'),'--input-dir',*[str(EVIDENCE/g['name']) for g in GROUPS],'--output',str(EVIDENCE/'round2-final-summary.json')]
+subprocess.run(command,cwd=ROOT,check=True)
+emit(event='all_complete',method_files=20,provider_prompt_rows=1380,summary=str(EVIDENCE/'round2-final-summary.json'))

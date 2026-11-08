@@ -1,0 +1,670 @@
+{
+  "schema_version": 1,
+  "name": "E-Moti retrieval development diagnostic 20261101",
+  "status": "synthetic_development_diagnostic",
+  "purpose": "Compare current eligible lexical / BGE / RRF retrieval and prompt delivery; no generative LLM scoring.",
+  "not_claimed": [
+    "representative population accuracy",
+    "sealed holdout",
+    "phone/device performance",
+    "end-to-end SQLite or model response latency"
+  ],
+  "character_id": "xingxi",
+  "owner_id": "local_user",
+  "now": 2000000,
+  "defaults": {
+    "kind": "user_fact",
+    "source": "synthetic_user_message",
+    "occurred_at": 1500000,
+    "created_at": 1500000,
+    "updated_at": 1500000,
+    "importance": 0.5,
+    "scope": "companion",
+    "confidence": 1
+  },
+  "memories": [
+    {
+      "id": "nickname",
+      "title": "称呼",
+      "summary": "用户希望被称为小叶。"
+    },
+    {
+      "id": "residence",
+      "title": "当前住址",
+      "summary": "用户目前住在青岛。",
+      "valid_from": 1000000,
+      "supersedes": "old_residence",
+      "version": 2
+    },
+    {
+      "id": "old_residence",
+      "title": "旧住址",
+      "summary": "用户住在成都。",
+      "deleted": true
+    },
+    {
+      "id": "drink",
+      "title": "饮料偏好",
+      "summary": "用户现在喜欢喝绿茶。",
+      "supersedes": "old_drink",
+      "version": 2
+    },
+    {
+      "id": "old_drink",
+      "title": "旧饮料偏好",
+      "summary": "用户喜欢咖啡。",
+      "deleted": true
+    },
+    {
+      "id": "music",
+      "title": "音乐偏好",
+      "summary": "用户偏爱没有人声的后摇音乐。"
+    },
+    {
+      "id": "food",
+      "title": "饮食偏好",
+      "summary": "用户吃饭不放香菜。"
+    },
+    {
+      "id": "exercise",
+      "title": "运动习惯",
+      "summary": "用户习惯晚饭后沿河散步半小时。"
+    },
+    {
+      "id": "transport",
+      "title": "通勤习惯",
+      "summary": "用户平时坐地铁通勤，不喜欢自己开车。"
+    },
+    {
+      "id": "gift",
+      "title": "庆祝偏好",
+      "summary": "用户不喜欢惊喜派对，生日更愿意安静吃顿饭。"
+    },
+    {
+      "id": "work_quiet",
+      "title": "专注时的互动偏好",
+      "summary": "用户调试程序时，希望伙伴不要主动插话。"
+    },
+    {
+      "id": "sleep_quiet",
+      "title": "休息时段",
+      "summary": "用户晚上十一点半以后希望保持安静。"
+    },
+    {
+      "id": "study",
+      "title": "研究兴趣",
+      "summary": "用户正在研究开放银行如何影响存款竞争。"
+    },
+    {
+      "id": "hobby",
+      "title": "游戏偏好",
+      "summary": "用户喜欢在角色扮演游戏里扮演法师。"
+    },
+    {
+      "id": "learning",
+      "title": "学习习惯",
+      "summary": "用户学习编程时更愿意先运行一个示例，再理解抽象概念。"
+    },
+    {
+      "id": "pet",
+      "title": "宠物姓名",
+      "summary": "用户养了一只叫糯米的橘猫。"
+    },
+    {
+      "id": "mom_flower",
+      "title": "母亲的偏好",
+      "summary": "用户的母亲喜欢桂花。"
+    },
+    {
+      "id": "dad_food",
+      "title": "父亲的偏好",
+      "summary": "用户的父亲喜欢吃面食。"
+    },
+    {
+      "id": "teacher_name",
+      "title": "吉他老师的姓名",
+      "summary": "用户的吉他老师叫沈禾。"
+    },
+    {
+      "id": "teacher_instrument",
+      "title": "吉他课程",
+      "summary": "用户每周六跟沈禾学习电吉他。"
+    },
+    {
+      "id": "uncle_job",
+      "title": "舅舅的职业",
+      "summary": "用户的舅舅是一位木匠。"
+    },
+    {
+      "id": "cousin_job",
+      "title": "堂姐的职业",
+      "summary": "用户的堂姐是一位陶艺家。"
+    },
+    {
+      "id": "roommate_a",
+      "title": "室友周宁",
+      "summary": "用户的室友周宁学建筑，喜欢登山。"
+    },
+    {
+      "id": "roommate_b",
+      "title": "室友顾青",
+      "summary": "用户的室友顾青学园艺，喜欢画水彩。"
+    },
+    {
+      "id": "shared_game",
+      "title": "第一次建桥",
+      "summary": "用户与伙伴已经在Minecraft里共同建成第一座木桥。",
+      "kind": "shared_experience"
+    },
+    {
+      "id": "shared_tests",
+      "title": "项目阶段成果",
+      "summary": "用户与伙伴一起完成了桌面伙伴的第一轮回归测试，测试结果已核验。",
+      "kind": "shared_experience"
+    },
+    {
+      "id": "reading_plan",
+      "title": "阅读计划",
+      "summary": "用户计划下周阅读三篇货币经济学论文，尚未确认完成。",
+      "kind": "plan"
+    },
+    {
+      "id": "appointment",
+      "title": "预约地点",
+      "summary": "用户预约在松风工作室试弹电吉他。"
+    },
+    {
+      "id": "book",
+      "title": "最近读完的书",
+      "summary": "用户最近读完了《海边的卡夫卡》。"
+    },
+    {
+      "id": "movie",
+      "title": "电影偏好",
+      "summary": "用户喜欢节奏舒缓、留白较多的电影。"
+    },
+    {
+      "id": "weather_pref",
+      "title": "天气偏好",
+      "summary": "用户喜欢阴天散步，不喜欢烈日暴晒。"
+    },
+    {
+      "id": "dog_friend",
+      "title": "朋友的狗",
+      "summary": "用户的朋友陈桥养了一只叫团子的柴犬。"
+    },
+    {
+      "id": "recipe",
+      "title": "拿手菜",
+      "summary": "用户最拿手的菜是番茄炒蛋。"
+    },
+    {
+      "id": "camera",
+      "title": "相机型号",
+      "summary": "用户日常拍照使用富士X-S20。"
+    },
+    {
+      "id": "keyboard",
+      "title": "键盘偏好",
+      "summary": "用户选键盘时优先保留F区和小数字键盘。"
+    },
+    {
+      "id": "meeting",
+      "title": "近期约定",
+      "summary": "用户与林岚约定周五下午在榕树咖啡馆讨论项目。"
+    },
+    {
+      "id": "late_return",
+      "title": "刚结束的旅行",
+      "summary": "用户上个月去过苏州，看了园林。"
+    },
+    {
+      "id": "nickname_friend",
+      "title": "朋友的称呼",
+      "summary": "用户的朋友周宁喜欢被叫阿宁。"
+    },
+    {
+      "id": "game_location",
+      "title": "游戏世界位置",
+      "summary": "Minecraft仓库坐标是X120、Y64、Z-30。",
+      "scope": "game",
+      "kind": "world_state"
+    },
+    {
+      "id": "work_status",
+      "title": "外部任务状态",
+      "summary": "Relay任务T-204正在构建安装包。",
+      "scope": "work",
+      "kind": "task_state",
+      "valid_until": 2100000
+    },
+    {
+      "id": "expired_event",
+      "title": "已经到期的活动",
+      "summary": "用户今天预约在枫桥书店参加阅读会。",
+      "valid_until": 1900000
+    },
+    {
+      "id": "future_event",
+      "title": "尚未生效的信息",
+      "summary": "用户下个月开始在江城实验室实习。",
+      "valid_from": 2100000
+    },
+    {
+      "id": "wrong_owner",
+      "title": "他人的牙医姓名",
+      "summary": "另一位用户的牙医叫方远。",
+      "owner_id": "other_user"
+    },
+    {
+      "id": "wrong_character",
+      "title": "另一角色的昵称",
+      "summary": "用户称另一个角色为小云。",
+      "character_id": "another_character"
+    },
+    {
+      "id": "uncertain",
+      "title": "未确认的猜测",
+      "summary": "模型猜测用户喜欢爵士乐。",
+      "confidence": 0
+    },
+    {
+      "id": "forgotten_event",
+      "title": "已遗忘的经历",
+      "summary": "用户曾在南山看过流星雨。",
+      "deleted": true,
+      "kind": "shared_experience"
+    }
+  ],
+  "queries": [
+    {
+      "id": "e01",
+      "family": "exact",
+      "text": "我希望你怎样称呼我？",
+      "gold_ids": [
+        "nickname"
+      ]
+    },
+    {
+      "id": "e02",
+      "family": "exact",
+      "text": "我现在住在哪座城市？",
+      "gold_ids": [
+        "residence"
+      ]
+    },
+    {
+      "id": "e03",
+      "family": "exact",
+      "text": "我养的橘猫叫什么？",
+      "gold_ids": [
+        "pet"
+      ]
+    },
+    {
+      "id": "e04",
+      "family": "exact",
+      "text": "我日常用的相机是什么型号？",
+      "gold_ids": [
+        "camera"
+      ]
+    },
+    {
+      "id": "e05",
+      "family": "exact",
+      "text": "我的拿手菜是什么？",
+      "gold_ids": [
+        "recipe"
+      ]
+    },
+    {
+      "id": "e06",
+      "family": "exact",
+      "text": "我最近读完的是哪本书？",
+      "gold_ids": [
+        "book"
+      ]
+    },
+    {
+      "id": "e07",
+      "family": "exact",
+      "text": "我喜欢玩哪类游戏角色？",
+      "gold_ids": [
+        "hobby"
+      ]
+    },
+    {
+      "id": "e08",
+      "family": "exact",
+      "text": "我选键盘最重视保留哪些按键区域？",
+      "gold_ids": [
+        "keyboard"
+      ]
+    },
+    {
+      "id": "p01",
+      "family": "paraphrase",
+      "text": "晚餐结束后，我通常会做什么轻运动？",
+      "gold_ids": [
+        "exercise"
+      ]
+    },
+    {
+      "id": "p02",
+      "family": "paraphrase",
+      "text": "给我推荐背景音乐时，需要有人唱歌吗？",
+      "gold_ids": [
+        "music"
+      ]
+    },
+    {
+      "id": "p03",
+      "family": "paraphrase",
+      "text": "准备我的生日庆祝，热闹的突袭聚会合适吗？",
+      "gold_ids": [
+        "gift"
+      ]
+    },
+    {
+      "id": "p04",
+      "family": "paraphrase",
+      "text": "我平日上下班主要靠什么交通工具？",
+      "gold_ids": [
+        "transport"
+      ]
+    },
+    {
+      "id": "p05",
+      "family": "paraphrase",
+      "text": "我正埋头排查代码故障，你适合主动找我闲聊吗？",
+      "gold_ids": [
+        "work_quiet"
+      ]
+    },
+    {
+      "id": "p06",
+      "family": "paraphrase",
+      "text": "我学新技术时，先讲概念还是先动手会更舒服？",
+      "gold_ids": [
+        "learning"
+      ]
+    },
+    {
+      "id": "p07",
+      "family": "paraphrase",
+      "text": "替我点一碗面，有哪种配菜需要去掉？",
+      "gold_ids": [
+        "food"
+      ]
+    },
+    {
+      "id": "p08",
+      "family": "paraphrase",
+      "text": "晴空烈日和云层遮阳，哪种更适合约我出去走走？",
+      "gold_ids": [
+        "weather_pref"
+      ]
+    },
+    {
+      "id": "p09",
+      "family": "paraphrase",
+      "text": "睡前最晚到几点就应该停止打扰我？",
+      "gold_ids": [
+        "sleep_quiet"
+      ]
+    },
+    {
+      "id": "p10",
+      "family": "paraphrase",
+      "text": "我更偏爱怎样节奏和叙事留白的影片？",
+      "gold_ids": [
+        "movie"
+      ]
+    },
+    {
+      "id": "p11",
+      "family": "paraphrase",
+      "text": "我关注银行账户开放会怎样改变什么竞争？",
+      "gold_ids": [
+        "study"
+      ]
+    },
+    {
+      "id": "p12",
+      "family": "paraphrase",
+      "text": "我现在想来点热饮，你记得我偏好哪一种吗？",
+      "gold_ids": [
+        "drink"
+      ]
+    },
+    {
+      "id": "n01",
+      "family": "entity",
+      "text": "我的舅舅从事什么职业？",
+      "gold_ids": [
+        "uncle_job"
+      ]
+    },
+    {
+      "id": "n02",
+      "family": "entity",
+      "text": "我的堂姐是做什么工作的？",
+      "gold_ids": [
+        "cousin_job"
+      ]
+    },
+    {
+      "id": "n03",
+      "family": "entity",
+      "text": "谁是我的吉他老师？",
+      "gold_ids": [
+        "teacher_name"
+      ]
+    },
+    {
+      "id": "n04",
+      "family": "entity",
+      "text": "母亲喜欢什么花？",
+      "gold_ids": [
+        "mom_flower"
+      ]
+    },
+    {
+      "id": "n05",
+      "family": "entity",
+      "text": "父亲喜欢吃哪一类主食？",
+      "gold_ids": [
+        "dad_food"
+      ]
+    },
+    {
+      "id": "n06",
+      "family": "entity",
+      "text": "周宁和顾青中，哪个室友学建筑？",
+      "gold_ids": [
+        "roommate_a",
+        "roommate_b"
+      ]
+    },
+    {
+      "id": "n07",
+      "family": "entity",
+      "text": "朋友陈桥养的狗叫什么？",
+      "gold_ids": [
+        "dog_friend"
+      ]
+    },
+    {
+      "id": "n08",
+      "family": "entity",
+      "text": "周宁喜欢别人怎么称呼他？",
+      "gold_ids": [
+        "nickname_friend"
+      ]
+    },
+    {
+      "id": "m01",
+      "family": "multi_evidence",
+      "text": "我每周哪天跟谁学电吉他？",
+      "gold_ids": [
+        "teacher_name",
+        "teacher_instrument"
+      ]
+    },
+    {
+      "id": "m02",
+      "family": "multi_evidence",
+      "text": "记得我们一起做成的游戏建筑和项目成果吗？",
+      "gold_ids": [
+        "shared_game",
+        "shared_tests"
+      ]
+    },
+    {
+      "id": "m03",
+      "family": "multi_evidence",
+      "text": "我和林岚什么时候、在哪儿讨论项目？",
+      "gold_ids": [
+        "meeting"
+      ]
+    },
+    {
+      "id": "m04",
+      "family": "multi_evidence",
+      "text": "两个室友分别学什么，爱好又是什么？",
+      "gold_ids": [
+        "roommate_a",
+        "roommate_b"
+      ]
+    },
+    {
+      "id": "l01",
+      "family": "lifecycle",
+      "text": "更正之后，我现在到底住在哪儿？",
+      "gold_ids": [
+        "residence"
+      ]
+    },
+    {
+      "id": "l02",
+      "family": "lifecycle",
+      "text": "我现在喜欢喝什么？别拿旧偏好回答。",
+      "gold_ids": [
+        "drink"
+      ]
+    },
+    {
+      "id": "l03",
+      "family": "lifecycle",
+      "text": "下周三篇论文是已经读完，还是仍然只是计划？",
+      "gold_ids": [
+        "reading_plan"
+      ]
+    },
+    {
+      "id": "l04",
+      "family": "lifecycle",
+      "text": "你记得我和你在哪儿一起看过流星雨吗？",
+      "gold_ids": []
+    },
+    {
+      "id": "l05",
+      "family": "lifecycle",
+      "text": "我今天那场阅读会在哪家书店？",
+      "gold_ids": []
+    },
+    {
+      "id": "l06",
+      "family": "lifecycle",
+      "text": "我现在在哪个实验室实习？",
+      "gold_ids": []
+    },
+    {
+      "id": "z01",
+      "family": "no_answer",
+      "text": "我的牙医叫什么名字？",
+      "gold_ids": []
+    },
+    {
+      "id": "z02",
+      "family": "no_answer",
+      "text": "我的护照还有多久到期？",
+      "gold_ids": []
+    },
+    {
+      "id": "z03",
+      "family": "no_answer",
+      "text": "我的银行卡尾号是多少？",
+      "gold_ids": []
+    },
+    {
+      "id": "z04",
+      "family": "no_answer",
+      "text": "我现在的备用手机是什么型号？",
+      "gold_ids": []
+    },
+    {
+      "id": "z05",
+      "family": "no_answer",
+      "text": "我去冰岛的具体日期是什么时候？",
+      "gold_ids": []
+    },
+    {
+      "id": "z06",
+      "family": "no_answer",
+      "text": "我的毕业论文定稿是哪一天？",
+      "gold_ids": []
+    },
+    {
+      "id": "z07",
+      "family": "no_answer",
+      "text": "红矮星是怎样形成的？",
+      "gold_ids": []
+    },
+    {
+      "id": "z08",
+      "family": "no_answer",
+      "text": "解释一下快速排序的时间复杂度。",
+      "gold_ids": []
+    },
+    {
+      "id": "s01",
+      "family": "scope",
+      "text": "Relay任务T-204现在是什么状态？",
+      "gold_ids": []
+    },
+    {
+      "id": "s02",
+      "family": "scope",
+      "text": "Minecraft仓库的坐标是多少？",
+      "gold_ids": []
+    },
+    {
+      "id": "s03",
+      "family": "scope",
+      "text": "我叫另一个角色什么昵称？",
+      "gold_ids": []
+    },
+    {
+      "id": "s04",
+      "family": "scope",
+      "text": "Minecraft仓库的坐标是多少？",
+      "gold_ids": [
+        "game_location"
+      ],
+      "scope": "game"
+    }
+  ],
+  "filler_seed": 20261101,
+  "filler_templates": [
+    "用户保存了编号{n}的植物观察笔记：针叶林土壤湿度测量。",
+    "双方整理了编号{n}的拼图零件，图案是海港灯塔。",
+    "用户收藏了编号{n}的博物馆展览资料，内容是青铜器纹样。",
+    "用户摘录了编号{n}的食谱笔记，内容是烤南瓜的火候。",
+    "用户给编号{n}的相册分类，照片记录了山间溪流。",
+    "用户记下编号{n}的地理资料，介绍高原冰川的形成。",
+    "用户整理编号{n}的电影幕后笔记，内容是布景灯光。",
+    "用户保存编号{n}的园艺记录，内容是多肉植物换盆。"
+  ],
+  "filler_note": "Each filler has a unique number/text, but eight repeated semantic templates. Corpus-scale timing is synthetic; filler repetitions do not count as independent quality samples."
+}

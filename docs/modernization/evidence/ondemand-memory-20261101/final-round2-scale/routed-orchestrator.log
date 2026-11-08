@@ -1,0 +1,5 @@
+[0;93m2026-11-02 04:42:33.701911748 [W:onnxruntime:Default, telemetry_1ds.cc:600 operator()] Failed to persist telemetry device ID; using an in-memory identifier[m
+{"event": "worker_complete", "method": "routed", "size": 3000, "status": "measured_synthetic_retrieval", "output": "/tmp/emoti-final-round2-quality/final-round2-scale/routed/routed-3000.json"}
+[0;93m2026-11-02 04:43:42.650315880 [W:onnxruntime:Default, telemetry_1ds.cc:600 operator()] Failed to persist telemetry device ID; using an in-memory identifier[m
+{"event": "worker_complete", "method": "routed", "size": 10000, "status": "measured_synthetic_retrieval", "output": "/tmp/emoti-final-round2-quality/final-round2-scale/routed/routed-10000.json"}
+{"manifest": "/tmp/emoti-final-round2-quality/final-round2-scale/routed/run-manifest.json", "status": "completed"}

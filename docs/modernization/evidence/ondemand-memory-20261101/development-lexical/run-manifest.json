@@ -1,0 +1,930 @@
+{
+  "schema_version": 1,
+  "status": "completed",
+  "methods": [
+    "none",
+    "lexical",
+    "routed",
+    "layered"
+  ],
+  "sizes": [
+    300
+  ],
+  "splits": [
+    "development"
+  ],
+  "dataset_sha256": {
+    "development": "94b19d77bdf72b547f73226b5654a571d19fb56ca4f37a85c539c8326eb78ed0"
+  },
+  "script_sha256": "82def40d75620c8c83166c7d117e7f60dda56f825deee7c64715cf0e9e0ee4c7",
+  "baseline_expected_commit": "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb",
+  "baseline_actual_commit": "299a0aa568c90525e6a6a90ce01dbbf80bfaefcb",
+  "new_source_start_sha256": {
+    "src/guanghe_companion/__init__.py": "05d083ba16c64028a324d6651c762c9f2a026a761ced00b1934006de8b0a3147",
+    "src/guanghe_companion/actions.py": "c88a4b75700a598960b415d67fcb0ccad07da44b344f1a226f549eb5c7c1467d",
+    "src/guanghe_companion/ai_context_builder.py": "b4f5eea89e2f87638e28dc2e87482819bea161e75d7f21fb312a1eb9f3989fff",
+    "src/guanghe_companion/ai_expressor.py": "9df5a429804bcfd4e92a7c6c68615547bbc7c015daafa5130fd983fbc72768c3",
+    "src/guanghe_companion/app.py": "30d6f5253bb9a358f0f020091b4564444a3133b9615134134f78475de2d12ff4",
+    "src/guanghe_companion/capability_panels.py": "5f2a7102d13be4d88484650eef28237c81d8b71f32630a066ece260992be26cc",
+    "src/guanghe_companion/capability_runtime.py": "df94a4a2677743d069ce9e205e7a4df1535ca54a492d55dbc3c8d07977b56a9d",
+    "src/guanghe_companion/capability_settings.py": "78876e9e566cf8b655cdd95d288b27c1fae37e63c268380872c5cc3fa5701a2f",
+    "src/guanghe_companion/character_generation_workflow.py": "fbd56a9a3acd00ae91800150fe1f93a306c66f3921619df33296942a1ba1bf97",
+    "src/guanghe_companion/character_inspiration.py": "e6a8e5b946c3ee4645b0dadfc6bfe022538c54f5b2f562ad3504c44adff463d6",
+    "src/guanghe_companion/character_library_view_model.py": "58fb7a018ad657a6693755f7b6df6c9b87575cc11f90c385a6e574add9cba8b3",
+    "src/guanghe_companion/character_local_copy.py": "a81b3feb64ec0c5762b2e27948abdcbfabdaef56c7196e12fea172edc8092ed8",
+    "src/guanghe_companion/character_pack.py": "bb83b729d5852baa5f4a5e656b65fb51819e029dfe836ad7085b9104eab6682e",
+    "src/guanghe_companion/character_pack_import.py": "2faaef1182a4a7a605e373067c825ab68426daafe3cdc6e21821f6a2dc5119ea",
+    "src/guanghe_companion/character_performance_profile.py": "6c46a148fc87e0f08f0d43f5d30b3105ee26c9b33aff26634e5dbaae4b674cd8",
+    "src/guanghe_companion/character_registry.py": "2c03fc9b99c0b130406d94fe108d6b570fba3dbfe41eafb4804c317c4a421c9b",
+    "src/guanghe_companion/character_resources.py": "7af6b04a8c6e0460a6e09861a8414f10a52d910b97afcd8a698e46fcb617093f",
+    "src/guanghe_companion/character_session.py": "da5868ddfb59bcd4a14a095edde01369f00cca61dc7580a49b592c36c5e195c3",
+    "src/guanghe_companion/character_voice_profile.py": "9b05f20ee4b92bc843d4279080fa078db21cbd7924b18b8924bdebca3e53a3f2",
+    "src/guanghe_companion/chat_memory.py": "a02a831a55c9b4a38842ee235b1bfe60f70b9c741d7f361b3db77d9de0702ac4",
+    "src/guanghe_companion/chat_memory_extraction.py": "36aff4a30c2c609bdb6d186be44b272db354426ab3ab12f845aed2643bc51e55",
+    "src/guanghe_companion/chat_memory_plans.py": "ddc28a5a2bb93a556e9d0dd6ef39d042ff3a8222afc33d8bbbf40205d9d5ed58",
+    "src/guanghe_companion/companion_dialogue_policy.py": "843efd1fcb8f14429282032e0a7f63be26532b6fb8803ee9d184985440f05784",
+    "src/guanghe_companion/companion_moments.py": "f4fc274a88c873b14e9ccc3a78d07fb445782cf13181b3e0b52796cfa74dcded",
+    "src/guanghe_companion/companion_story_runtime.py": "f27d7a3b8dd29b8d017008e3029033817f2cbe3ef334657f1f3f2f2950d17a22",
+    "src/guanghe_companion/controller.py": "b3bce33efc560ba94de3fa1a04153c4c9da6b788836053d25fc7d72bcf815272",
+    "src/guanghe_companion/demo.py": "47b2abf2c72c80e08e4663e589f532a173c12c5215759080f5a793c896d9aa86",
+    "src/guanghe_companion/desktop_dialogue_service.py": "526dfe7ab0a7a75d5a104f154baeb447de1ff26455d0d8e4d0927815e15204df",
+    "src/guanghe_companion/desktop_shell.py": "de35fb5e98f140cec8f843794061d6a7a7847437944b51ba6f269b7506dcb9fb",
+    "src/guanghe_companion/device_context.py": "edf75c73b976339ed65be7d1d7008476e5489e8f7bbe98b334ac4a1564265336",
+    "src/guanghe_companion/dialogue.py": "fa3c3965d12ed9b8c91c14ecf8246e71bbd7282788a89c61fcdf266183b4024b",
+    "src/guanghe_companion/dialogue_history.py": "80877f89e62bcc99104327eeb3251e7e0785cb3dcdcf25215458214773671a68",
+    "src/guanghe_companion/dialogue_parser.py": "eae12a37b3cd83ec98c877a0ddbbc1ff866afc3568ce2ac8667c4b7930406644",
+    "src/guanghe_companion/distribution_boundaries.py": "29cb735a34e0d51d8537cc4a2a2e005525768a985990213f0e319e18388f7cc5",
+    "src/guanghe_companion/emotional_memory.py": "325897312781efbbbc4981ee832b4dcfbf728cb34b03450bca32101f2169336b",
+    "src/guanghe_companion/emotional_memory_policy.py": "32ab7dd27582c31c74ac8f367727562a2eaa1b8124bcf6d94076b5e4e4e46290",
+    "src/guanghe_companion/emotional_memory_reflection.py": "4b7f9471eb56eb879b6d1594405e03ed1a455a784fca066aced6f999bc157b73",
+    "src/guanghe_companion/emotional_memory_retrieval.py": "f5b6481c44e32409fefbe8fcafc305f1d34750ddf598ee4d4849042828509849",
+    "src/guanghe_companion/emotional_memory_service.py": "a1b0ffb13e2a3839f742d23ac07f99a154f8eeca166128a365bd8bb8061b8455",
+    "src/guanghe_companion/engine.py": "4f60bd606cc8303f387e9f9e64d25a109d42c4f820b5cd9c1d502e87b728d455",
+    "src/guanghe_companion/events.py": "66b3e663f047b8b841573233adc1ce21c282fb7fdbd9a4f4c9ea8b06bcdf9c5d",
+    "src/guanghe_companion/expression_clients.py": "346c5fe87c536cd00a88d7835991ceee00a4c8245cdd2147c4b18e3e5e9c5403",
+    "src/guanghe_companion/expression_context.py": "d36e13724cdf8fca60468bc71a9cd739a66d424591b56699c424588c1fda54af",
+    "src/guanghe_companion/expression_diagnostic_view.py": "d021a2921a9d3303197c39d93f39603e5c22a217bb07ccab458adc13b1f2f778",
+    "src/guanghe_companion/expression_diagnostics.py": "c1d4f46ff3a50aa47356f502f5211436453b0519320cd00789ce82dba026f031",
+    "src/guanghe_companion/expression_event_pipeline.py": "5aecfbf055635c7f743b59787937b506f4a4954364224b0a73843207b3ddf7fe",
+    "src/guanghe_companion/expression_expressor.py": "7c069440d3344d2903e370f042972b56082899dfc8f426db6c45ebdb0c218788",
+    "src/guanghe_companion/expression_parser.py": "dbd28eaaa14613624dd2674ddb812b5ea47c737ff1e6ddb41a1d7ee228e02e4e",
+    "src/guanghe_companion/expression_prompt_budget.py": "40ddd61a73a6566c122bad8180c0fd9f0feb6d3ebb8b7366043bbd7b263b0a18",
+    "src/guanghe_companion/expression_provider_diagnostics.py": "cb3463ea2f0912b8bcf4627cafb93322529e296100065016221c46d735c0e6a9",
+    "src/guanghe_companion/expression_refinement.py": "0f88b279ab946269fd2ff4e0f838097868c992f00e19fe636df13a2164119d6f",
+    "src/guanghe_companion/expression_request.py": "0871bfbf230b9c2e4c3da5cb9118b7921f2fe22ce9808a3adffb307c00f66d44",
+    "src/guanghe_companion/expression_settings.py": "534a2204684a1c33ba445b2369f6dd5593477826dcdb3792a88dc909dbcc3c9d",
+    "src/guanghe_companion/focus_companion.py": "40d695af9927ab9f47e574d11fd2a8cce978f00788930629988bb8da69263fb9",
+    "src/guanghe_companion/focus_companion_qt.py": "ace9300b2ff4b51016b57414cc345d12e9cb7accb58ea6a8a31e789c9e4be66d",
+    "src/guanghe_companion/focus_companion_runtime.py": "82435a1a4f8389198ff95b24e4e2577b6345b43d8dc557d1047f74511f4bcd89",
+    "src/guanghe_companion/grounded_facts.py": "3084835d82df8c23eadbe27feca6ddd5a402cc58a68e722d54ba6e4f0fcd0b77",
+    "src/guanghe_companion/host_auth.py": "6c4f0f3cac336a82b29469571e8df7cc90f94c0e2ff8b695df54837a427bd301",
+    "src/guanghe_companion/host_runtime.py": "e03b2990e07ba5d8601daba0c86ad0a515a52949a44de760325621a54033f935",
+    "src/guanghe_companion/host_service.py": "3bbed8db26a9fb9422be7d3227a3ddaa8ef7b52778c3b311ea38de84b45d9f13",
+    "src/guanghe_companion/host_transport.py": "54cb67fcdfa4408976cb172583293d3ee008bfd3248e179851fb44fa631b6f1f",
+    "src/guanghe_companion/interaction_intents.py": "fa1747388abaeae02dfcc55da7bce50c08ba2bb7dfa62253671752ad0703a678",
+    "src/guanghe_companion/inventory.py": "9fa14648d2512ece2d7e7ae766f9db51fd6681ee242bf2615dd1c3fd8bff73ad",
+    "src/guanghe_companion/legacy_memory_migration.py": "f31a505654eac09cbba1b5ee6cf39e9c16cf68d24c38185034479512cf143a78",
+    "src/guanghe_companion/live2d_web.py": "1b0beb2bd935567258161740907a604da1a78f06dd0e042073603c6a6af12541",
+    "src/guanghe_companion/llm_smoke.py": "48b673d1df66c4c31da090ba487bb5fbeeae5b34c664e1d1597fd13044b18798",
+    "src/guanghe_companion/memory.py": "00f6db899c8ac3c965533a625b88cebc38f0b25e69ea50b6efddd9a37a87097b",
+    "src/guanghe_companion/memory_album_controller.py": "a6538f823f5b478bb1a742dbe39f9c46c0d36d6bf75904ba54854cfde7b9a7f5",
+    "src/guanghe_companion/memory_album_qt.py": "4521dbc464317d4c869f248b81f50ba55746d5cb60e51b2ddb15e2825c47dc79",
+    "src/guanghe_companion/memory_album_view_model.py": "9353322d280b7715ddce0a45397a2e85fa139a5871c47d8f15836b6224d1c7d5",
+    "src/guanghe_companion/memory_correction.py": "d017e4ee2d11a3e03222d1f4ee9c3d0a1b3b98a6e8afae2424b9aeffd785f619",
+    "src/guanghe_companion/memory_document.py": "be2f49c803f3d016a6cf3416bc02090b1cab9777f86aec88daef75b06b6e0802",
+    "src/guanghe_companion/memory_fusion.py": "391c2583ec70aee49fa1e4436bda34e385563c2b50ae4629198e7d85fc1eb0c2",
+    "src/guanghe_companion/memory_hierarchy.py": "dff13f4698e3c323c0fd257135f884595111d18206b7326c5accb6f7b6e821d4",
+    "src/guanghe_companion/memory_index.py": "ec815eb5cdd0bce466f94628339043469b5012557d97d0db280ceb47184aa819",
+    "src/guanghe_companion/memory_index_schema.py": "990cf51271a9d7bbcab7297648ae1559774f9d12d19ab80f03560da14a807d2a",
+    "src/guanghe_companion/memory_integration_bridge.py": "6356fc2a0acf0147b1f6e749c87d6bc0d7bcaedad8a927e05fbc3db186aab1d4",
+    "src/guanghe_companion/memory_settings_qt.py": "9268a8ab8ce3d4e401c34aa45b597cac11cb9a3b805b4197b82af2e7531b3f82",
+    "src/guanghe_companion/memory_settings_view_model.py": "31ffb5fed4de84b727062aa12119d06023073f7355a78dedc36100c4acfedd4b",
+    "src/guanghe_companion/mobile_link_qt.py": "c626d837766a9848d63a54d4b5d04a3c0b3e1226677bb4d5fc8c514e8e552ff5",
+    "src/guanghe_companion/mobile_link_view_model.py": "d8cf9ce76a7678c9fabc80ac4d3de3da7a887c26c8f882b2483bab83d9b0f5b9",
+    "src/guanghe_companion/models.py": "d508b9506097ba9f4589546e81a9b473e9ee8574a84edfc24d901c368eb6861c",
+    "src/guanghe_companion/motion.py": "eb9240350b50d1653fab7f4f32e57c3def43955f6d4474a351bf92688ce679b6",
+    "src/guanghe_companion/ondemand_memory.py": "c716e7ae63bc65d1aad3cba69e57b481682fce1f87281708d3c8d2d0a8beae8c",
+    "src/guanghe_companion/persona.py": "9e8ee73bd7add19011ae0163db5d0064c70131870a7e318917254b74c5550878",
+    "src/guanghe_companion/personal_task_runner.py": "e7820edda92b9de7ea58f617ff85d517335a048a6e86dbe60efe10f7fedefb8a",
+    "src/guanghe_companion/personal_tasks.py": "87e1657ad9e811d7d87ec5d1c3c56c7e9de460072a691cbd3c1a2ce72763572f",
+    "src/guanghe_companion/plugin_api.py": "97fcce67b2d7227ccd4df8e4836c4aa0b8e5be440de6dfbf888515518f42df33",
+    "src/guanghe_companion/plugin_audit.py": "2c4c7abfe9beefee7016eaf34b259440014137863c3fe8c9ab60889820d01b12",
+    "src/guanghe_companion/plugin_catalog_view_model.py": "84bef6f56dc1aa4d43a7edb2c4093f1e45b48eda8a9ea61092de2d06729d601c",
+    "src/guanghe_companion/plugin_center_app.py": "31adf09d32592eda73cc88f00f44693c4e63ea9bc5f7264aac2b2a6fc3676106",
+    "src/guanghe_companion/plugin_center_controller.py": "b9330fdf805ff41ba0c8d421f6f4ddb2f0805a2057f67306f20b109b4beb9237",
+    "src/guanghe_companion/plugin_center_qt.py": "83d24a99aeb4d4eec534f7055dd55aa48becf67e90ed936fa48ebd0a625912ec",
+    "src/guanghe_companion/plugin_configuration.py": "a57cf090236e6005cfe9b7f17b9d7b9879f17b360e2083f17d59ad8d34de5233",
+    "src/guanghe_companion/plugin_enabled_controller.py": "bc2b63c7e0acb8711ea1cb59442815213b848bbd0e39443cfd2e2972cc64b929",
+    "src/guanghe_companion/plugin_health.py": "fe12f15c8dd0165baf383668017f3c4e407de14f24d9c446579accc62d4cf970",
+    "src/guanghe_companion/plugin_host.py": "a68b9fd72afdd386f1f1b02443898979eea7aafeac862bd0a0570ef90c6932b4",
+    "src/guanghe_companion/plugin_journal.py": "63981a7176009fe74f61ce096073761c25036e0ed577e07761609206204a7324",
+    "src/guanghe_companion/plugin_manifest.py": "db749b4eed5bd7bfa6084c204fb38d5d6d56c2590669c7b87673273c5c418e52",
+    "src/guanghe_companion/plugin_package.py": "86f9740819c1c94ee1d9c30deb264b33f51cf9a260ce97f981ed69d3014c5cb6",
+    "src/guanghe_companion/plugin_provider_adapters.py": "522d28bdc1dbcf907dce3865f764d2208fe08278470d672bf2963c9a5d0a6bba",
+    "src/guanghe_companion/plugin_runtime.py": "2e9e1aa3ff135391558cc50477932ab65a08eb9b65397139d309733a09b8af1e",
+    "src/guanghe_companion/plugin_story_bridge.py": "0ae638faf86f3ee0355f099e071e9a786c2d5f2b9b63ec24aeb305a76cd15da5",
+    "src/guanghe_companion/plugin_subsystem.py": "37afce07bc0803906004fe7089955da4a0c03ad412c6137b6cf7ab9212e61100",
+    "src/guanghe_companion/presentation_renderer.py": "a82ee711e83c4fdc81d9a7f05c20c31cc460a7dd74762bb58584c720cc3537b9",
+    "src/guanghe_companion/proactive_companion.py": "e00ef472fdccba181f45ab8c2378ae6cabfb38ed8d41a414f0865e0a74b0b8dc",
+    "src/guanghe_companion/relationship.py": "82f7327ce25fd2f3a6c181f4f095c97dec8adfc9382f21660584174deebda22a",
+    "src/guanghe_companion/release_security.py": "67f8f29478a5fbc23213e8841cab037fc7585945343dceabf65565715247626e",
+    "src/guanghe_companion/retrieval_contract.py": "bb9010a1ce2e16052512bdfd19091ed5431feface828673d59e91c74e59fb4af",
+    "src/guanghe_companion/retrieval_evidence.py": "34714964eeef0eac42796dc19da3031fad6e76e1f9f76a2b847fdd3a88d9db1c",
+    "src/guanghe_companion/retrieval_router.py": "ded0fd5e7ae5c74f0b77c55606f0fa92d26fd5b1dbffa48715623be5b08d146e",
+    "src/guanghe_companion/runtime_paths.py": "a17994a0abec95e3c971417a5ad7a089e3c5a2dc7cb0084ea6458eab00e83db0",
+    "src/guanghe_companion/screen_observation.py": "b3ab107d67e346a22097fbf70bbb74bdab9ea5c16b336de80e40b29f316bd2a3",
+    "src/guanghe_companion/semantic_memory.py": "03592eebaa844741530f42ce74f10327d26da5abc57ae9e5a4d1b595ff2a10bf",
+    "src/guanghe_companion/session_goals.py": "4cbe930a04b1353ea8b0df5c7d75a6d290650390b16df65b01df82c4ee3ed8f2",
+    "src/guanghe_companion/shop_items.py": "b280112754ec75ccf0bccad497616d1a180167627ebd67f6ef4b8ed9c875939b",
+    "src/guanghe_companion/snapshot.py": "7f8440b891ef2fe58deb56d9f2349fe5a850f1c082865f994ff1e0239a07a2e2",
+    "src/guanghe_companion/snapshot_renderer.py": "c6e4cbf5b71dacd8c34cd979af77760ea7800ca6e8df15d416a03a773a41e0c9",
+    "src/guanghe_companion/spirit_stage.py": "6f53c03d4c43a102b517dc10c15d0d28b1d1d28780a776285811a31a471e3bf2",
+    "src/guanghe_companion/storage.py": "21f0a470014e26317917e9a50d4f71a0c3bbf54496b9a3290bf1ee3ef7a4e723",
+    "src/guanghe_companion/topic_scout.py": "bad5cf48350b2cdaba4aac1072f6dfc3ae876440855833bd67108d50f81ac2e5",
+    "src/guanghe_companion/tray_controller.py": "3f0b758afa99dc32a8d7b56a63a25ca0113b3302db090f83fce6bd1530dc70f1",
+    "src/guanghe_companion/ui_controls.py": "fa1882ff81794b0872b38d817f914166b090abf37887f9e72f8fcc7a1a7004d6",
+    "src/guanghe_companion/visual_actions.py": "ab661a746e8d46e0a5865146af6eeaa7c4e1d85ad7b324bfa11ead04798a4a4d",
+    "src/guanghe_companion/voice_asr.py": "d1efc7b36c24e91dc5ab815338ba9087f22c0d7976726e72062b7d90b2eda3ca",
+    "src/guanghe_companion/voice_async.py": "31f6438859e8acfb0f68b4a8cb275ea477d2aa88d9e6d86b5d5ce4f0e033ba45",
+    "src/guanghe_companion/voice_provider_catalog.py": "e9113941cb32da07f98eb8a0803fba786e2a6a1ed0e390233531a5fb1523a0f8",
+    "src/guanghe_companion/voice_service_control.py": "f359b03c14bcd1e995fc78b78c89c5f87233a553e50ad4fbf0220acb1787aa7e",
+    "src/guanghe_companion/voice_tts.py": "98435c2c2d4798a3491f554928144b92ac07f07e52ee676ef545606e6a60d8ff",
+    "src/guanghe_companion/web_search.py": "9166301ec4b3300591648bcdf93699b893144fc266e9053f3a3b69e13de26daa"
+  },
+  "runs": [
+    {
+      "method": "none",
+      "size": 300,
+      "output": "docs/modernization/evidence/ondemand-memory-20261101/development-lexical/none-300.json",
+      "returncode": 0,
+      "elapsed_ms": 1790.173233,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 108,
+        "stories": 18,
+        "answerable_queries": 52,
+        "no_answer_queries": 29,
+        "macro_recall_at_4": 0.0,
+        "delivered_recall": 0.0,
+        "precision_returned": 0.0,
+        "ndcg_at_4_binary": 0.0,
+        "mrr": 0.0,
+        "all_gold_delivered": {
+          "numerator": 0,
+          "denominator": 52,
+          "rate": 0.0
+        },
+        "no_answer_injection": {
+          "numerator": 0,
+          "denominator": 29,
+          "rate": 0.0
+        },
+        "unnecessary_retrieval": {
+          "numerator": 0,
+          "denominator": 27,
+          "rate": 0.0
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "status_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 29,
+          "rate": 0.0
+        },
+        "answerable_zero_evidence": {
+          "numerator": 52,
+          "denominator": 52,
+          "rate": 1.0
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "structured_wrong_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 108,
+            "p50": 0.192411,
+            "p95": 0.2760036499999999,
+            "p99": 0.5021525199999985,
+            "min": 0.120292,
+            "max": 0.653318
+          },
+          "total": {
+            "n": 108,
+            "p50": 0.22056399999999998,
+            "p95": 0.3388317999999999,
+            "p99": 0.6222121499999995,
+            "min": 0.137538,
+            "max": 0.671846
+          }
+        },
+        "rows_loaded": {
+          "n": 108,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "context_chars": {
+          "n": 108,
+          "p50": 250.0,
+          "p95": 250.0,
+          "p99": 250.0,
+          "min": 250.0,
+          "max": 250.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 108,
+          "p50": 670.0,
+          "p95": 678.0,
+          "p99": 679.93,
+          "min": 663.0,
+          "max": 680.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "1bb2f14a656ff35dc44cdcad7a8effe246fd10bf1839a0c9cde2d3b1d1bdbb97"
+    },
+    {
+      "method": "lexical",
+      "size": 300,
+      "output": "docs/modernization/evidence/ondemand-memory-20261101/development-lexical/lexical-300.json",
+      "returncode": 0,
+      "elapsed_ms": 9779.679828,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 108,
+        "stories": 18,
+        "answerable_queries": 52,
+        "no_answer_queries": 29,
+        "macro_recall_at_4": 0.7307692307692307,
+        "delivered_recall": 0.7307692307692307,
+        "precision_returned": 0.5608974358974359,
+        "ndcg_at_4_binary": 0.7209260363975737,
+        "mrr": 0.7307692307692307,
+        "all_gold_delivered": {
+          "numerator": 37,
+          "denominator": 52,
+          "rate": 0.7115384615384616
+        },
+        "no_answer_injection": {
+          "numerator": 17,
+          "denominator": 29,
+          "rate": 0.5862068965517241
+        },
+        "unnecessary_retrieval": {
+          "numerator": 27,
+          "denominator": 27,
+          "rate": 1.0
+        },
+        "route_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "status_exact": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 0,
+          "denominator": 29,
+          "rate": 0.0
+        },
+        "answerable_zero_evidence": {
+          "numerator": 11,
+          "denominator": 52,
+          "rate": 0.21153846153846154
+        },
+        "forbidden_injection": {
+          "numerator": 1,
+          "denominator": 108,
+          "rate": 0.009259259259259259
+        },
+        "structured_wrong_injection": {
+          "numerator": 20,
+          "denominator": 108,
+          "rate": 0.18518518518518517
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 5,
+          "denominator": 108,
+          "rate": 0.046296296296296294
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 108,
+            "p50": 0.25916150000000004,
+            "p95": 0.48594584999999996,
+            "p99": 0.5610552099999999,
+            "min": 0.165049,
+            "max": 0.648681
+          },
+          "database_read": {
+            "n": 108,
+            "p50": 39.7179565,
+            "p95": 47.136004549999996,
+            "p99": 59.51990846999995,
+            "min": 26.394804,
+            "max": 62.93371
+          },
+          "finalize_recall": {
+            "n": 108,
+            "p50": 7.593488499999999,
+            "p95": 12.46296345,
+            "p99": 26.188397169999952,
+            "min": 3.653746,
+            "max": 34.886118
+          },
+          "lexical_and_fusion": {
+            "n": 108,
+            "p50": 27.203348,
+            "p95": 33.2255573,
+            "p99": 35.01351308999999,
+            "min": 17.049322,
+            "max": 38.054294
+          },
+          "qualification": {
+            "n": 108,
+            "p50": 0.16853,
+            "p95": 0.3082414999999998,
+            "p99": 0.6991517599999973,
+            "min": 0.077778,
+            "max": 0.876516
+          },
+          "total": {
+            "n": 108,
+            "p50": 74.1583345,
+            "p95": 90.77760344999999,
+            "p99": 111.4359727699999,
+            "min": 48.531148,
+            "max": 115.456655
+          }
+        },
+        "rows_loaded": {
+          "n": 108,
+          "p50": 300.0,
+          "p95": 300.0,
+          "p99": 300.0,
+          "min": 298.0,
+          "max": 300.0
+        },
+        "context_chars": {
+          "n": 108,
+          "p50": 579.0,
+          "p95": 1621.3499999999997,
+          "p99": 1658.0,
+          "min": 250.0,
+          "max": 1663.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 108,
+          "p50": 880.5,
+          "p95": 1604.9499999999996,
+          "p99": 1647.6499999999999,
+          "min": 663.0,
+          "max": 1648.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "307114b0a3eca179782c2bed923da1860c9991dc70e1205680e9607e6d593348"
+    },
+    {
+      "method": "routed",
+      "size": 300,
+      "output": "docs/modernization/evidence/ondemand-memory-20261101/development-lexical/routed-300.json",
+      "returncode": 0,
+      "elapsed_ms": 5874.622849,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 108,
+        "stories": 18,
+        "answerable_queries": 52,
+        "no_answer_queries": 29,
+        "macro_recall_at_4": 0.6346153846153846,
+        "delivered_recall": 0.6346153846153846,
+        "precision_returned": 0.5769230769230769,
+        "ndcg_at_4_binary": 0.6389671997217484,
+        "mrr": 0.6538461538461539,
+        "all_gold_delivered": {
+          "numerator": 32,
+          "denominator": 52,
+          "rate": 0.6153846153846154
+        },
+        "no_answer_injection": {
+          "numerator": 10,
+          "denominator": 29,
+          "rate": 0.3448275862068966
+        },
+        "unnecessary_retrieval": {
+          "numerator": 23,
+          "denominator": 27,
+          "rate": 0.8518518518518519
+        },
+        "route_exact": {
+          "numerator": 45,
+          "denominator": 108,
+          "rate": 0.4166666666666667
+        },
+        "status_exact": {
+          "numerator": 55,
+          "denominator": 108,
+          "rate": 0.5092592592592593
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 18,
+          "denominator": 29,
+          "rate": 0.6206896551724138
+        },
+        "answerable_zero_evidence": {
+          "numerator": 16,
+          "denominator": 52,
+          "rate": 0.3076923076923077
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "structured_wrong_injection": {
+          "numerator": 6,
+          "denominator": 108,
+          "rate": 0.05555555555555555
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "overview_extractive_entailment": {
+          "numerator": 0,
+          "denominator": 0,
+          "rate": null
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 108,
+            "p50": 0.258055,
+            "p95": 0.5289921499999996,
+            "p99": 0.7569734499999997,
+            "min": 0.155755,
+            "max": 0.796255
+          },
+          "index_and_query_prepare": {
+            "n": 108,
+            "p50": 0.07978550000000001,
+            "p95": 0.48662274999999944,
+            "p99": 2.4109850299999938,
+            "min": 0.024737,
+            "max": 3.467584
+          },
+          "retrieval_context_assembly": {
+            "n": 108,
+            "p50": 0.11340200217091478,
+            "p95": 0.3231473543564788,
+            "p99": 0.5593150718777902,
+            "min": 0.05912000051466748,
+            "max": 0.6428130000131205
+          },
+          "retrieval_database_read": {
+            "n": 108,
+            "p50": 2.7885874951607548,
+            "p95": 12.362579450564223,
+            "p99": 36.414886979691644,
+            "min": 0.4402759950608015,
+            "max": 109.36539000249468
+          },
+          "retrieval_eligibility_and_evidence": {
+            "n": 101,
+            "p50": 0.037677004002034664,
+            "p95": 1.575522001076024,
+            "p99": 4.079061996890232,
+            "min": 0.0003800014383159578,
+            "max": 7.719822999206372
+          },
+          "retrieval_external_read": {
+            "n": 3,
+            "p50": 0.00024100154405459762,
+            "p95": 0.000412005465477705,
+            "p99": 0.0004272058140486479,
+            "min": 0.00021999585442245007,
+            "max": 0.0004310059011913836
+          },
+          "retrieval_finalize": {
+            "n": 108,
+            "p50": 0.6446000043069944,
+            "p95": 6.506503704076748,
+            "p99": 8.5641921806382,
+            "min": 0.2952570066554472,
+            "max": 10.896815998421516
+          },
+          "retrieval_ranking": {
+            "n": 101,
+            "p50": 0.04510799772106111,
+            "p95": 0.2971090070786886,
+            "p99": 2.4530590017093346,
+            "min": 0.008392999006900936,
+            "max": 5.326750993845053
+          },
+          "retrieval_routing": {
+            "n": 108,
+            "p50": 0.024707500415388495,
+            "p95": 0.055523799528600634,
+            "p99": 0.1938119898841246,
+            "min": 0.00539900065632537,
+            "max": 0.20444900292204693
+          },
+          "retrieval_total": {
+            "n": 108,
+            "p50": 5.580022003414342,
+            "p95": 17.148602548695624,
+            "p99": 45.55011735057624,
+            "min": 0.8690040049259551,
+            "max": 113.78765600238694
+          },
+          "retrieve": {
+            "n": 108,
+            "p50": 5.6110085000000005,
+            "p95": 17.20313164999999,
+            "p99": 45.632134049999905,
+            "min": 0.881583,
+            "max": 113.824241
+          },
+          "total": {
+            "n": 108,
+            "p50": 6.1290320000000005,
+            "p95": 18.052143499999985,
+            "p99": 46.05604493999991,
+            "min": 1.11795,
+            "max": 114.483007
+          }
+        },
+        "rows_loaded": {
+          "n": 108,
+          "p50": 1.0,
+          "p95": 64.0,
+          "p99": 64.0,
+          "min": 0.0,
+          "max": 64.0
+        },
+        "context_chars": {
+          "n": 108,
+          "p50": 501.0,
+          "p95": 1643.3,
+          "p99": 2365.65,
+          "min": 477.0,
+          "max": 2481.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 108,
+          "p50": 844.5,
+          "p95": 1555.95,
+          "p99": 2108.72,
+          "min": 827.0,
+          "max": 2169.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "203020bac57f161618151604a3a5e674e9726eccd1641c2288d162364c77f5fd"
+    },
+    {
+      "method": "layered",
+      "size": 300,
+      "output": "docs/modernization/evidence/ondemand-memory-20261101/development-lexical/layered-300.json",
+      "returncode": 0,
+      "elapsed_ms": 6073.285058,
+      "status": "measured_synthetic_retrieval",
+      "summary": {
+        "queries": 108,
+        "stories": 18,
+        "answerable_queries": 52,
+        "no_answer_queries": 29,
+        "macro_recall_at_4": 0.6346153846153846,
+        "delivered_recall": 0.6346153846153846,
+        "precision_returned": 0.5769230769230769,
+        "ndcg_at_4_binary": 0.6389671997217484,
+        "mrr": 0.6538461538461539,
+        "all_gold_delivered": {
+          "numerator": 32,
+          "denominator": 52,
+          "rate": 0.6153846153846154
+        },
+        "no_answer_injection": {
+          "numerator": 10,
+          "denominator": 29,
+          "rate": 0.3448275862068966
+        },
+        "unnecessary_retrieval": {
+          "numerator": 23,
+          "denominator": 27,
+          "rate": 0.8518518518518519
+        },
+        "route_exact": {
+          "numerator": 45,
+          "denominator": 108,
+          "rate": 0.4166666666666667
+        },
+        "status_exact": {
+          "numerator": 55,
+          "denominator": 108,
+          "rate": 0.5092592592592593
+        },
+        "correct_unknown_with_no_injection": {
+          "numerator": 18,
+          "denominator": 29,
+          "rate": 0.6206896551724138
+        },
+        "answerable_zero_evidence": {
+          "numerator": 16,
+          "denominator": 52,
+          "rate": 0.3076923076923077
+        },
+        "forbidden_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "structured_wrong_injection": {
+          "numerator": 6,
+          "denominator": 108,
+          "rate": 0.05555555555555555
+        },
+        "historical_wrong_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "planned_wrong_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "forgotten_injection": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "overview_source_coverage": {
+          "numerator": 22,
+          "denominator": 22,
+          "rate": 1.0
+        },
+        "overview_extractive_entailment": {
+          "numerator": 22,
+          "denominator": 22,
+          "rate": 1.0
+        },
+        "duplicate_evidence_queries": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "errors": {
+          "numerator": 0,
+          "denominator": 108,
+          "rate": 0.0
+        },
+        "stages_ms": {
+          "context_assembly": {
+            "n": 108,
+            "p50": 0.27545200000000003,
+            "p95": 0.5966450999999995,
+            "p99": 0.9231968499999984,
+            "min": 0.155766,
+            "max": 0.958089
+          },
+          "index_and_query_prepare": {
+            "n": 108,
+            "p50": 0.0775225,
+            "p95": 0.5035023999999991,
+            "p99": 1.0966556699999976,
+            "min": 0.021924,
+            "max": 4.252801
+          },
+          "retrieval_context_assembly": {
+            "n": 108,
+            "p50": 0.1182589985546656,
+            "p95": 0.29065930175420357,
+            "p99": 0.509488357711233,
+            "min": 0.06220499926712364,
+            "max": 0.5541680002352223
+          },
+          "retrieval_database_read": {
+            "n": 108,
+            "p50": 2.9871449987695087,
+            "p95": 15.285622504234196,
+            "p99": 17.831135797459854,
+            "min": 0.5005169950891286,
+            "max": 105.30636800103821
+          },
+          "retrieval_eligibility_and_evidence": {
+            "n": 101,
+            "p50": 0.041102000977844,
+            "p95": 1.6082009969977662,
+            "p99": 3.4061269980156794,
+            "min": 0.0003709938027895987,
+            "max": 3.6566290000337176
+          },
+          "retrieval_external_read": {
+            "n": 3,
+            "p50": 0.0003309978637844324,
+            "p95": 0.0003310044121462852,
+            "p99": 0.0003310049942228943,
+            "min": 0.0003309978637844324,
+            "max": 0.0003310051397420466
+          },
+          "retrieval_finalize": {
+            "n": 108,
+            "p50": 0.6048744980944321,
+            "p95": 7.774771200274697,
+            "p99": 11.67655001037928,
+            "min": 0.29768000240437686,
+            "max": 14.837540002190508
+          },
+          "retrieval_ranking": {
+            "n": 101,
+            "p50": 0.049975998990703374,
+            "p95": 0.5398360008257441,
+            "p99": 2.776778994302731,
+            "min": 0.008823000825941563,
+            "max": 6.138422999356408
+          },
+          "retrieval_routing": {
+            "n": 108,
+            "p50": 0.026129499019589275,
+            "p95": 0.04560650086204987,
+            "p99": 0.07548188979853859,
+            "min": 0.005027999577578157,
+            "max": 0.11095800437033176
+          },
+          "retrieval_total": {
+            "n": 108,
+            "p50": 5.89645550280693,
+            "p95": 20.26050490021589,
+            "p99": 32.301456675995716,
+            "min": 1.0035180021077394,
+            "max": 112.7801280017593
+          },
+          "retrieve": {
+            "n": 108,
+            "p50": 5.9199065,
+            "p95": 20.345194449999997,
+            "p99": 32.42720952999999,
+            "min": 1.023328,
+            "max": 112.839528
+          },
+          "total": {
+            "n": 108,
+            "p50": 6.6800755,
+            "p95": 21.119990249999994,
+            "p99": 33.42468556999999,
+            "min": 1.411594,
+            "max": 113.361908
+          }
+        },
+        "rows_loaded": {
+          "n": 108,
+          "p50": 1.0,
+          "p95": 64.0,
+          "p99": 64.0,
+          "min": 0.0,
+          "max": 64.0
+        },
+        "context_chars": {
+          "n": 108,
+          "p50": 501.0,
+          "p95": 1643.3,
+          "p99": 2365.65,
+          "min": 477.0,
+          "max": 2481.0
+        },
+        "bge_tokenizer_prompt_tokens": {
+          "n": 108,
+          "p50": 844.5,
+          "p95": 1555.95,
+          "p99": 2108.72,
+          "min": 827.0,
+          "max": 2169.0
+        },
+        "provider_tokens": "not_run",
+        "actual_answer_accuracy": "not_run",
+        "persona_behavior": "not_run"
+      },
+      "sha256": "248269547f5bd70865e0e1d0f99830f2b90590b3b6bab12c2fdd15f068333b58"
+    }
+  ],
+  "data_policy": "Independent story archives; synthetic stress tests, no population inference; fixed order; no generative LLM",
+  "new_source_unchanged_during_campaign": false
+}

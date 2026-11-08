@@ -1,0 +1,19 @@
+{
+  "measurement_class": "observed_concurrent_validation",
+  "evaluation_role": "post_existing_regression_fix_seen_replay",
+  "new_measurements": [
+    "routed",
+    "layered"
+  ],
+  "byte_reused_baselines": [
+    "none",
+    "lexical",
+    "bge_rrf"
+  ],
+  "maximum_heavy_workers": 3,
+  "other_load": "root pytest and Qt smoke may overlap; timings are not SLO evidence",
+  "production_commit": "b5b43e2a83a392b56d11cd2c24f01a89bdf22364",
+  "unchanged_tool_commit": "53cb836",
+  "first_independent_score_preserved_at": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory/docs/modernization/evidence/ondemand-memory-20261101/final-round2-sealed-300",
+  "generation_requests": 0
+}

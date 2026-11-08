@@ -1,0 +1,214 @@
+{
+  "schema": "emoti.memory.storage.comparison.v1",
+  "baseline": "storage-document-baseline-performance.json",
+  "upgraded": "storage-index-performance.json",
+  "results": [
+    {
+      "count": 300,
+      "corpus_sha256": "86977ee8668a4827b4cb76b28efaffbe08103a34de96a3d45a591e4c84ca3f71",
+      "summary_chars": {
+        "min": 77,
+        "median": 96.5,
+        "max": 116
+      },
+      "metrics": {
+        "warm_snapshot": {
+          "baseline_p50_ms": 42.838171,
+          "new_p50_ms": 1.327327,
+          "baseline_p95_ms": 49.151265,
+          "new_p95_ms": 1.657336,
+          "baseline_over_new": 32.2740146173475,
+          "n_each": 9
+        },
+        "warm_finalize_four": {
+          "baseline_p50_ms": 13.12288,
+          "new_p50_ms": 4.341325,
+          "baseline_p95_ms": 18.824414,
+          "new_p95_ms": 6.051232,
+          "baseline_over_new": 3.0227822151071386,
+          "n_each": 9
+        },
+        "warm_snapshot_and_finalize": {
+          "baseline_p50_ms": 61.700784,
+          "new_p50_ms": 5.67248,
+          "baseline_p95_ms": 71.613606,
+          "new_p95_ms": 6.347229,
+          "baseline_over_new": 10.877214904239414,
+          "n_each": 9
+        },
+        "correction": {
+          "baseline_p50_ms": 116.764967,
+          "new_p50_ms": 110.225331,
+          "baseline_p95_ms": 128.239626,
+          "new_p95_ms": 113.56363,
+          "baseline_over_new": 1.0593297016272964,
+          "n_each": 3
+        },
+        "forget": {
+          "baseline_p50_ms": 106.796298,
+          "new_p50_ms": 113.320092,
+          "baseline_p95_ms": 108.664699,
+          "new_p95_ms": 124.422684,
+          "baseline_over_new": 0.9424303856018753,
+          "n_each": 3
+        },
+        "expiry_not_due": {
+          "baseline_p50_ms": 41.246821,
+          "new_p50_ms": 0.313744,
+          "baseline_p95_ms": 47.845429,
+          "new_p95_ms": 0.53518,
+          "baseline_over_new": 131.4664854148605,
+          "n_each": 9
+        }
+      },
+      "db_bytes": {
+        "baseline": 315392,
+        "new": 2646016
+      },
+      "python_snapshot_peak_bytes": {
+        "baseline": 2488310,
+        "new": 52126
+      }
+    },
+    {
+      "count": 3000,
+      "corpus_sha256": "f6b762f7e5f91088333fbe096e3aa2f57c09d0a30ff298828a2c67be50dda7eb",
+      "summary_chars": {
+        "min": 77,
+        "median": 96.5,
+        "max": 116
+      },
+      "metrics": {
+        "warm_snapshot": {
+          "baseline_p50_ms": 428.599403,
+          "new_p50_ms": 1.242349,
+          "baseline_p95_ms": 523.525689,
+          "new_p95_ms": 1.926233,
+          "baseline_over_new": 344.99114419539114,
+          "n_each": 9
+        },
+        "warm_finalize_four": {
+          "baseline_p50_ms": 76.764034,
+          "new_p50_ms": 16.037284,
+          "baseline_p95_ms": 105.235078,
+          "new_p95_ms": 19.157162,
+          "baseline_over_new": 4.786598154650126,
+          "n_each": 9
+        },
+        "warm_snapshot_and_finalize": {
+          "baseline_p50_ms": 523.296889,
+          "new_p50_ms": 18.072592,
+          "baseline_p95_ms": 599.166498,
+          "new_p95_ms": 20.904775,
+          "baseline_over_new": 28.955275978122007,
+          "n_each": 9
+        },
+        "correction": {
+          "baseline_p50_ms": 974.694756,
+          "new_p50_ms": 1116.328942,
+          "baseline_p95_ms": 1028.192383,
+          "new_p95_ms": 1122.426801,
+          "baseline_over_new": 0.8731250434605322,
+          "n_each": 3
+        },
+        "forget": {
+          "baseline_p50_ms": 1079.046411,
+          "new_p50_ms": 1075.360279,
+          "baseline_p95_ms": 1080.747257,
+          "new_p95_ms": 1085.760259,
+          "baseline_over_new": 1.0034278111921968,
+          "n_each": 3
+        },
+        "expiry_not_due": {
+          "baseline_p50_ms": 438.508958,
+          "new_p50_ms": 0.258111,
+          "baseline_p95_ms": 493.225093,
+          "new_p95_ms": 0.725658,
+          "baseline_over_new": 1698.9161949703812,
+          "n_each": 9
+        }
+      },
+      "db_bytes": {
+        "baseline": 3112960,
+        "new": 24989696
+      },
+      "python_snapshot_peak_bytes": {
+        "baseline": 24393340,
+        "new": 51737
+      }
+    },
+    {
+      "count": 10000,
+      "corpus_sha256": "55d82392c1ba5347a45f5f8aa2b1e71e369dfc01c6f41da40f09fe4a7e2502e1",
+      "summary_chars": {
+        "min": 77,
+        "median": 96.5,
+        "max": 116
+      },
+      "metrics": {
+        "warm_snapshot": {
+          "baseline_p50_ms": 1578.325776,
+          "new_p50_ms": 1.269088,
+          "baseline_p95_ms": 1651.823955,
+          "new_p95_ms": 1.902527,
+          "baseline_over_new": 1243.6692932247408,
+          "n_each": 9
+        },
+        "warm_finalize_four": {
+          "baseline_p50_ms": 264.073461,
+          "new_p50_ms": 46.741894,
+          "baseline_p95_ms": 322.119981,
+          "new_p95_ms": 62.416784,
+          "baseline_over_new": 5.64960976977099,
+          "n_each": 9
+        },
+        "warm_snapshot_and_finalize": {
+          "baseline_p50_ms": 1695.517979,
+          "new_p50_ms": 46.538116,
+          "baseline_p95_ms": 1823.197358,
+          "new_p95_ms": 62.616467,
+          "baseline_over_new": 36.43288823724622,
+          "n_each": 9
+        },
+        "correction": {
+          "baseline_p50_ms": 3651.712172,
+          "new_p50_ms": 3783.773294,
+          "baseline_p95_ms": 3757.758724,
+          "new_p95_ms": 3975.680494,
+          "baseline_over_new": 0.9650980352841404,
+          "n_each": 3
+        },
+        "forget": {
+          "baseline_p50_ms": 3522.518183,
+          "new_p50_ms": 3725.205488,
+          "baseline_p95_ms": 3791.398451,
+          "new_p95_ms": 3915.562713,
+          "baseline_over_new": 0.9455903021583866,
+          "n_each": 3
+        },
+        "expiry_not_due": {
+          "baseline_p50_ms": 1356.542889,
+          "new_p50_ms": 0.280624,
+          "baseline_p95_ms": 1445.557027,
+          "new_p95_ms": 1.360106,
+          "baseline_over_new": 4834.023066451908,
+          "n_each": 9
+        }
+      },
+      "db_bytes": {
+        "baseline": 10362880,
+        "new": 83439616
+      },
+      "python_snapshot_peak_bytes": {
+        "baseline": 79570625,
+        "new": 51258
+      }
+    }
+  ],
+  "not_run": [
+    "real_model_request",
+    "desktop_interaction",
+    "crash_power_loss_hardware",
+    "secure_physical_erasure"
+  ]
+}

@@ -1,0 +1,16 @@
+{
+  "checked_at_utc": "2026-11-01T18:57:52.308811+00:00",
+  "source_freeze_commit": "f7a4e23a0f7b207fc68c1719c2217ac740416344",
+  "production_src_unchanged_from_freeze": true,
+  "original_tool_sha256": "783e836c45b556fd1b353728efcd95560180aeab3a7e741a8be6561af529baf2",
+  "revised_tool_sha256": "956ed77864c8b19538aadd5119b800ae10d1dd612e287d0cf9f365e62307c368",
+  "original_exit_code": 1,
+  "revised_exit_code": 0,
+  "revised_checks": {
+    "passed": 10,
+    "total": 10
+  },
+  "generation": "not_run",
+  "additional_verification": "all 3 fact phases recorded current provider routes/status; passage/query encoder counts remain 0; forgotten strings absent from final prompt",
+  "revision_reason": "update a legacy cosine oracle to the current on-demand structured retrieval contract; no production or scoring/data change"
+}

@@ -1,0 +1,439 @@
+{
+  "status": "passed",
+  "source_root": "/workspace/scratch/ac4f72a6307d/development/E-Moti-ondemand-memory",
+  "rows": [
+    {
+      "memory_id": "d_name",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_friend",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_teacher_name",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_teacher_job",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_home_old",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_home_now",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_food_avoid",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_breakfast",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_quiet",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_humor",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_clay_first",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_clay_glaze",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_clay_plan",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_forgotten_walk",
+      "split": "development",
+      "status": "passed",
+      "forgotten_ineligible_time_probes": [
+        0,
+        1791950000,
+        1792000000,
+        4000000000
+      ]
+    },
+    {
+      "memory_id": "d_photo_sort",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_deploy_fail",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_deploy_fix",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_photo_v2",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_photo_v3",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_backup_plan",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_backup_done",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_other_owner",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_other_role",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_game_pet",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_legacy_music",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_legacy_camera",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_cousin_city",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_cousin_job",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_novel",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_read_together",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_keyboard",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_keyboard_pref",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_timer",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_timer_button",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_uncle_job",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "d_uncle_city",
+      "split": "development",
+      "status": "passed"
+    },
+    {
+      "memory_id": "library_m1",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "library_m2",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "library_m3",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "library_m4",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "choir_m1",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "choir_m2",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "choir_m3",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "choir_m4",
+      "split": "holdout",
+      "status": "passed",
+      "forgotten_ineligible_time_probes": [
+        0,
+        1780304400,
+        1781496000,
+        4000000000
+      ]
+    },
+    {
+      "memory_id": "fireflies_m1",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "fireflies_m2",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "fireflies_m3",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "fireflies_m4",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "scanning_m1",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "scanning_m2",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "scanning_m3",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "scanning_m4",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "garden_m1",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "garden_m2",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "garden_m3",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "garden_m4",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "cycling_m1",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "cycling_m2",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "cycling_m3",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "cycling_m4",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "volunteering_m1",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "volunteering_m2",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "volunteering_m3",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "volunteering_m4",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "pottery_m1",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "pottery_m2",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "pottery_m3",
+      "split": "holdout",
+      "status": "passed"
+    },
+    {
+      "memory_id": "pottery_m4",
+      "split": "holdout",
+      "status": "passed",
+      "forgotten_ineligible_time_probes": [
+        0,
+        1781164800,
+        1781496000,
+        4000000000
+      ]
+    },
+    {
+      "memory_id": "v_pet",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_library",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_library_city",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_moon",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_scope",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_audio_fail",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_audio_fix",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_job_old",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_job_current",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_salary",
+      "split": "validation",
+      "status": "passed",
+      "forgotten_ineligible_time_probes": [
+        0,
+        1791950000,
+        1792000000,
+        4000000000
+      ]
+    },
+    {
+      "memory_id": "v_legacy_plant",
+      "split": "validation",
+      "status": "passed"
+    },
+    {
+      "memory_id": "v_plant_event",
+      "split": "validation",
+      "status": "passed"
+    }
+  ],
+  "dataset_hashes": {
+    "ondemand_memory_development.json": "c1f9358406a399ec24e863b48d3027c66348db8f9b53abba587f9b125ad40a01",
+    "ondemand_memory_holdout.json": "c9c5c37f5c839f3c259f9a038563d24f1ee1ffbc01b54584ae3575cd3265695e",
+    "ondemand_memory_validation.json": "408625996eeb69ff22e81c0ece92e3dcc1479853034d54d4a1e2eae61294bd97"
+  },
+  "retrieval_queries_executed": 0,
+  "generation_requests": 0,
+  "source_count": 80,
+  "failed_count": 0
+}
