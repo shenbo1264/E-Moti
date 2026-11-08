@@ -31,5 +31,7 @@ def test_temporal_presupposition_boundary_preserves_explicit_repetition_and_pers
         assert '重复、持续、变化、等待和习惯也属于事实预设' in delivered
         assert '保留拟人和玩笑本身' in delivered
         assert '原话明确提供的重复或延续信息应保留' in delivered
+        assert '只修改没有依据的限定语' in delivered
+        assert '不能从一个动作补出具体位置、光线、时段或效果' in delivered
     assert request.player_message in prompt
     assert request.persona == persona
