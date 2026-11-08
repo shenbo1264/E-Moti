@@ -26,7 +26,10 @@ def run(args):
     settings = ExpressionSettingsStore(args.app_settings).load()
     if settings.model != 'deepseek-flash' or settings.base_url.rstrip('/') not in {'https://api.deepseek.com', 'https://api.deepseek.com/v1'}:
         raise ValueError('requires official Flash settings')
-    known = json.loads(args.previous_calls.read_text(encoding='utf-8'))['calls'][4]
+    previous_calls = json.loads(args.previous_calls.read_text(encoding='utf-8'))['calls']
+    if args.review_indices and any(index < 0 or index >= len(previous_calls) for index in args.review_indices):
+        raise ValueError('unknown saved request index')
+    known = previous_calls[4]
     old_system = known['wire_payload']['messages'][0]['content']
     args.output.mkdir(parents=True, exist_ok=False)
     meter = BatchMeter(args.output / 'provider-calls.json', settings.api_key)
@@ -56,6 +59,32 @@ def run(args):
         return {'raw_output': raw, 'parsed': parsed, 'call_indices': list(range(start, meter.calls))}
 
     try:
+        if args.review_indices:
+            report['scope'] = 'targeted saved review repair plus optional production expression'
+            for index in args.review_indices:
+                prior = previous_calls[index]
+                prompt = prior['wire_payload']['messages'][1]['content']
+                row = {'id': 'saved_review_' + str(index), 'before_call': prior, 'input': json.loads(prompt)}
+                report['rows'].append(row)
+                row['after'] = review(prompt, review_rules())
+                save()
+            if args.generation_text:
+                client.max_tokens = 4096
+                expressor = ShinsekaiAIExpressor(llm_client=client, timeout_seconds=60, dialogue_policy=production_policy())
+                try:
+                    expr = expression(args.generation_text)
+                    start = meter.calls
+                    row = {'id': 'targeted_production', 'mode': 'production_expression',
+                           'request': expr.to_prompt_dict(), 'provider_prompt': expressor.build_prompt(expr)}
+                    report['rows'].append(row)
+                    row['events'] = expressor.express(expr)
+                    row['fallback_reason'] = expressor.last_fallback_reason
+                    row['call_indices'] = list(range(start, meter.calls))
+                    save()
+                finally:
+                    expressor.close()
+            report['status'] = 'completed'
+            return
         prompt = known['wire_payload']['messages'][1]['content']
         row = {'id': 'unsupported_repeat', 'input': json.loads(prompt), 'before_call': known}
         report['rows'].append(row)
@@ -108,4 +137,6 @@ if __name__ == '__main__':
     parser = argparse.ArgumentParser()
     for key in ('app-settings', 'previous-calls', 'output'):
         parser.add_argument('--' + key, required=True, type=Path)
+    parser.add_argument('--review-indices', nargs='+', type=int)
+    parser.add_argument('--generation-text')
     run(parser.parse_args())
